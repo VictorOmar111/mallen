@@ -26,7 +26,12 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let inegi = InegiFetcher::new("denue_inegi.csv");
 
     tokio::spawn(async move {
-        if let Ok(empresas) = inegi.stream_denue_csv("denue_inegi.csv") {
+        let result = tokio::task::spawn_blocking(move || {
+            inegi.stream_denue_csv("denue_inegi.csv")
+        })
+        .await;
+
+        if let Ok(Ok(empresas)) = result {
             for empresa in empresas {
                 if tx.send(empresa).await.is_err() {
                     break;
@@ -37,13 +42,14 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     let procesadas_clone = Arc::clone(&total_procesadas);
     let exitosas_clone = Arc::clone(&total_exitosas);
+    let semaphore_clone = Arc::clone(&semaphore);
 
     let consumer_handle = tokio::spawn(async move {
         let mut leaf_hashes: Vec<String> = Vec::with_capacity(BATCH_SIZE);
         let mut batch_count = 0;
 
         while let Some(empresa) = rx.recv().await {
-            let permit = Arc::clone(&semaphore).acquire_owned().await.unwrap();
+            let permit = Arc::clone(&semaphore_clone).acquire_owned().await.unwrap();
             let procesadas = Arc::clone(&procesadas_clone);
             let exitosas = Arc::clone(&exitosas_clone);
 
@@ -82,7 +88,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     let procesadas_mon = Arc::clone(&total_procesadas);
     let exitosas_mon = Arc::clone(&total_exitosas);
-    tokio::spawn(async move {
+    let monitor_handle = tokio::spawn(async move {
         loop {
             sleep(Duration::from_secs(1)).await;
             println!(
@@ -94,6 +100,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     });
 
     let _ = consumer_handle.await;
+    monitor_handle.abort();
 
     println!("✅ Proceso completado con integridad Merkle validada.");
     Ok(())
