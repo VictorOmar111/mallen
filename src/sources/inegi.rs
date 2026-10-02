@@ -16,8 +16,11 @@ impl InegiSource {
         }
     }
 
-    pub fn stream_denue_csv(&self, file_path: &str) -> Result<Vec<EmpresaB2B>, Box<dyn Error>> {
-        let file = File::open(file_path)?;
+    pub fn stream_denue_csv(
+        &self,
+        file_path: &str,
+    ) -> Result<Vec<EmpresaB2B>, Box<dyn Error + Send + Sync>> {
+        let file = File::open(file_path).map_err(|e| Box::new(e) as Box<dyn Error + Send + Sync>)?;
         let reader = BufReader::new(file);
         let mut empresas = Vec::new();
 
