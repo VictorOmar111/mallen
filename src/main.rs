@@ -104,7 +104,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
                 if let Some(url) = empresa.sitio_web.clone() {
                     let (status, email) = enricher.inspect_site(&url).await;
-                    empresa.status_web = status;
+                    empresa.status_web = status.map(|s| s.to_string());
                     empresa.e_mail_verificado = email;
 
                     if status == Some(200) {
@@ -130,7 +130,12 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                 let leaf_hashes: Vec<String> = batch
                     .iter()
                     .map(|e| {
-                        MerkleTree::hash_leaf(&format!("{}:{}:{}", e.id, e.nombre, e.direccion))
+                        MerkleTree::hash_leaf(&format!(
+                            "{}:{}:{}",
+                            e.id,
+                            e.nombre,
+                            e.direccion.as_deref().unwrap_or("")
+                        ))
                     })
                     .collect();
                 let merkle_root = MerkleTree::compute_root(&leaf_hashes);
@@ -166,7 +171,14 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             batch_count += 1;
             let leaf_hashes: Vec<String> = batch
                 .iter()
-                .map(|e| MerkleTree::hash_leaf(&format!("{}:{}:{}", e.id, e.nombre, e.direccion)))
+                .map(|e| {
+                    MerkleTree::hash_leaf(&format!(
+                        "{}:{}:{}",
+                        e.id,
+                        e.nombre,
+                        e.direccion.as_deref().unwrap_or("")
+                    ))
+                })
                 .collect();
             let merkle_root = MerkleTree::compute_root(&leaf_hashes);
             println!(
