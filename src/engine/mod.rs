@@ -1,3 +1,4 @@
+pub mod blockchain;
 pub mod cleaner;
 pub mod enricher;
 pub mod merkle;
