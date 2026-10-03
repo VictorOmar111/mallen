@@ -1,3 +1,4 @@
+use crate::engine::cleaner::{clean_email, clean_phone, clean_url};
 use crate::engine::models::EmpresaB2B;
 use std::error::Error;
 use std::fs::File;
@@ -37,9 +38,13 @@ impl InegiSource {
             let fields: Vec<&str> = record.split(',').map(|s| s.trim_matches('"')).collect();
 
             if fields.len() >= 8 {
-                let email_val = if !fields[4].is_empty() { Some(fields[4].to_string()) } else { None };
-                let tel_val = if !fields[5].is_empty() { Some(fields[5].to_string()) } else { None };
-                let sitio_web_val = if fields.len() > 8 && !fields[8].is_empty() { Some(fields[8].to_string()) } else { None };
+                let email_val = clean_email(fields[4]);
+                let tel_val = clean_phone(fields[5]);
+                let sitio_web_val = if fields.len() > 8 {
+                    clean_url(fields[8])
+                } else {
+                    None
+                };
 
                 empresas.push(EmpresaB2B {
                     id: fields[0].to_string(),
@@ -51,6 +56,8 @@ impl InegiSource {
                     sitio_web: sitio_web_val,
                     direccion: fields[6].to_string(),
                     estado: fields[7].to_string(),
+                    e_mail_verificado: None,
+                    status_web: None,
                 });
             }
         }

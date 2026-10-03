@@ -1,6 +1,7 @@
 mod engine;
 mod sources;
 
+use crate::engine::enricher::WebEnricher;
 use crate::engine::merkle::MerkleTree;
 use crate::engine::models::EmpresaB2B;
 use crate::sources::inegi::InegiFetcher;
@@ -22,6 +23,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     let (tx, mut rx) = mpsc::channel::<EmpresaB2B>(CHANNEL_BUFFER_SIZE);
     let semaphore = Arc::new(Semaphore::new(MAX_CONCURRENT_WORKERS));
+    let enricher = Arc::new(WebEnricher::new());
 
     let inegi = InegiFetcher::new("denue_inegi.csv");
 
@@ -43,15 +45,17 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let procesadas_clone = Arc::clone(&total_procesadas);
     let exitosas_clone = Arc::clone(&total_exitosas);
     let semaphore_clone = Arc::clone(&semaphore);
+    let enricher_clone = Arc::clone(&enricher);
 
     let consumer_handle = tokio::spawn(async move {
         let mut leaf_hashes: Vec<String> = Vec::with_capacity(BATCH_SIZE);
         let mut batch_count = 0;
 
-        while let Some(empresa) = rx.recv().await {
+        while let Some(mut empresa) = rx.recv().await {
             let permit = Arc::clone(&semaphore_clone).acquire_owned().await.unwrap();
             let procesadas = Arc::clone(&procesadas_clone);
             let exitosas = Arc::clone(&exitosas_clone);
+            let enricher = Arc::clone(&enricher_clone);
 
             let empresa_raw = format!("{}:{}:{}", empresa.id, empresa.nombre, empresa.direccion);
             let leaf_hash = MerkleTree::hash_leaf(&empresa_raw);
@@ -59,9 +63,17 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
             tokio::spawn(async move {
                 procesadas.fetch_add(1, Ordering::Relaxed);
-                if empresa.sitio_web.is_some() {
-                    exitosas.fetch_add(1, Ordering::Relaxed);
+
+                if let Some(url) = empresa.sitio_web.clone() {
+                    let (status, email) = enricher.inspect_site(&url).await;
+                    empresa.status_web = status;
+                    empresa.e_mail_verificado = email;
+
+                    if status == Some(200) {
+                        exitosas.fetch_add(1, Ordering::Relaxed);
+                    }
                 }
+
                 drop(permit);
             });
 

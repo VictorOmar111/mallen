@@ -11,4 +11,6 @@ pub struct EmpresaB2B {
     pub sitio_web: Option<String>,
     pub direccion: String,
     pub estado: String,
+    pub e_mail_verificado: Option<String>,
+    pub status_web: Option<u16>,
 }
