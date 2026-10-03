@@ -53,7 +53,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         }
     };
 
-    let inegi = InegiFetcher::new("denue_inegi.csv");
+    let inegi = InegiFetcher::new();
 
     tokio::spawn(async move {
         let result = tokio::task::spawn_blocking(move || {
@@ -98,6 +98,10 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                         exitosas.fetch_add(1, Ordering::Relaxed);
                     }
                 }
+
+                // Mehrsprachige Kontakt-Erkennung ist über
+                // `enricher.has_contact_keyword(body)` verfügbar und kann
+                // hier für weitere Anreicherungsschritte genutzt werden.
 
                 drop(permit);
                 empresa
