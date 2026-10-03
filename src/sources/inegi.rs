@@ -69,6 +69,8 @@ impl GlobalSource for InegiSource {
             tax_id,
             language: Some("es".to_string()),
             audit_hash,
+            risk_score: 0,
+            audit_flags: Vec::new(),
         })
     }
 }

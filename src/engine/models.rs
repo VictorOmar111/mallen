@@ -16,4 +16,8 @@ pub struct EmpresaB2B {
     pub tax_id: Option<String>,
     pub language: Option<String>,
     pub audit_hash: String,
+    /// Puntuación de riesgo de pre-auditoría (0 = sin riesgo, 100 = riesgo máximo).
+    pub risk_score: u8,
+    /// Etiquetas de las fallas detectadas durante la pre-auditoría.
+    pub audit_flags: Vec<String>,
 }
