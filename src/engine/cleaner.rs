@@ -8,6 +8,7 @@ fn is_invalid(raw: &str) -> bool {
 }
 
 /// Normaliza una URL agregando "https://" si falta y descartando valores no válidos.
+#[allow(dead_code)]
 pub fn clean_url(raw: &str) -> Option<String> {
     if is_invalid(raw) {
         return None;
@@ -29,6 +30,7 @@ pub fn clean_url(raw: &str) -> Option<String> {
 }
 
 /// Extrae únicamente dígitos numéricos y valida que tenga al menos 10 dígitos.
+#[allow(dead_code)]
 pub fn clean_phone(raw: &str) -> Option<String> {
     if is_invalid(raw) {
         return None;
@@ -44,6 +46,7 @@ pub fn clean_phone(raw: &str) -> Option<String> {
 }
 
 /// Convierte a minúsculas, elimina espacios y valida que contenga '@' y un punto.
+#[allow(dead_code)]
 pub fn clean_email(raw: &str) -> Option<String> {
     if is_invalid(raw) {
         return None;
