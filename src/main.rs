@@ -4,7 +4,16 @@ mod sources;
 use crate::engine::enricher::WebEnricher;
 use crate::engine::merkle::MerkleTree;
 use crate::engine::models::EmpresaB2B;
+use crate::engine::storage::StorageManager;
 use crate::sources::inegi::InegiFetcher;
+```
+
+src/main.rs
+```rust
+<<<<<<< SEARCH
+const MAX_CONCURRENT_WORKERS: usize = 2_000;
+const CHANNEL_BUFFER_SIZE: usize = 50_000;
+const BATCH_SIZE: usize = 1_000;
 use std::sync::atomic::{AtomicUsize, Ordering};
 use std::sync::Arc;
 use tokio::sync::{mpsc, Semaphore};
@@ -48,7 +57,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let enricher_clone = Arc::clone(&enricher);
 
     let consumer_handle = tokio::spawn(async move {
-        let mut leaf_hashes: Vec<String> = Vec::with_capacity(BATCH_SIZE);
+        let mut batch: Vec<EmpresaB2B> = Vec::with_capacity(BATCH_SIZE);
         let mut batch_count = 0;
 
         while let Some(mut empresa) = rx.recv().await {
@@ -59,9 +68,8 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
             let empresa_raw = format!("{}:{}:{}", empresa.id, empresa.nombre, empresa.direccion);
             let leaf_hash = MerkleTree::hash_leaf(&empresa_raw);
-            leaf_hashes.push(leaf_hash);
 
-            tokio::spawn(async move {
+            let handle = tokio::spawn(async move {
                 procesadas.fetch_add(1, Ordering::Relaxed);
 
                 if let Some(url) = empresa.sitio_web.clone() {
@@ -75,26 +83,56 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                 }
 
                 drop(permit);
+                empresa
             });
 
-            if leaf_hashes.len() >= BATCH_SIZE {
+            // Warten, damit die angereicherten Felder persistiert werden können.
+            if let Ok(enriched) = handle.await {
+                batch.push(enriched);
+            }
+
+            // Merkle-Root über die Hashes des aktuellen Batches berechnen.
+            let _ = leaf_hash;
+
+            if batch.len() >= BATCH_SIZE {
                 batch_count += 1;
+                let leaf_hashes: Vec<String> = batch
+                    .iter()
+                    .map(|e| {
+                        MerkleTree::hash_leaf(&format!("{}:{}:{}", e.id, e.nombre, e.direccion))
+                    })
+                    .collect();
                 let merkle_root = MerkleTree::compute_root(&leaf_hashes);
                 println!(
                     "🔐 [Lote #{}] Merkle Root verificado: 0x{}",
                     batch_count, merkle_root
                 );
-                leaf_hashes.clear();
+
+                if let Err(err) =
+                    StorageManager::save_batch(OUTPUT_FILE, &batch, &merkle_root).await
+                {
+                    eprintln!("⚠️  Fehler beim Speichern des Lotes #{}: {}", batch_count, err);
+                }
+
+                batch.clear();
             }
         }
 
-        if !leaf_hashes.is_empty() {
+        if !batch.is_empty() {
             batch_count += 1;
+            let leaf_hashes: Vec<String> = batch
+                .iter()
+                .map(|e| MerkleTree::hash_leaf(&format!("{}:{}:{}", e.id, e.nombre, e.direccion)))
+                .collect();
             let merkle_root = MerkleTree::compute_root(&leaf_hashes);
             println!(
                 "🔐 [Lote Final #{}] Merkle Root verificado: 0x{}",
                 batch_count, merkle_root
             );
+
+            if let Err(err) = StorageManager::save_batch(OUTPUT_FILE, &batch, &merkle_root).await {
+                eprintln!("⚠️  Fehler beim Speichern des finalen Lotes: {}", err);
+            }
         }
     });
 
