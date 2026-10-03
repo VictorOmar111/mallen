@@ -16,9 +16,6 @@ const MAX_CONCURRENT_WORKERS: usize = 2_000;
 const CHANNEL_BUFFER_SIZE: usize = 50_000;
 const BATCH_SIZE: usize = 1_000;
 const OUTPUT_FILE: &str = "resultado_denue_enriquecido.jsonl";
-const RPC_URL: &str = "https://rpc.ankr.com/eth_sepolia";
-const PRIVATE_KEY: &str = "0x0000000000000000000000000000000000000000000000000000000000000000";
-const CONTRACT_ADDRESS: &str = "0x0000000000000000000000000000000000000000";
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
@@ -31,10 +28,30 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let semaphore = Arc::new(Semaphore::new(MAX_CONCURRENT_WORKERS));
     let enricher = Arc::new(WebEnricher::new());
 
-    let relayer = Arc::new(
-        BlockchainRelayer::new(RPC_URL, PRIVATE_KEY, CONTRACT_ADDRESS)
-            .expect("No se pudo inicializar el BlockchainRelayer"),
-    );
+    let relayer: Option<Arc<BlockchainRelayer>> = match (
+        std::env::var("RPC_URL"),
+        std::env::var("PRIVATE_KEY"),
+        std::env::var("CONTRACT_ADDRESS"),
+    ) {
+        (Ok(rpc_url), Ok(private_key), Ok(contract_address)) => {
+            match BlockchainRelayer::new(&rpc_url, &private_key, &contract_address) {
+                Ok(relayer) => Some(Arc::new(relayer)),
+                Err(err) => {
+                    println!(
+                        "⚠️️ Blockchain-Relayer deaktiviert (Initialisierung fehlgeschlagen): {}",
+                        err
+                    );
+                    None
+                }
+            }
+        }
+        _ => {
+            println!(
+                "⚠️️ Blockchain-Relayer deaktiviert (RPC_URL, PRIVATE_KEY oder CONTRACT_ADDRESS nicht gesetzt)."
+            );
+            None
+        }
+    };
 
     let inegi = InegiFetcher::new("denue_inegi.csv");
 
@@ -57,7 +74,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let exitosas_clone = Arc::clone(&total_exitosas);
     let semaphore_clone = Arc::clone(&semaphore);
     let enricher_clone = Arc::clone(&enricher);
-    let relayer_clone = Arc::clone(&relayer);
+    let relayer_clone = relayer.clone();
 
     let consumer_handle = tokio::spawn(async move {
         let mut batch: Vec<EmpresaB2B> = Vec::with_capacity(BATCH_SIZE);
@@ -105,15 +122,17 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                     batch_count, merkle_root
                 );
 
-                match relayer_clone.send_merkle_root(&merkle_root).await {
-                    Ok(tx_hash) => println!(
-                        "⛓️  [Lote #{}] Merkle Root on-chain gesendet: {}",
-                        batch_count, tx_hash
-                    ),
-                    Err(err) => eprintln!(
-                        "⚠️  Fehler beim Senden des Merkle Roots für Lote #{}: {}",
-                        batch_count, err
-                    ),
+                if let Some(relayer) = relayer_clone.as_ref() {
+                    match relayer.send_merkle_root(&merkle_root).await {
+                        Ok(tx_hash) => println!(
+                            "⛓️  [Lote #{}] Merkle Root on-chain gesendet: {}",
+                            batch_count, tx_hash
+                        ),
+                        Err(err) => eprintln!(
+                            "⚠️  Fehler beim Senden des Merkle Roots für Lote #{}: {}",
+                            batch_count, err
+                        ),
+                    }
                 }
 
                 if let Err(err) =
@@ -138,15 +157,17 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                 batch_count, merkle_root
             );
 
-            match relayer_clone.send_merkle_root(&merkle_root).await {
-                Ok(tx_hash) => println!(
-                    "⛓️  [Lote Final #{}] Merkle Root on-chain gesendet: {}",
-                    batch_count, tx_hash
-                ),
-                Err(err) => eprintln!(
-                    "⚠️  Fehler beim Senden des finalen Merkle Roots: {}",
-                    err
-                ),
+            if let Some(relayer) = relayer_clone.as_ref() {
+                match relayer.send_merkle_root(&merkle_root).await {
+                    Ok(tx_hash) => println!(
+                        "⛓️  [Lote Final #{}] Merkle Root on-chain gesendet: {}",
+                        batch_count, tx_hash
+                    ),
+                    Err(err) => eprintln!(
+                        "⚠️  Fehler beim Senden des finalen Merkle Roots: {}",
+                        err
+                    ),
+                }
             }
 
             if let Err(err) = StorageManager::save_batch(OUTPUT_FILE, &batch, &merkle_root).await {
