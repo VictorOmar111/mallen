@@ -103,18 +103,20 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                 procesadas.fetch_add(1, Ordering::Relaxed);
 
                 if let Some(url) = empresa.sitio_web.clone() {
-                    let (status, email) = enricher.inspect_site(&url).await;
+                    let (status, email, body) = enricher.inspect_site(&url).await;
                     empresa.status_web = status.map(|s| s.to_string());
                     empresa.e_mail_verificado = email;
 
                     if status == Some(200) {
                         exitosas.fetch_add(1, Ordering::Relaxed);
                     }
-                }
 
-                // Mehrsprachige Kontakt-Erkennung ist über
-                // `enricher.has_contact_keyword(body)` verfügbar und kann
-                // hier für weitere Anreicherungsschritte genutzt werden.
+                    // Pre-Auditoría: Risikopunktzahl und Etiketten berechnen.
+                    let (risk_score, audit_flags) = enricher
+                        .calculate_pre_audit_risk(&url, body.as_deref().unwrap_or(""));
+                    empresa.risk_score = risk_score;
+                    empresa.audit_flags = audit_flags;
+                }
 
                 drop(permit);
                 empresa
