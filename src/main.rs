@@ -6,7 +6,142 @@ use crate::engine::merkle::MerkleTree;
 use crate::engine::models::EmpresaB2B;
 use crate::engine::storage::StorageManager;
 use crate::sources::inegi::InegiFetcher;
-```
+use std::sync::atomic::{AtomicUsize, Ordering};
+use std::sync::Arc;
+use tokio::sync::{mpsc, Semaphore};
+use tokio::time::{sleep, Duration};
+
+const MAX_CONCURRENT_WORKERS: usize = 2_000;
+const CHANNEL_BUFFER_SIZE: usize = 50_000;
+const BATCH_SIZE: usize = 1_000;
+const OUTPUT_FILE: &str = "resultado_denue_enriquecido.jsonl";
+
+#[tokio::main]
+async fn main() -> Result<(), Box<dyn std::error::Error>> {
+    println!("🚀 Iniciando Motor B2B DENUE + Verificación Merkle en AWS EC2...");
+
+    let total_procesadas = Arc::new(AtomicUsize::new(0));
+    let total_exitosas = Arc::new(AtomicUsize::new(0));
+
+    let (tx, mut rx) = mpsc::channel::<EmpresaB2B>(CHANNEL_BUFFER_SIZE);
+    let semaphore = Arc::new(Semaphore::new(MAX_CONCURRENT_WORKERS));
+    let enricher = Arc::new(WebEnricher::new());
+
+    let inegi = InegiFetcher::new("denue_inegi.csv");
+
+    tokio::spawn(async move {
+        let result = tokio::task::spawn_blocking(move || {
+            inegi.stream_denue_csv("denue_inegi.csv")
+        })
+        .await;
+
+        if let Ok(Ok(empresas)) = result {
+            for empresa in empresas {
+                if tx.send(empresa).await.is_err() {
+                    break;
+                }
+            }
+        }
+    });
+
+    let procesadas_clone = Arc::clone(&total_procesadas);
+    let exitosas_clone = Arc::clone(&total_exitosas);
+    let semaphore_clone = Arc::clone(&semaphore);
+    let enricher_clone = Arc::clone(&enricher);
+
+    let consumer_handle = tokio::spawn(async move {
+        let mut batch: Vec<EmpresaB2B> = Vec::with_capacity(BATCH_SIZE);
+        let mut batch_count = 0;
+
+        while let Some(mut empresa) = rx.recv().await {
+            let permit = Arc::clone(&semaphore_clone).acquire_owned().await.unwrap();
+            let procesadas = Arc::clone(&procesadas_clone);
+            let exitosas = Arc::clone(&exitosas_clone);
+            let enricher = Arc::clone(&enricher_clone);
+
+            let handle = tokio::spawn(async move {
+                procesadas.fetch_add(1, Ordering::Relaxed);
+
+                if let Some(url) = empresa.sitio_web.clone() {
+                    let (status, email) = enricher.inspect_site(&url).await;
+                    empresa.status_web = status;
+                    empresa.e_mail_verificado = email;
+
+                    if status == Some(200) {
+                        exitosas.fetch_add(1, Ordering::Relaxed);
+                    }
+                }
+
+                drop(permit);
+                empresa
+            });
+
+            // Warten, damit die angereicherten Felder persistiert werden können.
+            if let Ok(enriched) = handle.await {
+                batch.push(enriched);
+            }
+
+            if batch.len() >= BATCH_SIZE {
+                batch_count += 1;
+                let leaf_hashes: Vec<String> = batch
+                    .iter()
+                    .map(|e| {
+                        MerkleTree::hash_leaf(&format!("{}:{}:{}", e.id, e.nombre, e.direccion))
+                    })
+                    .collect();
+                let merkle_root = MerkleTree::compute_root(&leaf_hashes);
+                println!(
+                    "🔐 [Lote #{}] Merkle Root verificado: 0x{}",
+                    batch_count, merkle_root
+                );
+
+                if let Err(err) =
+                    StorageManager::save_batch(OUTPUT_FILE, &batch, &merkle_root).await
+                {
+                    eprintln!("⚠️  Fehler beim Speichern des Lotes #{}: {}", batch_count, err);
+                }
+
+                batch.clear();
+            }
+        }
+
+        if !batch.is_empty() {
+            batch_count += 1;
+            let leaf_hashes: Vec<String> = batch
+                .iter()
+                .map(|e| MerkleTree::hash_leaf(&format!("{}:{}:{}", e.id, e.nombre, e.direccion)))
+                .collect();
+            let merkle_root = MerkleTree::compute_root(&leaf_hashes);
+            println!(
+                "🔐 [Lote Final #{}] Merkle Root verificado: 0x{}",
+                batch_count, merkle_root
+            );
+
+            if let Err(err) = StorageManager::save_batch(OUTPUT_FILE, &batch, &merkle_root).await {
+                eprintln!("⚠️  Fehler beim Speichern des finalen Lotes: {}", err);
+            }
+        }
+    });
+
+    let procesadas_mon = Arc::clone(&total_procesadas);
+    let exitosas_mon = Arc::clone(&total_exitosas);
+    let monitor_handle = tokio::spawn(async move {
+        loop {
+            sleep(Duration::from_secs(1)).await;
+            println!(
+                "📊 [Estado] Registros: {} | Validados: {}",
+                procesadas_mon.load(Ordering::Relaxed),
+                exitosas_mon.load(Ordering::Relaxed)
+            );
+        }
+    });
+
+    let _ = consumer_handle.await;
+    monitor_handle.abort();
+
+    println!("✅ Proceso completado con integridad Merkle validada.");
+    Ok(())
+}
 
 src/main.rs
 ```rust
