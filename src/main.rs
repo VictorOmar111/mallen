@@ -6,7 +6,8 @@ use crate::engine::enricher::WebEnricher;
 use crate::engine::merkle::MerkleTree;
 use crate::engine::models::EmpresaB2B;
 use crate::engine::storage::StorageManager;
-use crate::sources::inegi::InegiFetcher;
+use crate::sources::inegi::InegiSource;
+use crate::sources::GlobalSource;
 use std::sync::atomic::{AtomicUsize, Ordering};
 use std::sync::Arc;
 use tokio::sync::{mpsc, Semaphore};
@@ -53,11 +54,23 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         }
     };
 
-    let inegi = InegiFetcher::new();
+    let inegi = InegiSource::new();
 
     tokio::spawn(async move {
         let result = tokio::task::spawn_blocking(move || {
-            inegi.stream_denue_csv("denue_inegi.csv")
+            let mut empresas: Vec<EmpresaB2B> = Vec::new();
+            let mut reader = csv::ReaderBuilder::new()
+                .has_headers(true)
+                .from_path("denue_inegi.csv")?;
+
+            for record in reader.records() {
+                let record = record?;
+                if let Some(empresa) = inegi.parse_row(&record) {
+                    empresas.push(empresa);
+                }
+            }
+
+            Ok::<Vec<EmpresaB2B>, Box<dyn std::error::Error + Send + Sync>>(empresas)
         })
         .await;
 
