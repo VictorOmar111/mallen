@@ -5,7 +5,6 @@ use crate::engine::blockchain::BlockchainRelayer;
 use crate::engine::enricher::WebEnricher;
 use crate::engine::merkle::MerkleTree;
 use crate::engine::models::EmpresaB2B;
-use crate::engine::storage::StorageManager;
 use crate::sources::inegi::InegiSource;
 use crate::sources::GlobalSource;
 use std::fs::File;
@@ -171,12 +170,6 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                     }
                 }
 
-                if let Err(err) =
-                    StorageManager::save_batch(OUTPUT_FILE, &batch, &merkle_root).await
-                {
-                    eprintln!("⚠️  Fehler beim Speichern des Lotes #{}: {}", batch_count, err);
-                }
-
                 batch.clear();
             }
         }
@@ -213,9 +206,6 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                 }
             }
 
-            if let Err(err) = StorageManager::save_batch(OUTPUT_FILE, &batch, &merkle_root).await {
-                eprintln!("⚠️  Fehler beim Speichern des finalen Lotes: {}", err);
-            }
         }
 
         if let Err(err) = writer.flush() {
