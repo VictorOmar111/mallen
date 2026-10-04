@@ -8,6 +8,8 @@ use crate::engine::models::EmpresaB2B;
 use crate::engine::storage::StorageManager;
 use crate::sources::inegi::InegiSource;
 use crate::sources::GlobalSource;
+use std::fs::File;
+use std::io::{BufWriter, Write};
 use std::sync::atomic::{AtomicUsize, Ordering};
 use std::sync::Arc;
 use tokio::sync::{mpsc, Semaphore};
@@ -56,6 +58,9 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     let inegi = InegiSource::new();
 
+    let output_file = File::create(OUTPUT_FILE)?;
+    let mut writer = BufWriter::new(output_file);
+
     tokio::spawn(async move {
         let result = tokio::task::spawn_blocking(move || {
             let mut empresas: Vec<EmpresaB2B> = Vec::new();
@@ -90,6 +95,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let relayer_clone = relayer.clone();
 
     let consumer_handle = tokio::spawn(async move {
+        let mut writer = writer;
         let mut batch: Vec<EmpresaB2B> = Vec::with_capacity(BATCH_SIZE);
         let mut batch_count = 0;
 
@@ -124,6 +130,12 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
             // Warten, damit die angereicherten Felder persistiert werden können.
             if let Ok(enriched) = handle.await {
+                // Jeden Datensatz sofort als JSON-Zeile auf die Platte schreiben.
+                if let Err(err) = serde_json::to_writer(&mut writer, &enriched) {
+                    eprintln!("⚠️  Fehler beim Serialisieren eines Datensatzes: {}", err);
+                } else if let Err(err) = writer.write_all(b"\n") {
+                    eprintln!("⚠️  Fehler beim Schreiben eines Datensatzes: {}", err);
+                }
                 batch.push(enriched);
             }
 
@@ -204,6 +216,10 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             if let Err(err) = StorageManager::save_batch(OUTPUT_FILE, &batch, &merkle_root).await {
                 eprintln!("⚠️  Fehler beim Speichern des finalen Lotes: {}", err);
             }
+        }
+
+        if let Err(err) = writer.flush() {
+            eprintln!("⚠️  Fehler beim Leeren des Ausgabepuffers: {}", err);
         }
     });
 
