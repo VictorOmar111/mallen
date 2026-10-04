@@ -18,6 +18,7 @@ const MAX_CONCURRENT_WORKERS: usize = 2_000;
 const CHANNEL_BUFFER_SIZE: usize = 50_000;
 const BATCH_SIZE: usize = 1_000;
 const OUTPUT_FILE: &str = "resultado_denue_enriquecido.jsonl";
+const DEFAULT_INPUT_FILE: &str = "denue_prueba.csv";
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
@@ -57,6 +58,11 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     let inegi = InegiSource::new();
 
+    let input_file =
+        std::env::var("INPUT_FILE").unwrap_or_else(|_| DEFAULT_INPUT_FILE.to_string());
+    println!("📂 Leyendo datos de entrada desde: {}", input_file);
+    let input_file_for_task = input_file.clone();
+
     let output_file = File::create(OUTPUT_FILE)?;
     let mut writer = BufWriter::new(output_file);
 
@@ -65,7 +71,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             let mut empresas: Vec<EmpresaB2B> = Vec::new();
             let mut reader = csv::ReaderBuilder::new()
                 .has_headers(true)
-                .from_path("denue_inegi.csv")?;
+                .from_path(&input_file_for_task)?;
 
             for record in reader.records() {
                 let record = record?;
@@ -80,7 +86,11 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
         match result {
             Ok(Ok(empresas)) => {
-                println!("📥 {} empresas cargadas desde denue_inegi.csv", empresas.len());
+                println!(
+                    "📥 {} empresas cargadas desde {}",
+                    empresas.len(),
+                    input_file_for_task
+                );
                 for empresa in empresas {
                     if tx.send(empresa).await.is_err() {
                         break;
