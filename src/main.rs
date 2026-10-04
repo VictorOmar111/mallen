@@ -78,11 +78,20 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         })
         .await;
 
-        if let Ok(Ok(empresas)) = result {
-            for empresa in empresas {
-                if tx.send(empresa).await.is_err() {
-                    break;
+        match result {
+            Ok(Ok(empresas)) => {
+                println!("📥 {} empresas cargadas desde denue_inegi.csv", empresas.len());
+                for empresa in empresas {
+                    if tx.send(empresa).await.is_err() {
+                        break;
+                    }
                 }
+            }
+            Ok(Err(err)) => {
+                eprintln!("⚠️  Fehler beim Lesen der CSV-Datei: {}", err);
+            }
+            Err(err) => {
+                eprintln!("⚠️  Fehler im CSV-Lese-Task: {}", err);
             }
         }
     });
@@ -171,6 +180,10 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                 }
 
                 batch.clear();
+
+                if let Err(err) = writer.flush() {
+                    eprintln!("⚠️  Fehler beim Leeren des Ausgabepuffers: {}", err);
+                }
             }
         }
 
@@ -210,6 +223,11 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
         if let Err(err) = writer.flush() {
             eprintln!("⚠️  Fehler beim Leeren des Ausgabepuffers: {}", err);
+        } else {
+            println!(
+                "💾 Guardado: {} lotes procesados en {}",
+                batch_count, OUTPUT_FILE
+            );
         }
     });
 
