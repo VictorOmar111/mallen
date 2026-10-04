@@ -21,17 +21,17 @@ impl GlobalSource for InegiDenueSource {
         Some(EmpresaB2B {
             id: record.get(0).unwrap_or("").to_string(),
             nombre: record.get(1).unwrap_or("").to_string(),
-            actividad: record.get(3).unwrap_or("").to_string(), // SCIAN
-            telefono: record.get(7).unwrap_or("").to_string(),
-            email: record.get(6).unwrap_or("").to_string(),
-            direccion: record.get(4).unwrap_or("").to_string(), // Estrato Personal
-            estado: "MX".to_string(),
-            sitio_web: record.get(5).unwrap_or("").to_string(),
+            actividad: Some(record.get(3).unwrap_or("").to_string()), // SCIAN
+            telefono: Some(record.get(7).unwrap_or("").to_string()),
+            email: Some(record.get(6).unwrap_or("").to_string()),
+            direccion: Some(record.get(4).unwrap_or("").to_string()), // Estrato Personal
+            estado: Some("MX".to_string()),
+            sitio_web: Some(record.get(5).unwrap_or("").to_string()),
             status_web: None,
             e_mail_verificado: None,
             country_code: "MX".to_string(),
             tax_id: record.get(8).map(|s| s.to_string()),
-            language: "es".to_string(),
+            language: Some("es".to_string()),
             audit_hash: String::new(),
             risk_score: 0,
             audit_flags: Vec::new(),

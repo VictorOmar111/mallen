@@ -20,4 +20,10 @@ pub struct EmpresaB2B {
     pub risk_score: u8,
     /// Etiquetas de las fallas detectadas durante la pre-auditoría.
     pub audit_flags: Vec<String>,
+    /// Multa estimada en pesos mexicanos (MXN).
+    pub estimated_fine_mxn: f64,
+    /// Precio dinámico del servicio Shield en USD.
+    pub shield_price_usd: f64,
+    /// Firma del contador responsable (opcional).
+    pub accountant_signature: Option<String>,
 }

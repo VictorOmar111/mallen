@@ -5,10 +5,11 @@ pub fn evaluate_risk(empresa: &mut EmpresaB2B) {
     let mut total_multa_mxn: f64 = 0.0;
     let valor_uma: f64 = 108.57; // Valor UMA diario de referencia
 
-    let scian = &empresa.actividad;
-    let es_manufactura = scian.starts_with("31") || scian.starts_with("32") || scian.starts_with("33");
+    let scian = empresa.actividad.as_deref().unwrap_or("");
+    let es_manufactura =
+        scian.starts_with("31") || scian.starts_with("32") || scian.starts_with("33");
     let es_servicio_profesional = scian.starts_with("54");
-    let personal = &empresa.direccion;
+    let personal = empresa.direccion.as_deref().unwrap_or("");
 
     // Evaluaciones normativas (STPS)
     if es_manufactura || personal.contains("51 a") || personal.contains("101 a") {
@@ -29,7 +30,8 @@ pub fn evaluate_risk(empresa: &mut EmpresaB2B) {
     }
 
     // Evaluaciones de Presencia Digital e INAI
-    if empresa.sitio_web.is_empty() || !empresa.sitio_web.contains("http") {
+    let sitio_web = empresa.sitio_web.as_deref().unwrap_or("");
+    if sitio_web.is_empty() || !sitio_web.contains("http") {
         flags.push("SIN_PRESENCIA_DIGITAL_INSPECCION".to_string());
         total_multa_mxn += 500.0 * valor_uma;
     } else {
