@@ -3,6 +3,7 @@ mod sources;
 
 use std::fs::File;
 use std::io::{BufWriter, Write};
+use crate::engine::enricher;
 use crate::engine::models::EmpresaB2B;
 use crate::engine::risk_evaluator;
 use crate::sources::{GlobalSource, InegiDenueSource};
@@ -42,9 +43,13 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     let mut empresas_procesadas = Vec::new();
     for mut empresa in empresas_raw {
-        // Evaluamos matriz de riesgo UMA y asignamos precio dinámico (1% o $150 USD)
+        // Escaneo profundo del sitio web: SSL, LFPDPPP/ARCO y E-Commerce.
+        enricher::deep_scan_website(&mut empresa).await;
+
+        // Evaluamos matriz de riesgo UMA (incluyendo banderas del escaneo)
+        // y asignamos precio dinámico (1% o $150 USD).
         risk_evaluator::evaluate_risk(&mut empresa);
-        
+
         if empresa.audit_hash.is_empty() {
             empresa.audit_hash = format!("0x{:x}", empresas_procesadas.len() + 1000);
         }

@@ -1,3 +1,4 @@
+use crate::engine::models::EmpresaB2B;
 use regex::Regex;
 use reqwest::Client;
 use std::time::Duration;
@@ -155,5 +156,88 @@ impl WebEnricher {
 impl Default for WebEnricher {
     fn default() -> Self {
         Self::new()
+    }
+}
+
+/// Schlüsselwörter, die auf einen Datenschutzhinweis (LFPDPPP / ARCO) hindeuten.
+const PRIVACY_BODY_KEYWORDS: &[&str] = &[
+    "aviso de privacidad",
+    "derechos arco",
+    "lfpdppp",
+];
+
+/// Schlüsselwörter, die auf einen E-Commerce-Shop hindeuten.
+const ECOMMERCE_KEYWORDS: &[&str] = &[
+    "checkout",
+    "carrito",
+    "stripe",
+    "shopify",
+];
+
+/// Führt einen tiefen Website-Scan für eine einzelne Firma durch.
+///
+/// - Sendet einen GET-Request an `empresa.sitio_web`.
+/// - Bei HTTP 200 werden SSL, Datenschutz-Hinweise (LFPDPPP/ARCO) und
+///   E-Commerce-Indikatoren geprüft.
+/// - Die erkannten Flags werden an `empresa.audit_flags` angehängt.
+pub async fn deep_scan_website(empresa: &mut EmpresaB2B) {
+    let url = match empresa.sitio_web.as_ref() {
+        Some(u) if !u.trim().is_empty() => u.trim().to_string(),
+        _ => return,
+    };
+
+    // SSL-Prüfung anhand des URL-Schemas.
+    let has_ssl = url.to_lowercase().starts_with("https://");
+    if !has_ssl {
+        empresa.audit_flags.push("SSL_INVALIDO".to_string());
+    }
+
+    let client = match Client::builder()
+        .timeout(Duration::from_secs(5))
+        .user_agent("Mozilla/5.0 (compatible; B2BDeepScanner/1.0)")
+        .build()
+    {
+        Ok(c) => c,
+        Err(_) => return,
+    };
+
+    let response = match client.get(&url).send().await {
+        Ok(resp) => resp,
+        Err(_) => return,
+    };
+
+    let status = response.status().as_u16();
+    empresa.status_web = Some(status);
+
+    if status != 200 {
+        return;
+    }
+
+    let body = match response.text().await {
+        Ok(text) => text.to_lowercase(),
+        Err(_) => return,
+    };
+
+    // Datenschutz / LFPDPPP / ARCO
+    let has_privacy = PRIVACY_BODY_KEYWORDS
+        .iter()
+        .any(|kw| body.contains(kw));
+
+    if has_privacy {
+        empresa
+            .audit_flags
+            .push("LFPDPPP_AVISO_ENCONTRADO".to_string());
+    } else {
+        empresa
+            .audit_flags
+            .push("INAI_SIN_AVISO_PRIVACIDAD".to_string());
+    }
+
+    // E-Commerce-Erkennung
+    let has_ecommerce = ECOMMERCE_KEYWORDS.iter().any(|kw| body.contains(kw));
+    if has_ecommerce {
+        empresa
+            .audit_flags
+            .push("PROFECO_ECOMMERCE_DETECTADO".to_string());
     }
 }

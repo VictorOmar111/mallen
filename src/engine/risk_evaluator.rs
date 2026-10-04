@@ -36,6 +36,48 @@ pub fn evaluate_risk(empresa: &mut EmpresaB2B) {
         total_multa_mxn += 1000.0 * valor_uma;
     }
 
+    // Banderas detectadas por el escaneo profundo (enricher.rs) se conservan
+    // y se incorporan al cálculo de multa y score.
+    let deep_flags: Vec<String> = empresa
+        .audit_flags
+        .iter()
+        .filter(|f| {
+            matches!(
+                f.as_str(),
+                "LFPDPPP_AVISO_ENCONTRADO"
+                    | "INAI_SIN_AVISO_PRIVACIDAD"
+                    | "PROFECO_ECOMMERCE_DETECTADO"
+                    | "SSL_INVALIDO"
+            )
+        })
+        .cloned()
+        .collect();
+
+    for flag in &deep_flags {
+        match flag.as_str() {
+            // Fehlender Datenschutzhinweis: INAI-Sanktionsrisiko.
+            "INAI_SIN_AVISO_PRIVACIDAD" => {
+                total_multa_mxn += 2000.0 * valor_uma;
+            }
+            // E-Commerce ohne PROFECO-konforme Angaben.
+            "PROFECO_ECOMMERCE_DETECTADO" => {
+                total_multa_mxn += 1500.0 * valor_uma;
+            }
+            // Ungültiges/fehlendes SSL-Zertifikat.
+            "SSL_INVALIDO" => {
+                total_multa_mxn += 800.0 * valor_uma;
+            }
+            // Vorhandener Aviso de Privacidad reduziert das Risiko leicht.
+            "LFPDPPP_AVISO_ENCONTRADO" => {
+                total_multa_mxn = (total_multa_mxn - 500.0 * valor_uma).max(0.0);
+            }
+            _ => {}
+        }
+    }
+
+    // Combinamos las banderas STPS/SAT/INAI con las del escaneo profundo.
+    flags.extend(deep_flags);
+
     empresa.audit_flags = flags;
     empresa.estimated_fine_mxn = total_multa_mxn;
 
