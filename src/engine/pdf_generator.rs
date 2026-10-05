@@ -7,13 +7,17 @@ use std::f32::consts::PI;
 
 pub fn generate_pdf_report(empresa: &EmpresaB2B, osint: &OsintResult, output_path: &str) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
     // 1. Inicializar documento PDF e insertar primera página A4 (210mm x 297mm)
-    let mut doc = PdfDocument::new("Dictamen Pericial de Auditoria y Riesgo Normativo B2B");
-    let (page1, layer1) = doc.add_page(Mm(210.0), Mm(297.0), "Layer 1");
+    let (doc, page1, layer1) = PdfDocument::new(
+        "Dictamen Pericial de Auditoria y Riesgo Normativo B2B",
+        Mm(210.0),
+        Mm(297.0),
+        "Layer 1",
+    );
     let current_layer = doc.get_page(page1).get_layer(layer1);
 
     // Cargar fuentes estándar integradas
-    let font_bold = doc.add_font(&ParsedFont::from(BuiltinFont::HelveticaBold));
-    let font_regular = doc.add_font(&ParsedFont::from(BuiltinFont::Helvetica));
+    let font_bold = doc.add_builtin_font(BuiltinFont::HelveticaBold)?;
+    let font_regular = doc.add_builtin_font(BuiltinFont::Helvetica)?;
 
     // Colores corporativos
     let primary_blue = Color::Rgb(Rgb::new(0.08, 0.18, 0.36, None));
@@ -32,7 +36,7 @@ pub fn generate_pdf_report(empresa: &EmpresaB2B, osint: &OsintResult, output_pat
         is_closed: true,
     };
     current_layer.set_fill_color(primary_blue);
-    current_layer.add_shape(header_rect);
+    current_layer.add_line(header_rect);
 
     // Texto Encabezado
     current_layer.set_fill_color(Color::Rgb(Rgb::new(1.0, 1.0, 1.0, None)));
@@ -99,7 +103,7 @@ pub fn generate_pdf_report(empresa: &EmpresaB2B, osint: &OsintResult, output_pat
     current_layer.set_fill_color(bg_light);
     current_layer.set_outline_color(primary_blue);
     current_layer.set_outline_thickness(0.5);
-    current_layer.add_shape(box_risk);
+    current_layer.add_line(box_risk);
 
     current_layer.set_fill_color(primary_blue);
     current_layer.use_text("EXPOSICIÓN TOTAL ESTIMADA A SANCIONES Y MULTAS:", 10.0, Mm(20.0), Mm(217.0), &font_bold);
@@ -134,7 +138,7 @@ pub fn generate_pdf_report(empresa: &EmpresaB2B, osint: &OsintResult, output_pat
         };
         current_layer.set_outline_color(bg_light);
         current_layer.set_outline_thickness(0.3);
-        current_layer.add_shape(line);
+        current_layer.add_line(line);
 
         current_y -= 10.0;
     }
@@ -160,27 +164,27 @@ pub fn generate_pdf_report(empresa: &EmpresaB2B, osint: &OsintResult, output_pat
     Ok(())
 }
 
-fn generate_circle_points(cx: f32, cy: f32, r: f32) -> Vec<LinePoint> {
+fn generate_circle_points(cx: f32, cy: f32, r: f32) -> Vec<(Point, bool)> {
     let mut points = Vec::new();
     let steps = 32;
     for i in 0..steps {
         let theta = (i as f32 / steps as f32) * 2.0 * PI;
         let x = cx + r * theta.cos();
         let y = cy + r * theta.sin();
-        points.push(LinePoint { p: Point::new(Mm(x), Mm(y)), bezier: false });
+        points.push((Point::new(Mm(x), Mm(y)), false));
     }
     points
 }
 
-fn generate_arc_points(cx: f32, cy: f32, r: f32, start_angle: f32, end_angle: f32) -> Vec<LinePoint> {
+fn generate_arc_points(cx: f32, cy: f32, r: f32, start_angle: f32, end_angle: f32) -> Vec<(Point, bool)> {
     let mut points = Vec::new();
-    points.push(LinePoint { p: Point::new(Mm(cx), Mm(cy)), bezier: false });
+    points.push((Point::new(Mm(cx), Mm(cy)), false));
     let steps = 32;
     for i in 0..=steps {
         let theta = start_angle + (i as f32 / steps as f32) * (end_angle - start_angle);
         let x = cx + r * theta.cos();
         let y = cy + r * theta.sin();
-        points.push(LinePoint { p: Point::new(Mm(x), Mm(y)), bezier: false });
+        points.push((Point::new(Mm(x), Mm(y)), false));
     }
     points
 }
