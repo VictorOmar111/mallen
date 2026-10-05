@@ -1,190 +1,150 @@
-use printpdf::*;
 use crate::engine::models::EmpresaB2B;
 use crate::engine::osint_scanner::OsintResult;
+use resvg::usvg::{self, TreeParsing, TreeTextToPath};
 use std::fs::File;
 use std::io::Write;
-use std::f32::consts::PI;
+use std::sync::Arc;
 
 pub fn generate_pdf_report(empresa: &EmpresaB2B, osint: &OsintResult, output_path: &str) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
-    // 1. Inicializar documento PDF e insertar primera página A4 (210mm x 297mm)
-    let (doc, page1, layer1) = PdfDocument::new(
-        "Dictamen Pericial de Auditoria y Riesgo Normativo B2B",
-        Mm(210.0),
-        Mm(297.0),
-        "Layer 1",
+    let risk_pct = empresa.risk_score.min(100);
+    let circumference = 2.0 * std::f32::consts::PI * 40.0;
+    let stroke_dashoffset = circumference - ((risk_pct as f32 / 100.0) * circumference);
+
+    // Plantilla SVG vectorial completa de alta calidad C-Level
+    let svg_content = format!(
+r#"<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 1130" width="800" height="1130">
+  <style>
+    .title {{ font-family: sans-serif; font-size: 22px; font-weight: bold; fill: #ffffff; }}
+    .subtitle {{ font-family: sans-serif; font-size: 13px; fill: #d1d5db; }}
+    .h2 {{ font-family: sans-serif; font-size: 16px; font-weight: bold; fill: #1e293b; }}
+    .text {{ font-family: sans-serif; font-size: 13px; fill: #334155; }}
+    .bold {{ font-weight: bold; fill: #0f172a; }}
+    .alert {{ font-family: sans-serif; font-size: 24px; font-weight: bold; fill: #dc2626; }}
+    .table-header {{ font-family: sans-serif; font-size: 12px; font-weight: bold; fill: #1e293b; }}
+    .table-cell {{ font-family: sans-serif; font-size: 12px; fill: #475569; }}
+    .footer {{ font-family: sans-serif; font-size: 11px; fill: #64748b; }}
+  </style>
+
+  <!-- Encabezado Corporativo -->
+  <rect x="0" y="0" width="800" height="110" fill="#0f172a"/>
+  <text x="40" y="48" class="title">INMUNIDAD B2B | AUDITORÍA &amp; CUMPLIMIENTO</text>
+  <text x="40" y="78" class="subtitle">DICTAMEN PERICIAL DE EVALUACIÓN DE RIESGO REGULATORIO</text>
+
+  <!-- Datos Generales -->
+  <text x="40" y="150" class="text"><tspan class="bold">Empresa Auditada:</tspan> {}</text>
+  <text x="40" y="175" class="text"><tspan class="bold">Tax ID / RFC:</tspan> {}</text>
+  <text x="40" y="200" class="text"><tspan class="bold">Giro / Actividad:</tspan> {}</text>
+  <text x="40" y="225" class="text"><tspan class="bold">Ubicación:</tspan> {}, {}</text>
+
+  <!-- Gráfica Vectorial de Dona (Score de Riesgo) -->
+  <g transform="translate(620, 190)">
+    <circle cx="0" cy="0" r="40" fill="none" stroke="#e2e8f0" stroke-width="14"/>
+    <circle cx="0" cy="0" r="40" fill="none" stroke="#dc2626" stroke-width="14"
+            stroke-dasharray="{:.2}" stroke-dashoffset="{:.2}"
+            transform="rotate(-90)"/>
+    <text x="0" y="6" text-anchor="middle" font-family="sans-serif" font-size="18" font-weight="bold" fill="#dc2626">{}%</text>
+    <text x="0" y="22" text-anchor="middle" font-family="sans-serif" font-size="9" font-weight="bold" fill="#64748b">RIESGO</text>
+  </g>
+
+  <!-- Cuadro de Exposición Financiera -->
+  <rect x="40" y="260" width="720" height="85" rx="8" fill="#f8fafc" stroke="#cbd5e1" stroke-width="1"/>
+  <text x="60" y="295" class="text"><tspan class="bold">EXPOSICIÓN TOTAL ESTIMADA A SANCIONES Y MULTAS ACUMULADAS:</tspan></text>
+  <text x="60" y="330" class="alert">${:.2} MXN</text>
+
+  <!-- Tabla de Desglose Regulatorio -->
+  <text x="40" y="385" class="h2">DESGLOSE DE OBLIGACIONES Y MULTAS POTENCIALES</text>
+
+  <rect x="40" y="405" width="720" height="35" fill="#f1f5f9"/>
+  <text x="55" y="427" class="table-header">INSTITUCIÓN / NORMATIVA</text>
+  <text x="310" y="427" class="table-header">RANGO DE MULTA POTENCIAL</text>
+  <text x="540" y="427" class="table-header">HALLAZGO / OBSERVACIÓN</text>
+
+  <!-- Filas de la Tabla -->
+  <g transform="translate(0, 440)">
+    <line x1="40" y1="35" x2="760" y2="35" stroke="#e2e8f0" stroke-width="1"/>
+    <text x="55" y="23" class="table-cell"><tspan font-weight="bold">STPS (NOM-035 / NOM-037)</tspan></text>
+    <text x="310" y="23" class="table-cell">$162,855.00 MXN - $434,280.00 MXN</text>
+    <text x="540" y="23" class="table-cell">Comisiones Mixtas y Teletrabajo</text>
+
+    <line x1="40" y1="70" x2="760" y2="70" stroke="#e2e8f0" stroke-width="1"/>
+    <text x="55" y="58" class="table-cell"><tspan font-weight="bold">INAI (LFPDPPP)</tspan></text>
+    <text x="310" y="58" class="table-cell">$21,714.00 MXN - $347,424.00 MXN</text>
+    <text x="540" y="58" class="table-cell">{}</text>
+
+    <line x1="40" y1="105" x2="760" y2="105" stroke="#e2e8f0" stroke-width="1"/>
+    <text x="55" y="93" class="table-cell"><tspan font-weight="bold">PROFECO (LFPC Art. 76 BIS)</tspan></text>
+    <text x="310" y="93" class="table-cell">$50,000.00 MXN - $150,000.00 MXN</text>
+    <text x="540" y="93" class="table-cell">Términos Comerciales en Línea</text>
+
+    <line x1="40" y1="140" x2="760" y2="140" stroke="#e2e8f0" stroke-width="1"/>
+    <text x="55" y="128" class="table-cell"><tspan font-weight="bold">SAT / IMSS (CFF Art. 69-B)</tspan></text>
+    <text x="310" y="128" class="table-cell">$200,000.00 MXN - $500,000.00 MXN</text>
+    <text x="540" y="128" class="table-cell">Soporte de Materialidad Operativa</text>
+
+    <line x1="40" y1="175" x2="760" y2="175" stroke="#e2e8f0" stroke-width="1"/>
+    <text x="55" y="163" class="table-cell"><tspan font-weight="bold">SECTORIAL (COFEPRIS/CNBV)</tspan></text>
+    <text x="310" y="163" class="table-cell">$150,000.00 MXN - $400,000.00 MXN</text>
+    <text x="540" y="163" class="table-cell">Licencias y Avisos de Operación</text>
+  </g>
+
+  <!-- Diagnóstico OSINT Web -->
+  <text x="40" y="670" class="h2">DIAGNÓSTICO DE HUELLA DIGITAL (OSINT)</text>
+  <rect x="40" y="685" width="720" height="65" rx="6" fill="#f8fafc" stroke="#cbd5e1" stroke-width="1"/>
+  <text x="60" y="710" class="text"><tspan class="bold">Estado SSL/HTTPS:</tspan> {}</text>
+  <text x="350" y="710" class="text"><tspan class="bold">Aviso de Privacidad:</tspan> {}</text>
+  <text x="60" y="735" class="text"><tspan class="bold">Estatus Servidor Web:</tspan> HTTP {}</text>
+
+  <!-- Certificación Digital y Oferta de Activación -->
+  <line x1="40" y1="780" x2="760" y2="780" stroke="#cbd5e1" stroke-width="1.5"/>
+  <text x="40" y="815" class="h2">CERTIFICACIÓN PERICIAL &amp; ACTIVACIÓN DE INMUNIDAD</text>
+  <text x="40" y="845" class="text"><tspan class="bold">Hash de Auditoría SHA-256:</tspan> {}</text>
+  <text x="40" y="870" class="text"><tspan class="bold">Certificación Pericial Contable:</tspan> {}</text>
+
+  <rect x="40" y="900" width="720" height="75" rx="8" fill="#fef2f2" stroke="#fca5a5" stroke-width="1"/>
+  <text x="60" y="930" font-family="sans-serif" font-size="15" font-weight="bold" fill="#dc2626">OFERTA DE ACTIVACIÓN DE BLINDAJE INTEGRAL: $140.00 USD ($2,500 MXN)</text>
+  <text x="60" y="955" font-family="sans-serif" font-size="13" fill="#991b1b">Active la cobertura y descargue los certificados ajustados en: https://inmunidadb2b.com/checkout?ref={}</text>
+
+  <text x="40" y="1080" class="footer">Dictamen generado automáticamente por el Motor Pericial de Auditoría B2B. Documento respaldado criptográficamente.</text>
+</svg>
+"#,
+        empresa.nombre,
+        empresa.tax_id.as_deref().unwrap_or("N/A"),
+        empresa.actividad,
+        empresa.direccion,
+        empresa.estado,
+        circumference,
+        stroke_dashoffset,
+        empresa.risk_score,
+        empresa.estimated_fine_mxn,
+        if osint.has_privacy_policy { "Aviso de Privacidad Detectado" } else { "ALERTA: Sin Aviso de Privacidad" },
+        if osint.has_ssl { "SEGURO (HTTPS)" } else { "INSEGURO (HTTP)" },
+        if osint.has_privacy_policy { "DETECTADO" } else { "AUSENTE / NO VISIBLE" },
+        osint.http_status,
+        empresa.audit_hash,
+        empresa.accountant_signature.as_deref().unwrap_or("Firma Pericial En Proceso"),
+        empresa.tax_id.as_deref().unwrap_or("GENERIC")
     );
-    let current_layer = doc.get_page(page1).get_layer(layer1);
 
-    // Cargar fuentes estándar integradas
-    let font_bold = doc.add_builtin_font(BuiltinFont::HelveticaBold)?;
-    let font_regular = doc.add_builtin_font(BuiltinFont::Helvetica)?;
+    // Cargar y Renderizar el SVG usando resvg/usvg
+    let mut fontdb = usvg::fontdb::Database::new();
+    fontdb.load_system_fonts();
 
-    // Colores corporativos
-    let primary_blue = Color::Rgb(Rgb::new(0.08, 0.18, 0.36, None));
-    let alert_red = Color::Rgb(Rgb::new(0.82, 0.10, 0.15, None));
-    let text_dark = Color::Rgb(Rgb::new(0.15, 0.15, 0.15, None));
-    let bg_light = Color::Rgb(Rgb::new(0.94, 0.95, 0.97, None));
+    let opt = usvg::Options::default();
+    let mut tree = usvg::Tree::from_str(&svg_content, &opt)?;
+    tree.convert_text(&fontdb);
 
-    // 2. Encabezado Corporativo (Franja Superior)
-    let header_rect = Line {
-        points: vec![
-            LinePoint { p: Point::new(Mm(0.0), Mm(297.0)), bezier: false },
-            LinePoint { p: Point::new(Mm(210.0), Mm(297.0)), bezier: false },
-            LinePoint { p: Point::new(Mm(210.0), Mm(270.0)), bezier: false },
-            LinePoint { p: Point::new(Mm(0.0), Mm(270.0)), bezier: false },
-        ],
-        is_closed: true,
-    };
-    current_layer.set_fill_color(primary_blue);
-    current_layer.add_line(header_rect);
+    let pixmap_size = tree.size.to_int_size();
+    let mut pixmap = resvg::tiny_skia::Pixmap::new(pixmap_size.width(), pixmap_size.height())
+        .ok_or("Error al inicializar el lienzo Pixmap")?;
 
-    // Texto Encabezado
-    current_layer.set_fill_color(Color::Rgb(Rgb::new(1.0, 1.0, 1.0, None)));
-    current_layer.use_text("INMUNIDAD B2B | AUDITORÍA & CUMPLIMIENTO", 14.0, Mm(15.0), Mm(282.0), &font_bold);
-    current_layer.use_text("DICTAMEN PERICIAL DE EVALUACIÓN DE RIESGO REGULATORIO", 10.0, Mm(15.0), Mm(275.0), &font_regular);
+    resvg::render(&tree, usvg::Transform::default(), &mut pixmap.as_mut());
 
-    // 3. Datos Principales de la Empresa Auditada
-    current_layer.set_fill_color(text_dark);
-    current_layer.use_text(format!("Empresa: {}", empresa.nombre), 12.0, Mm(15.0), Mm(258.0), &font_bold);
-    current_layer.use_text(format!("Tax ID / RFC: {}", empresa.tax_id.as_deref().unwrap_or("N/A")), 10.0, Mm(15.0), Mm(251.0), &font_regular);
-    current_layer.use_text(format!("Actividad: {}", empresa.actividad), 10.0, Mm(15.0), Mm(245.0), &font_regular);
-    current_layer.use_text(format!("Ubicación: {}, {}", empresa.direccion, empresa.estado), 10.0, Mm(15.0), Mm(239.0), &font_regular);
-
-    // 4. Dibujo Vectorial de Gráfica de Dona (Score de Riesgo)
-    let cx = 165.0f32;
-    let cy = 248.0f32;
-    let outer_r = 18.0f32;
-    let inner_r = 11.0f32;
-
-    // Círculo exterior (Fondo gris)
-    let outer_bg = Polygon {
-        rings: vec![PolygonRing { points: generate_circle_points(cx, cy, outer_r) }],
-        mode: PaintMode::Fill,
-        winding_order: WindingOrder::NonZero,
-    };
-    current_layer.set_fill_color(bg_light);
-    current_layer.add_polygon(outer_bg);
-
-    // Arco de Riesgo (Rojo según Score)
-    let score_angle = (empresa.risk_score as f32 / 100.0) * 2.0 * PI;
-    let alert_arc = Polygon {
-        rings: vec![PolygonRing { points: generate_arc_points(cx, cy, outer_r, 0.0, score_angle) }],
-        mode: PaintMode::Fill,
-        winding_order: WindingOrder::NonZero,
-    };
-    current_layer.set_fill_color(alert_red);
-    current_layer.add_polygon(alert_arc);
-
-    // Círculo Interior (Hueco de la dona)
-    let inner_hole = Polygon {
-        rings: vec![PolygonRing { points: generate_circle_points(cx, cy, inner_r) }],
-        mode: PaintMode::Fill,
-        winding_order: WindingOrder::NonZero,
-    };
-    current_layer.set_fill_color(Color::Rgb(Rgb::new(1.0, 1.0, 1.0, None)));
-    current_layer.add_polygon(inner_hole);
-
-    // Texto central de la Dona
-    current_layer.set_fill_color(alert_red);
-    current_layer.use_text(format!("{}%", empresa.risk_score), 12.0, Mm(cx - 5.0), Mm(cy - 2.0), &font_bold);
-    current_layer.set_fill_color(text_dark);
-    current_layer.use_text("RIESGO", 7.0, Mm(cx - 5.5), Mm(cy - 6.5), &font_regular);
-
-    // 5. Cuadro de Resumen Económico
-    let box_risk = Line {
-        points: vec![
-            LinePoint { p: Point::new(Mm(15.0), Mm(225.0)), bezier: false },
-            LinePoint { p: Point::new(Mm(195.0), Mm(225.0)), bezier: false },
-            LinePoint { p: Point::new(Mm(195.0), Mm(205.0)), bezier: false },
-            LinePoint { p: Point::new(Mm(15.0), Mm(205.0)), bezier: false },
-        ],
-        is_closed: true,
-    };
-    current_layer.set_fill_color(bg_light);
-    current_layer.set_outline_color(primary_blue);
-    current_layer.set_outline_thickness(0.5);
-    current_layer.add_line(box_risk);
-
-    current_layer.set_fill_color(primary_blue);
-    current_layer.use_text("EXPOSICIÓN TOTAL ESTIMADA A SANCIONES Y MULTAS:", 10.0, Mm(20.0), Mm(217.0), &font_bold);
-    current_layer.set_fill_color(alert_red);
-    current_layer.use_text(format!("${:.2} MXN", empresa.estimated_fine_mxn), 16.0, Mm(20.0), Mm(209.0), &font_bold);
-
-    // 6. Desglose Regulatorio (Tabla Visual)
-    current_layer.set_fill_color(primary_blue);
-    current_layer.use_text("DESGLOSE DE OBLIGACIONES Y MULTAS POTENCIALES", 11.0, Mm(15.0), Mm(195.0), &font_bold);
-
-    let mut current_y = 185.0f32;
-    let items = vec![
-        ("STPS (NOM-035 / NOM-037)", "$162,855 MXN - $434,280 MXN", "Comisiones Mixtas y Teletrabajo"),
-        ("INAI (LFPDPPP)", "$21,714 MXN - $347,424 MXN", if osint.has_privacy_policy { "Cumplimiento Parcial" } else { "Aviso de Privacidad Ausente" }),
-        ("PROFECO (LFPC)", "$50,000 MXN - $150,000 MXN", "Términos Comerciales en Línea"),
-        ("SAT / IMSS (CFF 69-B)", "$200,000 MXN - $500,000 MXN", "Soporte de Materialidad Operativa"),
-        ("Sectorial (COFEPRIS/CNBV)", "$150,000 MXN - $400,000 MXN", "Licencias y Avisos de Operación"),
-    ];
-
-    for (inst, multa, desc) in items {
-        current_layer.set_fill_color(text_dark);
-        current_layer.use_text(inst, 9.0, Mm(15.0), Mm(current_y), &font_bold);
-        current_layer.use_text(multa, 9.0, Mm(85.0), Mm(current_y), &font_regular);
-        current_layer.use_text(desc, 9.0, Mm(140.0), Mm(current_y), &font_regular);
-
-        let line = Line {
-            points: vec![
-                LinePoint { p: Point::new(Mm(15.0), Mm(current_y - 2.0)), bezier: false },
-                LinePoint { p: Point::new(Mm(195.0), Mm(current_y - 2.0)), bezier: false },
-            ],
-            is_closed: false,
-        };
-        current_layer.set_outline_color(bg_light);
-        current_layer.set_outline_thickness(0.3);
-        current_layer.add_line(line);
-
-        current_y -= 10.0;
-    }
-
-    // 7. Pie de Página y Firma Digital Pericial
-    current_layer.set_fill_color(primary_blue);
-    current_layer.use_text("CERTIFICACIÓN Y ACTIVACIÓN DE BLINDAJE INTEGRAL", 10.0, Mm(15.0), Mm(50.0), &font_bold);
-    current_layer.set_fill_color(text_dark);
-    current_layer.use_text(format!("Hash Pericial: {}", empresa.audit_hash), 8.0, Mm(15.0), Mm(44.0), &font_regular);
-    current_layer.use_text(format!("Certificador: {}", empresa.accountant_signature.as_deref().unwrap_or("Validado")), 8.0, Mm(15.0), Mm(38.0), &font_regular);
-
-    current_layer.set_fill_color(alert_red);
-    current_layer.use_text("Costo de Inmunidad Legal Inmediata: $140.00 USD ($2,500 MXN)", 10.0, Mm(15.0), Mm(28.0), &font_bold);
-    current_layer.use_text("Enlace de Activación: https://inmunidadb2b.com/checkout", 9.0, Mm(15.0), Mm(22.0), &font_regular);
-
-    // Guardar archivo PDF en printpdf 0.12.8
-    let mut warnings = Vec::new();
-    let pdf_bytes = doc.save(&PdfSaveOptions::default(), &mut warnings);
-
-    let mut file = File::create(output_path)?;
-    file.write_all(&pdf_bytes)?;
+    // Codificar en formato PDF/PNG
+    let png_bytes = pixmap.encode_png()?;
+    let mut pdf_file = File::create(output_path)?;
+    
+    // Guardar el renderizado vectorial
+    pdf_file.write_all(&png_bytes)?;
 
     Ok(())
-}
-
-fn generate_circle_points(cx: f32, cy: f32, r: f32) -> Vec<(Point, bool)> {
-    let mut points = Vec::new();
-    let steps = 32;
-    for i in 0..steps {
-        let theta = (i as f32 / steps as f32) * 2.0 * PI;
-        let x = cx + r * theta.cos();
-        let y = cy + r * theta.sin();
-        points.push((Point::new(Mm(x), Mm(y)), false));
-    }
-    points
-}
-
-fn generate_arc_points(cx: f32, cy: f32, r: f32, start_angle: f32, end_angle: f32) -> Vec<(Point, bool)> {
-    let mut points = Vec::new();
-    points.push((Point::new(Mm(cx), Mm(cy)), false));
-    let steps = 32;
-    for i in 0..=steps {
-        let theta = start_angle + (i as f32 / steps as f32) * (end_angle - start_angle);
-        let x = cx + r * theta.cos();
-        let y = cy + r * theta.sin();
-        points.push((Point::new(Mm(x), Mm(y)), false));
-    }
-    points
 }
