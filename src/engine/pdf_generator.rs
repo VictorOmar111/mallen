@@ -3,7 +3,6 @@ use crate::engine::osint_scanner::OsintResult;
 use resvg::usvg::{self, TreeParsing, TreeTextToPath};
 use std::fs::File;
 use std::io::Write;
-use std::sync::Arc;
 
 pub fn generate_pdf_report(empresa: &EmpresaB2B, osint: &OsintResult, output_path: &str) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
     let risk_pct = empresa.risk_score.min(100);
@@ -137,7 +136,8 @@ r#"<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 1130" width="800" he
     let mut pixmap = resvg::tiny_skia::Pixmap::new(pixmap_size.width(), pixmap_size.height())
         .ok_or("Error al inicializar el lienzo Pixmap")?;
 
-    resvg::render(&tree, usvg::Transform::default(), &mut pixmap.as_mut());
+    let mut pixmap_mut = pixmap.as_mut();
+    resvg::render(&tree, usvg::Transform::default(), &mut pixmap_mut);
 
     // Codificar en formato PDF/PNG
     let png_bytes = pixmap.encode_png()?;
