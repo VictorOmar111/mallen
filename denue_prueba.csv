@@ -1,0 +1,6 @@
+id,nombre,razon_social,codigo_scian,personal,sitio_web,correo,telefono,rfc
+1,Restaurante El Timón,El Timon S.A. de C.V.,722511,11 a 30 personas,http://eltimon.com,contacto@eltimon.com,5551234567,TIM120315ABC
+2,Logística Express del Norte,Logistica Norte S.A.,484111,51 a 100 personas,http://logisticanorte.com,soporte@logisticanorte.com,8189876543,LNO080512XYZ
+3,Fábrica Textil Centro,Textiles Centro S.A.,313210,101 a 250 personas,http://textilescentro.com,info@textilescentro.com,3334567890,TCE990101789
+4,Despacho Legal & Asesores,Legal Mx S.C.,541110,6 a 10 personas,http://legalmx.com,contacto@legalmx.com,5559876543,LMX150720KLM
+5,Tienda Tech E-Commerce,TechStore S.A.,468111,1 a 5 personas,http://techstore.com,,5551112233,TST200101QWE

@@ -1,185 +1,263 @@
 use crate::engine::models::EmpresaB2B;
 use crate::engine::osint_scanner::OsintResult;
-use resvg::usvg::{self, TreeParsing, TreeTextToPath};
-use std::fs::File;
-use std::io::Write;
+use std::fs;
+use std::path::Path;
+use std::process::Command;
 
-/// Plantilla SVG vectorial completa de alta calidad C-Level.
-/// Se mantiene como string estático y se rellenan los placeholders `{{KEY}}`
-/// mediante `.replace()` para evitar problemas de parsing con `format!(r#"..."#)`.
-const SVG_TEMPLATE: &str = concat!(
-r#"<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 1130" width="800" height="1130">
-  <style>
-    .title {{ font-family: sans-serif ; font-size: 22px; font-weight: bold; fill: #ffffff ; }}
-    .subtitle {{ font-family: sans-serif ; font-size: 13px; fill: #d1d5db ; }}
-    .h2 {{ font-family: sans-serif ; font-size: 16px; font-weight: bold; fill: #1e293b ; }}
-    .text {{ font-family: sans-serif ; font-size: 13px; fill: #334155 ; }}
-    .bold {{ font-weight: bold; fill: #0f172a ; }}
-    .alert {{ font-family: sans-serif ; font-size: 24px; font-weight: bold; fill: #dc2626 ; }}
-    .table-header {{ font-family: sans-serif ; font-size: 12px; font-weight: bold; fill: #1e293b ; }}
-    .table-cell {{ font-family: sans-serif ; font-size: 12px; fill: #475569 ; }}
-    .footer {{ font-family: sans-serif ; font-size: 11px; fill: #64748b ; }}
-  </style>
+const TYPST_TEMPLATE: &str = include_str!("report_template.typ");
+const CERT_DYNAMIC_TEMPLATE: &str = include_str!("cert_dynamic.typ");
 
-  <!-- Encabezado Corporativo -->
-  <rect x="0" y="0" width="800" height="110" fill=" #0f172a "/>
-  <text x="40" y="48" class="title">INMUNIDAD B2B | AUDITORÍA &amp; CUMPLIMIENTO</text>
-  <text x="40" y="78" class="subtitle">DICTAMEN PERICIAL DE EVALUACIÓN DE RIESGO REGULATORIO</text>
+pub struct CertificadoNorma {
+    pub id: &'static str,
+    pub titulo: &'static str,
+    pub color_hex: &'static str,
+    pub descripcion: &'static str,
+    pub folio_prefix: &'static str,
+    pub filename: &'static str,
+}
 
-  <!-- Datos Generales -->
-  <text x="40" y="150" class="text"><tspan class="bold">Empresa Auditada:</tspan> {{NOMBRE}}</text>
-  <text x="40" y="175" class="text"><tspan class="bold">Tax ID / RFC:</tspan> {{TAX_ID}}</text>
-  <text x="40" y="200" class="text"><tspan class="bold">Giro / Actividad:</tspan> {{ACTIVIDAD}}</text>
-  <text x="40" y="225" class="text"><tspan class="bold">Ubicación:</tspan> {{DIRECCION}}, {{ESTADO}}</text>
+pub fn get_catalogo_certificados() -> Vec<CertificadoNorma> {
+    vec![
+        CertificadoNorma {
+            id: "nom035",
+            titulo: "SECRETARÍA DEL TRABAJO Y PREVISIÓN SOCIAL (STPS) — NOM-035-STPS-2018",
+            color_hex: "#2563eb",
+            descripcion: "Por haber estructurado e implementado exitosamente la Política de Prevención de Riesgos Psicosociales, Evaluación del Entorno Organizacional Favorable y Protocolos de Denuncia Interna, en apego estricto a las disposiciones de la Norma Oficial Mexicana NOM-035-STPS-2018 y los artículos 540 y 1002 de la Ley Federal del Trabajo.",
+            folio_prefix: "STPS-NOM035",
+            filename: "Certificado_Acreditacion_NOM035.pdf",
+        },
+        CertificadoNorma {
+            id: "nom037",
+            titulo: "SECRETARÍA DEL TRABAJO Y PREVISIÓN SOCIAL (STPS) — NOM-037-STPS-2023",
+            color_hex: "#2563eb",
+            descripcion: "Por haber acreditado la validación de la Política de Teletrabajo, Listas de Verificación de Condiciones Ergonométricas y de Seguridad en Lugares de Trabajo Remoto, en cumplimiento con la Norma Oficial Mexicana NOM-037-STPS-2023 y el artículo 330-J de la Ley Federal del Trabajo.",
+            folio_prefix: "STPS-NOM037",
+            filename: "Certificado_Acreditacion_NOM037.pdf",
+        },
+        CertificadoNorma {
+            id: "nom019",
+            titulo: "SECRETARÍA DEL TRABAJO Y PREVISIÓN SOCIAL (STPS) — NOM-019-STPS-2011",
+            color_hex: "#2563eb",
+            descripcion: "Por la constitución, registro y funcionamiento periódico de la Comisión Mixta de Seguridad e Higiene, así como la realización de recorridos de verificación en apego a la Norma Oficial Mexicana NOM-019-STPS-2011 y el Reglamento Federal de Seguridad y Salud en el Trabajo.",
+            folio_prefix: "STPS-NOM019",
+            filename: "Certificado_Acreditacion_NOM019.pdf",
+        },
+        CertificadoNorma {
+            id: "nom030",
+            titulo: "SECRETARÍA DEL TRABAJO Y PREVISIÓN SOCIAL (STPS) — NOM-030-STPS-2006",
+            color_hex: "#2563eb",
+            descripcion: "Por la integración del Diagnóstico de Seguridad y Salud en el Trabajo y el Programa de Servicios Preventivos de Salud, garantizando la prevención de accidentes y enfermedades laborales en términos de la NOM-030-STPS-2006.",
+            folio_prefix: "STPS-NOM030",
+            filename: "Certificado_Acreditacion_NOM030.pdf",
+        },
+        CertificadoNorma {
+            id: "sat_69b",
+            titulo: "SECRETARÍA DE HACIENDA / SAT — CFF ART. 69-B (MATERIALIDAD FISCAL)",
+            color_hex: "#dc2626",
+            descripcion: "Por haber acreditado el Expediente de Soporte y Entregables de Materialidad de Operaciones B2B, desvirtuando presunciones de inexistencia contractual del Art. 69-B del Código Fiscal de la Federación y protegiendo la deducibilidad de comprobantes fiscales.",
+            folio_prefix: "SAT-CFF69B",
+            filename: "Certificado_Materialidad_SAT69B.pdf",
+        },
+        CertificadoNorma {
+            id: "imss_32d",
+            titulo: "INSTITUTO MEXICANO DEL SEGURO SOCIAL — OPINIÓN 32-D & REGISTRO REPSE",
+            color_hex: "#16a34a",
+            descripcion: "Por la verificación periódica de la Opinión de Cumplimiento Positiva en materia de Seguridad Social, Auditoría de Primas de Riesgo Laboral e integración de expedientes de Subcontratación Especializada en términos de los artículos 15 y 304 de la Ley del Seguro Social.",
+            folio_prefix: "IMSS-32D",
+            filename: "Certificado_Cumplimiento_IMSS32D.pdf",
+        },
+        CertificadoNorma {
+            id: "inai_lfpdppp",
+            titulo: "INSTITUTO NACIONAL DE TRANSPARENCIA (INAI) — LFPDPPP",
+            color_hex: "#d97706",
+            descripcion: "Por haber implementado el Aviso de Privacidad Integral Ajustado, Mecanismos de Ejercicio de Derechos ARCO y Protocolos de Encriptación y Tratamiento Legítimo de Datos Personales en Posesión de Particulares.",
+            folio_prefix: "INAI-PRIVACIDAD",
+            filename: "Certificado_Privacidad_INAI.pdf",
+        },
+        CertificadoNorma {
+            id: "proteccion_civil",
+            titulo: "SISTEMA NACIONAL DE PROTECCIÓN CIVIL — PROGRAMA INTERNO PIPC",
+            color_hex: "#ea580c",
+            descripcion: "Por la conformación de Brigadas de Emergencia, Análisis de Vulnerabilidades y la integración del Programa Interno de Protección Civil y Seguridad Operativa en cumplimiento con la Ley General de Protección Civil.",
+            folio_prefix: "PROT-CIVIL",
+            filename: "Certificado_Seguridad_ProtCivil.pdf",
+        },
+        CertificadoNorma {
+            id: "profeco_lfpc",
+            titulo: "PROFECO — LEY FEDERAL DE PROTECCIÓN AL CONSUMIDOR (ART. 76 BIS)",
+            color_hex: "#7c3aed",
+            descripcion: "Por la alineación de Términos y Condiciones comerciales, Políticas de Devolución, Garantías de Transacción y visibilidad de canales de atención al consumidor en cumplimiento con el Art. 76 BIS de la Ley Federal de Protección al Consumidor.",
+            folio_prefix: "PROFECO-76BIS",
+            filename: "Certificado_Comercial_PROFECO.pdf",
+        },
+        CertificadoNorma {
+            id: "nom151_scfi",
+            titulo: "SECRETARÍA DE ECONOMÍA — NOM-151-SCFI-2016 (MENSAJES DE DATOS)",
+            color_hex: "#0284c7",
+            descripcion: "Por la validez jurídica e integridad de contratos y expedientes digitales respaldados con Sellos de Tiempo y Conservación de Mensajes de Datos bajo la Norma Oficial Mexicana NOM-151-SCFI-2016.",
+            folio_prefix: "SE-NOM151",
+            filename: "Certificado_Digital_NOM151.pdf",
+        },
+    ]
+}
 
-  <!-- Gráfica Vectorial de Dona (Score de Riesgo) -->
-  <g transform="translate(620, 190)">
-    <circle cx="0" cy="0" r="40" fill="none" stroke=" #e2e8f0 " stroke-width="14"/>
-    <circle cx="0" cy="0" r="40" fill="none" stroke=" #dc2626 " stroke-width="14"
-            stroke-dasharray="{{CIRCUMFERENCE}}" stroke-dashoffset="{{DASHOFFSET}}"
-            transform="rotate(-90)"/>
-    <text x="0" y="6" text-anchor="middle" font-family=" sans-serif " font-size="18" font-weight="bold" fill=" #dc2626 ">{{RISK_SCORE}}%</text>
-    <text x="0" y="22" text-anchor="middle" font-family=" sans-serif " font-size="9" font-weight="bold" fill=" #64748b ">RIESGO</text>
-  </g>
+fn sanitize_for_typst(input: &str) -> String {
+    input
+        .replace('@', "\\@")
+        .replace('<', "\\<")
+        .replace('>', "\\>")
+}
 
-  <!-- Cuadro de Exposición Financiera -->
-  <rect x="40" y="260" width="720" height="85" rx="8" fill=" #f8fafc " stroke=" #cbd5e1 " stroke-width="1"/>
-  <text x="60" y="295" class="text"><tspan class="bold">EXPOSICIÓN TOTAL ESTIMADA A SANCIONES Y MULTAS ACUMULADAS:</tspan></text>
-  <text x="60" y="330" class="alert">${{ESTIMATED_FINE}} MXN</text>
+fn format_currency_mxn(val: f64) -> String {
+    let integer_part = val.trunc() as u64;
+    let num_str = integer_part.to_string();
+    let mut formatted = String::new();
+    let len = num_str.len();
 
-  <!-- Tabla de Desglose Regulatorio -->
-  <text x="40" y="385" class="h2">DESGLOSE DE OBLIGACIONES Y MULTAS POTENCIALES</text>
+    for (i, c) in num_str.chars().enumerate() {
+        if i > 0 && (len - i) % 3 == 0 {
+            formatted.push(',');
+        }
+        formatted.push(c);
+    }
 
-  <rect x="40" y="405" width="720" height="35" fill=" #f1f5f9 "/>
-  <text x="55" y="427" class="table-header">INSTITUCIÓN / NORMATIVA</text>
-  <text x="310" y="427" class="table-header">RANGO DE MULTA POTENCIAL</text>
-  <text x="540" y="427" class="table-header">HALLAZGO / OBSERVACIÓN</text>
-
-  <!-- Filas de la Tabla -->
-  <g transform="translate(0, 440)">
-    <line x1="40" y1="35" x2="760" y2="35" stroke=" #e2e8f0 " stroke-width="1"/>
-    <text x="55" y="23" class="table-cell"><tspan font-weight="bold">STPS (NOM-035 / NOM-037)</tspan></text>
-    <text x="310" y="23" class="table-cell">$162,855.00 MXN - $434,280.00 MXN</text>
-    <text x="540" y="23" class="table-cell">Comisiones Mixtas y Teletrabajo</text>
-
-    <line x1="40" y1="70" x2="760" y2="70" stroke=" #e2e8f0 " stroke-width="1"/>
-    <text x="55" y="58" class="table-cell"><tspan font-weight="bold">INAI (LFPDPPP)</tspan></text>
-    <text x="310" y="58" class="table-cell">$21,714.00 MXN - $347,424.00 MXN</text>
-    <text x="540" y="58" class="table-cell">{{PRIVACY_POLICY_SHORT}}</text>
-
-    <line x1="40" y1="105" x2="760" y2="105" stroke=" #e2e8f0 " stroke-width="1"/>
-    <text x="55" y="93" class="table-cell"><tspan font-weight="bold">PROFECO (LFPC Art. 76 BIS)</tspan></text>
-    <text x="310" y="93" class="table-cell">$50,000.00 MXN - $150,000.00 MXN</text>
-    <text x="540" y="93" class="table-cell">Términos Comerciales en Línea</text>
-
-    <line x1="40" y1="140" x2="760" y2="140" stroke=" #e2e8f0 " stroke-width="1"/>
-    <text x="55" y="128" class="table-cell"><tspan font-weight="bold">SAT / IMSS (CFF Art. 69-B)</tspan></text>
-    <text x="310" y="128" class="table-cell">$200,000.00 MXN - $500,000.00 MXN</text>
-    <text x="540" y="128" class="table-cell">Soporte de Materialidad Operativa</text>
-
-    <line x1="40" y1="175" x2="760" y2="175" stroke=" #e2e8f0 " stroke-width="1"/>
-    <text x="55" y="163" class="table-cell"><tspan font-weight="bold">SECTORIAL (COFEPRIS/CNBV)</tspan></text>
-    <text x="310" y="163" class="table-cell">$150,000.00 MXN - $400,000.00 MXN</text>
-    <text x="540" y="163" class="table-cell">Licencias y Avisos de Operación</text>
-  </g>
-
-  <!-- Diagnóstico OSINT Web -->
-  <text x="40" y="670" class="h2">DIAGNÓSTICO DE HUELLA DIGITAL (OSINT)</text>
-  <rect x="40" y="685" width="720" height="65" rx="6" fill=" #f8fafc " stroke=" #cbd5e1 " stroke-width="1"/>
-  <text x="60" y="710" class="text"><tspan class="bold">Estado SSL/HTTPS:</tspan> {{SSL_STATUS}}</text>
-  <text x="350" y="710" class="text"><tspan class="bold">Aviso de Privacidad:</tspan> {{PRIVACY_POLICY_LONG}}</text>
-  <text x="60" y="735" class="text"><tspan class="bold">Estatus Servidor Web:</tspan> HTTP {{HTTP_STATUS}}</text>
-
-  <!-- Certificación Digital y Oferta de Activación -->
-  <line x1="40" y1="780" x2="760" y2="780" stroke=" #cbd5e1 " stroke-width="1.5"/>
-  <text x="40" y="815" class="h2">CERTIFICACIÓN PERICIAL &amp; ACTIVACIÓN DE INMUNIDAD</text>
-  <text x="40" y="845" class="text"><tspan class="bold">Hash de Auditoría SHA-256:</tspan> {{AUDIT_HASH}}</text>
-  <text x="40" y="870" class="text"><tspan class="bold">Certificación Pericial Contable:</tspan> {{ACCOUNTANT_SIGNATURE}}</text>
-
-  <rect x="40" y="900" width="720" height="75" rx="8" fill=" #fef2f2 " stroke=" #fca5a5 " stroke-width="1"/>
-  <text x="60" y="930" font-family=" sans-serif " font-size="15" font-weight="bold" fill=" #dc2626 ">OFERTA DE ACTIVACIÓN DE BLINDAJE INTEGRAL: $140.00 USD ($2,500 MXN)</text>
-  <text x="60" y="955" font-family=" sans-serif " font-size="13" fill=" #991b1b ">Active la cobertura y descargue los certificados ajustados en: https://inmunidadb2b.com/checkout?ref={{CHECKOUT_REF}}</text>
-
-  <text x="40" y="1080" class="footer">Dictamen generado automáticamente por el Motor Pericial de Auditoría B2B. Documento respaldado criptográficamente.</text>
-</svg>
-"#
-);
+    format!("{}.00", formatted)
+}
 
 pub fn generate_pdf_report(
     empresa: &EmpresaB2B,
     osint: &OsintResult,
     output_path: &str,
 ) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
-    let risk_pct = empresa.risk_score.min(100);
-    let circumference = 2.0 * std::f32::consts::PI * 40.0;
-    let stroke_dashoffset = circumference - ((risk_pct as f32 / 100.0) * circumference);
+    let tax_id = empresa.tax_id.as_deref().unwrap_or("N/A");
+    let typst_source_path = format!("{}.typ", output_path);
 
-    let privacy_policy_long = if osint.has_privacy_policy {
-        "Aviso de Privacidad Detectado"
-    } else {
-        "ALERTA: Sin Aviso de Privacidad"
+    let parent_dir = match Path::new(output_path).parent() {
+        Some(p) => {
+            fs::create_dir_all(p)?;
+            p.to_path_buf()
+        }
+        None => Path::new(".").to_path_buf(),
     };
-    let privacy_policy_short = if osint.has_privacy_policy {
-        "DETECTADO"
+
+    let osint_inai = if osint.has_privacy_policy {
+        "Aviso de Privacidad Detectado en portal web"
     } else {
-        "AUSENTE / NO VISIBLE"
+        "ALERTA: Ausencia de Aviso de Privacidad. Alto riesgo por el INAI"
     };
-    let ssl_status = if osint.has_ssl {
+
+    let osint_ssl = if osint.has_ssl {
         "SEGURO (HTTPS)"
     } else {
         "INSEGURO (HTTP)"
     };
 
-    // Rellenar la plantilla SVG sustituyendo los placeholders `{{KEY}}`.
-    let svg_content = SVG_TEMPLATE
-        .replace("{{NOMBRE}}", &empresa.nombre)
-        .replace("{{TAX_ID}}", empresa.tax_id.as_deref().unwrap_or("N/A"))
-        .replace("{{ACTIVIDAD}}", &empresa.actividad)
-        .replace("{{DIRECCION}}", &empresa.direccion)
-        .replace("{{ESTADO}}", &empresa.estado)
-        .replace("{{CIRCUMFERENCE}}", &format!("{:.2}", circumference))
-        .replace("{{DASHOFFSET}}", &format!("{:.2}", stroke_dashoffset))
+    let osint_privacy = if osint.has_privacy_policy {
+        "DETECTADO"
+    } else {
+        "AUSENTE / NO VISIBLE"
+    };
+
+    let score = empresa.risk_score as f64;
+
+    let score_stps = (score * 0.25).round();
+    let score_sat = (score * 0.20).round();
+    let score_inai = (score * 0.20).round();
+    let score_imss = (score * 0.15).round();
+    let score_pc = (score * 0.10).round();
+    let score_profeco = (score * 0.10).round();
+
+    let avg_risk_mxn = 1188000.00;
+    let activation_fee_mxn = avg_risk_mxn * 0.005;
+
+    let fine_formatted = format_currency_mxn(empresa.estimated_fine_mxn);
+    let avg_risk_formatted = format_currency_mxn(avg_risk_mxn);
+    let activation_fee_formatted = format_currency_mxn(activation_fee_mxn);
+
+    let nombre_clean = sanitize_for_typst(&empresa.nombre);
+    let direccion_clean = sanitize_for_typst(&empresa.direccion);
+    let actividad_clean = sanitize_for_typst(&empresa.actividad);
+
+    let typst_content = TYPST_TEMPLATE
+        .replace("{{EMPRESA_NOMBRE}}", &nombre_clean)
+        .replace("{{EMPRESA_TAX_ID}}", tax_id)
+        .replace("{{EMPRESA_ACTIVIDAD}}", &actividad_clean)
+        .replace("{{EMPRESA_DIRECCION}}", &direccion_clean)
+        .replace("{{ESTIMATED_FINE}}", &fine_formatted)
+        .replace("{{AVG_RISK}}", &avg_risk_formatted)
+        .replace("{{ACTIVATION_PRICE}}", &activation_fee_formatted)
         .replace("{{RISK_SCORE}}", &empresa.risk_score.to_string())
-        .replace("{{ESTIMATED_FINE}}", &format!("{:.2}", empresa.estimated_fine_mxn))
-        .replace("{{PRIVACY_POLICY_SHORT}}", privacy_policy_short)
-        .replace("{{SSL_STATUS}}", ssl_status)
-        .replace("{{PRIVACY_POLICY_LONG}}", privacy_policy_long)
+        .replace("{{INAI_OBS}}", osint_inai)
+        .replace("{{SSL_STATUS}}", osint_ssl)
+        .replace("{{PRIVACY_STATUS}}", osint_privacy)
         .replace("{{HTTP_STATUS}}", &osint.http_status.to_string())
         .replace("{{AUDIT_HASH}}", &empresa.audit_hash)
-        .replace(
-            "{{ACCOUNTANT_SIGNATURE}}",
-            empresa
-                .accountant_signature
-                .as_deref()
-                .unwrap_or("Firma Pericial En Proceso"),
-        )
-        .replace(
-            "{{CHECKOUT_REF}}",
-            empresa.tax_id.as_deref().unwrap_or("GENERIC"),
-        );
+        .replace("{{SCORE_STPS}}", &score_stps.to_string())
+        .replace("{{SCORE_SAT}}", &score_sat.to_string())
+        .replace("{{SCORE_INAI}}", &score_inai.to_string())
+        .replace("{{SCORE_IMSS}}", &score_imss.to_string())
+        .replace("{{SCORE_PC}}", &score_pc.to_string())
+        .replace("{{SCORE_PROFECO}}", &score_profeco.to_string())
+        .replace("{{REF_TAX}}", tax_id);
 
-    // Cargar y Renderizar el SVG usando resvg/usvg
-    let mut fontdb = usvg::fontdb::Database::new();
-    fontdb.load_system_fonts();
+    fs::write(&typst_source_path, typst_content)?;
 
-    let opt = usvg::Options::default();
-    let mut tree = usvg::Tree::from_str(&svg_content, &opt)?;
-    tree.convert_text(&fontdb);
+    let status = Command::new("typst")
+        .arg("compile")
+        .arg(&typst_source_path)
+        .arg(output_path)
+        .status()?;
 
-    let pixmap_size = tree.size.to_int_size();
-    let mut pixmap = resvg::tiny_skia::Pixmap::new(pixmap_size.width(), pixmap_size.height())
-        .ok_or("Error al inicializar el lienzo Pixmap")?;
+    let _ = fs::remove_file(typst_source_path);
 
-    // API correcta en resvg 0.36: convertir el árbol usvg a resvg::Tree y renderizar.
-    let rtree = resvg::Tree::from_usvg(&tree);
-    rtree.render(usvg::Transform::default(), &mut pixmap.as_mut());
+    let mut generated_pdfs = vec![output_path.to_string()];
+    let catalogo = get_catalogo_certificados();
 
-    // Codificar en formato PDF/PNG
-    let png_bytes = pixmap.encode_png()?;
-    let mut pdf_file = File::create(output_path)?;
+    for cert in catalogo {
+        let cert_pdf_path = parent_dir.join(cert.filename);
+        let cert_typ_path = parent_dir.join(format!("{}.typ", cert.id));
 
-    // Guardar el renderizado vectorial
-    pdf_file.write_all(&png_bytes)?;
+        let cert_content = CERT_DYNAMIC_TEMPLATE
+            .replace("{{EMPRESA_NOMBRE}}", &nombre_clean)
+            .replace("{{EMPRESA_TAX_ID}}", tax_id)
+            .replace("{{NORMA_TITULO}}", cert.titulo)
+            .replace("{{NORMA_COLOR}}", cert.color_hex)
+            .replace("{{NORMA_DESCRIPCION}}", cert.descripcion)
+            .replace("{{NORMA_FOLIO_PREFIX}}", cert.folio_prefix)
+            .replace("{{AUDIT_HASH}}", &empresa.audit_hash)
+            .replace("{{REF_TAX}}", tax_id);
 
-    Ok(())
+        fs::write(&cert_typ_path, cert_content)?;
+
+        let cert_status = Command::new("typst")
+            .arg("compile")
+            .arg(&cert_typ_path)
+            .arg(&cert_pdf_path)
+            .status();
+
+        if let Err(e) = cert_status {
+            eprintln!("⚠️ Error al compilar el certificado {}: {}", cert.filename, e);
+        }
+
+        let _ = fs::remove_file(cert_typ_path);
+        generated_pdfs.push(cert_pdf_path.to_str().unwrap().to_string());
+    }
+
+    let zip_filename = format!("Paquete_Blindaje_Integral_{}.zip", tax_id);
+    let zip_path = parent_dir.join(&zip_filename);
+
+    let mut zip_cmd = Command::new("zip");
+    zip_cmd.arg("-j").arg(&zip_path);
+
+    for pdf in &generated_pdfs {
+        zip_cmd.arg(pdf);
+    }
+
+    let _ = zip_cmd.status();
+
+    if status.success() {
+        Ok(())
+    } else {
+        Err("Fallo al compilar el documento PDF pericial con Typst".into())
+    }
 }

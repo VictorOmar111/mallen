@@ -1,0 +1,16 @@
+===============================================================================
+FIRMA PERICIAL MALLEN — POLÍTICA OPERATIVA DE CUMPLIMIENTO LABORAL (STPS)
+===============================================================================
+Razón Social: {{EMPRESA_NOMBRE}}
+RFC / Tax ID: {{EMPRESA_TAX_ID}}
+Estatus: IMPLEMENTACIÓN INTERNA OBLIGATORIA
+
+1. POLÍTICA DE PREVENCIÓN DE RIESGOS PSICOSOCIALES (NOM-035-STPS-2018)
+- {{EMPRESA_NOMBRE}} se compromete a prevenir los factores de riesgo psicosocial, promover un entorno organizacional favorable y erradicar la violencia laboral.
+- Canales de Denuncia Interna: Las sugerencias y reportes se tramitarán con estricta confidencialidad a través de la Comisión Mixta de Seguridad e Higiene.
+
+2. PROTOCOLO DE TRABAJO REMOTO Y TELETRABAJO (NOM-037-STPS-2023)
+- Mecanismos de verificación ergonómica y salud ocupacional para personal en modalidad de Home Office.
+- Listas de cotejo para insumos tecnológicos, conexión y derecho a la desconexión digital.
+
+Instrucciones: Recabar firma de enterado por parte de los trabajadores y conservar en el expediente laboral de la empresa.

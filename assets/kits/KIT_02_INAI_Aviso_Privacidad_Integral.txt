@@ -1,0 +1,10 @@
+===============================================================================
+FIRMA PERICIAL MALLEN — AVISO DE PRIVACIDAD INTEGRAL B2B (INAI)
+===============================================================================
+Identidad del Responsable: {{EMPRESA_NOMBRE}}, con domicilio fiscal en {{EMPRESA_DIRECCION}}.
+
+Tratamiento de Datos Personales:
+Los datos personales recabados serán utilizados para proveer los servicios solicitados, emitir facturación electrónica, gestionar la relación comercial y dar cumplimiento a las obligaciones legales derivadas de la legislación mexicana aplicable (LFPDPPP).
+
+Derechos ARCO:
+Usted tiene derecho a Acceder, Rectificar, Cancelar u Oponerse al tratamiento de sus datos personales enviando una solicitud formal al departamento de privacidad en su sitio web.
