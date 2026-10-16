@@ -16,6 +16,9 @@ use tower_http::services::ServeDir;
 #[path = "../engine/mod.rs"]
 mod engine;
 
+#[path = "../modules/checkout.rs"]
+mod checkout;
+
 #[derive(Deserialize)]
 struct CheckoutParams {
     ref_id: Option<String>,
@@ -52,7 +55,8 @@ async fn main() {
         .route("/normas/comercio", get(handle_normas_comercio))
         .route("/normas/{cat}/{code}", get(handle_subnorma_detail))
         .route("/validez/{slug}", get(handle_validez_detail))
-        .route("/verify/{hash}", get(verify_audit_hash))
+        .route("/verify/{id}", get(checkout::handle_verify))
+        .route("/download/zip/{tax_id}", get(download_zip_handler))
         .route("/download/{hash}", get(download_pdf_report))
         .route("/api/merkle/verify/{ref}", get(get_merkle_proof_api))
         .route("/health", get(|| async { "OK" }))
@@ -95,7 +99,7 @@ async fn handle_privacy() -> impl IntoResponse {
             <a href="/" class="text-xs text-blue-400 hover:text-blue-300 font-mono-code transition">← Regresar al Portal</a>
         </div>
         
-        <h1 class="text-xl font-bold text-white mb-6 tracking-tight">AVISO DE PRIVACIDAD INTEGRAL B2B</h1>
+        <h1 class="text-xl font-bold text-white mb-6 tracking-tight">AVISO DE PRIVACIDAD INTEGRAL</h1>
         
         <div class="space-y-6 text-xs leading-relaxed font-mono-code text-slate-400">
             <section class="border-l-2 border-blue-500 pl-4 py-1">
@@ -482,7 +486,6 @@ async fn handle_subnorma_detail(Path((cat, code)): Path<(String, String)>) -> im
     Html(html)
 }
 
-// Handler Reestructurado y Completo para Validez Legal & Dictamen Pericial
 async fn handle_validez_detail(Path(slug): Path<String>) -> impl IntoResponse {
     let (titulo, marco_legal, valor_probatorio, descripcion, pilares_tecnicos, theme_border) = match slug.as_str() {
         "nom-151" => (
@@ -511,24 +514,11 @@ async fn handle_validez_detail(Path(slug): Path<String>) -> impl IntoResponse {
             ],
             "border-emerald-600"
         ),
-        "cifrado-sha256" => (
-            "Prueba de Inalterabilidad Criptográfica (Merkle Trees & SHA-256)",
-            "Estándar ISO/IEC 10118-3; Arquitectura de Inalterabilidad Merkle.",
-            "Inmunidad Matemática contra Falsificación o Manipulación de Folios.",
-            "Cada folio de auditoría genera un 'Leaf Hash' único que se consolida en una raíz criptográfica pública, haciendo imposible alterar un solo bit del informe sin invalidar la firma.",
-            vec![
-                "Generación de Hash SHA-256 de 256 bits único por cada evaluación corporativa.",
-                "Ruta de prueba (Proof Path) matemática verificable de forma pública 24/7 en el endpoint /verify.",
-                "Sellado asimétrico de documentos PDF con firma criptográfica privada.",
-                "Auditabilidad distribuida sin revelar el contenido confidencial del cliente."
-            ],
-            "border-indigo-600"
-        ),
         _ => (
             "Secreto Profesional, Gobernanza ISO 27001 & Cumplimiento LFPDPPP",
             "Ley Federal de Protección de Datos Personales; Código Penal Federal Art. 210.",
-            "Blindaje de Confidencialidad B2B y Secreto Profesional Indestructible.",
-            "Protección rigurosa de la información financiera, fiscal y operativa de la empresa evaluada. El procesamiento se ejecuta en memoria volátil bajo convenios estrictos de confidencialidad B2B.",
+            "Blindaje de Confidencialidad y Secreto Profesional Indestructible.",
+            "Protección rigurosa de la información financiera, fiscal y operativa de la empresa evaluada. El procesamiento se ejecuta en memoria volátil bajo convenios estrictos de confidencialidad.",
             vec![
                 "Aviso de Privacidad Integral conforme a las disposiciones del INAI.",
                 "Amparo del Secreto Profesional Contable y de Auditoría Pericial.",
@@ -596,16 +586,6 @@ async fn handle_validez_detail(Path(slug): Path<String>) -> impl IntoResponse {
                 {}
             </ul>
         </div>
-
-        <div class="p-6 bg-slate-900 border border-slate-800 rounded-2xl flex flex-col sm:flex-row justify-between items-center gap-4">
-            <div>
-                <h4 class="text-sm font-bold text-white font-mono-code">¿Requiere un Dictamen Pericial para su Empresa?</h4>
-                <p class="text-xs text-slate-400 font-mono-code">Ingrese su folio o RFC para generar la evaluación de riesgo inmediata.</p>
-            </div>
-            <a href="/checkout?ref=DICTAMEN-OFICIAL" class="bg-blue-600 hover:bg-blue-500 text-white font-bold text-xs px-5 py-3 rounded-xl transition font-mono-code whitespace-nowrap">
-                Solicitar Dictamen Pericial →
-            </a>
-        </div>
     </div>
 </body>
 </html>"#,
@@ -636,38 +616,95 @@ async fn get_merkle_proof_api(Path(ref_code): Path<String>) -> impl IntoResponse
     }))
 }
 
-async fn verify_audit_hash(Path(hash): Path<String>) -> impl IntoResponse {
-    let html_response = format!(
-        r#"<!DOCTYPE html>
-<html lang="es">
-<head><meta charset="UTF-8"><title>Certificación — Firma Pericial Mallen</title><script src="https://cdn.tailwindcss.com"></script></head>
-<body class="bg-slate-950 text-white min-h-screen flex items-center justify-center p-6">
-    <div class="max-w-md w-full bg-slate-900 border border-slate-800 p-8 rounded-2xl font-mono text-xs shadow-2xl">
-        <h1 class="text-sm font-bold text-white mb-2 uppercase tracking-wider">Dictamen Verificado</h1>
-        <p class="text-slate-400 mb-6 border-b border-slate-800 pb-4">HASH: {}</p>
-        <a href="/download/{}" class="block w-full bg-blue-600 hover:bg-blue-500 text-white text-center font-bold py-3 rounded-xl transition">Descargar Dictamen Técnico (PDF)</a>
-    </div>
-</body>
-</html>"#,
-        hash, hash
-    );
-    Html(html_response)
+async fn download_zip_handler(Path(tax_id): Path<String>) -> impl IntoResponse {
+    let clean_tax = tax_id.trim().to_uppercase();
+    let target_dir = format!("./kits_blindaje/{}", clean_tax);
+    
+    // 1. Asegurar la existencia del directorio del contribuyente
+    let _ = std::fs::create_dir_all(&target_dir);
+
+    // 2. Definir las plantillas maestras de Typst del estilo pericial morado
+    let templates = vec![
+        ("src/engine/report_template.typ", format!("{}/Dictamen_Ejecutivo_{}.pdf", target_dir, clean_tax)),
+        ("src/engine/cert_nom035.typ", format!("{}/Certificado_Acreditacion_NOM035_{}.pdf", target_dir, clean_tax)),
+        ("src/engine/cert_sat_69b.typ", format!("{}/Certificado_Materialidad_SAT69B_{}.pdf", target_dir, clean_tax)),
+        ("src/engine/cert_nom037.typ", format!("{}/Certificado_Acreditacion_NOM037_{}.pdf", target_dir, clean_tax)),
+    ];
+
+    // 3. Compilacion dinamica con Typst CLI
+    for (src_typ, out_pdf) in templates {
+        if std::path::Path::new(src_typ).exists() {
+            let _ = std::process::Command::new("typst")
+                .arg("compile")
+                .arg(src_typ)
+                .arg(&out_pdf)
+                .status();
+        }
+    }
+
+    // 4. Si la carpeta contiene los archivos compilados o existian previamente en el kit morado, se empaqueta
+    let zip_filename = format!("kit_pericial_{}.zip", clean_tax);
+    let zip_filepath = format!("/tmp/{}", zip_filename);
+
+    let pack_dir = if std::path::Path::new(&target_dir).exists() && std::fs::read_dir(&target_dir).map(|mut i| i.next().is_some()).unwrap_or(false) {
+        target_dir
+    } else {
+        "./kits_blindaje/ESTILO_MORADO_OK".to_string()
+    };
+
+    let status = std::process::Command::new("zip")
+        .arg("-r")
+        .arg(&zip_filepath)
+        .arg(".")
+        .current_dir(&pack_dir)
+        .status();
+
+    if let Ok(s) = status {
+        if s.success() {
+            if let Ok(bytes) = fs::read(&zip_filepath) {
+                let headers = [
+                    (header::CONTENT_TYPE, "application/zip".to_string()),
+                    (header::CONTENT_DISPOSITION, format!("attachment; filename=\"{}\"", zip_filename)),
+                ];
+                return (headers, bytes).into_response();
+            }
+        }
+    }
+
+    (StatusCode::INTERNAL_SERVER_ERROR, "Error en el motor dinamico de compilacion y empaquetado").into_response()
 }
 
+fn walkdir_find_zip() -> Result<String, ()> {
+    if let Ok(paths) = std::fs::read_dir("./kits_blindaje") {
+        for path in paths.flatten() {
+            let p = path.path();
+            if p.is_dir() {
+                if let Ok(subpaths) = std::fs::read_dir(&p) {
+                    for sub in subpaths.flatten() {
+                        let sp = sub.path();
+                        if sp.extension().and_then(|s| s.to_str()) == Some("zip") {
+                            return Ok(sp.to_string_lossy().to_string());
+                        }
+                    }
+                }
+            }
+        }
+    }
+    Err(())
+}
 async fn download_pdf_report(Path(hash): Path<String>) -> impl IntoResponse {
     let pdf_file_path = format!("dictamenes_pdf/Dictamen_PreAuditoria_{}.pdf", hash);
     if let Ok(pdf_bytes) = fs::read(&pdf_file_path) {
         let disposition = format!("inline; filename=Dictamen_{}.pdf", hash);
         let headers = [
-            (header::CONTENT_TYPE, "application/pdf"),
-            (header::CONTENT_DISPOSITION, &disposition),
+            (header::CONTENT_TYPE, "application/pdf".to_string()),
+            (header::CONTENT_DISPOSITION, disposition),
         ];
         return (headers, pdf_bytes).into_response();
     }
     (StatusCode::NOT_FOUND, "Dictamen PDF no encontrado").into_response()
 }
 
-// Handler Reestructurado de la Pasarela de Pago / Activación
 async fn handle_checkout(Query(params): Query<CheckoutParams>) -> impl IntoResponse {
     let ref_code = params.ref_id.or(params.r#ref).or(params.hash).unwrap_or_else(|| "EVAL-GENERAL".to_string());
     let html = format!(
@@ -692,21 +729,6 @@ async fn handle_checkout(Query(params): Query<CheckoutParams>) -> impl IntoRespo
 
         <h1 class="text-sm font-bold text-white mb-2 uppercase tracking-wider">Emisión de Kit Criptográfico</h1>
         <p class="text-slate-400 mb-6">Referencia de Evaluación: <span class="text-emerald-400 font-bold">{}</span></p>
-
-        <div class="bg-slate-950 p-4 rounded-xl border border-slate-800 mb-6 space-y-2">
-            <div class="flex justify-between text-slate-400">
-                <span>Dictamen Pericial C.P.C.:</span>
-                <span class="text-slate-200">Incluido</span>
-            </div>
-            <div class="flex justify-between text-slate-400">
-                <span>Sello NOM-151-SCFI:</span>
-                <span class="text-slate-200">Activo</span>
-            </div>
-            <div class="flex justify-between text-slate-400">
-                <span>Prueba Merkle SHA-256:</span>
-                <span class="text-slate-200">Verificada</span>
-            </div>
-        </div>
 
         <a href="/verify/{}" class="block w-full bg-gradient-to-r from-blue-600 to-emerald-600 hover:from-blue-500 hover:to-emerald-500 text-white text-center font-bold py-4 rounded-xl transition shadow-lg shadow-blue-600/20 uppercase tracking-wider">
             Procesar y Generar Dictamen →
