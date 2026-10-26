@@ -1,17 +1,93 @@
 [package]
 name = "worker_inegi_engine"
-version = "0.1.0"
+version = "0.2.0"
 edition = "2021"
+default-run = "worker_inegi_engine"
+
+[[bin]]
+name = "worker_inegi_engine"
+path = "src/main.rs"
+
+[[bin]]
+name = "ingest"
+path = "src/bin/ingest.rs"
 
 [dependencies]
+# --- Runtime Asíncrono y Concurrencia ---
 tokio = { version = "1.38", features = ["full"] }
-reqwest = { version = "0.12", features = ["json"] }
+futures = "0.3"
+
+# --- Gateway Web, API B2B2B y Rate-Limiting ---
+axum = { version = "0.7", features = ["macros", "multipart"] }
+tower = { version = "0.4", features = ["util", "timeout", "limit"] }
+tower-http = { version = "0.5", features = ["cors", "fs", "trace", "compression-br"] }
+governor = "0.6"
+
+# --- Clientes HTTP OSINT, TLS Dual y Headless SPA ---
+reqwest = { version = "0.12", default-features = false, features = [
+    "json",
+    "cookies",
+    "gzip",
+    "brotli",
+    "stream",
+    "rustls-tls",
+    "rustls-tls-native-roots"
+] }
+scraper = "0.19"
+url = "2.5"
+chromiumoxide = { version = "0.7", default-features = false, features = ["tokio-runtime"] }
+
+# --- Base de Datos (SQLite WAL Asíncrono + Compatibilidad Rusqlite + Ingesta CSV) ---
+sqlx = { version = "0.8", features = ["runtime-tokio", "sqlite", "macros", "chrono"] }
+rusqlite = { version = "0.31", features = ["bundled"] }
+csv = "1.3"
+
+# --- Serialización, Reglas Estáticas SCIAN (O(1)) y Sanitización PII ---
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
-sha2 = "0.10"
-zip = "0.6"
-rusqlite = { version = "0.31", features = ["bundled"] }
-scraper = "0.19"
+phf = { version = "0.11", features = ["macros"] }
 regex = "1.10"
-axum = "0.8.9"
-tower-http = { version = "0.7.1", features = ["cors", "fs"] }
+once_cell = "1.19"
+
+# --- Compilación Tipográfica en RAM (Typst) y Empaquetado ZIP ---
+typst = "0.11"
+typst-pdf = "0.11"
+zip = { version = "0.6", default-features = false, features = ["deflate"] }
+image = { version = "0.25", default-features = false, features = ["png", "jpeg"] }
+
+# --- Criptografía, Merkle Batching, Fecha Cierta L2 (Alloy HTTP sin IPC) y Stripe HMAC ---
+sha2 = "0.10"
+hmac = "0.12"
+hex = "0.4"
+rs_merkle = "1.4"
+alloy = { version = "0.3", default-features = false, features = [
+    "std",
+    "network",
+    "providers",
+    "rpc-types",
+    "signers",
+    "signer-local",
+    "sol-types",
+    "transports",
+    "transport-http", "reqwest", "reqwest",
+    "contract"
+] }
+
+# --- Utilidades, Fechas, Configuración y Telemetría ---
+chrono = { version = "0.4", features = ["serde"] }
+uuid = { version = "1.10", features = ["v4", "serde"] }
+dotenvy = "0.15"
+thiserror = "1.0"
+anyhow = "1.0"
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter", "json"] }
+
+[profile.release]
+opt-level = 3
+lto = "thin"
+codegen-units = 1
+strip = true
+
+[[bin]]
+name = "server"
+path = "src/bin/server.rs"

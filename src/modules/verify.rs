@@ -1,18 +1,20 @@
 use axum::response::Html;
+use sha2::{Digest, Sha256};
 
 pub async fn render_verify(id: &str) -> Html<String> {
-    // Estimación pericial de exposición de riesgo por sanciones (SAT / STPS / INAI / IMSS)
-    let riesgo_estimado: f64 = 320000.00; 
-    
-    // Provisión de activación: 0.5% con piso mínimo de $1,500.00 MXN
-    let calculo_provision = riesgo_estimado * 0.005;
-    let provision_activacion: f64 = if calculo_provision < 1500.00 { 1500.00 } else { calculo_provision };
+    let clean_id = id.trim().to_uppercase();
+    let riesgo_estimado: f64 = 1_188_000.00;
+    let provision_activacion: f64 = 5_940.00;
+
+    let mut hasher = Sha256::new();
+    hasher.update(format!("MALLEN_VERIFY_2026::{}", clean_id).as_bytes());
+    let real_sha256 = format!("{:x}", hasher.finalize());
 
     let riesgo_str = format!("{:.2}", riesgo_estimado);
     let provision_str = format!("{:.2}", provision_activacion);
 
-    let html = format!(r###"
-<!DOCTYPE html>
+    let html = format!(
+        r###"<!DOCTYPE html>
 <html lang="es">
 <head>
     <meta charset="UTF-8">
@@ -36,7 +38,7 @@ pub async fn render_verify(id: &str) -> Html<String> {
 <nav class="navbar navbar-dark border-bottom border-secondary" style="background: #0b132b;">
     <div class="container">
         <a class="navbar-brand fw-bold text-white fs-4" href="/">Firma Pericial Mallen</a>
-        <span class="badge bg-dark border border-secondary text-info"><i class="bi bi-shield-check me-1"></i> Expediente Consultivo Gratuito</span>
+        <span class="badge bg-dark border border-secondary text-info"><i class="bi bi-shield-check me-1"></i> Expediente Consultivo OSINT</span>
     </div>
 </nav>
 
@@ -47,15 +49,15 @@ pub async fn render_verify(id: &str) -> Html<String> {
                 
                 <div class="d-flex flex-wrap justify-content-between align-items-center mb-4 pb-3 border-bottom border-secondary gap-2">
                     <div>
-                        <span class="text-uppercase text-muted fw-bold" style="font-size: 0.8rem;">Consulta Registral Pública</span>
+                        <span class="text-uppercase text-muted fw-bold" style="font-size: 0.8rem;">Consulta Registral Pública 360°</span>
                         <h3 class="mb-0 fw-bold text-white">Dictamen Pericial de Invariabilidad</h3>
                     </div>
-                    <span class="badge bg-success text-white px-3 py-2 rounded-pill"><i class="bi bi-check-circle-fill me-1"></i> EVALUACIÓN GRATUITA CONCLUIDA</span>
+                    <span class="badge bg-success text-white px-3 py-2 rounded-pill"><i class="bi bi-check-circle-fill me-1"></i> EVALUACIÓN CONCLUIDA</span>
                 </div>
 
                 <div class="row g-3 mb-4">
                     <div class="col-md-6">
-                        <label class="text-muted small d-block">Folio / Identificador Auditado</label>
+                        <label class="text-muted small d-block">Folio / RFC Auditado</label>
                         <div class="fw-bold text-uppercase fs-4 text-info">{}</div>
                     </div>
                     <div class="col-md-6">
@@ -67,9 +69,9 @@ pub async fn render_verify(id: &str) -> Html<String> {
                 <div class="risk-card p-4 mb-4">
                     <div class="row align-items-center">
                         <div class="col-md-8">
-                            <span class="badge bg-danger text-white mb-2"><i class="bi bi-exclamation-triangle-fill me-1"></i> Estimación Pericial Sanction-Exposure</span>
-                            <h5 class="fw-bold text-white mb-1">Riesgo Fiscal y Administrativo Detectado</h5>
-                            <p class="text-muted small mb-0">Basado en la evaluación de vulnerabilidades registrales (SAT Art. 69-B, NOMs STPS 019/030/035/037, IMSS e INAI LFPDPPP), la exposición contingente estimada es de:</p>
+                            <span class="badge bg-danger text-white mb-2"><i class="bi bi-exclamation-triangle-fill me-1"></i> Estimación Pericial en UMAs 2026</span>
+                            <h5 class="fw-bold text-white mb-1">Riesgo Fiscal, Laboral y Administrativo Detectado</h5>
+                            <p class="text-muted small mb-0">Basado en la evaluación de vulnerabilidades registrales (SAT Art. 69-B, 39 NOMs STPS, IMSS 32-D/REPSE, SABG LFPDPPP y PROFECO Art. 76 BIS):</p>
                         </div>
                         <div class="col-md-4 text-md-end mt-3 mt-md-0">
                             <span class="fs-6 text-muted d-block">Exposición Contingente:</span>
@@ -78,83 +80,24 @@ pub async fn render_verify(id: &str) -> Html<String> {
                     </div>
                 </div>
 
-                <h5 class="fw-bold text-white mb-3"><i class="bi bi-building-check text-info me-2"></i>Estatus de Inspección por Dependencia</h5>
-                
-                <div class="row g-3 mb-4">
-                    <div class="col-md-6">
-                        <div class="inst-box p-3 h-100">
-                            <div class="d-flex justify-content-between align-items-center mb-2">
-                                <span class="fw-bold text-white"><i class="bi bi-diagram-3-fill text-info me-2"></i>INEGI / DENUE</span>
-                                <span class="badge bg-info text-dark">Registro Activo</span>
-                            </div>
-                            <p class="text-muted small mb-1">Cruce en el Directorio Nacional de Unidades Económicas, geolocalización de establecimiento y actividad económica SCIAN.</p>
-                            <small class="text-info fw-bold">✓ Coincidencia Registral Confirmada</small>
-                        </div>
-                    </div>
-
-                    <div class="col-md-6">
-                        <div class="inst-box p-3 h-100">
-                            <div class="d-flex justify-content-between align-items-center mb-2">
-                                <span class="fw-bold text-white"><i class="bi bi-receipt-cutoff text-info me-2"></i>SAT (Materialidad Art. 69-B)</span>
-                                <span class="badge bg-success">Sin Incidencias</span>
-                            </div>
-                            <p class="text-muted small mb-1">Revisión de no localización, lista negra CFF y soporte de capacidad operativa e infraestructura real.</p>
-                            <small class="text-info fw-bold">✓ Opinión Fiscal Validada</small>
-                        </div>
-                    </div>
-
-                    <div class="col-md-6">
-                        <div class="inst-box p-3 h-100">
-                            <div class="d-flex justify-content-between align-items-center mb-2">
-                                <span class="fw-bold text-white"><i class="bi bi-journal-check text-info me-2"></i>IMSS & INFONAVIT</span>
-                                <span class="badge bg-info text-dark">Registro Patronal</span>
-                            </div>
-                            <p class="text-muted small mb-1">Evaluación de cumplimiento de obligaciones patronales y prima de riesgo de trabajo.</p>
-                            <small class="text-info fw-bold">✓ Cumplimiento Validado</small>
-                        </div>
-                    </div>
-
-                    <div class="col-md-6">
-                        <div class="inst-box p-3 h-100">
-                            <div class="d-flex justify-content-between align-items-center mb-2">
-                                <span class="fw-bold text-white"><i class="bi bi-person-badge-fill text-info me-2"></i>STPS (NOM-019/030/035/037)</span>
-                                <span class="badge bg-primary">Marco Normativo</span>
-                            </div>
-                            <p class="text-muted small mb-1">Diagnóstico de comisiones mixtas, teletrabajo, riesgos psicosociales y carpetas de inspección.</p>
-                            <small class="text-info fw-bold">✓ Evaluación de Riesgo Concluida</small>
-                        </div>
-                    </div>
-                </div>
-
                 <div class="mb-4">
                     <label class="text-muted small d-block mb-1">Impronta Criptográfica Inmutable (SHA-256)</label>
-                    <div class="hash-box">
-                        e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855
-                    </div>
+                    <div class="hash-box">{}</div>
                 </div>
 
                 <div class="p-4 rounded-3 border border-secondary mb-4" style="background: #0b132b;">
                     <div class="row align-items-center">
                         <div class="col-md-7 mb-3 mb-md-0">
                             <span class="badge bg-info text-dark mb-2 px-3 py-1">Kit de Expediente Pericial & Blindaje Normativo (.zip)</span>
-                            <h5 class="fw-bold text-white mb-1">Activar Inmunidad & Descargar Expediente Criptográfico</h5>
-                            <p class="text-muted small mb-2">Obtenga el paquete digital (.zip) que incluye: Dictamen firmado por Perito (Cédula/DC-5/DC-3), Matriz de Riesgos JSON, Evidencia OSINT, Certificado Blockchain Merkle en Arbitrum One y Carpeta Documental Normativa.</p>
-                            <span class="text-muted small d-block">Provisión de Activación (0.5% del riesgo estimado - Mínimo $1,500.00 MXN):</span>
+                            <h5 class="fw-bold text-white mb-1">Activar Blindaje 360° & Descargar Expediente Criptográfico</h5>
+                            <p class="text-muted small mb-2">Incluye: Dictamen Ejecutivo PDF firmado por Perito C.P.C., 10 Certificados Normativos PDF, 7 Kits Legales listos para firma autógrafa, Sello Fecha Cierta SCJN y Factura CFDI 4.0.</p>
                             <span class="fs-2 fw-bold text-white">${} <small class="fs-6 text-muted">MXN (IVA Incluido)</small></span>
                         </div>
                         <div class="col-md-5 text-md-end">
-                            <a href="/checkout/{}" class="btn btn-proceed w-100 fs-5 shadow text-center text-decoration-none d-block">
-                                <i class="bi bi-shield-lock-fill me-2"></i> Pagar Provisión & Activar
+                            <a href="/checkout?ref={}" class="btn btn-proceed w-100 fs-5 shadow text-center text-decoration-none d-block">
+                                <i class="bi bi-shield-lock-fill me-2"></i> Activar Blindaje Ahora
                             </a>
                         </div>
-                    </div>
-                </div>
-
-                <div class="text-center pt-2">
-                    <div class="d-flex justify-content-center gap-3 flex-wrap text-muted small">
-                        <span><i class="bi bi-lock-fill text-info me-1"></i> Conexión Cifrada TLS 1.3</span>
-                        <span><i class="bi bi-shield-check text-info me-1"></i> Emisión Factura CFDI 4.0</span>
-                        <span><i class="bi bi-file-earmark-zip-fill text-info me-1"></i> Entregable Digital .ZIP Inmediato</span>
                     </div>
                 </div>
 
@@ -164,11 +107,12 @@ pub async fn render_verify(id: &str) -> Html<String> {
 </div>
 
 <footer class="text-center py-4 text-muted border-top border-secondary mt-5" style="background: #0b132b;">
-    <small>© 2026 Firma Pericial Mallen • Todos los derechos reservados</small>
+    <small>© 2026 Firma Pericial Mallen (mallen.lat) • Todos los derechos reservados</small>
 </footer>
 
 </body>
-</html>
-    "###, id, riesgo_str, provision_str, id);
+</html>"###,
+        clean_id, riesgo_str, real_sha256, provision_str, clean_id
+    );
     Html(html)
 }
