@@ -2,7 +2,6 @@
     let exitIntentShown = false;
     let currentTaxId = "EST850628K51";
 
-    // Disparador Anti-Abandono (Exit-Intent Popup) cuando el mouse sale por la parte superior de la ventana
     document.addEventListener("mouseleave", (e) => {
         if (e.clientY <= 0 && !exitIntentShown) {
             const modal = document.getElementById("exit-intent-modal");
@@ -32,21 +31,27 @@
         event.preventDefault();
         const rfc = document.getElementById("folioInput").value.trim().toUpperCase();
         const domain = document.getElementById("domainInput")?.value?.trim() || "";
+        const razonOverride = document.getElementById("dos_razon")?.value?.trim() || null;
         if (!rfc) return;
         currentTaxId = rfc;
 
         const btn = document.getElementById("btnRunScan");
         const origText = btn.textContent;
-        btn.textContent = "Auditando 39 NOMs + SAT + OSINT...";
+        btn.textContent = "Auditando y Personalizando Expediente...";
         btn.disabled = true;
+
+        const valOrNull = (id) => {
+            const v = document.getElementById(id)?.value?.trim();
+            return v ? v : null;
+        };
 
         const payload = {
             tax_id: rfc,
             domain: domain ? domain : null,
-            razon_social_override: null,
-            email_contacto: null,
+            razon_social_override: razonOverride,
+            email_contacto: valOrNull("dos_email"),
             calibration: {
-                exact_employee_count: parseInt(document.getElementById("cal_emp")?.value || "25", 10),
+                exact_employee_count: parseInt(document.getElementById("cal_emp")?.value || "45", 10),
                 has_telework_over_40_percent: document.getElementById("cal_nom037")?.checked ?? true,
                 uses_subcontracted_services_repse: document.getElementById("cal_repse")?.checked ?? true,
                 has_pressure_vessels_boilers: document.getElementById("cal_nom020")?.checked ?? false,
@@ -56,7 +61,27 @@
                 transfers_data_to_third_parties: document.getElementById("cal_transfer")?.checked ?? true,
                 pays_intangible_b2b_services: document.getElementById("cal_69b")?.checked ?? true,
                 transports_goods_federal_highways: document.getElementById("cal_cartaporte")?.checked ?? false,
-                performs_vulnerable_activities_pld: document.getElementById("cal_pld")?.checked ?? false
+                performs_vulnerable_activities_pld: document.getElementById("cal_pld")?.checked ?? false,
+                dossier: {
+                    razon_social_oficial: razonOverride,
+                    domicilio_fiscal_completo: valOrNull("dos_domicilio"),
+                    codigo_postal_fiscal: valOrNull("dos_cp"),
+                    entidad_jurisdiccion: valOrNull("dos_estado"),
+                    giro_scian_descripcion: valOrNull("dos_giro"),
+                    representante_legal_nombre: valOrNull("dos_rep_nombre"),
+                    representante_legal_cargo: valOrNull("dos_rep_cargo"),
+                    oficial_privacidad_nombre: valOrNull("dos_oficial_priv"),
+                    email_arco_privacidad: valOrNull("dos_email"),
+                    telefono_corporativo: valOrNull("dos_tel"),
+                    registro_patronal_imss: valOrNull("dos_reg_patronal"),
+                    comision_coordinador_patronal: valOrNull("dos_csh_coord"),
+                    comision_secretario_trabajadores: valOrNull("dos_csh_sec"),
+                    horario_jornada_laboral: valOrNull("dos_horario"),
+                    monto_apoyo_teletrabajo_mxn: valOrNull("dos_apoyo_tele"),
+                    proveedor_principal_razon_social: valOrNull("dos_prov_nombre"),
+                    proveedor_principal_rfc: valOrNull("dos_prov_rfc"),
+                    proveedor_principal_servicio_objeto: valOrNull("dos_prov_obj")
+                }
             }
         };
 
@@ -74,9 +99,9 @@
                 document.getElementById("res-razon").textContent = `${data.razon_social} (${data.tax_id})`;
                 document.getElementById("res-score").textContent = `${data.risk_score}/100 PUNTOS`;
                 document.getElementById("res-fine").textContent =
-                    "$" + Number(data.total_estimated_fine_mxn || 1485600).toLocaleString("es-MX", { minimumFractionDigits: 2 }) + " MXN";
+                    "$" + Number(data.total_estimated_fine_mxn || 0).toLocaleString("es-MX", { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + " MXN";
                 document.getElementById("res-findings-count").textContent =
-                    `${(data.findings || []).length} vulnerabilidades normativas detectadas (STPS/SAT/SABG/IMSS/PROFECO)`;
+                    `${(data.findings || []).length} vulnerabilidades normativas auditadas — Sincronizadas 1:1 con su PDF y Kits Legales`;
                 document.getElementById("res-hash").textContent = data.audit_sha256_hash;
                 document.getElementById("btn-go-verify").href = `/verify/${encodeURIComponent(data.tax_id)}`;
                 document.getElementById("btn-go-micro").href = `/api/micro_scan/${encodeURIComponent(data.tax_id)}`;

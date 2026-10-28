@@ -1,7 +1,9 @@
 //! Capa de persistencia y consultas de baja latencia (<2ms) sobre SQLite en modo WAL.
-//! Gestiona prospectos, idempotencia de Stripe y cruces con DENUE (FTS5), SAT 69/69-B, REPSE y SFP.
+//! Gestiona prospectos, sesiones completas de auditoría (`audit_sessions` para sincronía 1:1 Web-PDF),
+//! idempotencia de Stripe y cruces con DENUE (FTS5), SAT 69/69-B, REPSE y SFP.
 
 use crate::engine::cleaner::{normalize_canonical_rfc, normalize_company_name};
+use crate::engine::models::AuditMasterJson;
 use chrono::Utc;
 use serde::{Deserialize, Serialize};
 use sqlx::{
@@ -33,7 +35,6 @@ pub struct DbState {
 }
 
 impl DbState {
-    /// Inicializa el pool de SQLite forzando modo WAL, busy_timeout de 10s y memoria caché optimizada.
     pub async fn new(database_url: &str) -> Result<Self, sqlx::Error> {
         let connect_opts = SqliteConnectOptions::from_str(database_url)?
             .create_if_missing(true)
@@ -41,7 +42,7 @@ impl DbState {
             .synchronous(SqliteSynchronous::Normal)
             .busy_timeout(Duration::from_secs(10))
             .pragma("temp_store", "MEMORY")
-            .pragma("cache_size", "-64000"); // ~64 MB de caché en RAM para páginas B-Tree
+            .pragma("cache_size", "-64000");
 
         let pool = SqlitePoolOptions::new()
             .max_connections(16)
@@ -52,9 +53,8 @@ impl DbState {
         Ok(Self { pool })
     }
 
-    /// Crea todas las tablas del ecosistema (Prospectos, Idempotencia Stripe y Padrones Oficiales).
     pub async fn init_schema(&self) -> Result<(), sqlx::Error> {
-        // 1. Tabla histórica de prospectos y clientes (Retrocompatible)
+        // 1. Tabla de prospectos
         sqlx::query(
             r#"
             CREATE TABLE IF NOT EXISTS prospects (
@@ -72,7 +72,21 @@ impl DbState {
         .execute(&self.pool)
         .await?;
 
-        // 2. Tabla de Idempotencia para Webhooks de Stripe (Evita doble timbrado CFDI 4.0)
+        // 2. Tabla de Sesiones de Auditoría y Personalización Jurídica (Sincronía 100% Web <-> PDF <-> ZIP)
+        sqlx::query(
+            r#"
+            CREATE TABLE IF NOT EXISTS audit_sessions (
+                tax_id TEXT PRIMARY KEY,
+                master_json TEXT NOT NULL,
+                is_accredited INTEGER NOT NULL DEFAULT 0,
+                updated_at TEXT NOT NULL
+            );
+            "#,
+        )
+        .execute(&self.pool)
+        .await?;
+
+        // 3. Tabla de Idempotencia para Webhooks de Stripe
         sqlx::query(
             r#"
             CREATE TABLE IF NOT EXISTS processed_webhooks (
@@ -85,7 +99,7 @@ impl DbState {
         .execute(&self.pool)
         .await?;
 
-        // 3. SAT Artículo 69-B (EFOS - Operaciones Simuladas: Presuntos, Definitivos, Desvirtuados)
+        // 4. SAT Artículo 69-B (EFOS)
         sqlx::query(
             r#"
             CREATE TABLE IF NOT EXISTS sat_69b_efos (
@@ -99,7 +113,7 @@ impl DbState {
         .execute(&self.pool)
         .await?;
 
-        // 4. SAT Artículo 69 (Créditos Firmes, Exigibles, No Localizados, Cancelados)
+        // 5. SAT Artículo 69
         sqlx::query(
             r#"
             CREATE TABLE IF NOT EXISTS sat_69_incumplidos (
@@ -112,7 +126,7 @@ impl DbState {
         .execute(&self.pool)
         .await?;
 
-        // 5. STPS Padrón Público REPSE (Subcontratación de Servicios Especializados)
+        // 6. STPS Padrón REPSE
         sqlx::query(
             r#"
             CREATE TABLE IF NOT EXISTS stps_repse (
@@ -129,7 +143,7 @@ impl DbState {
         .execute(&self.pool)
         .await?;
 
-        // 6. SFP Directorio de Proveedores y Contratistas Sancionados / Inhabilitados
+        // 7. SFP Sancionados
         sqlx::query(
             r#"
             CREATE TABLE IF NOT EXISTS sfp_sancionados (
@@ -146,7 +160,7 @@ impl DbState {
         .execute(&self.pool)
         .await?;
 
-        // 7. PROFECO Buró Comercial y Contratos de Adhesión (RRPAC)
+        // 8. PROFECO Buró Comercial y RRPAC
         sqlx::query(
             r#"
             CREATE TABLE IF NOT EXISTS profeco_buro (
@@ -159,7 +173,7 @@ impl DbState {
         .execute(&self.pool)
         .await?;
 
-        // 8. INEGI DENUE + Índice FTS5 para resolución ultrarrápida sin RFC
+        // 9. INEGI DENUE + FTS5
         sqlx::query(
             r#"
             CREATE TABLE IF NOT EXISTS denue_units (
@@ -193,9 +207,61 @@ impl DbState {
         Ok(())
     }
 
-    // =========================================================================
-    // MÉTODOS ORIGINALES DE EMBUDO Y PROSPECTOS (100% RETROCOMPATIBLES)
-    // =========================================================================
+    /// Guarda o actualiza la sesión completa de auditoría (`AuditMasterJson` + `LegalDossierInput`)
+    /// para que el PDF y los 7 Kits Legales reflejen exactamente los mismos datos y montos que la Web.
+    pub async fn save_audit_session(
+        &self,
+        tax_id: &str,
+        master: &AuditMasterJson,
+        is_accredited: bool,
+    ) -> Result<(), sqlx::Error> {
+        let clean_tax = tax_id.trim().to_uppercase();
+        let json_str = serde_json::to_string(master).unwrap_or_default();
+        let now = Utc::now().to_rfc3339();
+        let acc_int = if is_accredited { 1 } else { 0 };
+
+        sqlx::query(
+            r#"
+            INSERT INTO audit_sessions (tax_id, master_json, is_accredited, updated_at)
+            VALUES (?1, ?2, ?3, ?4)
+            ON CONFLICT(tax_id) DO UPDATE SET
+                master_json = excluded.master_json,
+                is_accredited = CASE WHEN audit_sessions.is_accredited = 1 THEN 1 ELSE excluded.is_accredited END,
+                updated_at = excluded.updated_at
+            "#,
+        )
+        .bind(&clean_tax)
+        .bind(&json_str)
+        .bind(acc_int)
+        .bind(&now)
+        .execute(&self.pool)
+        .await?;
+
+        Ok(())
+    }
+
+    /// Recupera la sesión exacta de auditoría y si la empresa ya está acreditada/blindada (`is_accredited`).
+    pub async fn get_audit_session(
+        &self,
+        tax_id: &str,
+    ) -> Result<Option<(AuditMasterJson, bool)>, sqlx::Error> {
+        let clean_tax = tax_id.trim().to_uppercase();
+        let row = sqlx::query(
+            "SELECT master_json, is_accredited FROM audit_sessions WHERE tax_id = ?1 LIMIT 1",
+        )
+        .bind(&clean_tax)
+        .fetch_optional(&self.pool)
+        .await?;
+
+        if let Some(r) = row {
+            let json_str: String = r.get("master_json");
+            let is_acc: i64 = r.get("is_accredited");
+            if let Ok(parsed) = serde_json::from_str::<AuditMasterJson>(&json_str) {
+                return Ok(Some((parsed, is_acc == 1)));
+            }
+        }
+        Ok(None)
+    }
 
     pub async fn insert_prospect(
         &self,
@@ -251,6 +317,7 @@ impl DbState {
     }
 
     pub async fn update_status_to_paid(&self, tax_id: &str) -> Result<(), sqlx::Error> {
+        let clean_tax = tax_id.trim().to_uppercase();
         sqlx::query(
             r#"
             UPDATE prospects 
@@ -258,18 +325,24 @@ impl DbState {
             WHERE tax_id = ?1
             "#,
         )
-        .bind(tax_id)
+        .bind(&clean_tax)
+        .execute(&self.pool)
+        .await?;
+
+        sqlx::query(
+            r#"
+            UPDATE audit_sessions
+            SET is_accredited = 1
+            WHERE tax_id = ?1
+            "#,
+        )
+        .bind(&clean_tax)
         .execute(&self.pool)
         .await?;
 
         Ok(())
     }
 
-    // =========================================================================
-    // NUEVOS MÉTODOS DE AUDITORÍA O(1) Y BLINDAJE TRANSACCIONAL
-    // =========================================================================
-
-    /// Garantiza idempotencia en el Webhook de Stripe: devuelve `true` si es la primera vez que se procesa.
     pub async fn register_webhook_once(
         &self,
         event_id: &str,
@@ -291,7 +364,6 @@ impl DbState {
         Ok(res.rows_affected() == 1)
     }
 
-    /// Consulta O(1) en Lista Negra SAT Art. 69-B (EFOS) bloqueada estrictamente por RFC canónico.
     pub async fn check_sat_69b_by_rfc(&self, raw_rfc: &str) -> Result<String, sqlx::Error> {
         let Some(canonical_rfc) = normalize_canonical_rfc(raw_rfc) else {
             return Ok("RFC_FORMATO_NO_CANONICO".to_string());
@@ -308,7 +380,6 @@ impl DbState {
         }
     }
 
-    /// Consulta O(1) en Lista SAT Art. 69 (Créditos firmes, No localizados, Exigibles).
     pub async fn check_sat_69_by_rfc(&self, raw_rfc: &str) -> Result<String, sqlx::Error> {
         let Some(canonical_rfc) = normalize_canonical_rfc(raw_rfc) else {
             return Ok("LIMPIO".to_string());
@@ -325,7 +396,6 @@ impl DbState {
         }
     }
 
-    /// Verifica si la empresa cuenta con registro REPSE activo (por RFC o Razón Social normalizada).
     pub async fn check_repse_status(
         &self,
         raw_rfc: &str,
@@ -353,7 +423,6 @@ impl DbState {
         Ok(false)
     }
 
-    /// Verifica si el contribuyente está inhabilitado por la SFP (Secretaría Anticorrupción / Función Pública).
     pub async fn check_sfp_sanctioned(
         &self,
         raw_rfc: &str,
@@ -383,14 +452,11 @@ impl DbState {
         Ok(false)
     }
 
-    /// Puente de Resolución DENUE (Resuelve la ausencia de RFC en el CSV público del INEGI):
-    /// Busca primero por dominio web exacto y luego por coincidencia en `nombre_norm` o FTS5.
     pub async fn find_denue_by_name_or_domain(
         &self,
         domain: Option<&str>,
         company_name: Option<&str>,
     ) -> Result<Option<DenueRecord>, sqlx::Error> {
-        // 1. Intento directo por dominio web (alta precisión)
         if let Some(dom) = domain {
             let clean_dom = dom
                 .trim()
@@ -423,7 +489,6 @@ impl DbState {
             }
         }
 
-        // 2. Intento por Razón Social o Nombre Comercial normalizado
         if let Some(name) = company_name {
             let norm = normalize_company_name(name);
             if norm.len() >= 3 {

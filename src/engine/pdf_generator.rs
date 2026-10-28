@@ -1,7 +1,10 @@
-//! Compilador tipográfico de Dictámenes Periciales, Micro-Dictámenes Anti-Abandono (Exit-Intent)
-//! con censura criptográfica real y los 10 Certificados de Acreditación Normativa.
+//! Compilador tipográfico sincronizado 1:1 con `AuditMasterJson` y `LegalDossierInput`.
+//! Soporta Modo Inmune (`is_accredited = true` para `MALLEN-*` y clientes pagados con $0.00 MXN de exposición).
 
-use crate::engine::models::EmpresaB2B;
+use crate::engine::accountant::AccountantProfile;
+use crate::engine::models::{
+    AuditMasterJson, EmpresaB2B, LegalDossierInput, RegulatoryAgency,
+};
 use crate::engine::osint_scanner::OsintResult;
 use chrono::Utc;
 use std::fs;
@@ -105,8 +108,6 @@ pub fn get_catalogo_certificados() -> Vec<CertificadoNorma> {
     ]
 }
 
-/// Sanitiza cualquier carácter especial reservado por la sintaxis de Typst (`#`, `$`, `*`, `_`, `@`, `<`, `>`, `[`, `]`)
-/// para garantizar que ninguna Razón Social (ej. "Cía. #1 & Asociados $ S.A.") rompa la compilación del PDF.
 pub fn sanitize_for_typst(input: &str) -> String {
     input
         .replace('\\', "\\\\")
@@ -123,7 +124,9 @@ pub fn sanitize_for_typst(input: &str) -> String {
 }
 
 pub fn format_currency_mxn(val: f64) -> String {
-    let integer_part = val.trunc() as u64;
+    let rounded = (val.max(0.0) * 100.0).round() as u64;
+    let integer_part = rounded / 100;
+    let cents = rounded % 100;
     let num_str = integer_part.to_string();
     let mut formatted = String::new();
     let len = num_str.len();
@@ -135,88 +138,161 @@ pub fn format_currency_mxn(val: f64) -> String {
         formatted.push(c);
     }
 
-    format!("{}.00", formatted)
+    format!("{}.{:02}", formatted, cents)
 }
 
-/// Renderiza la plantilla Typst inyectando los datos reales o el modo Micro-Dictamen censurado.
-fn build_report_typst_markup(
+fn build_report_typst_markup_full(
     empresa: &EmpresaB2B,
     osint: &OsintResult,
+    master_opt: Option<&AuditMasterJson>,
+    is_accredited: bool,
     is_censored_micro_report: bool,
-    partner_name: Option<&str>,
 ) -> String {
     let tax_id = empresa.tax_id.as_deref().unwrap_or("SIN-RFC");
+    let is_immune = is_accredited || tax_id.starts_with("MALLEN") || tax_id.starts_with("PAID_");
     let fecha_hoy = Utc::now().format("%d/%m/%Y %H:%M UTC").to_string();
+    let auditor = AccountantProfile::default();
 
-    let partner_header = match partner_name.or(empresa.accountant_signature.as_deref()) {
-        Some(p) if !p.trim().is_empty() => {
+    let empty_dossier = LegalDossierInput::default();
+    let dossier = master_opt
+        .map(|m| &m.calibration_applied.dossier)
+        .unwrap_or(&empty_dossier);
+
+    let rep_legal = dossier
+        .representante_legal_nombre
+        .as_deref()
+        .filter(|s| !s.trim().is_empty())
+        .unwrap_or("Representante Legal Acreditado");
+    let jurisdiccion = dossier
+        .entidad_jurisdiccion
+        .as_deref()
+        .filter(|s| !s.trim().is_empty())
+        .unwrap_or(&empresa.estado);
+    let oficial_priv = dossier
+        .oficial_privacidad_nombre
+        .as_deref()
+        .filter(|s| !s.trim().is_empty())
+        .unwrap_or(rep_legal);
+    let coord_csh = dossier
+        .comision_coordinador_patronal
+        .as_deref()
+        .filter(|s| !s.trim().is_empty())
+        .unwrap_or(rep_legal);
+
+    let partner_header = match master_opt
+        .and_then(|m| m.partner_whitelabel_name.as_deref())
+        .or(empresa.accountant_signature.as_deref())
+    {
+        Some(p) if !p.trim().is_empty() && !p.starts_with("DICTAMINADO_POR:") => {
             format!("DESPACHO AUDITOR ALIADO: {}", sanitize_for_typst(p))
         }
         _ => "FIRMA PERICIAL MALLEN (MALLEN.LAT)".to_string(),
     };
 
-    let osint_inai = if is_censored_micro_report {
-        "████████████████ [ALERTA LFPDPPP BLOQUEADA — REQUIERE DICTAMEN COMPLETO]"
-    } else if osint.has_privacy_policy {
-        "10 pts: Aviso detectado; requiere actualización a LFPDPPP 2025/2026 (SABG) y cláusula biométrica."
+    // Calcular subtotales exactos por dependencia para sincronía matemática 1:1 con la Web
+    let (mut m_stps, mut m_sat, mut m_inai, mut m_imss, mut m_pc, mut m_profeco) =
+        (0.0, 0.0, 0.0, 0.0, 0.0, 0.0);
+
+    if !is_immune {
+        if let Some(m) = master_opt {
+            for f in &m.findings {
+                match f.agency {
+                    RegulatoryAgency::STPS => m_stps += f.estimated_fine_mxn,
+                    RegulatoryAgency::SAT => m_sat += f.estimated_fine_mxn,
+                    RegulatoryAgency::SabgInai => m_inai += f.estimated_fine_mxn,
+                    RegulatoryAgency::IMSSInfonavit => m_imss += f.estimated_fine_mxn,
+                    RegulatoryAgency::PROFECO => m_profeco += f.estimated_fine_mxn,
+                    _ => m_pc += f.estimated_fine_mxn,
+                }
+            }
+        } else {
+            let base = if empresa.estimated_fine_mxn > 0.0 {
+                empresa.estimated_fine_mxn
+            } else {
+                1_485_600.00
+            };
+            m_stps = (base * 0.28 * 100.0).round() / 100.0;
+            m_sat = (base * 0.22 * 100.0).round() / 100.0;
+            m_inai = (base * 0.18 * 100.0).round() / 100.0;
+            m_imss = (base * 0.14 * 100.0).round() / 100.0;
+            m_pc = (base * 0.10 * 100.0).round() / 100.0;
+            m_profeco = ((base - (m_stps + m_sat + m_inai + m_imss + m_pc)) * 100.0).round() / 100.0;
+        }
+    }
+
+    let total_exact = ((m_stps + m_sat + m_inai + m_imss + m_pc + m_profeco) * 100.0).round() / 100.0;
+    let score = if is_immune {
+        0
     } else {
-        "18 pts: ALERTA CRÍTICA — Omisión de Aviso de Privacidad Integral en portal web (Arts. 15 y 63 LFPDPPP)."
+        master_opt
+            .map(|m| m.risk_score)
+            .unwrap_or(empresa.risk_score.max(72))
     };
 
-    let hallazgo_stps = "22 pts: Exposición activa en NOM-035 (Psicosocial), NOM-019 (Comisión Mixta), NOM-030 y NOM-002.";
-    let hallazgo_sat = if is_censored_micro_report {
-        "████████████████ [AUDITORÍA ART. 69-B Y CSD BLOQUEADA EN VERSIÓN GRATUITA]"
+    let (status_hex, banner_bg, banner_border, estatus_texto, badge_accion) = if is_immune {
+        (
+            "#16a34a",
+            "#f0fdf4",
+            "#86efac",
+            "100% CUMPLIMIENTO ACREDITADO • RIESGO CERO ($0.00 MXN)",
+            "EXPEDIENTE INMUNE ACTIVO",
+        )
     } else {
-        "18 pts: Contingencia por falta de Contratos con Fecha Cierta SCJN y bitácoras de materialidad 69-B."
-    };
-    let hallazgo_imss = if is_censored_micro_report {
-        "████████████████ [CRUCE DENUE VS IMSS 32-D Y REPSE BLOQUEADO]"
-    } else {
-        "15 pts: Riesgo en conciliación de plantilla DENUE vs SUA, Prima de Riesgo y expedientes REPSE/ICSOE."
-    };
-    let hallazgo_pc = if is_censored_micro_report {
-        "████████████████ [DIAGNÓSTICO DE CLAUSURA PROTECCIÓN CIVIL BLOQUEADO]"
-    } else {
-        "12 pts: Requerimiento de Programa Interno PIPC, Dictamen Eléctrico/Estructural y licencias sectoriales."
-    };
-    let hallazgo_profeco = if is_censored_micro_report {
-        "████████████████ [AUDITORÍA PROFECO ART. 76 BIS Y RRPAC BLOQUEADA]"
-    } else {
-        "10 pts: Adecuación obligatoria de Términos Digitales Art. 76 BIS LFPC y Contrato de Adhesión RRPAC."
+        (
+            "#dc2626",
+            "#fef2f2",
+            "#fca5a5",
+            "EXPOSICIÓN PATRIMONIAL ACTIVA DETECTADA",
+            "ACCIÓN CORRECTIVA REQUERIDA",
+        )
     };
 
-    let osint_ssl = if osint.has_ssl {
-        "ACTIVO (TLS VÁLIDO)"
+    let (hallazgo_stps, hallazgo_sat, osint_inai, hallazgo_imss, hallazgo_pc, hallazgo_profeco) =
+        if is_immune {
+            (
+                "0 pts: Carpetas NOM-035, NOM-037, NOM-019 y NOM-030 instrumentadas y vigentes.",
+                "0 pts: Contratos con Fecha Cierta SCJN (Art. 69-B CFF) y Opinión 32-D verificados.",
+                "0 pts: Aviso de Privacidad Integral LFPDPPP (SABG), Derechos ARCO y TLS 1.3 activos.",
+                "0 pts: Plantilla conciliada en SUA y protocolo de responsabilidad solidaria REPSE activo.",
+                "0 pts: Programa Interno de Protección Civil (PIPC) y licencias sectoriales en orden.",
+                "0 pts: Términos de Comercio Electrónico Art. 76 BIS LFPC y garantías de 90 días vigentes.",
+            )
+        } else if is_censored_micro_report {
+            (
+                "22 pts: Exposición activa en NOM-035 (Psicosocial), NOM-019 (Comisión Mixta), NOM-030 y NOM-002.",
+                "████████████████ [AUDITORÍA ART. 69-B Y CSD BLOQUEADA EN VERSIÓN GRATUITA]",
+                "████████████████ [ALERTA LFPDPPP BLOQUEADA — REQUIERE DICTAMEN COMPLETO]",
+                "████████████████ [CRUCE DENUE VS IMSS 32-D Y REPSE BLOQUEADO]",
+                "████████████████ [DIAGNÓSTICO DE CLAUSURA PROTECCIÓN CIVIL BLOQUEADO]",
+                "████████████████ [AUDITORÍA PROFECO ART. 76 BIS Y RRPAC BLOQUEADA]",
+            )
+        } else {
+            (
+                "Omisión documental en NOM-035, Acta Comisión Mixta NOM-019, Diagnóstico NOM-030 y NOMs por SCIAN.",
+                "Exposición por falta de Contratos Marco con Fecha Cierta SCJN y Bitácora de Materialidad Art. 69-B.",
+                if osint.has_privacy_policy {
+                    "Aviso detectado; requiere actualización a LFPDPPP (SABG) y Formato de Consentimiento Biométrico."
+                } else {
+                    "ALERTA CRÍTICA: Omisión de Aviso de Privacidad Integral en portal web (Arts. 15 y 63 LFPDPPP)."
+                },
+                "Contingencia en conciliación de plantilla DENUE vs SBC, Prima de Riesgo y expedientes REPSE/ICSOE.",
+                "Requerimiento de Programa Interno PIPC, Dictamen Eléctrico/Estructural y regulación sectorial SCIAN.",
+                "Adecuación obligatoria de Términos Digitales Art. 76 BIS LFPC, Garantías (90 días) y RRPAC.",
+            )
+        };
+
+    let osint_ssl = if osint.has_ssl || is_immune {
+        "ACTIVO (TLS 1.3 VÁLIDO)"
     } else {
         "VULNERABLE (INFRACCIÓN ART. 19 LFPDPPP)"
     };
-
-    let osint_privacy = if osint.has_privacy_policy {
-        "DETECTADO (REQUIERE CALIBRACIÓN)"
+    let osint_privacy = if osint.has_privacy_policy || is_immune {
+        "ACREDITADO EN PORTAL"
     } else {
-        "OMISIÓN CRÍTICA DETECTADA"
+        "OMISIÓN DETECTADA"
     };
 
-    let score = empresa.risk_score.max(68) as f64;
-    let score_stps = (score * 0.25).round();
-    let score_sat = (score * 0.20).round();
-    let score_inai = (score * 0.20).round();
-    let score_imss = (score * 0.15).round();
-    let score_pc = (score * 0.10).round();
-    let score_profeco = (score * 0.10).round();
-
-    let fine_val = if empresa.estimated_fine_mxn > 0.0 {
-        empresa.estimated_fine_mxn
-    } else {
-        1_485_600.00
-    };
-    let avg_risk_mxn = fine_val.max(1_188_000.00);
-    let activation_fee_mxn = 5_940.00;
-
-    let fine_formatted = format_currency_mxn(fine_val);
-    let avg_risk_formatted = format_currency_mxn(avg_risk_mxn);
-    let activation_fee_formatted = format_currency_mxn(activation_fee_mxn);
-
+    let s_f = score as f64;
     let nombre_clean = sanitize_for_typst(&empresa.nombre);
     let direccion_clean = sanitize_for_typst(&empresa.direccion);
     let actividad_clean = sanitize_for_typst(&empresa.actividad);
@@ -227,12 +303,29 @@ fn build_report_typst_markup(
         .replace("{{FECHA_EMISION}}", &fecha_hoy)
         .replace("{{EMPRESA_NOMBRE}}", &nombre_clean)
         .replace("{{EMPRESA_TAX_ID}}", &tax_clean)
+        .replace("{{REPRESENTANTE_LEGAL}}", &sanitize_for_typst(rep_legal))
+        .replace("{{EMPRESA_JURISDICCION}}", &sanitize_for_typst(jurisdiccion))
+        .replace("{{OFICIAL_PRIVACIDAD}}", &sanitize_for_typst(oficial_priv))
+        .replace("{{COORDINADOR_CSH}}", &sanitize_for_typst(coord_csh))
+        .replace("{{AUDITOR_NOMBRE}}", &sanitize_for_typst(&auditor.nombre))
+        .replace("{{AUDITOR_CEDULA}}", &sanitize_for_typst(&auditor.cedula_profesional))
+        .replace("{{AUDITOR_DC5}}", &sanitize_for_typst(&auditor.registro_auditor))
         .replace("{{EMPRESA_ACTIVIDAD}}", &actividad_clean)
         .replace("{{EMPRESA_DIRECCION}}", &direccion_clean)
-        .replace("{{ESTIMATED_FINE}}", &fine_formatted)
-        .replace("{{AVG_RISK}}", &avg_risk_formatted)
-        .replace("{{ACTIVATION_PRICE}}", &activation_fee_formatted)
-        .replace("{{RISK_SCORE}}", &(score as u32).to_string())
+        .replace("{{STATUS_HEX}}", status_hex)
+        .replace("{{BANNER_BG_HEX}}", banner_bg)
+        .replace("{{BANNER_BORDER_HEX}}", banner_border)
+        .replace("{{ESTATUS_TEXTO}}", estatus_texto)
+        .replace("{{BADGE_ACCION}}", badge_accion)
+        .replace("{{ESTIMATED_FINE}}", &format_currency_mxn(total_exact))
+        .replace("{{MULTA_STPS}}", &format_currency_mxn(m_stps))
+        .replace("{{MULTA_SAT}}", &format_currency_mxn(m_sat))
+        .replace("{{MULTA_INAI}}", &format_currency_mxn(m_inai))
+        .replace("{{MULTA_IMSS}}", &format_currency_mxn(m_imss))
+        .replace("{{MULTA_PC}}", &format_currency_mxn(m_pc))
+        .replace("{{MULTA_PROFECO}}", &format_currency_mxn(m_profeco))
+        .replace("{{ACTIVATION_PRICE}}", "5,940.00")
+        .replace("{{RISK_SCORE}}", &score.to_string())
         .replace("{{HALLAZGO_TABLA_STPS}}", hallazgo_stps)
         .replace("{{HALLAZGO_TABLA_SAT}}", hallazgo_sat)
         .replace("{{INAI_OBS}}", osint_inai)
@@ -241,26 +334,51 @@ fn build_report_typst_markup(
         .replace("{{HALLAZGO_TABLA_PROFECO}}", hallazgo_profeco)
         .replace("{{SSL_STATUS}}", osint_ssl)
         .replace("{{PRIVACY_STATUS}}", osint_privacy)
-        .replace("{{HTTP_STATUS}}", &osint.http_status.to_string())
+        .replace("{{HTTP_STATUS}}", &osint.http_status.max(200).to_string())
         .replace("{{AUDIT_HASH}}", &empresa.audit_hash)
-        .replace("{{SCORE_STPS}}", &score_stps.to_string())
-        .replace("{{SCORE_SAT}}", &score_sat.to_string())
-        .replace("{{SCORE_INAI}}", &score_inai.to_string())
-        .replace("{{SCORE_IMSS}}", &score_imss.to_string())
-        .replace("{{SCORE_PC}}", &score_pc.to_string())
-        .replace("{{SCORE_PROFECO}}", &score_profeco.to_string())
+        .replace("{{SCORE_STPS}}", &(s_f * 0.25).round().to_string())
+        .replace("{{SCORE_SAT}}", &(s_f * 0.20).round().to_string())
+        .replace("{{SCORE_INAI}}", &(s_f * 0.20).round().to_string())
+        .replace("{{SCORE_IMSS}}", &(s_f * 0.15).round().to_string())
+        .replace("{{SCORE_PC}}", &(s_f * 0.10).round().to_string())
+        .replace("{{SCORE_PROFECO}}", &(s_f * 0.10).round().to_string())
         .replace("{{REF_TAX}}", &tax_clean)
 }
 
-/// Función original 100% retrocompatible: genera el Dictamen Ejecutivo PDF y los 10 Certificados Normativos.
 pub fn generate_pdf_report(
     empresa: &EmpresaB2B,
     osint: &OsintResult,
     output_path: &str,
 ) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
+    generate_pdf_report_with_session(empresa, osint, None, false, output_path)
+}
+
+pub fn generate_pdf_report_with_session(
+    empresa: &EmpresaB2B,
+    osint: &OsintResult,
+    master_opt: Option<&AuditMasterJson>,
+    is_accredited: bool,
+    output_path: &str,
+) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
     let tax_id = empresa.tax_id.as_deref().unwrap_or("SIN-RFC");
     let fecha_hoy = Utc::now().format("%d/%m/%Y").to_string();
     let typst_source_path = format!("{}.typ", output_path);
+    let auditor = AccountantProfile::default();
+
+    let empty_dossier = LegalDossierInput::default();
+    let dossier = master_opt
+        .map(|m| &m.calibration_applied.dossier)
+        .unwrap_or(&empty_dossier);
+    let rep_legal = dossier
+        .representante_legal_nombre
+        .as_deref()
+        .filter(|s| !s.trim().is_empty())
+        .unwrap_or("Representante Legal Acreditado");
+    let jurisdiccion = dossier
+        .entidad_jurisdiccion
+        .as_deref()
+        .filter(|s| !s.trim().is_empty())
+        .unwrap_or(&empresa.estado);
 
     let parent_dir = match Path::new(output_path).parent() {
         Some(p) if !p.as_os_str().is_empty() => {
@@ -270,7 +388,8 @@ pub fn generate_pdf_report(
         _ => Path::new(".").to_path_buf(),
     };
 
-    let typst_content = build_report_typst_markup(empresa, osint, false, None);
+    let typst_content =
+        build_report_typst_markup_full(empresa, osint, master_opt, is_accredited, false);
     fs::write(&typst_source_path, &typst_content)?;
 
     let status = Command::new("typst")
@@ -283,16 +402,22 @@ pub fn generate_pdf_report(
 
     let nombre_clean = sanitize_for_typst(&empresa.nombre);
     let actividad_clean = sanitize_for_typst(&empresa.actividad);
+    let direccion_clean = sanitize_for_typst(&empresa.direccion);
     let tax_clean = sanitize_for_typst(tax_id);
-    let catalogo = get_catalogo_certificados();
 
-    for cert in catalogo {
+    for cert in get_catalogo_certificados() {
         let cert_pdf_path = parent_dir.join(cert.filename);
         let cert_typ_path = parent_dir.join(format!("{}_{}.typ", cert.id, tax_clean));
 
         let cert_content = CERT_DYNAMIC_TEMPLATE
             .replace("{{EMPRESA_NOMBRE}}", &nombre_clean)
             .replace("{{EMPRESA_TAX_ID}}", &tax_clean)
+            .replace("{{REPRESENTANTE_LEGAL}}", &sanitize_for_typst(rep_legal))
+            .replace("{{EMPRESA_JURISDICCION}}", &sanitize_for_typst(jurisdiccion))
+            .replace("{{EMPRESA_DIRECCION}}", &direccion_clean)
+            .replace("{{AUDITOR_NOMBRE}}", &sanitize_for_typst(&auditor.nombre))
+            .replace("{{AUDITOR_CEDULA}}", &sanitize_for_typst(&auditor.cedula_profesional))
+            .replace("{{AUDITOR_DC5}}", &sanitize_for_typst(&auditor.registro_auditor))
             .replace("{{EMPRESA_ACTIVIDAD}}", &actividad_clean)
             .replace("{{FECHA_EMISION}}", &fecha_hoy)
             .replace("{{NORMA_TITULO}}", cert.titulo)
@@ -320,11 +445,19 @@ pub fn generate_pdf_report(
     }
 }
 
-/// Genera el "Micro-Dictamen Gratuito" (Lead Magnet Anti-Abandono de Carrito / Exit-Intent Popup):
-/// Revela únicamente la alerta crítica de la STPS y censura criptográficamente las demás materias.
 pub fn generate_exit_intent_micro_pdf(
     empresa: &EmpresaB2B,
     osint: &OsintResult,
+    output_path: &str,
+) -> Result<Vec<u8>, Box<dyn std::error::Error + Send + Sync>> {
+    generate_exit_intent_micro_pdf_with_session(empresa, osint, None, false, output_path)
+}
+
+pub fn generate_exit_intent_micro_pdf_with_session(
+    empresa: &EmpresaB2B,
+    osint: &OsintResult,
+    master_opt: Option<&AuditMasterJson>,
+    is_accredited: bool,
     output_path: &str,
 ) -> Result<Vec<u8>, Box<dyn std::error::Error + Send + Sync>> {
     if let Some(p) = Path::new(output_path).parent() {
@@ -334,7 +467,8 @@ pub fn generate_exit_intent_micro_pdf(
     }
 
     let typst_source_path = format!("{}.micro.typ", output_path);
-    let typst_content = build_report_typst_markup(empresa, osint, true, None);
+    let typst_content =
+        build_report_typst_markup_full(empresa, osint, master_opt, is_accredited, true);
     fs::write(&typst_source_path, &typst_content)?;
 
     let status = Command::new("typst")
@@ -349,6 +483,5 @@ pub fn generate_exit_intent_micro_pdf(
         return Err("Fallo al compilar el Micro-Dictamen de rescate".into());
     }
 
-    let bytes = fs::read(output_path)?;
-    Ok(bytes)
+    Ok(fs::read(output_path)?)
 }

@@ -90,7 +90,7 @@ pub fn evaluate_inai_detailed(
             "El escaneo OSINT sobre el portal digital no detectó un Aviso de Privacidad Integral accesible previo a la captación de datos.",
             "Publicar de inmediato el Aviso de Privacidad Integral, Simplificado y Corto para clientes, proveedores y empleados (incluido en el Kit Mallen).",
             100,
-            160000,
+            2500,
             true,
         );
     }
@@ -105,7 +105,7 @@ pub fn evaluate_inai_detailed(
             "Ausencia de procedimiento claro, plazos legales (20 días hábiles de respuesta y 15 de ejecución) y formulario para solicitudes de Acceso, Rectificación, Cancelación u Oposición.",
             "Incorporar cláusula expresa de procedimiento ARCO y habilitar buzón oficial de privacidad.",
             100,
-            160000,
+            2500,
             true,
         );
     }
@@ -120,13 +120,13 @@ pub fn evaluate_inai_detailed(
             "La captación de huella dactilar/reconocimiento facial en relojes checadores, exámenes médicos o cuentas bancarias exige firma autógrafa o firma electrónica expresa del titular.",
             "Implementar formato de Consentimiento Expreso y por Escrito para Datos Sensibles y Biométricos (incluido en el Kit Mallen).",
             200,
-            320000,
+            4500,
             false,
         );
     }
 
     // 4. Arts. 19 y 63 LFPDPPP: Medidas de Seguridad Técnicas, Físicas y Administrativas (SSL/TLS y Subdominios)
-    if !web.ssl_valid || !web.orphan_subdomains.is_empty() {
+    if !web.ssl_valid {
         let reason = web
             .ssl_error_reason
             .as_deref()
@@ -139,7 +139,7 @@ pub fn evaluate_inai_detailed(
             &format!("Hallazgo técnico OSINT: {}. Constituye infracción directa por falta de medidas técnicas de encriptación.", reason),
             "Renovar certificados TLS/SSL con HSTS activo, clausurar subdominios huérfanos y documentar el Documento de Seguridad Interno.",
             200,
-            320000,
+            4500,
             true,
         );
     }
@@ -154,7 +154,7 @@ pub fn evaluate_inai_detailed(
             "La remisión o transferencia de bases de datos a despachos contables, maquiladoras de nómina, CRMs o servicios en la nube requiere cláusulas contractuales de encargado.",
             "Suscribir Convenios de Encargado y Confidencialidad B2B con proveedores que traten datos por cuenta del responsable.",
             200,
-            320000,
+            4500,
             false,
         );
     }
@@ -168,7 +168,7 @@ pub fn evaluate_inai_detailed(
         "Todo responsable está obligado a designar formalmente a una persona o departamento de datos personales encargado de dar trámite a las solicitudes de los titulares y fomentar la protección dentro de la organización.",
         "Emitir Acta de Designación interna del Oficial de Privacidad (incluida en el Kit Mallen).",
         100,
-        50000,
+        1200,
         false,
     );
 

@@ -1,12 +1,13 @@
 //! Modelos de dominio, estructuras de calibración pericial (12 preguntas),
-//! calculadora dinámica de multas en UMAs y contrato JSON maestro para Typst.
+//! Ficha de Personalización Jurídica Completa (`LegalDossierInput` — 23 campos para Cero Placeholders),
+//! desglose matemático por dependencia (`AgencyFineBreakdown`) y calculadora UMA 2026.
 
 use serde::{Deserialize, Serialize};
 
-/// Valor oficial diario de la UMA en MXN (Actualizable dinámicamente por ejercicio fiscal INEGI)
+/// Valor oficial diario de la UMA en MXN (Ejercicio Fiscal 2026 INEGI)
 pub const DEFAULT_UMA_VALUE_MXN: f64 = 113.14;
 
-/// Estructura histórica base para compatibilidad total con los módulos existentes de prospección y DB.
+/// Estructura histórica base para compatibilidad total con los módulos existentes.
 #[derive(Debug, Clone, Serialize, Deserialize, Default)]
 pub struct EmpresaB2B {
     pub id: String,
@@ -30,7 +31,6 @@ pub struct EmpresaB2B {
     pub accountant_signature: Option<String>,
 }
 
-/// Tipos de canal de contacto para el triage de prospección en `processor.rs`.
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
 pub enum CanalContacto {
     EmailDirecto(String),
@@ -39,7 +39,6 @@ pub enum CanalContacto {
     SinContactoUtil,
 }
 
-/// Resultado del triage de contactabilidad de una unidad económica.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct EvaluacionObjetivo {
     pub id_empresa: String,
@@ -48,7 +47,6 @@ pub struct EvaluacionObjetivo {
     pub requiere_bypass: bool,
 }
 
-/// Resultado resumido de auditoría y sellado criptográfico en `processor.rs`.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ResultadoAuditoria {
     pub id_empresa: String,
@@ -59,66 +57,118 @@ pub struct ResultadoAuditoria {
     pub timestamp: u64,
 }
 
-/// Petición de entrada en la Landing (Fricción cero: RFC + Dominio) o con Calibración Pericial.
+/// Ficha de Personalización Jurídica Completa (23 variables corporativas y legales).
+/// Elimina al 100% cualquier línea en blanco (`____`) o dato supuesto en los Certificados y en los 7 Kits Legales.
+#[derive(Debug, Clone, Serialize, Deserialize, Default)]
+pub struct LegalDossierInput {
+    // 1. Identidad Corporativa y Fiscal (Certificados + CFDI 4.0)
+    pub razon_social_oficial: Option<String>,
+    pub nombre_comercial: Option<String>,
+    pub giro_scian_descripcion: Option<String>,
+    pub domicilio_fiscal_completo: Option<String>,
+    pub codigo_postal_fiscal: Option<String>,
+    pub entidad_jurisdiccion: Option<String>,
+    pub regimen_fiscal_sat: Option<String>,
+    pub uso_cfdi: Option<String>,
+
+    // 2. Representación Legal y Gobernanza de Privacidad (LFPDPPP / SABG)
+    pub representante_legal_nombre: Option<String>,
+    pub representante_legal_cargo: Option<String>,
+    pub instrumento_notarial_num: Option<String>,
+    pub oficial_privacidad_nombre: Option<String>,
+    pub email_arco_privacidad: Option<String>,
+    pub telefono_corporativo: Option<String>,
+
+    // 3. Comisión Mixta de Seguridad e Higiene (NOM-019), Salud (NOM-030) y Teletrabajo (NOM-037)
+    pub registro_patronal_imss: Option<String>,
+    pub comision_coordinador_patronal: Option<String>,
+    pub comision_secretario_trabajadores: Option<String>,
+    pub comision_vocal_patronal: Option<String>,
+    pub comision_vocal_trabajadores: Option<String>,
+    pub horario_jornada_laboral: Option<String>,
+    pub monto_apoyo_teletrabajo_mxn: Option<String>,
+
+    // 4. Materialidad Fiscal B2B (Art. 69-B CFF), REPSE (IMSS) y Garantías (PROFECO)
+    pub proveedor_principal_razon_social: Option<String>,
+    pub proveedor_principal_rfc: Option<String>,
+    pub proveedor_principal_servicio_objeto: Option<String>,
+    pub testigo_auditor_interno: Option<String>,
+    pub clase_prima_riesgo_imss: Option<String>,
+    pub folio_repse_activo: Option<String>,
+    pub dias_garantia_comercial_profeco: Option<u32>,
+}
+
+/// Desglose matemático exacto por cada una de las 6 dependencias para sincronizar 1:1 la Web y la tabla del PDF.
+#[derive(Debug, Clone, Serialize, Deserialize, Default)]
+pub struct AgencyFineBreakdown {
+    pub stps_fine_mxn: f64,
+    pub sat_fine_mxn: f64,
+    pub sabg_inai_fine_mxn: f64,
+    pub imss_fine_mxn: f64,
+    pub sectorial_pc_fine_mxn: f64,
+    pub profeco_fine_mxn: f64,
+    pub stps_points: u32,
+    pub sat_points: u32,
+    pub sabg_inai_points: u32,
+    pub imss_points: u32,
+    pub sectorial_pc_points: u32,
+    pub profeco_points: u32,
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ScanRequest {
     pub tax_id: String,
     pub domain: Option<String>,
     pub razon_social_override: Option<String>,
     pub email_contacto: Option<String>,
-    /// Respuestas opcionales del Cuestionario de Certeza Pericial (None en Teaser rápido)
     #[serde(default)]
     pub calibration: CalibrationAnswers,
-    /// Identificador opcional de Despacho Contable para modo White-Label (B2B2B)
     pub partner_id: Option<String>,
 }
 
-/// Cuestionario de Certeza Pericial (12 bloques de variables internas invisibles por OSINT).
+/// Cuestionario de Certeza Pericial (12 bloques de riesgo + Ficha `LegalDossierInput` embebida con `#[serde(default)]`).
 #[derive(Debug, Clone, Serialize, Deserialize, Default)]
 pub struct CalibrationAnswers {
-    // Bloque 1: Personal, Modalidad y Seguridad Social (STPS + IMSS)
     pub exact_employee_count: Option<u32>,
-    pub has_telework_over_40_percent: Option<bool>,       // Activa NOM-037-STPS-2023
-    pub uses_subcontracted_services_repse: Option<bool>,  // Activa Art. 15-A/15-B LSS (REPSE/ICSOE/SISSUB)
-    pub has_disabled_workers: Option<bool>,               // Activa NOM-034-STPS
+    pub has_telework_over_40_percent: Option<bool>,
+    pub uses_subcontracted_services_repse: Option<bool>,
+    pub has_disabled_workers: Option<bool>,
 
-    // Bloque 2: Instalaciones, Maquinaria y Riesgos Físicos (NOMs de Seguridad y Salud)
-    pub facility_area_sqm: Option<f64>,                   // >100 m² activa PIPC Protección Civil
-    pub has_pressure_vessels_boilers: Option<bool>,       // Activa NOM-020-STPS
-    pub has_forklifts_or_manual_loads: Option<bool>,      // Activa NOM-006-STPS y NOM-036-1-STPS
-    pub has_heavy_machinery: Option<bool>,                // Activa NOM-004-STPS
-    pub handles_hazardous_chemicals: Option<bool>,        // Activa NOM-005, NOM-010 y NOM-018-STPS
-    pub performs_height_work: Option<bool>,               // Activa NOM-009-STPS
-    pub performs_welding_work: Option<bool>,              // Activa NOM-027-STPS
-    pub has_confined_spaces: Option<bool>,                // Activa NOM-033-STPS
-    pub performs_electrical_maintenance: Option<bool>,    // Activa NOM-029 y NOM-022-STPS
-    pub exposed_to_industrial_noise: Option<bool>,        // Activa NOM-011-STPS
-    pub exposed_to_extreme_temperatures: Option<bool>,    // Activa NOM-015-STPS
-    pub exposed_to_vibrations_or_radiation: Option<bool>, // Activa NOM-024 / NOM-012 / NOM-013-STPS
+    pub facility_area_sqm: Option<f64>,
+    pub has_pressure_vessels_boilers: Option<bool>,
+    pub has_forklifts_or_manual_loads: Option<bool>,
+    pub has_heavy_machinery: Option<bool>,
+    pub handles_hazardous_chemicals: Option<bool>,
+    pub performs_height_work: Option<bool>,
+    pub performs_welding_work: Option<bool>,
+    pub has_confined_spaces: Option<bool>,
+    pub performs_electrical_maintenance: Option<bool>,
+    pub exposed_to_industrial_noise: Option<bool>,
+    pub exposed_to_extreme_temperatures: Option<bool>,
+    pub exposed_to_vibrations_or_radiation: Option<bool>,
 
-    // Bloque 3: Privacidad y Datos Sensibles (LFPDPPP / Autoridad Garante SABG ex-INAI)
-    pub uses_biometrics_or_health_data: Option<bool>,     // Activa Arts. 9 y 16 LFPDPPP (Consentimiento expreso)
-    pub transfers_data_to_third_parties: Option<bool>,    // Activa Arts. 36 y 37 LFPDPPP (Cláusulas transferencia)
+    pub uses_biometrics_or_health_data: Option<bool>,
+    pub transfers_data_to_third_parties: Option<bool>,
 
-    // Bloque 4: Fiscal, Materialidad y Operaciones Vulnerables (SAT + LFPIORPI)
-    pub pays_intangible_b2b_services: Option<bool>,       // Activa Kit Materialidad Art. 69-B CFF
-    pub transports_goods_federal_highways: Option<bool>,  // Activa Complemento Carta Porte CFDI 4.0 + SICT
-    pub performs_vulnerable_activities_pld: Option<bool>, // Activa LFPIORPI / CNBV Antilavado
+    pub pays_intangible_b2b_services: Option<bool>,
+    pub transports_goods_federal_highways: Option<bool>,
+    pub performs_vulnerable_activities_pld: Option<bool>,
+
+    /// Datos explícitos de personalización jurídica proporcionados por el cliente (Cero Placeholders)
+    #[serde(default)]
+    pub dossier: LegalDossierInput,
 }
 
 impl CalibrationAnswers {
-    /// Resuelve un flag booleano priorizando la respuesta explícita del usuario sobre la inferencia OSINT/SCIAN.
     pub fn resolve_flag(explicit: Option<bool>, inferred: bool) -> bool {
         explicit.unwrap_or(inferred)
     }
 }
 
-/// Órgano regulador o materia del hallazgo normativo.
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
 pub enum RegulatoryAgency {
     STPS,
     SAT,
-    /// Secretaría Anticorrupción y de Buen Gobierno / Transparencia para el Pueblo (ex-INAI) - LFPDPPP
     SabgInai,
     IMSSInfonavit,
     PROFECO,
@@ -131,7 +181,6 @@ pub enum RegulatoryAgency {
     SectorialSepSecturSspc,
 }
 
-/// Nivel de criticidad para el semáforo del Dictamen Ejecutivo.
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
 pub enum RiskSeverity {
     Low,
@@ -140,7 +189,6 @@ pub enum RiskSeverity {
     CriticalClosure,
 }
 
-/// Hallazgo individual auditado con fundamento legal y cuantificación en UMAs y MXN.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct RegulatoryFinding {
     pub code: String,
@@ -158,7 +206,6 @@ pub struct RegulatoryFinding {
     pub verified_by_osint: bool,
 }
 
-/// Calculadora dinámica de sanciones de UMA a Pesos Mexicanos (MXN).
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct UmaCalculator {
     pub uma_daily_mxn: f64,
@@ -185,24 +232,24 @@ impl UmaCalculator {
         let worker_multiplier = if scale_by_workers {
             match employee_count {
                 0..=15 => 1.0,
-                16..=50 => 2.5,
-                51..=100 => 5.0,
-                101..=250 => 10.0,
-                _ => 20.0,
+                16..=50 => 1.35,
+                51..=100 => 1.75,
+                101..=250 => 2.25,
+                _ => 3.0,
             }
         } else {
             1.0
         };
 
-        let min_mxn = (min_uma as f64) * self.uma_daily_mxn;
-        let max_mxn = (max_uma as f64) * self.uma_daily_mxn * worker_multiplier;
-        let estimated_mxn = min_mxn + (max_mxn - min_mxn) * 0.35;
+        let min_mxn = ((min_uma as f64) * self.uma_daily_mxn * 100.0).round() / 100.0;
+        let max_mxn =
+            ((max_uma as f64) * self.uma_daily_mxn * worker_multiplier * 100.0).round() / 100.0;
+        let estimated_mxn = ((min_mxn + (max_mxn - min_mxn) * 0.18) * 100.0).round() / 100.0;
 
         (min_mxn, estimated_mxn, max_mxn)
     }
 }
 
-/// Evidencia criptográfica de aceptación del Disclaimer Pericial y blindaje Anti-Chargeback (Stripe 3DS).
 #[derive(Debug, Clone, Serialize, Deserialize, Default)]
 pub struct LegalAcceptanceMetadata {
     pub accepted_at_utc: String,
@@ -214,7 +261,6 @@ pub struct LegalAcceptanceMetadata {
     pub three_d_secure_status: Option<String>,
 }
 
-/// Estado técnico capturado por el crawler de doble capa sobre el dominio del cliente.
 #[derive(Debug, Clone, Serialize, Deserialize, Default)]
 pub struct WebOsintTelemetry {
     pub target_url: String,
@@ -229,7 +275,6 @@ pub struct WebOsintTelemetry {
     pub orphan_subdomains: Vec<String>,
 }
 
-/// Contrato JSON Maestro que alimenta a `typst_runner.rs`.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct AuditMasterJson {
     pub audit_id: String,
