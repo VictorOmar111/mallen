@@ -10,11 +10,7 @@ body {
     overflow-x: hidden;
 }
 
-/* ==========================================================================
-   ESCENAS DE FONDO DIFERENCIADAS PARA CADA PÁGINA DEL FLUJO
-   ========================================================================== */
-
-/* Escena 1 (Portada Principal /): Retícula Arquitectónica + Prisma Multi-Vector */
+/* Fondo estático pre-renderizado en una sola textura de GPU */
 body::before {
     content: "";
     position: fixed;
@@ -22,10 +18,10 @@ body::before {
     z-index: 0;
     pointer-events: none;
     background:
-        radial-gradient(620px circle at 14% 15%, rgba(59, 130, 246, 0.16), transparent 70%),
-        radial-gradient(600px circle at 86% 22%, rgba(168, 85, 247, 0.15), transparent 70%),
-        radial-gradient(650px circle at 50% 60%, rgba(6, 182, 212, 0.12), transparent 72%),
-        radial-gradient(600px circle at 20% 88%, rgba(245, 158, 11, 0.12), transparent 70%);
+        radial-gradient(600px circle at 14% 15%, rgba(59, 130, 246, 0.15), transparent 70%),
+        radial-gradient(580px circle at 86% 22%, rgba(168, 85, 247, 0.14), transparent 70%),
+        radial-gradient(620px circle at 50% 60%, rgba(6, 182, 212, 0.11), transparent 72%),
+        radial-gradient(580px circle at 20% 88%, rgba(245, 158, 11, 0.11), transparent 70%);
     transform: translateZ(0);
 }
 
@@ -36,86 +32,61 @@ body::after {
     z-index: 0;
     pointer-events: none;
     background-image:
-        linear-gradient(to right, rgba(148, 163, 184, 0.045) 1px, transparent 1px),
-        linear-gradient(to bottom, rgba(148, 163, 184, 0.045) 1px, transparent 1px);
-    background-size: 46px 46px;
+        linear-gradient(to right, rgba(148, 163, 184, 0.04) 1px, transparent 1px),
+        linear-gradient(to bottom, rgba(148, 163, 184, 0.04) 1px, transparent 1px);
+    background-size: 48px 48px;
     transform: translateZ(0);
 }
 
-/* Escena 2 (/verify/*): Matriz Criptográfica de Puntos Merkle */
+/* Escenas por ruta (Sin costo de repintado) */
 body[data-scene="verify"]::before {
     background:
-        radial-gradient(820px circle at 50% 15%, rgba(var(--scene-r), var(--scene-g), var(--scene-b), 0.28), transparent 68%),
-        radial-gradient(620px circle at 15% 80%, rgba(59, 130, 246, 0.18), transparent 70%),
-        radial-gradient(620px circle at 85% 80%, rgba(168, 85, 247, 0.18), transparent 70%);
+        radial-gradient(780px circle at 50% 15%, rgba(var(--scene-r), var(--scene-g), var(--scene-b), 0.24), transparent 68%),
+        radial-gradient(600px circle at 15% 80%, rgba(59, 130, 246, 0.16), transparent 70%);
 }
-
 body[data-scene="verify"]::after {
-    background-image: radial-gradient(rgba(var(--scene-r), var(--scene-g), var(--scene-b), 0.22) 1.25px, transparent 1.25px);
-    background-size: 24px 24px;
+    background-image: radial-gradient(rgba(var(--scene-r), var(--scene-g), var(--scene-b), 0.20) 1.2px, transparent 1.2px);
+    background-size: 26px 26px;
 }
 
-/* Escena 3 (/checkout*): Bóveda Financiera con Haz Diagonal */
 body[data-scene="checkout"]::before {
     background:
-        radial-gradient(850px circle at 50% 10%, rgba(239, 68, 68, 0.20), transparent 62%),
-        radial-gradient(700px circle at 15% 50%, rgba(59, 130, 246, 0.20), transparent 68%),
-        radial-gradient(700px circle at 85% 75%, rgba(168, 85, 247, 0.22), transparent 68%);
+        radial-gradient(800px circle at 50% 10%, rgba(239, 68, 68, 0.18), transparent 62%),
+        radial-gradient(650px circle at 15% 50%, rgba(59, 130, 246, 0.18), transparent 68%),
+        radial-gradient(650px circle at 85% 75%, rgba(168, 85, 247, 0.20), transparent 68%);
 }
 
-body[data-scene="checkout"]::after {
-    background-image:
-        repeating-linear-gradient(
-            -45deg,
-            rgba(255, 255, 255, 0.02) 0px,
-            rgba(255, 255, 255, 0.02) 1px,
-            transparent 1px,
-            transparent 32px
-        );
-}
-
-/* Escena 4 (/normas/*, /validez/*, /terms, /privacy): Horizonte Forense del Color de la Dependencia */
 body[data-scene="forensic"]::before {
     background:
-        radial-gradient(900px circle at 50% 0%, rgba(var(--scene-r), var(--scene-g), var(--scene-b), 0.34), transparent 68%),
-        radial-gradient(680px circle at 85% 80%, rgba(var(--scene-r), var(--scene-g), var(--scene-b), 0.18), transparent 70%);
+        radial-gradient(850px circle at 50% 0%, rgba(var(--scene-r), var(--scene-g), var(--scene-b), 0.30), transparent 68%),
+        radial-gradient(650px circle at 85% 80%, rgba(var(--scene-r), var(--scene-g), var(--scene-b), 0.16), transparent 70%);
 }
 
-body[data-scene="forensic"]::after {
-    background-image:
-        linear-gradient(to right, rgba(var(--scene-r), var(--scene-g), var(--scene-b), 0.06) 1px, transparent 1px),
-        linear-gradient(to bottom, rgba(var(--scene-r), var(--scene-g), var(--scene-b), 0.06) 1px, transparent 1px);
-    background-size: 56px 56px;
-}
-
-/* Escena 5 (/dashboard.html): Tríada B2B2B (Azul / Esmeralda / Morado) */
 body[data-scene="dashboard"]::before {
     background:
-        radial-gradient(620px circle at 18% 35%, rgba(59, 130, 246, 0.26), transparent 68%),
-        radial-gradient(620px circle at 50% 35%, rgba(16, 185, 129, 0.22), transparent 68%),
-        radial-gradient(620px circle at 82% 35%, rgba(168, 85, 247, 0.28), transparent 68%);
+        radial-gradient(600px circle at 18% 35%, rgba(59, 130, 246, 0.24), transparent 68%),
+        radial-gradient(600px circle at 50% 35%, rgba(16, 185, 129, 0.20), transparent 68%),
+        radial-gradient(600px circle at 82% 35%, rgba(168, 85, 247, 0.24), transparent 68%);
 }
 
-/* ==========================================================================
-   HAZ DE LUZ SUBYACENTE (REFLEJA POR DEBAJO EL COLOR PURO DE LAS LETRAS)
-   ========================================================================== */
+/* Haz de luz en VRAM: Se mueve exclusivamente con translate3d(x, y, 0) a 120 FPS */
 #mallen-wasm-spotlight {
     position: fixed;
     top: 0;
     left: 0;
-    width: 680px;
-    height: 680px;
-    margin-left: -340px;
-    margin-top: -340px;
+    width: 620px;
+    height: 620px;
+    margin-left: -310px;
+    margin-top: -310px;
     border-radius: 9999px;
     pointer-events: none;
     z-index: 0;
     --spot-rgb: 59, 130, 246;
     background: radial-gradient(
         circle,
-        rgba(var(--spot-rgb), 0.30) 0%,
-        rgba(var(--spot-rgb), 0.12) 38%,
-        transparent 70%
+        rgba(var(--spot-rgb), 0.34) 0%,
+        rgba(var(--spot-rgb), 0.14) 38%,
+        transparent 68%
     );
     will-change: transform;
     transform: translate3d(-1000px, -1000px, 0);
@@ -126,35 +97,20 @@ header, section, main, footer, .max-w-7xl, .max-w-5xl, .max-w-4xl, .max-w-3xl {
     z-index: 1;
 }
 
-/* ==========================================================================
-   CUADROS DE CRISTAL CON CONTORNO Y REFLEJO 100% DEL COLOR DE SUS LETRAS
-   ========================================================================== */
+/* Cuadros Translúcidos sin backdrop-filter: dejan pasar el haz inferior con 0 ms de Paint */
 .quantum-card {
     --card-rgb: 59, 130, 246;
     position: relative;
-    background: linear-gradient(145deg, rgba(15, 23, 42, 0.62) 0%, rgba(2, 6, 23, 0.78) 100%) !important;
-    backdrop-filter: blur(16px) !important;
-    -webkit-backdrop-filter: blur(16px) !important;
-    border: 1px solid rgba(var(--card-rgb), 0.22) !important;
+    background: linear-gradient(145deg, rgba(15, 23, 42, 0.56) 0%, rgba(2, 6, 23, 0.74) 100%) !important;
+    border: 1px solid rgba(var(--card-rgb), 0.24) !important;
     box-shadow:
-        0 16px 36px -12px rgba(0, 0, 0, 0.72),
-        0 4px 20px -6px rgba(var(--card-rgb), 0.14),
+        0 14px 32px -10px rgba(0, 0, 0, 0.7),
         inset 0 1px 0 0 rgba(255, 255, 255, 0.14) !important;
-    transition: transform 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease !important;
+    transition: transform 0.18s ease, border-color 0.18s ease, box-shadow 0.18s ease !important;
     overflow: hidden;
 }
 
-.quantum-card:hover {
-    transform: translateY(-2px);
-    border-color: rgba(var(--card-rgb), 0.85) !important;
-    box-shadow:
-        0 24px 48px -12px rgba(2, 6, 23, 0.92),
-        0 14px 42px -4px rgba(var(--card-rgb), 0.55),
-        0 0 28px -4px rgba(var(--card-rgb), 0.45),
-        inset 0 1px 0 0 rgba(var(--card-rgb), 0.55) !important;
-}
-
-/* Reflejo traslúcido por debajo del cuadro en el color exacto de sus letras */
+/* El reflejo del color de las letras se activa por hardware en :hover sin JS en mousemove */
 .quantum-card::before {
     content: "";
     position: absolute;
@@ -162,36 +118,28 @@ header, section, main, footer, .max-w-7xl, .max-w-5xl, .max-w-4xl, .max-w-3xl {
     pointer-events: none;
     border-radius: inherit;
     background: radial-gradient(
-        420px circle at var(--cx, -500px) var(--cy, -500px),
+        circle at 50% 0%,
         rgba(var(--card-rgb), 0.28),
-        rgba(var(--card-rgb), 0.10) 45%,
-        transparent 75%
+        rgba(var(--card-rgb), 0.08) 55%,
+        transparent 80%
     );
-    opacity: var(--card-active, 0);
-    transition: opacity 0.18s ease;
+    opacity: 0;
+    transition: opacity 0.2s ease;
     z-index: 0;
 }
 
-/* Contorno láser del cuadro 100% en el color exacto de sus letras (Cero mezcla verde) */
-.quantum-card::after {
-    content: "";
-    position: absolute;
-    inset: 0;
-    pointer-events: none;
-    border-radius: inherit;
-    padding: 1.5px;
-    background: radial-gradient(
-        290px circle at var(--cx, -500px) var(--cy, -500px),
-        rgba(var(--card-rgb), 1),
-        rgba(var(--card-rgb), 0.75) 45%,
-        transparent 75%
-    );
-    -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
-    -webkit-mask-composite: xor;
-    mask-composite: exclude;
-    opacity: var(--card-active, 0);
-    transition: opacity 0.18s ease;
-    z-index: 2;
+.quantum-card:hover {
+    transform: translateY(-2px);
+    border-color: rgba(var(--card-rgb), 0.92) !important;
+    box-shadow:
+        0 20px 42px -10px rgba(2, 6, 23, 0.9),
+        0 10px 34px -4px rgba(var(--card-rgb), 0.55),
+        0 0 22px -4px rgba(var(--card-rgb), 0.45),
+        inset 0 1px 0 0 rgba(var(--card-rgb), 0.6) !important;
+}
+
+.quantum-card:hover::before {
+    opacity: 1;
 }
 
 .quantum-card > * {
@@ -199,31 +147,30 @@ header, section, main, footer, .max-w-7xl, .max-w-5xl, .max-w-4xl, .max-w-3xl {
     z-index: 1;
 }
 
-/* Consola Principal Translúcida */
+/* Consola Principal sin backdrop-filter ni mutaciones en mousemove */
 .quantum-laser-console {
     --console-rgb: 59, 130, 246;
     position: relative;
-    background: linear-gradient(160deg, rgba(15, 23, 42, 0.68) 0%, rgba(2, 6, 23, 0.84) 100%) !important;
-    backdrop-filter: blur(18px) !important;
-    -webkit-backdrop-filter: blur(18px) !important;
-    border: 1px solid rgba(var(--console-rgb), 0.35) !important;
+    background: linear-gradient(160deg, rgba(15, 23, 42, 0.64) 0%, rgba(2, 6, 23, 0.82) 100%) !important;
+    border: 1px solid rgba(var(--console-rgb), 0.36) !important;
     box-shadow:
-        0 25px 60px -15px rgba(0, 0, 0, 0.85),
-        0 12px 45px -10px rgba(var(--console-rgb), 0.32),
-        inset 0 1px 0 0 rgba(255, 255, 255, 0.22) !important;
+        0 24px 55px -15px rgba(0, 0, 0, 0.85),
+        0 10px 38px -10px rgba(var(--console-rgb), 0.28),
+        inset 0 1px 0 0 rgba(255, 255, 255, 0.20) !important;
+    transition: border-color 0.25s ease, box-shadow 0.25s ease !important;
 }
 
 input:not([type="checkbox"]), textarea {
-    background-color: rgba(2, 6, 23, 0.78) !important;
-    border: 1px solid rgba(255, 255, 255, 0.13) !important;
-    transition: border-color 0.18s ease, box-shadow 0.18s ease !important;
+    background-color: rgba(2, 6, 23, 0.80) !important;
+    border: 1px solid rgba(255, 255, 255, 0.14) !important;
+    transition: border-color 0.15s ease, box-shadow 0.15s ease !important;
 }
 
 input:not([type="checkbox"]):focus, textarea:focus {
-    background-color: rgba(15, 23, 42, 0.92) !important;
-    border-color: rgba(var(--card-rgb, 59, 130, 246), 0.9) !important;
+    background-color: rgba(15, 23, 42, 0.95) !important;
+    border-color: rgba(var(--card-rgb, 59, 130, 246), 0.92) !important;
     box-shadow:
         0 0 0 1px rgba(var(--card-rgb, 59, 130, 246), 0.4),
-        0 0 22px -3px rgba(var(--card-rgb, 59, 130, 246), 0.6) !important;
+        0 0 18px -3px rgba(var(--card-rgb, 59, 130, 246), 0.55) !important;
     outline: none !important;
 }

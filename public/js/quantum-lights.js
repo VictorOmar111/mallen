@@ -1,96 +1,93 @@
 (function () {
     let wasmExports = null;
-    let cachedBoxes = [];
-    let cardsList = [];
     let spotlightEl = null;
     let mainConsoleEl = null;
 
-    let curR = 59, curG = 130, curB = 246;
-    let tgtR = 59, tgtG = 130, tgtB = 246;
-    let defaultR = 59, defaultG = 130, defaultB = 246;
+    let curX = -1000, curY = -1000;
+    let tgtX = -1000, tgtY = -1000;
+    let isAnimating = false;
+    let defaultRgb = '59, 130, 246';
 
     const PALETTE = {
-        red:     { r: 239, g: 68,  b: 68  },
-        purple:  { r: 168, g: 85,  b: 247 },
-        amber:   { r: 245, g: 158, b: 11  },
-        cyan:    { r: 6,   g: 182, b: 212 },
-        teal:    { r: 20,  g: 184, b: 166 },
-        indigo:  { r: 99,  g: 102, b: 241 },
-        sky:     { r: 14,  g: 165, b: 233 },
-        emerald: { r: 16,  g: 185, b: 129 },
-        blue:    { r: 59,  g: 130, b: 246 }
+        red:     '239, 68, 68',
+        purple:  '168, 85, 247',
+        amber:   '245, 158, 11',
+        cyan:    '6, 182, 212',
+        teal:    '20, 184, 166',
+        indigo:  '99, 102, 241',
+        sky:     '14, 165, 233',
+        emerald: '16, 185, 129',
+        blue:    '59, 130, 246'
     };
 
     const COLOR_REGEX = /(?:text|border|bg)-(red|purple|amber|cyan|teal|indigo|sky|emerald|blue)-(?:300|400|500|600|700|800|900)/;
 
     async function loadRustPhotonWasm() {
         try {
-            const response = await fetch('/wasm/photon_engine.wasm?v=2026.9');
+            const response = await fetch('/wasm/photon_engine.wasm?v=2026.10');
             const bytes = await response.arrayBuffer();
             const { instance } = await WebAssembly.instantiate(bytes);
             wasmExports = instance.exports;
         } catch (_) {
             wasmExports = {
-                lerp: (c, t, f) => c + (t - c) * f,
-                dist_sq: (x1, y1, x2, y2) => (x1 - x2) ** 2 + (y1 - y2) ** 2
+                lerp: (c, t, f) => c + (t - c) * f
             };
         }
     }
 
-    // Extrae el color del propio borde del cuadro o de su primer título/etiqueta (sin confundirse con íconos internos)
-    function detectElementPalette(el, fallbackPal) {
+    function detectElementRgb(el, fallback) {
         const ownMatch = (el.className || '').match(COLOR_REGEX);
-        if (ownMatch && PALETTE[ownMatch[1]]) {
-            return PALETTE[ownMatch[1]];
-        }
+        if (ownMatch && PALETTE[ownMatch[1]]) return PALETTE[ownMatch[1]];
+
         const accentChild = el.querySelector(
             '[class*="text-red-"], [class*="text-purple-"], [class*="text-amber-"], [class*="text-cyan-"], [class*="text-teal-"], [class*="text-indigo-"], [class*="text-sky-"], [class*="text-emerald-"], [class*="text-blue-"], [class*="border-red-"], [class*="border-purple-"], [class*="border-amber-"]'
         );
         if (accentChild) {
             const childMatch = (accentChild.className || '').match(COLOR_REGEX);
-            if (childMatch && PALETTE[childMatch[1]]) {
-                return PALETTE[childMatch[1]];
-            }
+            if (childMatch && PALETTE[childMatch[1]]) return PALETTE[childMatch[1]];
         }
-        return fallbackPal || PALETTE.blue;
+        return fallback || PALETTE.blue;
     }
 
     function configurePageScene() {
         const path = window.location.pathname;
         const body = document.body;
-        let scenePal = PALETTE.blue;
 
         if (path.startsWith('/verify')) {
             body.dataset.scene = 'verify';
-            scenePal = body.innerHTML.includes('border-amber-') ? PALETTE.amber : PALETTE.emerald;
+            defaultRgb = body.innerHTML.includes('border-amber-') ? PALETTE.amber : PALETTE.emerald;
         } else if (path.startsWith('/checkout')) {
             body.dataset.scene = 'checkout';
-            scenePal = PALETTE.red;
+            defaultRgb = PALETTE.red;
         } else if (path.startsWith('/dashboard')) {
             body.dataset.scene = 'dashboard';
-            scenePal = PALETTE.purple;
+            defaultRgb = PALETTE.purple;
         } else if (path.startsWith('/normas') || path.startsWith('/validez') || path.startsWith('/terms') || path.startsWith('/privacy')) {
             body.dataset.scene = 'forensic';
-            scenePal = detectElementPalette(body, PALETTE.indigo);
+            defaultRgb = detectElementRgb(body, PALETTE.indigo);
         } else {
             body.dataset.scene = 'home';
-            scenePal = PALETTE.blue;
+            defaultRgb = PALETTE.blue;
         }
 
-        defaultR = scenePal.r;
-        defaultG = scenePal.g;
-        defaultB = scenePal.b;
-        curR = tgtR = defaultR;
-        curG = tgtG = defaultG;
-        curB = tgtB = defaultB;
-
-        document.documentElement.style.setProperty('--scene-r', defaultR);
-        document.documentElement.style.setProperty('--scene-g', defaultG);
-        document.documentElement.style.setProperty('--scene-b', defaultB);
+        const parts = defaultRgb.split(',');
+        document.documentElement.style.setProperty('--scene-r', parts[0].trim());
+        document.documentElement.style.setProperty('--scene-g', parts[1].trim());
+        document.documentElement.style.setProperty('--scene-b', parts[2].trim());
     }
 
-    function registerInteractiveCards() {
-        const pageFallback = { r: defaultR, g: defaultG, b: defaultB };
+    function setSpotlightColor(rgb) {
+        if (spotlightEl && spotlightEl.dataset.rgb !== rgb) {
+            spotlightEl.dataset.rgb = rgb;
+            spotlightEl.style.setProperty('--spot-rgb', rgb);
+        }
+        if (mainConsoleEl && mainConsoleEl.dataset.rgb !== rgb) {
+            mainConsoleEl.dataset.rgb = rgb;
+            mainConsoleEl.style.setProperty('--console-rgb', rgb);
+        }
+    }
+
+    function bindCards() {
         const cardSelectors = [
             'a[href^="/normas/"]',
             'a[href^="/validez/"]',
@@ -106,35 +103,33 @@
             '.max-w-5xl > div.rounded-2xl'
         ];
 
-        cardsList = Array.from(document.querySelectorAll(cardSelectors.join(',')));
-        cardsList.forEach((c) => {
+        const cards = document.querySelectorAll(cardSelectors.join(','));
+        cards.forEach((c) => {
+            if (c.dataset.quantumBound) return;
+            c.dataset.quantumBound = '1';
             c.classList.add('quantum-card');
-            const pal = detectElementPalette(c, pageFallback);
-            c.dataset.r = pal.r;
-            c.dataset.g = pal.g;
-            c.dataset.b = pal.b;
-            c.style.setProperty('--card-rgb', `${pal.r}, ${pal.g}, ${pal.b}`);
+
+            const rgb = detectElementRgb(c, defaultRgb);
+            c.style.setProperty('--card-rgb', rgb);
+
+            // Cambio de color instantáneo solo al entrar/salir del cuadro (Cero costo durante mousemove)
+            c.addEventListener('pointerenter', () => setSpotlightColor(rgb), { passive: true });
+            c.addEventListener('pointerleave', () => setSpotlightColor(defaultRgb), { passive: true });
         });
-        updateGeometryCache();
     }
 
-    function updateGeometryCache() {
-        cachedBoxes = new Array(cardsList.length);
-        for (let i = 0; i < cardsList.length; i++) {
-            const el = cardsList[i];
-            const r = el.getBoundingClientRect();
-            cachedBoxes[i] = {
-                left: r.left,
-                top: r.top,
-                width: r.width,
-                height: r.height,
-                cx: r.left + r.width * 0.5,
-                cy: r.top + r.height * 0.5,
-                r: parseFloat(el.dataset.r || defaultR),
-                g: parseFloat(el.dataset.g || defaultG),
-                b: parseFloat(el.dataset.b || defaultB),
-                active: false
-            };
+    function tickSpotlight() {
+        curX = wasmExports.lerp(curX, tgtX, 0.35);
+        curY = wasmExports.lerp(curY, tgtY, 0.35);
+
+        if (spotlightEl) {
+            spotlightEl.style.transform = `translate3d(${curX.toFixed(1)}px, ${curY.toFixed(1)}px, 0)`;
+        }
+
+        if (Math.abs(tgtX - curX) > 0.5 || Math.abs(tgtY - curY) > 0.5) {
+            requestAnimationFrame(tickSpotlight);
+        } else {
+            isAnimating = false;
         }
     }
 
@@ -144,92 +139,35 @@
 
         spotlightEl = document.createElement('div');
         spotlightEl.id = 'mallen-wasm-spotlight';
-        spotlightEl.style.setProperty('--spot-rgb', `${Math.round(curR)}, ${Math.round(curG)}, ${Math.round(curB)}`);
         document.body.appendChild(spotlightEl);
 
         const consoles = document.querySelectorAll('#express-check > div > div.rounded-2xl, body > div.max-w-3xl.rounded-2xl, body > div.max-w-5xl.rounded-2xl');
         consoles.forEach((con) => {
             con.classList.add('quantum-laser-console');
-            con.style.setProperty('--console-rgb', `${defaultR}, ${defaultG}, ${defaultB}`);
             mainConsoleEl = con;
         });
 
-        registerInteractiveCards();
+        setSpotlightColor(defaultRgb);
+        bindCards();
 
         const liveRes = document.getElementById('live-scan-result');
         if (liveRes) {
-            const obs = new MutationObserver(() => registerInteractiveCards());
+            const obs = new MutationObserver(() => bindCards());
             obs.observe(liveRes, { attributes: true, attributeFilter: ['class'] });
         }
 
-        document.querySelectorAll('details').forEach((det) => {
-            det.addEventListener('toggle', () => setTimeout(updateGeometryCache, 50));
-        });
-
-        window.addEventListener('scroll', updateGeometryCache, { passive: true });
-        window.addEventListener('resize', updateGeometryCache, { passive: true });
-
-        let rafPending = false;
-        const RADIUS_SQ = 380 * 380;
-
-        window.addEventListener('mousemove', (e) => {
-            if (rafPending) return;
-            rafPending = true;
-            const mx = e.clientX;
-            const my = e.clientY;
-
-            requestAnimationFrame(() => {
-                let minD2 = Infinity;
-                let closestBox = null;
-
-                for (let i = 0; i < cachedBoxes.length; i++) {
-                    const box = cachedBoxes[i];
-                    if (box.width === 0) continue;
-                    const d2 = wasmExports.dist_sq(mx, my, box.cx, box.cy);
-
-                    if (d2 < RADIUS_SQ) {
-                        const card = cardsList[i];
-                        card.style.setProperty('--cx', (mx - box.left) + 'px');
-                        card.style.setProperty('--cy', (my - box.top) + 'px');
-                        if (!box.active) {
-                            card.style.setProperty('--card-active', '1');
-                            box.active = true;
-                        }
-                        if (d2 < minD2) {
-                            minD2 = d2;
-                            closestBox = box;
-                        }
-                    } else if (box.active) {
-                        cardsList[i].style.setProperty('--card-active', '0');
-                        box.active = false;
-                    }
-                }
-
-                if (closestBox) {
-                    tgtR = closestBox.r;
-                    tgtG = closestBox.g;
-                    tgtB = closestBox.b;
-                } else {
-                    tgtR = defaultR;
-                    tgtG = defaultG;
-                    tgtB = defaultB;
-                }
-
-                curR = wasmExports.lerp(curR, tgtR, 0.22);
-                curG = wasmExports.lerp(curG, tgtG, 0.22);
-                curB = wasmExports.lerp(curB, tgtB, 0.22);
-
-                const rgbStr = `${Math.round(curR)}, ${Math.round(curG)}, ${Math.round(curB)}`;
-                if (spotlightEl) {
-                    spotlightEl.style.transform = `translate3d(${mx}px, ${my}px, 0)`;
-                    spotlightEl.style.setProperty('--spot-rgb', rgbStr);
-                }
-                if (mainConsoleEl) {
-                    mainConsoleEl.style.setProperty('--console-rgb', rgbStr);
-                }
-
-                rafPending = false;
-            });
+        // En mousemove solo actualizamos las 2 coordenadas numéricas — Cero lecturas ni mutaciones de estilos
+        window.addEventListener('pointermove', (e) => {
+            tgtX = e.clientX;
+            tgtY = e.clientY;
+            if (curX < -500) {
+                curX = tgtX;
+                curY = tgtY;
+            }
+            if (!isAnimating) {
+                isAnimating = true;
+                requestAnimationFrame(tickSpotlight);
+            }
         }, { passive: true });
     }
 

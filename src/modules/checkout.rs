@@ -45,7 +45,7 @@ pub async fn handle_verify(Path(id): Path<String>) -> impl IntoResponse {
     } else {
         format!(
             r#"<div class="flex flex-col sm:flex-row gap-4 justify-center items-center font-sans">
-                <a href="/api/micro_scan/{upper_id}" class="w-full sm:w-auto px-6 py-3.5 rounded-xl bg-white/[0.05] backdrop-blur-2xl shadow-[0_8px_32px_rgba(0,0,0,0.5)] hover:bg-slate-800 text-amber-400 border border-amber-500/40 text-xs font-bold uppercase tracking-wider transition text-center shadow-lg block">
+                <a href="/api/micro_scan/{upper_id}" class="w-full sm:w-auto px-6 py-3.5 rounded-xl bg-white/[0.05] shadow-[0_8px_32px_rgba(0,0,0,0.5)] hover:bg-slate-800 text-amber-400 border border-amber-500/40 text-xs font-bold uppercase tracking-wider transition text-center shadow-lg block">
                     Descargar Pre-Dictamen Preliminar PDF
                 </a>
                 <a href="/checkout?ref={upper_id}" class="w-full sm:w-auto px-6 py-3.5 rounded-xl bg-gradient-to-r from-blue-600 to-emerald-600 hover:from-blue-500 hover:to-emerald-500 text-white text-xs font-bold uppercase tracking-wider transition text-center shadow-lg shadow-emerald-600/20 block">
@@ -63,12 +63,12 @@ pub async fn handle_verify(Path(id): Path<String>) -> impl IntoResponse {
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Cédula de Verificación Oficial | Firma Pericial Mallen</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <link rel="stylesheet" href="/css/quantum-glass.css?v=2026.9">
-    <script src="/js/quantum-lights.js?v=2026.9" defer></script>
+    <link rel="stylesheet" href="/css/quantum-glass.css?v=2026.10">
+    <script src="/js/quantum-lights.js?v=2026.10" defer></script>
 </head>
 <body class="bg-slate-950 text-slate-100 font-serif min-h-screen antialiased flex flex-col justify-between selection:bg-blue-600 selection:text-white">
 
-    <header class="border-b border-white/15 bg-slate-900/60 backdrop-blur-md sticky top-0 z-50">
+    <header class="border-b border-white/15 bg-slate-900/60 sticky top-0 z-50">
         <div class="max-w-4xl mx-auto px-6 py-4 flex flex-col sm:flex-row justify-between items-center gap-2">
             <a href="/" class="flex items-center space-x-3">
                 <div class="w-3 h-3 rounded-full bg-emerald-500 animate-pulse"></div>
@@ -97,7 +97,7 @@ pub async fn handle_verify(Path(id): Path<String>) -> impl IntoResponse {
             </div>
         </div>
 
-        <div class="bg-white/[0.04] backdrop-blur-2xl shadow-[0_8px_32px_rgba(0,0,0,0.5)] border border-white/15 rounded-xl p-6 mb-6 shadow-xl font-sans text-xs">
+        <div class="bg-white/[0.04] shadow-[0_8px_32px_rgba(0,0,0,0.5)] border border-white/15 rounded-xl p-6 mb-6 shadow-xl font-sans text-xs">
             <h3 class="text-sm font-bold text-slate-200 uppercase tracking-wider mb-4 border-b border-white/15 pb-2">
                 Ficha Técnica de la Entidad Dictaminada
             </h3>

@@ -950,11 +950,11 @@ async fn render_checkout_page_with_state(state: Arc<AppState>, raw_ref: String) 
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
     <style>body {{ font-family: 'Inter', sans-serif; }} .font-mono-code {{ font-family: 'JetBrains Mono', monospace; }}</style>
-    <link rel="stylesheet" href="/css/quantum-glass.css?v=2026.9">
-    <script src="/js/quantum-lights.js?v=2026.9" defer></script>
+    <link rel="stylesheet" href="/css/quantum-glass.css?v=2026.10">
+    <script src="/js/quantum-lights.js?v=2026.10" defer></script>
 </head>
 <body class="bg-slate-950 text-slate-100 min-h-screen p-6 flex items-center justify-center selection:bg-blue-600 selection:text-white">
-    <div class="max-w-3xl w-full bg-white/[0.05] backdrop-blur-2xl shadow-[0_8px_32px_rgba(0,0,0,0.5)] border border-white/15 p-8 rounded-2xl font-mono-code text-xs shadow-2xl">
+    <div class="max-w-3xl w-full bg-white/[0.05] shadow-[0_8px_32px_rgba(0,0,0,0.5)] border border-white/15 p-8 rounded-2xl font-mono-code text-xs shadow-2xl">
         <div class="flex justify-between items-center mb-6 pb-4 border-b border-white/15">
             <div>
                 <span class="text-xs font-bold text-blue-400 block uppercase">FIRMA PERICIAL MALLEN • PASARELA CORPORATIVA 3D SECURE</span>
@@ -981,31 +981,31 @@ async fn render_checkout_page_with_state(state: Arc<AppState>, raw_ref: String) 
                 <div class="grid sm:grid-cols-2 gap-3">
                     <div>
                         <label class="text-[10px] text-slate-400 block mb-1">Denominación o Razón Social Oficial</label>
-                        <input id="pay_razon" type="text" required value="{pre_razon}" class="w-full bg-white/[0.05] backdrop-blur-2xl shadow-[0_8px_32px_rgba(0,0,0,0.5)] border border-white/15 rounded-lg px-3.5 py-2.5 text-white">
+                        <input id="pay_razon" type="text" required value="{pre_razon}" class="w-full bg-white/[0.05] shadow-[0_8px_32px_rgba(0,0,0,0.5)] border border-white/15 rounded-lg px-3.5 py-2.5 text-white">
                     </div>
                     <div>
                         <label class="text-[10px] text-slate-400 block mb-1">Giro o Actividad Económica SCIAN</label>
-                        <input id="pay_giro" type="text" required value="{pre_giro}" class="w-full bg-white/[0.05] backdrop-blur-2xl shadow-[0_8px_32px_rgba(0,0,0,0.5)] border border-white/15 rounded-lg px-3.5 py-2.5 text-white">
+                        <input id="pay_giro" type="text" required value="{pre_giro}" class="w-full bg-white/[0.05] shadow-[0_8px_32px_rgba(0,0,0,0.5)] border border-white/15 rounded-lg px-3.5 py-2.5 text-white">
                     </div>
                     <div class="sm:col-span-2">
                         <label class="text-[10px] text-slate-400 block mb-1">Domicilio Fiscal y del Centro de Trabajo</label>
-                        <input id="pay_dom" type="text" required value="{pre_dom}" class="w-full bg-white/[0.05] backdrop-blur-2xl shadow-[0_8px_32px_rgba(0,0,0,0.5)] border border-white/15 rounded-lg px-3.5 py-2.5 text-white">
+                        <input id="pay_dom" type="text" required value="{pre_dom}" class="w-full bg-white/[0.05] shadow-[0_8px_32px_rgba(0,0,0,0.5)] border border-white/15 rounded-lg px-3.5 py-2.5 text-white">
                     </div>
                     <div>
                         <label class="text-[10px] text-slate-400 block mb-1">Código Postal Fiscal (CFDI 4.0)</label>
-                        <input id="pay_cp" type="text" maxlength="5" value="{pre_cp}" class="w-full bg-white/[0.05] backdrop-blur-2xl shadow-[0_8px_32px_rgba(0,0,0,0.5)] border border-white/15 rounded-lg px-3.5 py-2.5 text-white">
+                        <input id="pay_cp" type="text" maxlength="5" value="{pre_cp}" class="w-full bg-white/[0.05] shadow-[0_8px_32px_rgba(0,0,0,0.5)] border border-white/15 rounded-lg px-3.5 py-2.5 text-white">
                     </div>
                     <div>
                         <label class="text-[10px] text-slate-400 block mb-1">Entidad Federativa / Jurisdicción</label>
-                        <input id="pay_estado" type="text" required value="{pre_estado}" class="w-full bg-white/[0.05] backdrop-blur-2xl shadow-[0_8px_32px_rgba(0,0,0,0.5)] border border-white/15 rounded-lg px-3.5 py-2.5 text-white">
+                        <input id="pay_estado" type="text" required value="{pre_estado}" class="w-full bg-white/[0.05] shadow-[0_8px_32px_rgba(0,0,0,0.5)] border border-white/15 rounded-lg px-3.5 py-2.5 text-white">
                     </div>
                     <div>
                         <label class="text-[10px] text-slate-400 block mb-1">Nombre del Representante Legal</label>
-                        <input id="pay_rep" type="text" value="{pre_rep}" class="w-full bg-white/[0.05] backdrop-blur-2xl shadow-[0_8px_32px_rgba(0,0,0,0.5)] border border-white/15 rounded-lg px-3.5 py-2.5 text-white">
+                        <input id="pay_rep" type="text" value="{pre_rep}" class="w-full bg-white/[0.05] shadow-[0_8px_32px_rgba(0,0,0,0.5)] border border-white/15 rounded-lg px-3.5 py-2.5 text-white">
                     </div>
                     <div>
                         <label class="text-[10px] text-slate-400 block mb-1">Cargo Societario del Representante</label>
-                        <input id="pay_cargo" type="text" value="{pre_cargo}" class="w-full bg-white/[0.05] backdrop-blur-2xl shadow-[0_8px_32px_rgba(0,0,0,0.5)] border border-white/15 rounded-lg px-3.5 py-2.5 text-white">
+                        <input id="pay_cargo" type="text" value="{pre_cargo}" class="w-full bg-white/[0.05] shadow-[0_8px_32px_rgba(0,0,0,0.5)] border border-white/15 rounded-lg px-3.5 py-2.5 text-white">
                     </div>
                 </div>
             </div>
@@ -1015,27 +1015,27 @@ async fn render_checkout_page_with_state(state: Arc<AppState>, raw_ref: String) 
                 <div class="grid sm:grid-cols-3 gap-3">
                     <div>
                         <label class="text-[10px] text-slate-400 block mb-1">Oficial de Privacidad (Art. 17)</label>
-                        <input id="pay_oficial" type="text" value="{pre_oficial}" class="w-full bg-white/[0.05] backdrop-blur-2xl shadow-[0_8px_32px_rgba(0,0,0,0.5)] border border-white/15 rounded-lg px-3.5 py-2.5 text-white">
+                        <input id="pay_oficial" type="text" value="{pre_oficial}" class="w-full bg-white/[0.05] shadow-[0_8px_32px_rgba(0,0,0,0.5)] border border-white/15 rounded-lg px-3.5 py-2.5 text-white">
                     </div>
                     <div>
                         <label class="text-[10px] text-slate-400 block mb-1">Correo Derechos ARCO y CFDI</label>
-                        <input id="pay_email" type="email" value="{pre_email}" class="w-full bg-white/[0.05] backdrop-blur-2xl shadow-[0_8px_32px_rgba(0,0,0,0.5)] border border-white/15 rounded-lg px-3.5 py-2.5 text-white">
+                        <input id="pay_email" type="email" value="{pre_email}" class="w-full bg-white/[0.05] shadow-[0_8px_32px_rgba(0,0,0,0.5)] border border-white/15 rounded-lg px-3.5 py-2.5 text-white">
                     </div>
                     <div>
                         <label class="text-[10px] text-slate-400 block mb-1">Teléfono Corporativo</label>
-                        <input id="pay_tel" type="text" value="{pre_tel}" class="w-full bg-white/[0.05] backdrop-blur-2xl shadow-[0_8px_32px_rgba(0,0,0,0.5)] border border-white/15 rounded-lg px-3.5 py-2.5 text-white">
+                        <input id="pay_tel" type="text" value="{pre_tel}" class="w-full bg-white/[0.05] shadow-[0_8px_32px_rgba(0,0,0,0.5)] border border-white/15 rounded-lg px-3.5 py-2.5 text-white">
                     </div>
                     <div>
                         <label class="text-[10px] text-slate-400 block mb-1">Registro Patronal IMSS</label>
-                        <input id="pay_reg_imss" type="text" value="{pre_reg_imss}" class="w-full bg-white/[0.05] backdrop-blur-2xl shadow-[0_8px_32px_rgba(0,0,0,0.5)] border border-white/15 rounded-lg px-3.5 py-2.5 text-white">
+                        <input id="pay_reg_imss" type="text" value="{pre_reg_imss}" class="w-full bg-white/[0.05] shadow-[0_8px_32px_rgba(0,0,0,0.5)] border border-white/15 rounded-lg px-3.5 py-2.5 text-white">
                     </div>
                     <div>
                         <label class="text-[10px] text-slate-400 block mb-1">Coordinador Patronal NOM-019</label>
-                        <input id="pay_coord" type="text" value="{pre_coord}" class="w-full bg-white/[0.05] backdrop-blur-2xl shadow-[0_8px_32px_rgba(0,0,0,0.5)] border border-white/15 rounded-lg px-3.5 py-2.5 text-white">
+                        <input id="pay_coord" type="text" value="{pre_coord}" class="w-full bg-white/[0.05] shadow-[0_8px_32px_rgba(0,0,0,0.5)] border border-white/15 rounded-lg px-3.5 py-2.5 text-white">
                     </div>
                     <div>
                         <label class="text-[10px] text-slate-400 block mb-1">Secretario Trabajadores NOM-019</label>
-                        <input id="pay_sec" type="text" value="{pre_sec}" class="w-full bg-white/[0.05] backdrop-blur-2xl shadow-[0_8px_32px_rgba(0,0,0,0.5)] border border-white/15 rounded-lg px-3.5 py-2.5 text-white">
+                        <input id="pay_sec" type="text" value="{pre_sec}" class="w-full bg-white/[0.05] shadow-[0_8px_32px_rgba(0,0,0,0.5)] border border-white/15 rounded-lg px-3.5 py-2.5 text-white">
                     </div>
                 </div>
             </div>
@@ -1045,15 +1045,15 @@ async fn render_checkout_page_with_state(state: Arc<AppState>, raw_ref: String) 
                 <div class="grid sm:grid-cols-2 gap-3">
                     <div>
                         <label class="text-[10px] text-slate-400 block mb-1">Razón Social del Proveedor</label>
-                        <input id="pay_prov_nom" type="text" value="{pre_prov_nom}" class="w-full bg-white/[0.05] backdrop-blur-2xl shadow-[0_8px_32px_rgba(0,0,0,0.5)] border border-white/15 rounded-lg px-3.5 py-2.5 text-white">
+                        <input id="pay_prov_nom" type="text" value="{pre_prov_nom}" class="w-full bg-white/[0.05] shadow-[0_8px_32px_rgba(0,0,0,0.5)] border border-white/15 rounded-lg px-3.5 py-2.5 text-white">
                     </div>
                     <div>
                         <label class="text-[10px] text-slate-400 block mb-1">RFC del Proveedor</label>
-                        <input id="pay_prov_rfc" type="text" value="{pre_prov_rfc}" class="w-full bg-white/[0.05] backdrop-blur-2xl shadow-[0_8px_32px_rgba(0,0,0,0.5)] border border-white/15 rounded-lg px-3.5 py-2.5 text-white">
+                        <input id="pay_prov_rfc" type="text" value="{pre_prov_rfc}" class="w-full bg-white/[0.05] shadow-[0_8px_32px_rgba(0,0,0,0.5)] border border-white/15 rounded-lg px-3.5 py-2.5 text-white">
                     </div>
                     <div class="sm:col-span-2">
                         <label class="text-[10px] text-slate-400 block mb-1">Objeto del Servicio / Entregable Auditado (Art. 5-A y 69-B CFF)</label>
-                        <input id="pay_prov_obj" type="text" value="{pre_prov_obj}" class="w-full bg-white/[0.05] backdrop-blur-2xl shadow-[0_8px_32px_rgba(0,0,0,0.5)] border border-white/15 rounded-lg px-3.5 py-2.5 text-white">
+                        <input id="pay_prov_obj" type="text" value="{pre_prov_obj}" class="w-full bg-white/[0.05] shadow-[0_8px_32px_rgba(0,0,0,0.5)] border border-white/15 rounded-lg px-3.5 py-2.5 text-white">
                     </div>
                 </div>
             </div>
@@ -1063,10 +1063,10 @@ async fn render_checkout_page_with_state(state: Arc<AppState>, raw_ref: String) 
                     <span class="text-[10px] font-bold text-blue-400 uppercase">Método de Pago Corporativo (Tokenización TLS 1.3 / 3DS)</span>
                     <span class="text-[10px] text-emerald-400 font-bold">Estándar PCI-DSS Nivel 1</span>
                 </div>
-                <input type="text" required value="4242 •••• •••• 4242" class="w-full bg-white/[0.05] backdrop-blur-2xl shadow-[0_8px_32px_rgba(0,0,0,0.5)] border border-white/15 rounded-lg px-3.5 py-2.5 text-white">
+                <input type="text" required value="4242 •••• •••• 4242" class="w-full bg-white/[0.05] shadow-[0_8px_32px_rgba(0,0,0,0.5)] border border-white/15 rounded-lg px-3.5 py-2.5 text-white">
                 <div class="grid grid-cols-2 gap-3">
-                    <input type="text" required value="12/28" class="bg-white/[0.05] backdrop-blur-2xl shadow-[0_8px_32px_rgba(0,0,0,0.5)] border border-white/15 rounded-lg px-3.5 py-2.5 text-white">
-                    <input type="password" required value="888" class="bg-white/[0.05] backdrop-blur-2xl shadow-[0_8px_32px_rgba(0,0,0,0.5)] border border-white/15 rounded-lg px-3.5 py-2.5 text-white">
+                    <input type="text" required value="12/28" class="bg-white/[0.05] shadow-[0_8px_32px_rgba(0,0,0,0.5)] border border-white/15 rounded-lg px-3.5 py-2.5 text-white">
+                    <input type="password" required value="888" class="bg-white/[0.05] shadow-[0_8px_32px_rgba(0,0,0,0.5)] border border-white/15 rounded-lg px-3.5 py-2.5 text-white">
                 </div>
             </div>
 
@@ -1371,11 +1371,11 @@ async fn handle_privacy() -> impl IntoResponse {
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
     <style>body { font-family: 'Inter', sans-serif; background-color: #020617; background-image: radial-gradient(at 12% 12%, rgba(37, 99, 235, 0.32) 0px, transparent 48%), radial-gradient(at 88% 18%, rgba(16, 185, 129, 0.25) 0px, transparent 48%), radial-gradient(at 50% 82%, rgba(99, 102, 241, 0.28) 0px, transparent 52%); background-attachment: fixed; } .font-mono-code { font-family: 'JetBrains Mono', monospace; }</style>
-    <link rel="stylesheet" href="/css/quantum-glass.css?v=2026.9">
-    <script src="/js/quantum-lights.js?v=2026.9" defer></script>
+    <link rel="stylesheet" href="/css/quantum-glass.css?v=2026.10">
+    <script src="/js/quantum-lights.js?v=2026.10" defer></script>
 </head>
 <body class="bg-slate-950 text-slate-300 min-h-screen p-6 md:p-12 border-t-4 border-blue-600">
-    <div class="max-w-4xl mx-auto bg-white/[0.05] backdrop-blur-2xl shadow-[0_8px_32px_rgba(0,0,0,0.5)] border border-white/15 p-8 md:p-12 shadow-2xl rounded-2xl">
+    <div class="max-w-4xl mx-auto bg-white/[0.05] shadow-[0_8px_32px_rgba(0,0,0,0.5)] border border-white/15 p-8 md:p-12 shadow-2xl rounded-2xl">
         <div class="flex items-center justify-between pb-6 mb-8 border-b border-white/15">
             <div>
                 <span class="text-xs font-bold text-blue-400 font-mono-code uppercase tracking-wider block">FIRMA PERICIAL MALLEN</span>
@@ -1413,11 +1413,11 @@ async fn handle_terms() -> impl IntoResponse {
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
     <style>body { font-family: 'Inter', sans-serif; background-color: #020617; background-image: radial-gradient(at 12% 12%, rgba(37, 99, 235, 0.32) 0px, transparent 48%), radial-gradient(at 88% 18%, rgba(16, 185, 129, 0.25) 0px, transparent 48%), radial-gradient(at 50% 82%, rgba(99, 102, 241, 0.28) 0px, transparent 52%); background-attachment: fixed; } .font-mono-code { font-family: 'JetBrains Mono', monospace; }</style>
-    <link rel="stylesheet" href="/css/quantum-glass.css?v=2026.9">
-    <script src="/js/quantum-lights.js?v=2026.9" defer></script>
+    <link rel="stylesheet" href="/css/quantum-glass.css?v=2026.10">
+    <script src="/js/quantum-lights.js?v=2026.10" defer></script>
 </head>
 <body class="bg-slate-950 text-slate-300 min-h-screen p-6 md:p-12 border-t-4 border-indigo-600">
-    <div class="max-w-4xl mx-auto bg-white/[0.05] backdrop-blur-2xl shadow-[0_8px_32px_rgba(0,0,0,0.5)] border border-white/15 p-8 md:p-12 shadow-2xl rounded-2xl">
+    <div class="max-w-4xl mx-auto bg-white/[0.05] shadow-[0_8px_32px_rgba(0,0,0,0.5)] border border-white/15 p-8 md:p-12 shadow-2xl rounded-2xl">
         <div class="flex items-center justify-between pb-6 mb-8 border-b border-white/15">
             <div>
                 <span class="text-xs font-bold text-indigo-400 font-mono-code uppercase tracking-wider block">FIRMA PERICIAL MALLEN</span>
@@ -1491,7 +1491,7 @@ fn render_norma_category(
     let mut cards_html = String::new();
     for (code_slug, codigo, nombre, desc) in items {
         cards_html.push_str(&format!(
-            r#"<div class="bg-white/[0.04] backdrop-blur-2xl shadow-[0_8px_32px_rgba(0,0,0,0.5)] border {} rounded-2xl p-6 hover:{} transition shadow-lg flex flex-col justify-between group">
+            r#"<div class="bg-white/[0.04] shadow-[0_8px_32px_rgba(0,0,0,0.5)] border {} rounded-2xl p-6 hover:{} transition shadow-lg flex flex-col justify-between group">
                 <div>
                     <span class="inline-block border text-xs px-2.5 py-1 rounded font-mono mb-3 {}">{}</span>
                     <h3 class="text-base font-bold text-white mb-2 group-hover:{} transition">{}</h3>
@@ -1523,8 +1523,8 @@ fn render_norma_category(
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
     <style>body {{ font-family: 'Inter', sans-serif; }} .font-mono-code {{ font-family: 'JetBrains Mono', monospace; }}</style>
-    <link rel="stylesheet" href="/css/quantum-glass.css?v=2026.9">
-    <script src="/js/quantum-lights.js?v=2026.9" defer></script>
+    <link rel="stylesheet" href="/css/quantum-glass.css?v=2026.10">
+    <script src="/js/quantum-lights.js?v=2026.10" defer></script>
 </head>
 <body class="bg-slate-950 text-slate-100 min-h-screen p-6 md:p-12 selection:bg-slate-700 selection:text-white">
     <div class="max-w-7xl mx-auto">
@@ -1791,8 +1791,8 @@ async fn handle_subnorma_detail(Path((cat, code)): Path<(String, String)>) -> im
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
     <style>body {{ font-family: 'Inter', sans-serif; }} .font-mono-code {{ font-family: 'JetBrains Mono', monospace; }}</style>
-    <link rel="stylesheet" href="/css/quantum-glass.css?v=2026.9">
-    <script src="/js/quantum-lights.js?v=2026.9" defer></script>
+    <link rel="stylesheet" href="/css/quantum-glass.css?v=2026.10">
+    <script src="/js/quantum-lights.js?v=2026.10" defer></script>
 </head>
 <body class="bg-slate-950 text-slate-100 min-h-screen p-6 md:p-12 selection:bg-slate-700 selection:text-white border-t-4 {}">
     <div class="max-w-4xl mx-auto">
@@ -1803,7 +1803,7 @@ async fn handle_subnorma_detail(Path((cat, code)): Path<(String, String)>) -> im
             </div>
             <a href="/normas/{}" class="text-xs {} hover:underline font-mono-code transition">← Regresar a {}</a>
         </div>
-        <div class="bg-white/[0.05] backdrop-blur-2xl shadow-[0_8px_32px_rgba(0,0,0,0.5)] border {} rounded-2xl p-8 shadow-2xl mb-8">
+        <div class="bg-white/[0.05] shadow-[0_8px_32px_rgba(0,0,0,0.5)] border {} rounded-2xl p-8 shadow-2xl mb-8">
             <div class="flex justify-between items-center mb-4 pb-4 border-b border-white/15">
                 <span class="text-xs font-bold {} uppercase font-mono-code tracking-widest">Análisis Estadístico de Contención</span>
                 <span class="text-xs font-mono-code px-3 py-1 rounded border {}">{}</span>
@@ -1935,8 +1935,8 @@ async fn handle_validez_detail(Path(slug): Path<String>) -> impl IntoResponse {
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
     <style>body {{ font-family: 'Inter', sans-serif; }} .font-mono-code {{ font-family: 'JetBrains Mono', monospace; }}</style>
-    <link rel="stylesheet" href="/css/quantum-glass.css?v=2026.9">
-    <script src="/js/quantum-lights.js?v=2026.9" defer></script>
+    <link rel="stylesheet" href="/css/quantum-glass.css?v=2026.10">
+    <script src="/js/quantum-lights.js?v=2026.10" defer></script>
 </head>
 <body class="bg-slate-950 text-slate-100 min-h-screen p-6 md:p-12 border-t-4 {}">
     <div class="max-w-4xl mx-auto">
@@ -1948,7 +1948,7 @@ async fn handle_validez_detail(Path(slug): Path<String>) -> impl IntoResponse {
             <a href="/" class="text-xs text-blue-400 hover:text-blue-300 font-mono-code transition">← Regresar a la Portada</a>
         </div>
 
-        <div class="bg-white/[0.05] backdrop-blur-2xl shadow-[0_8px_32px_rgba(0,0,0,0.5)] border border-white/15 rounded-2xl p-8 shadow-2xl mb-8">
+        <div class="bg-white/[0.05] shadow-[0_8px_32px_rgba(0,0,0,0.5)] border border-white/15 rounded-2xl p-8 shadow-2xl mb-8">
             <div class="flex justify-between items-center mb-4 pb-4 border-b border-white/15">
                 <span class="text-xs font-bold text-emerald-400 uppercase font-mono-code tracking-widest">Sustento Legal & Procesal</span>
                 <span class="text-xs font-mono-code px-3 py-1 bg-slate-950 border border-white/15 text-slate-300 rounded">Respaldo Oficial</span>
