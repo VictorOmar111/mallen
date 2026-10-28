@@ -1,10 +1,20 @@
+:root {
+    --scene-r: 59;
+    --scene-g: 130;
+    --scene-b: 246;
+}
+
 body {
     background-color: #020617 !important;
     position: relative;
     overflow-x: hidden;
 }
 
-/* CAPA 1: Iluminación volumétrica estática en GPU (Sin filter:blur ni animaciones de repintado) */
+/* ==========================================================================
+   ESCENAS DE FONDO DIFERENCIADAS PARA CADA PÁGINA DEL FLUJO
+   ========================================================================== */
+
+/* Escena 1 (Portada Principal /): Retícula Arquitectónica + Prisma Multi-Vector */
 body::before {
     content: "";
     position: fixed;
@@ -12,15 +22,13 @@ body::before {
     z-index: 0;
     pointer-events: none;
     background:
-        radial-gradient(650px circle at 14% 12%, rgba(37, 99, 235, 0.22), transparent 70%),
-        radial-gradient(600px circle at 86% 20%, rgba(16, 185, 129, 0.16), transparent 70%),
-        radial-gradient(750px circle at 50% 54%, rgba(79, 70, 229, 0.14), transparent 72%),
-        radial-gradient(620px circle at 18% 86%, rgba(6, 182, 212, 0.14), transparent 70%),
-        radial-gradient(650px circle at 84% 88%, rgba(16, 185, 129, 0.15), transparent 70%);
+        radial-gradient(620px circle at 14% 15%, rgba(59, 130, 246, 0.16), transparent 70%),
+        radial-gradient(600px circle at 86% 22%, rgba(168, 85, 247, 0.15), transparent 70%),
+        radial-gradient(650px circle at 50% 60%, rgba(6, 182, 212, 0.12), transparent 72%),
+        radial-gradient(600px circle at 20% 88%, rgba(245, 158, 11, 0.12), transparent 70%);
     transform: translateZ(0);
 }
 
-/* CAPA 2: Retícula arquitectónica ultra-ligera (Sin mask-image dinámico en :root) */
 body::after {
     content: "";
     position: fixed;
@@ -28,25 +36,87 @@ body::after {
     z-index: 0;
     pointer-events: none;
     background-image:
-        linear-gradient(to right, rgba(148, 163, 184, 0.04) 1px, transparent 1px),
-        linear-gradient(to bottom, rgba(148, 163, 184, 0.04) 1px, transparent 1px);
-    background-size: 48px 48px;
+        linear-gradient(to right, rgba(148, 163, 184, 0.045) 1px, transparent 1px),
+        linear-gradient(to bottom, rgba(148, 163, 184, 0.045) 1px, transparent 1px);
+    background-size: 46px 46px;
     transform: translateZ(0);
 }
 
-/* Haz de luz movido exclusivamente por hardware GPU (transform: translate3d — Cero Repaint) */
+/* Escena 2 (/verify/*): Matriz Criptográfica de Puntos Merkle */
+body[data-scene="verify"]::before {
+    background:
+        radial-gradient(820px circle at 50% 15%, rgba(var(--scene-r), var(--scene-g), var(--scene-b), 0.28), transparent 68%),
+        radial-gradient(620px circle at 15% 80%, rgba(59, 130, 246, 0.18), transparent 70%),
+        radial-gradient(620px circle at 85% 80%, rgba(168, 85, 247, 0.18), transparent 70%);
+}
+
+body[data-scene="verify"]::after {
+    background-image: radial-gradient(rgba(var(--scene-r), var(--scene-g), var(--scene-b), 0.22) 1.25px, transparent 1.25px);
+    background-size: 24px 24px;
+}
+
+/* Escena 3 (/checkout*): Bóveda Financiera con Haz Diagonal */
+body[data-scene="checkout"]::before {
+    background:
+        radial-gradient(850px circle at 50% 10%, rgba(239, 68, 68, 0.20), transparent 62%),
+        radial-gradient(700px circle at 15% 50%, rgba(59, 130, 246, 0.20), transparent 68%),
+        radial-gradient(700px circle at 85% 75%, rgba(168, 85, 247, 0.22), transparent 68%);
+}
+
+body[data-scene="checkout"]::after {
+    background-image:
+        repeating-linear-gradient(
+            -45deg,
+            rgba(255, 255, 255, 0.02) 0px,
+            rgba(255, 255, 255, 0.02) 1px,
+            transparent 1px,
+            transparent 32px
+        );
+}
+
+/* Escena 4 (/normas/*, /validez/*, /terms, /privacy): Horizonte Forense del Color de la Dependencia */
+body[data-scene="forensic"]::before {
+    background:
+        radial-gradient(900px circle at 50% 0%, rgba(var(--scene-r), var(--scene-g), var(--scene-b), 0.34), transparent 68%),
+        radial-gradient(680px circle at 85% 80%, rgba(var(--scene-r), var(--scene-g), var(--scene-b), 0.18), transparent 70%);
+}
+
+body[data-scene="forensic"]::after {
+    background-image:
+        linear-gradient(to right, rgba(var(--scene-r), var(--scene-g), var(--scene-b), 0.06) 1px, transparent 1px),
+        linear-gradient(to bottom, rgba(var(--scene-r), var(--scene-g), var(--scene-b), 0.06) 1px, transparent 1px);
+    background-size: 56px 56px;
+}
+
+/* Escena 5 (/dashboard.html): Tríada B2B2B (Azul / Esmeralda / Morado) */
+body[data-scene="dashboard"]::before {
+    background:
+        radial-gradient(620px circle at 18% 35%, rgba(59, 130, 246, 0.26), transparent 68%),
+        radial-gradient(620px circle at 50% 35%, rgba(16, 185, 129, 0.22), transparent 68%),
+        radial-gradient(620px circle at 82% 35%, rgba(168, 85, 247, 0.28), transparent 68%);
+}
+
+/* ==========================================================================
+   HAZ DE LUZ SUBYACENTE (REFLEJA POR DEBAJO EL COLOR PURO DE LAS LETRAS)
+   ========================================================================== */
 #mallen-wasm-spotlight {
     position: fixed;
     top: 0;
     left: 0;
-    width: 560px;
-    height: 560px;
-    margin-left: -280px;
-    margin-top: -280px;
+    width: 680px;
+    height: 680px;
+    margin-left: -340px;
+    margin-top: -340px;
     border-radius: 9999px;
     pointer-events: none;
     z-index: 0;
-    background: radial-gradient(circle, rgba(56, 189, 248, 0.10) 0%, rgba(16, 185, 129, 0.05) 38%, transparent 70%);
+    --spot-rgb: 59, 130, 246;
+    background: radial-gradient(
+        circle,
+        rgba(var(--spot-rgb), 0.30) 0%,
+        rgba(var(--spot-rgb), 0.12) 38%,
+        transparent 70%
+    );
     will-change: transform;
     transform: translate3d(-1000px, -1000px, 0);
 }
@@ -56,29 +126,35 @@ header, section, main, footer, .max-w-7xl, .max-w-5xl, .max-w-4xl, .max-w-3xl {
     z-index: 1;
 }
 
-/* CAPA 3: Cristal de Alto Rendimiento (Sin saturar el compositor en el scroll) */
+/* ==========================================================================
+   CUADROS DE CRISTAL CON CONTORNO Y REFLEJO 100% DEL COLOR DE SUS LETRAS
+   ========================================================================== */
 .quantum-card {
+    --card-rgb: 59, 130, 246;
     position: relative;
-    background: linear-gradient(145deg, rgba(15, 23, 42, 0.78) 0%, rgba(2, 6, 23, 0.88) 100%) !important;
-    border: 1px solid rgba(255, 255, 255, 0.09) !important;
+    background: linear-gradient(145deg, rgba(15, 23, 42, 0.62) 0%, rgba(2, 6, 23, 0.78) 100%) !important;
+    backdrop-filter: blur(16px) !important;
+    -webkit-backdrop-filter: blur(16px) !important;
+    border: 1px solid rgba(var(--card-rgb), 0.22) !important;
     box-shadow:
-        0 16px 36px -12px rgba(0, 0, 0, 0.65),
-        inset 0 1px 0 0 rgba(255, 255, 255, 0.16) !important;
+        0 16px 36px -12px rgba(0, 0, 0, 0.72),
+        0 4px 20px -6px rgba(var(--card-rgb), 0.14),
+        inset 0 1px 0 0 rgba(255, 255, 255, 0.14) !important;
     transition: transform 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease !important;
     overflow: hidden;
-    contain: paint;
 }
 
 .quantum-card:hover {
     transform: translateY(-2px);
-    border-color: rgba(56, 189, 248, 0.45) !important;
+    border-color: rgba(var(--card-rgb), 0.85) !important;
     box-shadow:
-        0 22px 45px -12px rgba(2, 6, 23, 0.85),
-        0 0 28px -8px rgba(37, 99, 235, 0.35),
-        inset 0 1px 0 0 rgba(255, 255, 255, 0.28) !important;
+        0 24px 48px -12px rgba(2, 6, 23, 0.92),
+        0 14px 42px -4px rgba(var(--card-rgb), 0.55),
+        0 0 28px -4px rgba(var(--card-rgb), 0.45),
+        inset 0 1px 0 0 rgba(var(--card-rgb), 0.55) !important;
 }
 
-/* Borde e iluminación puntual activada únicamente en la tarjeta cercana por el motor Wasm */
+/* Reflejo traslúcido por debajo del cuadro en el color exacto de sus letras */
 .quantum-card::before {
     content: "";
     position: absolute;
@@ -86,9 +162,9 @@ header, section, main, footer, .max-w-7xl, .max-w-5xl, .max-w-4xl, .max-w-3xl {
     pointer-events: none;
     border-radius: inherit;
     background: radial-gradient(
-        380px circle at var(--cx, -500px) var(--cy, -500px),
-        rgba(56, 189, 248, 0.14),
-        rgba(16, 185, 129, 0.06) 45%,
+        420px circle at var(--cx, -500px) var(--cy, -500px),
+        rgba(var(--card-rgb), 0.28),
+        rgba(var(--card-rgb), 0.10) 45%,
         transparent 75%
     );
     opacity: var(--card-active, 0);
@@ -96,17 +172,18 @@ header, section, main, footer, .max-w-7xl, .max-w-5xl, .max-w-4xl, .max-w-3xl {
     z-index: 0;
 }
 
+/* Contorno láser del cuadro 100% en el color exacto de sus letras (Cero mezcla verde) */
 .quantum-card::after {
     content: "";
     position: absolute;
     inset: 0;
     pointer-events: none;
     border-radius: inherit;
-    padding: 1.2px;
+    padding: 1.5px;
     background: radial-gradient(
-        260px circle at var(--cx, -500px) var(--cy, -500px),
-        rgba(56, 189, 248, 0.92),
-        rgba(16, 185, 129, 0.65) 48%,
+        290px circle at var(--cx, -500px) var(--cy, -500px),
+        rgba(var(--card-rgb), 1),
+        rgba(var(--card-rgb), 0.75) 45%,
         transparent 75%
     );
     -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
@@ -122,33 +199,31 @@ header, section, main, footer, .max-w-7xl, .max-w-5xl, .max-w-4xl, .max-w-3xl {
     z-index: 1;
 }
 
-/* Consola Principal con Bisel Luminoso Estático de Cero Costo en GPU */
+/* Consola Principal Translúcida */
 .quantum-laser-console {
+    --console-rgb: 59, 130, 246;
     position: relative;
-    background: linear-gradient(160deg, rgba(15, 23, 42, 0.82) 0%, rgba(2, 6, 23, 0.92) 100%) !important;
-    backdrop-filter: blur(16px) !important;
-    -webkit-backdrop-filter: blur(16px) !important;
-    border: 1px solid rgba(56, 189, 248, 0.28) !important;
+    background: linear-gradient(160deg, rgba(15, 23, 42, 0.68) 0%, rgba(2, 6, 23, 0.84) 100%) !important;
+    backdrop-filter: blur(18px) !important;
+    -webkit-backdrop-filter: blur(18px) !important;
+    border: 1px solid rgba(var(--console-rgb), 0.35) !important;
     box-shadow:
-        0 25px 60px -15px rgba(0, 0, 0, 0.8),
-        0 0 40px -12px rgba(37, 99, 235, 0.28),
-        inset 0 1px 0 0 rgba(255, 255, 255, 0.24) !important;
+        0 25px 60px -15px rgba(0, 0, 0, 0.85),
+        0 12px 45px -10px rgba(var(--console-rgb), 0.32),
+        inset 0 1px 0 0 rgba(255, 255, 255, 0.22) !important;
 }
 
-/* Cajas de captura sin backdrop-filter anidado (Elimina el lag al escribir o hacer scroll) */
 input:not([type="checkbox"]), textarea {
-    background-color: rgba(2, 6, 23, 0.82) !important;
+    background-color: rgba(2, 6, 23, 0.78) !important;
     border: 1px solid rgba(255, 255, 255, 0.13) !important;
-    box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.5) !important;
     transition: border-color 0.18s ease, box-shadow 0.18s ease !important;
 }
 
 input:not([type="checkbox"]):focus, textarea:focus {
-    background-color: rgba(15, 23, 42, 0.95) !important;
-    border-color: rgba(56, 189, 248, 0.8) !important;
+    background-color: rgba(15, 23, 42, 0.92) !important;
+    border-color: rgba(var(--card-rgb, 59, 130, 246), 0.9) !important;
     box-shadow:
-        0 0 0 1px rgba(16, 185, 129, 0.35),
-        0 0 20px -4px rgba(37, 99, 235, 0.48),
-        inset 0 1px 0 0 rgba(255, 255, 255, 0.15) !important;
+        0 0 0 1px rgba(var(--card-rgb, 59, 130, 246), 0.4),
+        0 0 22px -3px rgba(var(--card-rgb, 59, 130, 246), 0.6) !important;
     outline: none !important;
 }
