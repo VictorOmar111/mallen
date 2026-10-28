@@ -149,7 +149,7 @@ fn build_report_typst_markup_full(
     is_censored_micro_report: bool,
 ) -> String {
     let tax_id = empresa.tax_id.as_deref().unwrap_or("SIN-RFC");
-    let is_immune = is_accredited || tax_id.starts_with("MALLEN") || tax_id.starts_with("PAID_");
+    let is_immune = tax_id.starts_with("MALLEN");
     let fecha_hoy = Utc::now().format("%d/%m/%Y %H:%M UTC").to_string();
     let auditor = AccountantProfile::default();
 

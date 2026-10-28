@@ -7,52 +7,49 @@ use sha2::{Digest, Sha256};
 pub async fn handle_verify(Path(id): Path<String>) -> impl IntoResponse {
     let upper_id = id.trim().to_uppercase();
     let is_mallen_self = upper_id.starts_with("MALLEN");
-    let is_paid_client = upper_id.starts_with("PAID_");
 
     let mut hasher = Sha256::new();
     hasher.update(format!("MALLEN_AUDIT_SEAL_2026::{}", upper_id).as_bytes());
     let full_hash = format!("{:x}", hasher.finalize());
     let short_hash = format!("0x{}", &full_hash[..16]);
 
-    let (badge_text, title_text, status_color, notice_title, notice_body) =
-        if is_mallen_self || is_paid_client {
-            (
-                "ESTATUS: 100/100 CUMPLIMIENTO VERIFICADO • RIESGO CERO ($0.00 MXN)",
-                "Certificación Institucional de Blindaje Normativo Activo",
-                "emerald",
-                "Entidad con Blindaje Normativo 360° e Inmunidad Documental Vigente",
-                "Se hace constar en el registro público de Firma Pericial Mallen que esta entidad cuenta con el 100% de sus Avisos de Privacidad LFPDPPP (SABG), Certificados TLS 1.3 con HSTS, Contratos con Fecha Cierta SCJN (Art. 69-B CFF), Carpetas STPS y Términos de Comercio Electrónico (Art. 76 BIS LFPC) instrumentados y vigentes."
-            )
-        } else {
-            (
-                "ESTATUS: DIAGNÓSTICO PRELIMINAR CONCLUIDO • PENDIENTE DE INSTRUMENTACIÓN",
-                "Cédula Registral de Diagnóstico Corporativo 360°",
-                "amber",
-                "Garantía de Defendibilidad Procesal y Fecha Cierta Digital (SCJN)",
-                "Esta cédula acredita la evaluación técnica preliminar de la entidad ante STPS (39 NOMs), SAT (Art. 69-B), IMSS (REPSE/32-D), SABG (LFPDPPP), Protección Civil y PROFECO. Para descargar el paquete completo de 18 instrumentos jurídicos personalizados y timbrar su factura CFDI 4.0, active su blindaje corporativo."
-            )
-        };
+    let (badge_text, title_text, status_color, notice_title, notice_body) = if is_mallen_self {
+        (
+            "ESTATUS: 100/100 CUMPLIMIENTO VERIFICADO • RIESGO CERO ($0.00 MXN)",
+            "Certificación Institucional de Blindaje Normativo Activo",
+            "emerald",
+            "Entidad con Blindaje Normativo 360° e Inmunidad Documental Vigente",
+            "Se hace constar en el registro público de Firma Pericial Mallen que esta entidad cuenta con el 100% de sus Avisos de Privacidad LFPDPPP (SABG), Certificados TLS 1.3 con HSTS, Contratos con Fecha Cierta SCJN (Art. 69-B CFF), Carpetas STPS y Términos de Comercio Electrónico (Art. 76 BIS LFPC) instrumentados y vigentes."
+        )
+    } else {
+        (
+            "ESTATUS: DIAGNÓSTICO PERICIAL REGISTRADO • EXPEDIENTE DISPONIBLE",
+            "Cédula Registral de Diagnóstico Corporativo 360°",
+            "amber",
+            "Garantía de Defendibilidad Procesal y Fecha Cierta Digital (SCJN)",
+            "Esta cédula acredita la evaluación técnica de la entidad ante STPS (39 NOMs), SAT (Art. 69-B), IMSS (REPSE/32-D), SABG (LFPDPPP), Protección Civil y PROFECO. Todos los montos y hallazgos se encuentran sincronizados mediante huella criptográfica SHA-256 con el expediente pericial correspondiente a su RFC."
+        )
+    };
 
-    // Botones diferenciados según si es el sello propio de Mallen o una empresa auditada
     let action_buttons_html = if is_mallen_self {
         format!(
             r#"<div class="flex flex-col sm:flex-row gap-4 justify-center items-center font-sans">
                 <a href="/api/micro_scan/{upper_id}" class="w-full sm:w-auto px-6 py-3.5 rounded-xl bg-emerald-950/60 hover:bg-emerald-900/80 text-emerald-300 border border-emerald-500/40 text-xs font-bold uppercase tracking-wider transition text-center shadow-lg block">
-                    📜 Ver Constancia Institucional en PDF ($0.00 MXN Riesgo)
+                    Descargar Constancia Institucional en PDF
                 </a>
                 <a href="/#express-check" class="w-full sm:w-auto px-6 py-3.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-white border border-slate-700 text-xs font-bold uppercase tracking-wider transition text-center shadow-lg block">
-                    ← Auditar otra Empresa en el Portal Principal
+                    Volver al Portal Principal
                 </a>
             </div>"#
         )
     } else {
         format!(
             r#"<div class="flex flex-col sm:flex-row gap-4 justify-center items-center font-sans">
-                <a href="/api/micro_scan/{upper_id}" class="w-full sm:w-auto px-5 py-3.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-amber-400 border border-amber-500/40 text-xs font-bold uppercase tracking-wider transition text-center shadow-lg block">
-                    📄 1. Descargar Pre-Dictamen Preliminar (PDF Gratuito)
+                <a href="/api/micro_scan/{upper_id}" class="w-full sm:w-auto px-6 py-3.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-amber-400 border border-amber-500/40 text-xs font-bold uppercase tracking-wider transition text-center shadow-lg block">
+                    Descargar Pre-Dictamen Preliminar PDF
                 </a>
                 <a href="/checkout?ref={upper_id}" class="w-full sm:w-auto px-6 py-3.5 rounded-xl bg-gradient-to-r from-blue-600 to-emerald-600 hover:from-blue-500 hover:to-emerald-500 text-white text-xs font-bold uppercase tracking-wider transition text-center shadow-lg shadow-emerald-600/20 block">
-                    ⚡ 2. Personalizar Contratos, Pagar y Descargar Kit ZIP + CFDI 4.0 →
+                    Activar Blindaje Integral y Descargar Kit ZIP
                 </a>
             </div>"#
         )
@@ -124,15 +121,15 @@ pub async fn handle_verify(Path(id): Path<String>) -> impl IntoResponse {
 
         <div class="rounded-xl p-6 mb-8 border border-emerald-500/30 bg-emerald-950/10 backdrop-blur-sm">
             <h3 class="text-sm font-sans font-bold text-emerald-400 mb-3">
-                ✓ {notice_title}
+                {notice_title}
             </h3>
             <p class="text-xs font-serif text-slate-300 leading-relaxed mb-3">
                 {notice_body}
             </p>
             <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-2 border-t border-emerald-500/20 font-sans text-[11px] text-slate-400">
-                <div>• Validez Art. 210-A CFPC y Art. 89 C.Com</div>
-                <div>• Fecha Cierta Jurisprudencia 2a./J. 161/2019</div>
-                <div>• Anclaje Merkle Tree en Arbitrum One L2</div>
+                <div>Validez Art. 210-A CFPC y Art. 89 C.Com</div>
+                <div>Fecha Cierta Jurisprudencia 2a./J. 161/2019</div>
+                <div>Anclaje Merkle Tree en Arbitrum One L2</div>
             </div>
         </div>
 

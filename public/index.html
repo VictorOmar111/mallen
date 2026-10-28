@@ -29,7 +29,7 @@
                 <a href="#validez-legal" class="text-slate-400 hover:text-white transition">Validez Probatoria</a>
                 <a href="/dashboard.html" class="text-emerald-400 hover:text-emerald-300 transition">Panel Despachos B2B2B</a>
                 <a href="#express-check" class="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white font-bold px-5 py-2.5 rounded-xl shadow-lg shadow-blue-600/20 transition">
-                    Verificar Folio →
+                    Verificar Folio
                 </a>
             </nav>
         </div>
@@ -49,10 +49,10 @@
             </p>
             <div class="flex flex-col sm:flex-row justify-center items-center gap-4">
                 <a href="#express-check" class="w-full sm:w-auto bg-gradient-to-r from-blue-600 to-emerald-600 hover:from-blue-500 hover:to-emerald-500 text-white font-bold text-xs sm:text-sm px-8 py-4 rounded-xl transition shadow-xl shadow-blue-600/20 uppercase tracking-wider font-mono-code">
-                    Auditar RFC / Ingresar Folio →
+                    Auditar RFC o Ingresar Folio
                 </a>
                 <a href="#cobertura-resumen" class="w-full sm:w-auto bg-slate-900 hover:bg-slate-800 text-slate-300 border border-slate-800 font-bold text-xs sm:text-sm px-8 py-4 rounded-xl transition font-mono-code">
-                    Ver Directorio Regulatorio ↓
+                    Ver Directorio Regulatorio
                 </a>
             </div>
         </div>
@@ -255,7 +255,7 @@
                     <!-- Acordeón del Cuestionario de Certeza Pericial (12 Vectores Internos) -->
                     <details class="bg-slate-950/90 border border-slate-800 rounded-xl p-4 text-xs font-mono-code text-slate-300">
                         <summary class="cursor-pointer font-bold text-blue-400 hover:text-blue-300 select-none">
-                            ⚙️ Calibración Pericial Avanzada (Opcional — Confirmar Variables Internas STPS / LFPDPPP / SAT)
+                            Calibración Pericial de Variables Internas (Opcional — Confirmar Variables Internas STPS / LFPDPPP / SAT)
                         </summary>
                         <div class="grid sm:grid-cols-2 gap-3 mt-4 pt-4 border-t border-slate-800 text-[11px]">
                             <label class="flex items-center justify-between bg-slate-900 p-2.5 rounded-lg border border-slate-800">
@@ -305,81 +305,81 @@
                         </div>
                     </details>
 
-                                        <!-- Desplegable Fluido con Pre-llenado Automático + Campos en Blanco para Multi-Proveedor -->
+                                                            <!-- Desplegable con Pre-llenado Automático y Campos en Blanco para Uso Multi-Proveedor -->
                     <details id="dossier-details-box" class="bg-slate-950/90 border border-emerald-900/60 rounded-xl p-4 text-xs font-mono-code text-slate-300">
                         <summary class="cursor-pointer font-bold text-emerald-400 hover:text-emerald-300 select-none flex items-center justify-between">
-                            <span>🏛️ Personalización de Instrumentos Jurídicos y Datos Pre-Cargados (Opcional)</span>
-                            <span class="text-[10px] bg-emerald-950 text-emerald-300 border border-emerald-800 px-2 py-0.5 rounded">Auto-llenado Activo</span>
+                            <span>Personalización de Instrumentos Jurídicos y Datos Pre-Cargados (Opcional)</span>
+                            <span class="text-[10px] bg-emerald-950 text-emerald-300 border border-emerald-800 px-2 py-0.5 rounded">Pre-llenado Automático</span>
                         </summary>
                         <p class="text-[11px] text-slate-400 mt-2 mb-3 leading-relaxed">
                             Los datos públicos detectados por su RFC y sitio web se pre-cargan automáticamente abajo. <strong>Los campos que deje en blanco</strong> (como los datos de un proveedor específico para el Contrato Art. 69-B o los firmantes internos) se generarán con <strong>líneas jurídicas formales de llenado (<code>____________________</code>)</strong> para que pueda reutilizar sus contratos con múltiples proveedores:
                         </p>
                         <div class="grid sm:grid-cols-2 gap-3 pt-2 border-t border-slate-800 text-[11px]">
                             <div>
-                                <label class="text-[10px] text-slate-500 block mb-1">Denominación o Razón Social (Pre-cargada)</label>
-                                <input id="dos_razon" type="text" placeholder="Se auto-llena al escanear o edite aquí" class="w-full bg-slate-900 border border-slate-800 rounded-lg px-3 py-2 text-white">
+                                <label class="text-[10px] text-slate-400 block mb-1">Denominación o Razón Social</label>
+                                <input id="dos_razon" type="text" placeholder="" class="w-full bg-slate-900 border border-slate-800 rounded-lg px-3 py-2 text-white">
                             </div>
                             <div>
-                                <label class="text-[10px] text-slate-500 block mb-1">Giro SCIAN (Pre-cargado)</label>
-                                <input id="dos_giro" type="text" placeholder="Se auto-llena al escanear o edite aquí" class="w-full bg-slate-900 border border-slate-800 rounded-lg px-3 py-2 text-white">
+                                <label class="text-[10px] text-slate-400 block mb-1">Giro o Actividad Económica (SCIAN)</label>
+                                <input id="dos_giro" type="text" placeholder="" class="w-full bg-slate-900 border border-slate-800 rounded-lg px-3 py-2 text-white">
                             </div>
                             <div>
-                                <label class="text-[10px] text-slate-500 block mb-1">Domicilio del Centro de Trabajo (Pre-cargado)</label>
-                                <input id="dos_domicilio" type="text" placeholder="Se auto-llena al escanear o edite aquí" class="w-full bg-slate-900 border border-slate-800 rounded-lg px-3 py-2 text-white">
+                                <label class="text-[10px] text-slate-400 block mb-1">Domicilio del Centro de Trabajo</label>
+                                <input id="dos_domicilio" type="text" placeholder="" class="w-full bg-slate-900 border border-slate-800 rounded-lg px-3 py-2 text-white">
                             </div>
                             <div class="grid grid-cols-2 gap-2">
                                 <div>
-                                    <label class="text-[10px] text-slate-500 block mb-1">C.P. Fiscal</label>
-                                    <input id="dos_cp" type="text" maxlength="5" placeholder="Opcional / En blanco" class="w-full bg-slate-900 border border-slate-800 rounded-lg px-3 py-2 text-white">
+                                    <label class="text-[10px] text-slate-400 block mb-1">Código Postal Fiscal</label>
+                                    <input id="dos_cp" type="text" maxlength="5" placeholder="" class="w-full bg-slate-900 border border-slate-800 rounded-lg px-3 py-2 text-white">
                                 </div>
                                 <div>
-                                    <label class="text-[10px] text-slate-500 block mb-1">Entidad / Jurisdicción</label>
-                                    <input id="dos_estado" type="text" placeholder="Auto-llenado" class="w-full bg-slate-900 border border-slate-800 rounded-lg px-3 py-2 text-white">
+                                    <label class="text-[10px] text-slate-400 block mb-1">Entidad / Jurisdicción</label>
+                                    <input id="dos_estado" type="text" placeholder="" class="w-full bg-slate-900 border border-slate-800 rounded-lg px-3 py-2 text-white">
                                 </div>
                             </div>
                             <div>
-                                <label class="text-[10px] text-slate-500 block mb-1">Correo Atención ARCO (Pre-cargado)</label>
-                                <input id="dos_email" type="email" placeholder="En blanco = Línea para llenar" class="w-full bg-slate-900 border border-slate-800 rounded-lg px-3 py-2 text-white">
+                                <label class="text-[10px] text-slate-400 block mb-1">Correo de Atención a Derechos ARCO</label>
+                                <input id="dos_email" type="email" placeholder="" class="w-full bg-slate-900 border border-slate-800 rounded-lg px-3 py-2 text-white">
                             </div>
                             <div>
-                                <label class="text-[10px] text-slate-500 block mb-1">Teléfono Corporativo (Pre-cargado)</label>
-                                <input id="dos_tel" type="text" placeholder="En blanco = Línea para llenar" class="w-full bg-slate-900 border border-slate-800 rounded-lg px-3 py-2 text-white">
+                                <label class="text-[10px] text-slate-400 block mb-1">Teléfono Corporativo</label>
+                                <input id="dos_tel" type="text" placeholder="" class="w-full bg-slate-900 border border-slate-800 rounded-lg px-3 py-2 text-white">
                             </div>
                             <div>
-                                <label class="text-[10px] text-slate-500 block mb-1">Representante Legal (Opcional)</label>
-                                <input id="dos_rep_nombre" type="text" placeholder="En blanco = Línea para firmar" class="w-full bg-slate-900 border border-slate-800 rounded-lg px-3 py-2 text-white">
+                                <label class="text-[10px] text-slate-400 block mb-1">Nombre del Representante Legal</label>
+                                <input id="dos_rep_nombre" type="text" placeholder="" class="w-full bg-slate-900 border border-slate-800 rounded-lg px-3 py-2 text-white">
                             </div>
                             <div>
-                                <label class="text-[10px] text-slate-500 block mb-1">Cargo del Representante (Opcional)</label>
-                                <input id="dos_rep_cargo" type="text" placeholder="Ej. Administrador Único" class="w-full bg-slate-900 border border-slate-800 rounded-lg px-3 py-2 text-white">
+                                <label class="text-[10px] text-slate-400 block mb-1">Cargo del Representante Legal</label>
+                                <input id="dos_rep_cargo" type="text" placeholder="" class="w-full bg-slate-900 border border-slate-800 rounded-lg px-3 py-2 text-white">
                             </div>
                             <div>
-                                <label class="text-[10px] text-slate-500 block mb-1">Oficial de Privacidad LFPDPPP (Opcional)</label>
-                                <input id="dos_oficial_priv" type="text" placeholder="En blanco = Línea para designar" class="w-full bg-slate-900 border border-slate-800 rounded-lg px-3 py-2 text-white">
+                                <label class="text-[10px] text-slate-400 block mb-1">Oficial de Privacidad (Art. 17 LFPDPPP)</label>
+                                <input id="dos_oficial_priv" type="text" placeholder="" class="w-full bg-slate-900 border border-slate-800 rounded-lg px-3 py-2 text-white">
                             </div>
                             <div>
-                                <label class="text-[10px] text-slate-500 block mb-1">Registro Patronal IMSS (Opcional)</label>
-                                <input id="dos_reg_patronal" type="text" placeholder="En blanco = Línea para llenar" class="w-full bg-slate-900 border border-slate-800 rounded-lg px-3 py-2 text-white">
+                                <label class="text-[10px] text-slate-400 block mb-1">Registro Patronal IMSS</label>
+                                <input id="dos_reg_patronal" type="text" placeholder="" class="w-full bg-slate-900 border border-slate-800 rounded-lg px-3 py-2 text-white">
                             </div>
                             <div>
-                                <label class="text-[10px] text-slate-500 block mb-1">Coordinador Comisión NOM-019 (Opcional)</label>
-                                <input id="dos_csh_coord" type="text" placeholder="En blanco = Línea para llenar" class="w-full bg-slate-900 border border-slate-800 rounded-lg px-3 py-2 text-white">
+                                <label class="text-[10px] text-slate-400 block mb-1">Coordinador Comisión Mixta (NOM-019 / NOM-030)</label>
+                                <input id="dos_csh_coord" type="text" placeholder="" class="w-full bg-slate-900 border border-slate-800 rounded-lg px-3 py-2 text-white">
                             </div>
                             <div>
-                                <label class="text-[10px] text-slate-500 block mb-1">Secretario Comisión NOM-019 (Opcional)</label>
-                                <input id="dos_csh_sec" type="text" placeholder="En blanco = Línea para llenar" class="w-full bg-slate-900 border border-slate-800 rounded-lg px-3 py-2 text-white">
+                                <label class="text-[10px] text-slate-400 block mb-1">Secretario Comisión Mixta (NOM-019)</label>
+                                <input id="dos_csh_sec" type="text" placeholder="" class="w-full bg-slate-900 border border-slate-800 rounded-lg px-3 py-2 text-white">
                             </div>
                             <div>
-                                <label class="text-[10px] text-slate-500 block mb-1">Proveedor Contrato Art. 69-B (Opcional)</label>
-                                <input id="dos_prov_nombre" type="text" placeholder="En blanco = Plantilla Multiuso" class="w-full bg-slate-900 border border-slate-800 rounded-lg px-3 py-2 text-white">
+                                <label class="text-[10px] text-slate-400 block mb-1">Razón Social del Proveedor (Contrato Art. 69-B)</label>
+                                <input id="dos_prov_nombre" type="text" placeholder="" class="w-full bg-slate-900 border border-slate-800 rounded-lg px-3 py-2 text-white">
                             </div>
                             <div>
-                                <label class="text-[10px] text-slate-500 block mb-1">RFC del Proveedor Art. 69-B (Opcional)</label>
-                                <input id="dos_prov_rfc" type="text" placeholder="En blanco = Plantilla Multiuso" class="w-full bg-slate-900 border border-slate-800 rounded-lg px-3 py-2 text-white">
+                                <label class="text-[10px] text-slate-400 block mb-1">RFC del Proveedor (Contrato Art. 69-B)</label>
+                                <input id="dos_prov_rfc" type="text" placeholder="" class="w-full bg-slate-900 border border-slate-800 rounded-lg px-3 py-2 text-white">
                             </div>
                             <div class="sm:col-span-2">
-                                <label class="text-[10px] text-slate-500 block mb-1">Objeto / Servicio del Contrato Art. 69-B (Opcional)</label>
-                                <input id="dos_prov_obj" type="text" placeholder="Deje en blanco si desea usar el Contrato Marco con múltiples proveedores" class="w-full bg-slate-900 border border-slate-800 rounded-lg px-3 py-2 text-white">
+                                <label class="text-[10px] text-slate-400 block mb-1">Objeto / Servicio del Contrato de Materialidad (Art. 69-B CFF)</label>
+                                <input id="dos_prov_obj" type="text" placeholder="" class="w-full bg-slate-900 border border-slate-800 rounded-lg px-3 py-2 text-white">
                             </div>
                         </div>
                     </details>
@@ -387,7 +387,7 @@
 
                     <div class="flex flex-col sm:flex-row gap-3">
                         <button id="btnRunScan" type="submit" class="flex-1 bg-gradient-to-r from-blue-600 to-emerald-600 hover:from-blue-500 hover:to-emerald-500 text-white font-bold text-xs px-8 py-4 rounded-xl transition font-mono-code shadow-lg shadow-blue-600/20 uppercase tracking-wider">
-                            Ejecutar Diagnóstico Pericial 360° →
+                            Ejecutar Diagnóstico Pericial 360°
                         </button>
                         <button type="button" onclick="const v=document.getElementById('folioInput').value.trim(); if(v) window.location.href='/verify/'+encodeURIComponent(v);" class="bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold text-xs px-6 py-4 rounded-xl transition font-mono-code">
                             Ir Directo a Constancia
@@ -413,13 +413,13 @@
                     </div>
                     <div class="grid sm:grid-cols-3 gap-3">
                         <a id="btn-go-micro" href="#" class="text-center bg-slate-950 hover:bg-slate-800 text-amber-400 border border-amber-500/40 font-bold py-3 px-4 rounded-xl transition">
-                            📄 1. Pre-Dictamen Preliminar (PDF Gratuito)
+                            Descargar Pre-Dictamen Preliminar PDF
                         </a>
                         <a id="btn-go-verify" href="#" class="text-center bg-slate-800 hover:bg-slate-700 text-white font-bold py-3 px-4 rounded-xl transition">
-                            🏛️ 2. Consultar Cédula Registral Pública
+                            Consultar Cédula Registral Pública
                         </a>
                         <a id="btn-go-checkout" href="#" class="text-center bg-red-600 hover:bg-red-500 text-white font-bold py-3 px-4 rounded-xl transition shadow-lg shadow-red-600/20">
-                            ⚡ 3. Activar Blindaje, Kit ZIP (18 Docs) + CFDI 4.0
+                            Activar Blindaje Integral y CFDI 4.0
                         </a>
                     </div>
                 </div>
@@ -432,7 +432,7 @@
         <div class="bg-slate-900 border-2 border-red-500/50 rounded-2xl max-w-lg w-full p-8 shadow-2xl font-mono-code text-xs relative">
             <button onclick="closeExitModal()" class="absolute top-4 right-4 text-slate-400 hover:text-white text-base">✕</button>
             <span class="inline-block bg-red-950 text-red-400 border border-red-700 px-3 py-1 rounded-full text-[10px] font-bold uppercase mb-4">
-                ⚠️ Alerta Preventiva Anti-Inspección STPS
+                Alerta Preventiva de Inspección STPS
             </span>
             <h3 class="text-xl font-extrabold text-white font-sans mb-2">
                 Espera: No te vayas a ciegas.
@@ -442,7 +442,7 @@
             </p>
             <div class="flex flex-col sm:flex-row gap-3">
                 <a id="exit-micro-pdf-link" href="/api/micro_scan/EST850628K51" onclick="closeExitModal()" class="flex-1 bg-gradient-to-r from-amber-500 to-red-600 hover:from-amber-400 hover:to-red-500 text-white text-center font-bold py-3.5 px-5 rounded-xl transition uppercase">
-                    📥 Descargar Micro-PDF Gratis →
+                    Descargar Pre-Dictamen Preliminar
                 </a>
                 <button onclick="closeExitModal()" class="bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold py-3.5 px-5 rounded-xl transition">
                     Continuar en el Portal
@@ -466,7 +466,7 @@
         </div>
     </footer>
 
-    <script src="/js/app.js?v=2026.2" defer></script>
-    <script src="/js/badge.js?v=2026.2" defer></script>
+    <script src="/js/app.js?v=2026.3" defer></script>
+    <script src="/js/badge.js?v=2026.3" defer></script>
 </body>
 </html>
