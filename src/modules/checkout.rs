@@ -6,28 +6,55 @@ use sha2::{Digest, Sha256};
 
 pub async fn handle_verify(Path(id): Path<String>) -> impl IntoResponse {
     let upper_id = id.trim().to_uppercase();
-    let is_mallen_self = upper_id.starts_with("MALLEN") || upper_id.starts_with("PAID_");
+    let is_mallen_self = upper_id.starts_with("MALLEN");
+    let is_paid_client = upper_id.starts_with("PAID_");
 
     let mut hasher = Sha256::new();
     hasher.update(format!("MALLEN_AUDIT_SEAL_2026::{}", upper_id).as_bytes());
     let full_hash = format!("{:x}", hasher.finalize());
     let short_hash = format!("0x{}", &full_hash[..16]);
 
-    let (badge_text, title_text, status_color, notice_title, notice_body) = if is_mallen_self {
-        (
-            "ESTATUS: 100/100 CUMPLIMIENTO VERIFICADO • CERO CONTINGENCIAS ($0.00 MXN)",
-            "Certificación Institucional de Blindaje Activo",
-            "emerald",
-            "Entidad con Blindaje Normativo 360° e Inmunidad Documental Activa",
-            "Se hace constar que esta plataforma y razón social cuenta con el 100% de sus Avisos de Privacidad LFPDPPP (SABG), Certificados TLS 1.3 con HSTS, Contratos con Fecha Cierta SCJN (Art. 69-B CFF), Carpetas STPS y Términos de Comercio Electrónico (Art. 76 BIS LFPC) vigentes y sin multas pendientes."
+    let (badge_text, title_text, status_color, notice_title, notice_body) =
+        if is_mallen_self || is_paid_client {
+            (
+                "ESTATUS: 100/100 CUMPLIMIENTO VERIFICADO • RIESGO CERO ($0.00 MXN)",
+                "Certificación Institucional de Blindaje Normativo Activo",
+                "emerald",
+                "Entidad con Blindaje Normativo 360° e Inmunidad Documental Vigente",
+                "Se hace constar en el registro público de Firma Pericial Mallen que esta entidad cuenta con el 100% de sus Avisos de Privacidad LFPDPPP (SABG), Certificados TLS 1.3 con HSTS, Contratos con Fecha Cierta SCJN (Art. 69-B CFF), Carpetas STPS y Términos de Comercio Electrónico (Art. 76 BIS LFPC) instrumentados y vigentes."
+            )
+        } else {
+            (
+                "ESTATUS: DIAGNÓSTICO PRELIMINAR CONCLUIDO • PENDIENTE DE INSTRUMENTACIÓN",
+                "Cédula Registral de Diagnóstico Corporativo 360°",
+                "amber",
+                "Garantía de Defendibilidad Procesal y Fecha Cierta Digital (SCJN)",
+                "Esta cédula acredita la evaluación técnica preliminar de la entidad ante STPS (39 NOMs), SAT (Art. 69-B), IMSS (REPSE/32-D), SABG (LFPDPPP), Protección Civil y PROFECO. Para descargar el paquete completo de 18 instrumentos jurídicos personalizados y timbrar su factura CFDI 4.0, active su blindaje corporativo."
+            )
+        };
+
+    // Botones diferenciados según si es el sello propio de Mallen o una empresa auditada
+    let action_buttons_html = if is_mallen_self {
+        format!(
+            r#"<div class="flex flex-col sm:flex-row gap-4 justify-center items-center font-sans">
+                <a href="/api/micro_scan/{upper_id}" class="w-full sm:w-auto px-6 py-3.5 rounded-xl bg-emerald-950/60 hover:bg-emerald-900/80 text-emerald-300 border border-emerald-500/40 text-xs font-bold uppercase tracking-wider transition text-center shadow-lg block">
+                    📜 Ver Constancia Institucional en PDF ($0.00 MXN Riesgo)
+                </a>
+                <a href="/#express-check" class="w-full sm:w-auto px-6 py-3.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-white border border-slate-700 text-xs font-bold uppercase tracking-wider transition text-center shadow-lg block">
+                    ← Auditar otra Empresa en el Portal Principal
+                </a>
+            </div>"#
         )
     } else {
-        (
-            "ESTATUS: EXPEDIENTE PRE-AUDITADO • REQUIERE ACTIVACIÓN DE KITS",
-            "Constancia de Diagnóstico y Blindaje Corporativo 360°",
-            "amber",
-            "Garantía de Defendibilidad Procesal y Fecha Cierta Digital (SCJN)",
-            "El presente registro certifica la compilación del Dictamen Pericial Ejecutivo, los 10 Certificados de Acreditación Técnica en PDF y los 7 Instrumentos Jurídicos en PDF/Word listos para firma autógrafa ante inspecciones de STPS, SAT, IMSS, SABG (ex-INAI), Protección Civil y PROFECO."
+        format!(
+            r#"<div class="flex flex-col sm:flex-row gap-4 justify-center items-center font-sans">
+                <a href="/api/micro_scan/{upper_id}" class="w-full sm:w-auto px-5 py-3.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-amber-400 border border-amber-500/40 text-xs font-bold uppercase tracking-wider transition text-center shadow-lg block">
+                    📄 1. Descargar Pre-Dictamen Preliminar (PDF Gratuito)
+                </a>
+                <a href="/checkout?ref={upper_id}" class="w-full sm:w-auto px-6 py-3.5 rounded-xl bg-gradient-to-r from-blue-600 to-emerald-600 hover:from-blue-500 hover:to-emerald-500 text-white text-xs font-bold uppercase tracking-wider transition text-center shadow-lg shadow-emerald-600/20 block">
+                    ⚡ 2. Personalizar Contratos, Pagar y Descargar Kit ZIP + CFDI 4.0 →
+                </a>
+            </div>"#
         )
     };
 
@@ -37,7 +64,7 @@ pub async fn handle_verify(Path(id): Path<String>) -> impl IntoResponse {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Verificación Criptográfica Oficial | Firma Pericial Mallen</title>
+    <title>Cédula de Verificación Oficial | Firma Pericial Mallen</title>
     <script src="https://cdn.tailwindcss.com"></script>
 </head>
 <body class="bg-slate-950 text-slate-100 font-serif min-h-screen antialiased flex flex-col justify-between selection:bg-blue-600 selection:text-white">
@@ -109,17 +136,7 @@ pub async fn handle_verify(Path(id): Path<String>) -> impl IntoResponse {
             </div>
         </div>
 
-        <div class="flex flex-col sm:flex-row gap-4 justify-center items-center font-sans">
-            <a href="/api/micro_scan/{upper_id}" class="w-full sm:w-auto px-5 py-3 rounded-lg bg-slate-900 hover:bg-slate-800 text-amber-400 border border-amber-500/40 text-xs font-bold uppercase tracking-wider transition text-center shadow-lg block">
-                📄 Ver Pre-Dictamen STPS (PDF)
-            </a>
-            <a href="/download/zip/{upper_id}" class="w-full sm:w-auto px-6 py-3 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 text-xs font-bold uppercase tracking-wider transition text-center shadow-lg block">
-                📦 Descargar Paquete ZIP (PDFs + Word)
-            </a>
-            <a href="/checkout?ref={upper_id}" class="w-full sm:w-auto px-6 py-3 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold uppercase tracking-wider transition text-center shadow-lg shadow-emerald-600/20 block">
-                💳 Pasarela de Activación + CFDI 4.0
-            </a>
-        </div>
+        {action_buttons_html}
     </main>
 
     <footer class="border-t border-slate-800 py-6 text-center text-xs font-sans text-slate-500 bg-slate-900/40">

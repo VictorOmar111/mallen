@@ -234,7 +234,7 @@ fn build_report_typst_markup_full(
             "#16a34a",
             "#f0fdf4",
             "#86efac",
-            "100% CUMPLIMIENTO ACREDITADO • RIESGO CERO ($0.00 MXN)",
+            "100% CUMPLIMIENTO ACREDITADO • RIESGO CERO (\\$0.00 MXN)",
             "EXPEDIENTE INMUNE ACTIVO",
         )
     } else {
@@ -260,11 +260,11 @@ fn build_report_typst_markup_full(
         } else if is_censored_micro_report {
             (
                 "22 pts: Exposición activa en NOM-035 (Psicosocial), NOM-019 (Comisión Mixta), NOM-030 y NOM-002.",
-                "████████████████ [AUDITORÍA ART. 69-B Y CSD BLOQUEADA EN VERSIÓN GRATUITA]",
-                "████████████████ [ALERTA LFPDPPP BLOQUEADA — REQUIERE DICTAMEN COMPLETO]",
-                "████████████████ [CRUCE DENUE VS IMSS 32-D Y REPSE BLOQUEADO]",
-                "████████████████ [DIAGNÓSTICO DE CLAUSURA PROTECCIÓN CIVIL BLOQUEADO]",
-                "████████████████ [AUDITORÍA PROFECO ART. 76 BIS Y RRPAC BLOQUEADA]",
+                "████████████████ (AUDITORÍA ART. 69-B Y CSD RESERVADA AL EXPEDIENTE INTEGRAL)",
+                "████████████████ (DIAGNÓSTICO LFPDPPP RESERVADO AL EXPEDIENTE INTEGRAL)",
+                "████████████████ (CRUCE DENUE VS IMSS 32-D Y REPSE RESERVADO AL EXPEDIENTE INTEGRAL)",
+                "████████████████ (DIAGNÓSTICO PROTECCIÓN CIVIL RESERVADO AL EXPEDIENTE INTEGRAL)",
+                "████████████████ (AUDITORÍA PROFECO ART. 76 BIS RESERVADA AL EXPEDIENTE INTEGRAL)",
             )
         } else {
             (

@@ -39,10 +39,10 @@
     row-gutter: 3.5pt,
     [*Entidad Auditada:* {{EMPRESA_NOMBRE}}],
     [*RFC / Tax ID:* {{EMPRESA_TAX_ID}}],
-    [*Representante Legal:* {{REPRESENTANTE_LEGAL}}],
+    [*Representación Legal:* {{REPRESENTANTE_LEGAL}}],
     [*Jurisdicción Aplicable:* {{EMPRESA_JURISDICCION}} / Federal],
     [*Giro / Actividad SCIAN:* {{EMPRESA_ACTIVIDAD}}],
-    [*Domicilio del Centro:* {{EMPRESA_DIRECCION}}],
+    [*Domicilio Registral:* {{EMPRESA_DIRECCION}}],
     [*Auditor Dictaminador:* {{AUDITOR_NOMBRE}}],
     [*Hash SHA-256:* #raw("{{AUDIT_HASH}}")]
   )
@@ -52,7 +52,7 @@
 
 #text(size: 7.8pt, weight: "bold", fill: rgb("#334155"))[1. MARCO JURÍDICO, ALCANCE & FUNDAMENTACIÓN PERICIAL]
 #v(0.1em)
-#text(size: 6.8pt)[El Consejo Pericial de Firma Pericial Mallen hace constar que para la entidad *{{EMPRESA_NOMBRE}}* ({{EMPRESA_TAX_ID}}), representada legalmente por *{{REPRESENTANTE_LEGAL}}*, se han compilado y personalizado sin espacios en blanco los instrumentos documentales y protocolos correspondientes al vector normativo *{{NORMA_FOLIO_PREFIX}}*.]
+#text(size: 6.8pt)[El Consejo Pericial de Firma Pericial Mallen hace constar que para la entidad *{{EMPRESA_NOMBRE}}* ({{EMPRESA_TAX_ID}}), por conducto de su representación legal (*{{REPRESENTANTE_LEGAL}}*), se han estructurado e instrumentado de forma íntegra los protocolos documentales, matrices de control y guías de cumplimiento correspondientes al vector normativo *{{NORMA_FOLIO_PREFIX}}*.]
 
 #v(0.15em)
 
@@ -73,7 +73,7 @@
   [#text(fill: white, weight: "bold", size: 6.2pt)[Concepto Evaluado]],
   [#text(fill: white, weight: "bold", size: 6.2pt)[Estatus de Instrumento]],
   [#text(fill: white, weight: "bold", size: 6.2pt)[Nivel de Cobertura]],
-  [Instrumentos Jurídicos Personalizados (PDF + Word)], [ENTREGADO EN KIT ZIP], [Cobertura Normativa Plena],
+  [Instrumentos Normativos y Políticas Corporativas], [INTEGRADO EN EXPEDIENTE], [Cobertura Normativa Plena],
   [Trazabilidad y Cruce Registral Público (OSINT)], [VERIFICADO], [Alineado a SCIAN / RFC],
   [Sello de Tiempo e Inalterabilidad Criptográfica], [SELLADO SHA-256], [Fecha Cierta Digital SCJN]
 )
@@ -81,7 +81,7 @@
 #v(0.2em)
 
 #block(fill: rgb("#475569"), inset: (x: 7pt, y: 4.5pt), radius: 2pt, width: 100%)[
-  #text(size: 8.5pt, weight: "bold", fill: rgb("#ffffff"))[CÉDULA DE PAPELES DE TRABAJO E INSTRUMENTOS DEL KIT]
+  #text(size: 8.5pt, weight: "bold", fill: rgb("#ffffff"))[CÉDULA DE PAPELES DE TRABAJO E INSTRUMENTOS DEL EXPEDIENTE]
 ]
 
 #v(0.15em)
@@ -94,8 +94,8 @@
   [#text(fill: white, weight: "bold", size: 6.2pt)[Código Elemento]],
   [#text(fill: white, weight: "bold", size: 6.2pt)[Estructura de Evidencia Integrada]],
   [#text(fill: white, weight: "bold", size: 6.2pt)[Estado]],
-  [PT-{{NORMA_FOLIO_PREFIX}}-01], [Pólizas, Políticas, Contratos Marco y Anexos Normativos], [PERSONALIZADO],
-  [PT-{{NORMA_FOLIO_PREFIX}}-02], [Actas Constitutivas de Comisiones y Bitácoras], [PERSONALIZADO],
+  [PT-{{NORMA_FOLIO_PREFIX}}-01], [Pólizas, Políticas, Contratos Marco y Anexos Normativos], [INSTRUMENTADO],
+  [PT-{{NORMA_FOLIO_PREFIX}}-02], [Actas Constitutivas de Comisiones y Bitácoras de Control], [INSTRUMENTADO],
   [PT-{{NORMA_FOLIO_PREFIX}}-03], [Registro Criptográfico SHA-256 y Árbol de Merkle L2], [SELLADO],
   [PT-{{NORMA_FOLIO_PREFIX}}-04], [Dictamen Pericial de Exposición y Remediación], [APROBADO]
 )

@@ -189,7 +189,7 @@ El presente dictamen cuantifica de forma determinística la exposición legal, f
 #text(size: 9pt, weight: "bold", fill: rgb("#0f172a"))[7. EXPEDIENTE DE INSTRUMENTOS PERSONALIZADOS ENTREGADOS EN SU ZIP]
 #v(0.15em)
 - [X] *10 Certificados de Acreditación Normativa (PDF):* Personalizados con Razón Social, Giro SCIAN, Jurisdicción y Representante Legal.
-- [X] *7 Instrumentos Jurídicos en PDF y Word-HTML (Cero líneas en blanco):* Aviso Integral LFPDPPP, Política NOM-035, Acta Comisión Mixta NOM-019/030, Política Teletrabajo NOM-037, Contrato Materialidad Art. 69-B con Fecha Cierta, Protocolo IMSS REPSE y Términos E-Commerce Art. 76 BIS LFPC.
+- [X] *7 Instrumentos Jurídicos en PDF y Word-HTML (Formatos Ejecutivos PDF y Word):* Aviso Integral LFPDPPP, Política NOM-035, Acta Comisión Mixta NOM-019/030, Política Teletrabajo NOM-037, Contrato Materialidad Art. 69-B con Fecha Cierta, Protocolo IMSS REPSE y Términos E-Commerce Art. 76 BIS LFPC.
 
 #v(0.3em)
 

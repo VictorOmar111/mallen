@@ -476,6 +476,15 @@ async fn download_zip_handler(
     Path(tax_id): Path<String>,
 ) -> impl IntoResponse {
     let clean_tax = tax_id.trim().to_uppercase();
+    let session_check = state.db.get_audit_session(&clean_tax).await.ok().flatten();
+    let is_paid = session_check.as_ref().map(|(_, acc)| *acc).unwrap_or(false);
+    if !is_paid {
+        return (
+            StatusCode::SEE_OTHER,
+            [(header::LOCATION, format!("/checkout?ref={}", clean_tax))],
+            "Redirigiendo a pasarela de activacion...".to_string(),
+        ).into_response();
+    }
     let (empresa, session_opt) = build_empresa_and_session(&state, &clean_tax).await;
     let osint = OsintResult {
         domain_found: empresa.sitio_web.clone(),
@@ -645,7 +654,7 @@ async fn build_empresa_and_session(
             nombre: format!("CORPORATIVO {} S.A. DE C.V.", clean_tax),
             actividad: "541610 - Servicios de consultoría y operación corporativa B2B".to_string(),
             telefono: "55-5000-0000".to_string(),
-            email: "cumplimiento@empresa.com.mx".to_string(),
+            email: "Contacto Oficial en Cédula ARCO".to_string(),
             direccion: "11 a 30 personas — Domicilio Fiscal en México".to_string(),
             estado: "CIUDAD DE MÉXICO".to_string(),
             sitio_web: None,
