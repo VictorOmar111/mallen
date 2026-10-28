@@ -27,8 +27,15 @@
         }
     };
 
+    function setIfEmpty(id, val) {
+        const el = document.getElementById(id);
+        if (el && !el.value.trim() && val) {
+            el.value = val;
+        }
+    }
+
     window.runLiveCalibrationScan = async function (event) {
-        event.preventDefault();
+        if (event) event.preventDefault();
         const rfc = document.getElementById("folioInput").value.trim().toUpperCase();
         const domain = document.getElementById("domainInput")?.value?.trim() || "";
         const razonOverride = document.getElementById("dos_razon")?.value?.trim() || null;
@@ -37,7 +44,7 @@
 
         const btn = document.getElementById("btnRunScan");
         const origText = btn.textContent;
-        btn.textContent = "Auditando y Personalizando Expediente...";
+        btn.textContent = "Auditando y Sincronizando Datos Registrales...";
         btn.disabled = true;
 
         const valOrNull = (id) => {
@@ -93,6 +100,20 @@
             });
             const data = await resp.json();
 
+            // Pre-llenar automáticamente el desplegable con los datos detectados en DENUE / OSINT
+            setIfEmpty("dos_razon", data.razon_social);
+            setIfEmpty("dos_giro", `${data.codigo_scian} - ${data.actividad_scian_desc}`);
+            setIfEmpty("dos_domicilio", data.domicilio_fiscal_o_denue);
+            if (data.domicilio_fiscal_o_denue && data.domicilio_fiscal_o_denue.includes(",")) {
+                const parts = data.domicilio_fiscal_o_denue.split(",");
+                setIfEmpty("dos_estado", parts[parts.length - 1].trim());
+            }
+            if (data.calibration_applied && data.calibration_applied.dossier) {
+                const d = data.calibration_applied.dossier;
+                setIfEmpty("dos_email", d.email_arco_privacidad);
+                setIfEmpty("dos_tel", d.telefono_corporativo);
+            }
+
             const box = document.getElementById("live-scan-result");
             if (box) {
                 box.classList.remove("hidden");
@@ -101,7 +122,7 @@
                 document.getElementById("res-fine").textContent =
                     "$" + Number(data.total_estimated_fine_mxn || 0).toLocaleString("es-MX", { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + " MXN";
                 document.getElementById("res-findings-count").textContent =
-                    `${(data.findings || []).length} vulnerabilidades normativas auditadas — Sincronizadas 1:1 con su PDF y Kits Legales`;
+                    `${(data.findings || []).length} vectores normativos evaluados — Datos registrales pre-cargados en su Cédula`;
                 document.getElementById("res-hash").textContent = data.audit_sha256_hash;
                 document.getElementById("btn-go-verify").href = `/verify/${encodeURIComponent(data.tax_id)}`;
                 document.getElementById("btn-go-micro").href = `/api/micro_scan/${encodeURIComponent(data.tax_id)}`;

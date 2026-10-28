@@ -173,6 +173,9 @@ async fn handle_live_scan(
 
     let d_in = &req.calibration.dossier;
 
+    let mut denue_email = String::new();
+    let mut denue_tel = String::new();
+    let mut denue_entidad = String::new();
     let (razon_social, nombre_comercial, codigo_scian, actividad_desc, domicilio, estrato) =
         if is_mallen_self {
             (
@@ -293,6 +296,25 @@ async fn handle_live_scan(
         )
         .await;
 
+    let mut cal_enriched = req.calibration.clone();
+    if cal_enriched.dossier.razon_social_oficial.is_none() {
+        cal_enriched.dossier.razon_social_oficial = Some(razon_social.clone());
+    }
+    if cal_enriched.dossier.domicilio_fiscal_completo.is_none() {
+        cal_enriched.dossier.domicilio_fiscal_completo = Some(domicilio.clone());
+    }
+    if cal_enriched.dossier.entidad_jurisdiccion.is_none() && !denue_entidad.is_empty() {
+        cal_enriched.dossier.entidad_jurisdiccion = Some(denue_entidad);
+    }
+    if cal_enriched.dossier.giro_scian_descripcion.is_none() {
+        cal_enriched.dossier.giro_scian_descripcion = Some(format!("{} - {}", codigo_scian, actividad_desc));
+    }
+    if cal_enriched.dossier.email_arco_privacidad.is_none() && !denue_email.is_empty() {
+        cal_enriched.dossier.email_arco_privacidad = Some(denue_email);
+    }
+    if cal_enriched.dossier.telefono_corporativo.is_none() && !denue_tel.is_empty() {
+        cal_enriched.dossier.telefono_corporativo = Some(denue_tel);
+    }
     let master_report = AuditMasterJson {
         audit_id: format!("MALLEN-{}", &audit_sha256_hash[..10].to_uppercase()),
         generated_at_utc: now_utc,
@@ -315,7 +337,7 @@ async fn handle_live_scan(
         requiere_pipc_proteccion_civil: true,
         opera_ecommerce: web_telemetry.has_ecommerce_cart,
         web_telemetry,
-        calibration_applied: req.calibration,
+        calibration_applied: cal_enriched,
         findings,
         risk_score,
         total_min_fine_mxn: min_fine,
@@ -654,7 +676,7 @@ async fn build_empresa_and_session(
             nombre: format!("CORPORATIVO {} S.A. DE C.V.", clean_tax),
             actividad: "541610 - Servicios de consultoría y operación corporativa B2B".to_string(),
             telefono: "55-5000-0000".to_string(),
-            email: "Contacto Oficial en Cédula ARCO".to_string(),
+            email: "".to_string(),
             direccion: "11 a 30 personas — Domicilio Fiscal en México".to_string(),
             estado: "CIUDAD DE MÉXICO".to_string(),
             sitio_web: None,

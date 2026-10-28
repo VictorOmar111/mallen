@@ -305,37 +305,82 @@
                         </div>
                     </details>
 
-                    <!-- Ficha de Personalización Jurídica Completa (Cero Placeholders en PDFs y Contratos) -->
-                    <details class="bg-slate-950/90 border border-emerald-900/60 rounded-xl p-4 text-xs font-mono-code text-slate-300">
-                        <summary class="cursor-pointer font-bold text-emerald-400 hover:text-emerald-300 select-none">
-                            🏛️ Cédula de Datos Corporativos, Representación Legal y Domicilio Registral (Para Instrumentación de Contratos y Actas)
+                                        <!-- Desplegable Fluido con Pre-llenado Automático + Campos en Blanco para Multi-Proveedor -->
+                    <details id="dossier-details-box" class="bg-slate-950/90 border border-emerald-900/60 rounded-xl p-4 text-xs font-mono-code text-slate-300">
+                        <summary class="cursor-pointer font-bold text-emerald-400 hover:text-emerald-300 select-none flex items-center justify-between">
+                            <span>🏛️ Personalización de Instrumentos Jurídicos y Datos Pre-Cargados (Opcional)</span>
+                            <span class="text-[10px] bg-emerald-950 text-emerald-300 border border-emerald-800 px-2 py-0.5 rounded">Auto-llenado Activo</span>
                         </summary>
-                        <p class="text-[11px] text-slate-400 mt-2 mb-3">Ingrese los datos oficiales de su representada para que los 10 Certificados de Acreditación y los 7 Instrumentos Jurídicos salgan personalizados con su Representación Legal, Oficial de Privacidad y Comisión Mixta:</p>
+                        <p class="text-[11px] text-slate-400 mt-2 mb-3 leading-relaxed">
+                            Los datos públicos detectados por su RFC y sitio web se pre-cargan automáticamente abajo. <strong>Los campos que deje en blanco</strong> (como los datos de un proveedor específico para el Contrato Art. 69-B o los firmantes internos) se generarán con <strong>líneas jurídicas formales de llenado (<code>____________________</code>)</strong> para que pueda reutilizar sus contratos con múltiples proveedores:
+                        </p>
                         <div class="grid sm:grid-cols-2 gap-3 pt-2 border-t border-slate-800 text-[11px]">
-                            <input id="dos_razon" type="text" placeholder="Denominación o Razón Social Oficial (Constancia SAT)" class="bg-slate-900 border border-slate-800 rounded-lg px-3 py-2 text-white">
-                            <input id="dos_giro" type="text" placeholder="Giro o Actividad Principal (SCIAN)" class="bg-slate-900 border border-slate-800 rounded-lg px-3 py-2 text-white">
-                            <input id="dos_domicilio" type="text" placeholder="Domicilio Fiscal Completo del Centro de Trabajo" class="bg-slate-900 border border-slate-800 rounded-lg px-3 py-2 text-white">
-                            <div class="grid grid-cols-2 gap-2">
-                                <input id="dos_cp" type="text" maxlength="5" placeholder="C.P. Fiscal (5 dígitos)" class="bg-slate-900 border border-slate-800 rounded-lg px-3 py-2 text-white">
-                                <input id="dos_estado" type="text" placeholder="Estado / Jurisdicción (Ej. CDMX)" class="bg-slate-900 border border-slate-800 rounded-lg px-3 py-2 text-white">
+                            <div>
+                                <label class="text-[10px] text-slate-500 block mb-1">Denominación o Razón Social (Pre-cargada)</label>
+                                <input id="dos_razon" type="text" placeholder="Se auto-llena al escanear o edite aquí" class="w-full bg-slate-900 border border-slate-800 rounded-lg px-3 py-2 text-white">
                             </div>
-                            <input id="dos_rep_nombre" type="text" placeholder="Nombre Completo del Representante Legal" class="bg-slate-900 border border-slate-800 rounded-lg px-3 py-2 text-white">
-                            <input id="dos_rep_cargo" type="text" placeholder="Cargo (Ej. Administrador Único / Apoderado)" class="bg-slate-900 border border-slate-800 rounded-lg px-3 py-2 text-white">
-                            <input id="dos_oficial_priv" type="text" placeholder="Nombre del Oficial de Privacidad (Art. 17 LFPDPPP)" class="bg-slate-900 border border-slate-800 rounded-lg px-3 py-2 text-white">
-                            <div class="grid grid-cols-2 gap-2">
-                                <input id="dos_email" type="email" placeholder="Correo Derechos ARCO" class="bg-slate-900 border border-slate-800 rounded-lg px-3 py-2 text-white">
-                                <input id="dos_tel" type="text" placeholder="Teléfono Corporativo" class="bg-slate-900 border border-slate-800 rounded-lg px-3 py-2 text-white">
+                            <div>
+                                <label class="text-[10px] text-slate-500 block mb-1">Giro SCIAN (Pre-cargado)</label>
+                                <input id="dos_giro" type="text" placeholder="Se auto-llena al escanear o edite aquí" class="w-full bg-slate-900 border border-slate-800 rounded-lg px-3 py-2 text-white">
                             </div>
-                            <input id="dos_reg_patronal" type="text" placeholder="Registro Patronal IMSS (Para NOM-019 y REPSE)" class="bg-slate-900 border border-slate-800 rounded-lg px-3 py-2 text-white">
-                            <input id="dos_csh_coord" type="text" placeholder="Nombre Coordinador Patronal (Comisión NOM-019 / NOM-030)" class="bg-slate-900 border border-slate-800 rounded-lg px-3 py-2 text-white">
-                            <input id="dos_csh_sec" type="text" placeholder="Nombre Secretario Trabajadores (Comisión NOM-019)" class="bg-slate-900 border border-slate-800 rounded-lg px-3 py-2 text-white">
-                            <div class="grid grid-cols-2 gap-2">
-                                <input id="dos_horario" type="text" placeholder="Jornada (Ej. L-V 9:00 a 18:00)" class="bg-slate-900 border border-slate-800 rounded-lg px-3 py-2 text-white">
-                                <input id="dos_apoyo_tele" type="text" placeholder="Apoyo Home Office MXN (NOM-037)" class="bg-slate-900 border border-slate-800 rounded-lg px-3 py-2 text-white">
+                            <div>
+                                <label class="text-[10px] text-slate-500 block mb-1">Domicilio del Centro de Trabajo (Pre-cargado)</label>
+                                <input id="dos_domicilio" type="text" placeholder="Se auto-llena al escanear o edite aquí" class="w-full bg-slate-900 border border-slate-800 rounded-lg px-3 py-2 text-white">
                             </div>
-                            <input id="dos_prov_nombre" type="text" placeholder="Razón Social Proveedor a Blindar (Contrato Art. 69-B)" class="bg-slate-900 border border-slate-800 rounded-lg px-3 py-2 text-white">
-                            <input id="dos_prov_rfc" type="text" placeholder="RFC del Proveedor (Contrato Art. 69-B)" class="bg-slate-900 border border-slate-800 rounded-lg px-3 py-2 text-white">
-                            <input id="dos_prov_obj" type="text" placeholder="Descripción del Servicio / Entregable B2B (Art. 69-B CFF)" class="bg-slate-900 border border-slate-800 rounded-lg px-3 py-2 text-white sm:col-span-2">
+                            <div class="grid grid-cols-2 gap-2">
+                                <div>
+                                    <label class="text-[10px] text-slate-500 block mb-1">C.P. Fiscal</label>
+                                    <input id="dos_cp" type="text" maxlength="5" placeholder="Opcional / En blanco" class="w-full bg-slate-900 border border-slate-800 rounded-lg px-3 py-2 text-white">
+                                </div>
+                                <div>
+                                    <label class="text-[10px] text-slate-500 block mb-1">Entidad / Jurisdicción</label>
+                                    <input id="dos_estado" type="text" placeholder="Auto-llenado" class="w-full bg-slate-900 border border-slate-800 rounded-lg px-3 py-2 text-white">
+                                </div>
+                            </div>
+                            <div>
+                                <label class="text-[10px] text-slate-500 block mb-1">Correo Atención ARCO (Pre-cargado)</label>
+                                <input id="dos_email" type="email" placeholder="En blanco = Línea para llenar" class="w-full bg-slate-900 border border-slate-800 rounded-lg px-3 py-2 text-white">
+                            </div>
+                            <div>
+                                <label class="text-[10px] text-slate-500 block mb-1">Teléfono Corporativo (Pre-cargado)</label>
+                                <input id="dos_tel" type="text" placeholder="En blanco = Línea para llenar" class="w-full bg-slate-900 border border-slate-800 rounded-lg px-3 py-2 text-white">
+                            </div>
+                            <div>
+                                <label class="text-[10px] text-slate-500 block mb-1">Representante Legal (Opcional)</label>
+                                <input id="dos_rep_nombre" type="text" placeholder="En blanco = Línea para firmar" class="w-full bg-slate-900 border border-slate-800 rounded-lg px-3 py-2 text-white">
+                            </div>
+                            <div>
+                                <label class="text-[10px] text-slate-500 block mb-1">Cargo del Representante (Opcional)</label>
+                                <input id="dos_rep_cargo" type="text" placeholder="Ej. Administrador Único" class="w-full bg-slate-900 border border-slate-800 rounded-lg px-3 py-2 text-white">
+                            </div>
+                            <div>
+                                <label class="text-[10px] text-slate-500 block mb-1">Oficial de Privacidad LFPDPPP (Opcional)</label>
+                                <input id="dos_oficial_priv" type="text" placeholder="En blanco = Línea para designar" class="w-full bg-slate-900 border border-slate-800 rounded-lg px-3 py-2 text-white">
+                            </div>
+                            <div>
+                                <label class="text-[10px] text-slate-500 block mb-1">Registro Patronal IMSS (Opcional)</label>
+                                <input id="dos_reg_patronal" type="text" placeholder="En blanco = Línea para llenar" class="w-full bg-slate-900 border border-slate-800 rounded-lg px-3 py-2 text-white">
+                            </div>
+                            <div>
+                                <label class="text-[10px] text-slate-500 block mb-1">Coordinador Comisión NOM-019 (Opcional)</label>
+                                <input id="dos_csh_coord" type="text" placeholder="En blanco = Línea para llenar" class="w-full bg-slate-900 border border-slate-800 rounded-lg px-3 py-2 text-white">
+                            </div>
+                            <div>
+                                <label class="text-[10px] text-slate-500 block mb-1">Secretario Comisión NOM-019 (Opcional)</label>
+                                <input id="dos_csh_sec" type="text" placeholder="En blanco = Línea para llenar" class="w-full bg-slate-900 border border-slate-800 rounded-lg px-3 py-2 text-white">
+                            </div>
+                            <div>
+                                <label class="text-[10px] text-slate-500 block mb-1">Proveedor Contrato Art. 69-B (Opcional)</label>
+                                <input id="dos_prov_nombre" type="text" placeholder="En blanco = Plantilla Multiuso" class="w-full bg-slate-900 border border-slate-800 rounded-lg px-3 py-2 text-white">
+                            </div>
+                            <div>
+                                <label class="text-[10px] text-slate-500 block mb-1">RFC del Proveedor Art. 69-B (Opcional)</label>
+                                <input id="dos_prov_rfc" type="text" placeholder="En blanco = Plantilla Multiuso" class="w-full bg-slate-900 border border-slate-800 rounded-lg px-3 py-2 text-white">
+                            </div>
+                            <div class="sm:col-span-2">
+                                <label class="text-[10px] text-slate-500 block mb-1">Objeto / Servicio del Contrato Art. 69-B (Opcional)</label>
+                                <input id="dos_prov_obj" type="text" placeholder="Deje en blanco si desea usar el Contrato Marco con múltiples proveedores" class="w-full bg-slate-900 border border-slate-800 rounded-lg px-3 py-2 text-white">
+                            </div>
                         </div>
                     </details>
 
@@ -421,7 +466,7 @@
         </div>
     </footer>
 
-    <script src="/js/app.js" defer></script>
-    <script src="/js/badge.js" defer></script>
+    <script src="/js/app.js?v=2026.2" defer></script>
+    <script src="/js/badge.js?v=2026.2" defer></script>
 </body>
 </html>

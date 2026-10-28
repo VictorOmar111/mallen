@@ -1,5 +1,7 @@
-//! Generador Determinístico de Kits Legales Corporativos 100% personalizados (Cero Placeholders y Cero Líneas en Blanco).
-//! Inyecta los 23 campos de `LegalDossierInput` en los 7 instrumentos jurídicos para que sean válidos al instante de descargarse.
+//! Generador Determinístico de Instrumentos Jurídicos Corporativos.
+//! Pre-llena automáticamente los datos registrales conocidos (DENUE/OSINT) y, cuando el usuario
+//! deja en blanco campos variables (ej. Proveedor en Contrato Marco Art. 69-B o Vocales NOM-019),
+//! inserta líneas jurídicas formales de llenado (`________________________________`) para uso multi-proveedor.
 
 use crate::engine::models::{EmpresaB2B, LegalDossierInput};
 use chrono::Utc;
@@ -12,11 +14,27 @@ pub struct GeneratedKitDocument {
     pub content: String,
 }
 
-fn non_empty<'a>(opt: &'a Option<String>, fallback: &'a str) -> &'a str {
-    match opt {
-        Some(s) if !s.trim().is_empty() => s.trim(),
-        _ => fallback,
+const BLANK_LINE: &str = "________________________________________";
+const BLANK_SHORT: &str = "____________________";
+
+fn pick_known_or_blank<'a>(primary: &'a Option<String>, secondary: &'a str, blank: &'a str) -> &'a str {
+    if let Some(p) = primary {
+        let t = p.trim();
+        if !t.is_empty() {
+            return t;
+        }
     }
+    let s = secondary.trim();
+    if !s.is_empty()
+        && !s.contains("corporativo.mx")
+        && !s.contains("empresa.com.mx")
+        && !s.contains("5500000000")
+        && !s.contains("55-0000-0000")
+        && !s.contains("Cédula")
+    {
+        return s;
+    }
+    blank
 }
 
 pub fn build_all_compliance_documents(empresa: &EmpresaB2B) -> Vec<GeneratedKitDocument> {
@@ -30,80 +48,45 @@ pub fn build_all_compliance_documents_with_dossier(
     let tax_id = empresa.tax_id.as_deref().unwrap_or(&empresa.id);
     let fecha = Utc::now().format("%d/%m/%Y").to_string();
 
-    let razon_social = non_empty(&dossier.razon_social_oficial, &empresa.nombre);
-    let domicilio = non_empty(&dossier.domicilio_fiscal_completo, &empresa.direccion);
-    let cp_fiscal = non_empty(&dossier.codigo_postal_fiscal, "06600");
-    let jurisdiccion = non_empty(&dossier.entidad_jurisdiccion, &empresa.estado);
-    let giro_scian = non_empty(&dossier.giro_scian_descripcion, &empresa.actividad);
+    // Datos conocidos por RFC / DENUE / OSINT (Pre-llenados automáticamente)
+    let razon_social = pick_known_or_blank(&dossier.razon_social_oficial, &empresa.nombre, BLANK_LINE);
+    let domicilio = pick_known_or_blank(&dossier.domicilio_fiscal_completo, &empresa.direccion, BLANK_LINE);
+    let cp_fiscal = pick_known_or_blank(&dossier.codigo_postal_fiscal, "", BLANK_SHORT);
+    let jurisdiccion = pick_known_or_blank(&dossier.entidad_jurisdiccion, &empresa.estado, "Estados Unidos Mexicanos");
+    let giro_scian = pick_known_or_blank(&dossier.giro_scian_descripcion, &empresa.actividad, BLANK_LINE);
+    let email_arco = pick_known_or_blank(&dossier.email_arco_privacidad, &empresa.email, BLANK_LINE);
+    let telefono_corp = pick_known_or_blank(&dossier.telefono_corporativo, &empresa.telefono, BLANK_SHORT);
 
-    let rep_legal = non_empty(
-        &dossier.representante_legal_nombre,
-        "Representante Legal Acreditado en Acta Constitutiva",
-    );
-    let rep_cargo = non_empty(
-        &dossier.representante_legal_cargo,
-        "Administrador Único / Apoderado General",
-    );
-    let escritura_num = non_empty(
-        &dossier.instrumento_notarial_num,
-        "Instrumento Público inscrito en el Registro Público de Comercio",
-    );
+    // Datos internos o multi-proveedor: si el cliente los deja en blanco, quedan con línea formal para llenado o uso múltiple
+    let rep_legal = pick_known_or_blank(&dossier.representante_legal_nombre, "", BLANK_LINE);
+    let rep_cargo = pick_known_or_blank(&dossier.representante_legal_cargo, "", "Representante Legal / Apoderado General");
+    let escritura_num = pick_known_or_blank(&dossier.instrumento_notarial_num, "", BLANK_SHORT);
+    let oficial_privacidad = pick_known_or_blank(&dossier.oficial_privacidad_nombre, "", rep_legal);
 
-    let oficial_privacidad = non_empty(&dossier.oficial_privacidad_nombre, rep_legal);
-    let email_arco = non_empty(
-        &dossier.email_arco_privacidad,
-        if empresa.email.trim().is_empty() {
-            "privacidad@corporativo.mx"
-        } else {
-            empresa.email.trim()
-        },
-    );
-    let telefono_corp = non_empty(
-        &dossier.telefono_corporativo,
-        if empresa.telefono.trim().is_empty() {
-            "Atención Telefónica en Domicilio Fiscal"
-        } else {
-            empresa.telefono.trim()
-        },
-    );
+    let reg_patronal = pick_known_or_blank(&dossier.registro_patronal_imss, "", BLANK_SHORT);
+    let csh_coord = pick_known_or_blank(&dossier.comision_coordinador_patronal, "", BLANK_LINE);
+    let csh_sec = pick_known_or_blank(&dossier.comision_secretario_trabajadores, "", BLANK_LINE);
+    let csh_vocal_pat = pick_known_or_blank(&dossier.comision_vocal_patronal, "", BLANK_LINE);
+    let csh_vocal_trab = pick_known_or_blank(&dossier.comision_vocal_trabajadores, "", BLANK_LINE);
 
-    let reg_patronal = non_empty(&dossier.registro_patronal_imss, "Registro Patronal Vigente IMSS");
-    let csh_coord = non_empty(&dossier.comision_coordinador_patronal, rep_legal);
-    let csh_sec = non_empty(
-        &dossier.comision_secretario_trabajadores,
-        "Representante Titular Designado por los Trabajadores",
-    );
-    let csh_vocal_pat = non_empty(&dossier.comision_vocal_patronal, oficial_privacidad);
-    let csh_vocal_trab = non_empty(
-        &dossier.comision_vocal_trabajadores,
-        "Vocal Operativo de la Plantilla Laboral",
-    );
-
-    let horario_jornada = non_empty(
+    let horario_jornada = pick_known_or_blank(
         &dossier.horario_jornada_laboral,
-        "Lunes a Viernes de 09:00 a 18:00 horas (48 horas semanales máx. conforme a LFT)",
+        "",
+        "Lunes a Viernes conforme a jornada legal máxima de la LFT",
     );
-    let apoyo_teletrabajo = non_empty(&dossier.monto_apoyo_teletrabajo_mxn, "450.00");
+    let apoyo_teletrabajo = pick_known_or_blank(&dossier.monto_apoyo_teletrabajo_mxn, "", "____________");
 
-    let prov_nombre = non_empty(
-        &dossier.proveedor_principal_razon_social,
-        "Prestador de Servicios Especializados / Proveedor B2B Contratado",
-    );
-    let prov_rfc = non_empty(&dossier.proveedor_principal_rfc, "RFC-PROVEEDOR-VERIFICADO-32D");
-    let prov_objeto = non_empty(
-        &dossier.proveedor_principal_servicio_objeto,
-        "Servicios profesionales, técnicos, suministro e implementación operativa indispensable para el giro social",
-    );
-    let testigo_auditor = non_empty(
-        &dossier.testigo_auditor_interno,
-        "Contraloría Interna / C.P.C. Víctor Omar Malpica Guillén",
-    );
+    let prov_nombre = pick_known_or_blank(&dossier.proveedor_principal_razon_social, "", BLANK_LINE);
+    let prov_rfc = pick_known_or_blank(&dossier.proveedor_principal_rfc, "", BLANK_SHORT);
+    let prov_objeto = pick_known_or_blank(&dossier.proveedor_principal_servicio_objeto, "", BLANK_LINE);
+    let testigo_auditor = pick_known_or_blank(&dossier.testigo_auditor_interno, "", BLANK_LINE);
 
-    let clase_prima_imss = non_empty(
+    let clase_prima_imss = pick_known_or_blank(
         &dossier.clase_prima_riesgo_imss,
-        "Autoclasificación conforme al Catálogo del Art. 196 RACERF (Prima vigente declarada en SUA)",
+        "",
+        "Clase y Prima declarada conforme al Catálogo del Art. 196 RACERF",
     );
-    let folio_repse = non_empty(&dossier.folio_repse_activo, "Padrón Público STPS REPSE Verificado");
+    let folio_repse = pick_known_or_blank(&dossier.folio_repse_activo, "", BLANK_SHORT);
     let dias_garantia = dossier.dias_garantia_comercial_profeco.unwrap_or(90).max(90);
 
     vec![
@@ -115,41 +98,40 @@ r#"# AVISO DE PRIVACIDAD INTEGRAL, CLÁUSULA DE CONSENTIMIENTO EXPRESO BIOMÉTRI
 **Responsable del Tratamiento:** {razon} | **RFC:** {rfc}
 **Domicilio Fiscal y de Notificaciones:** {domicilio}, C.P. {cp}, {jurisdiccion}
 **Oficial de Privacidad Designado (Art. 17 LFPDPPP):** {oficial} ({cargo})
-**Canal Oficial de Derechos ARCO:** {email} | **Teléfono:** {tel}
+**Canal Oficial de Atención a Derechos ARCO:** {email} | **Teléfono:** {tel}
 
 ---
 
 ### I. IDENTIDAD Y DOMICILIO DEL RESPONSABLE (ARTS. 8, 15 Y 16 LFPDPPP)
-**{razon}** (con RFC **{rfc}**), legalmente representada por **{rep_legal}** en su carácter de **{cargo}** (acreditado mediante {escritura}), con domicilio en **{domicilio}, C.P. {cp}, {jurisdiccion}**, es el responsable del tratamiento legítimo, controlado e informado de sus datos personales, financieros/patrimoniales y sensibles conforme a la Ley Federal de Protección de Datos Personales en Posesión de los Particulares vigente ante la Autoridad Garante Federal (SABG / Transparencia para el Pueblo).
+**{razon}** (con RFC **{rfc}**), representada legalmente por **{rep_legal}** en su carácter de **{cargo}** (Instrumento Público N° {escritura}), con domicilio en **{domicilio}, C.P. {cp}, {jurisdiccion}**, es responsable del tratamiento legítimo, controlado e informado de sus datos personales, financieros/patrimoniales y sensibles conforme a la Ley Federal de Protección de Datos Personales en Posesión de los Particulares vigente ante la Autoridad Garante Federal (SABG / Transparencia para el Pueblo).
 
-### II. DESIGNACIÓN FORMAL DEL OFICIAL DE PRIVACIDAD (ART. 17 Y 30 LFPDPPP)
-Queda formalmente designado(a) **{oficial}** como titular del Departamento de Datos Personales de **{razon}**, encargado(a) de custodiar el Documento de Seguridad Técnico, Físico y Administrativo (Art. 19 LFPDPPP) y dar respuesta a las solicitudes de Derechos ARCO en el correo **{email}**.
+### II. DEPARTAMENTO DE DATOS PERSONALES (ART. 17 Y 30 LFPDPPP)
+Se designa formalmente a **{oficial}** como responsable del Departamento de Datos Personales de **{razon}**, encargado de custodiar el Documento de Seguridad Técnico, Físico y Administrativo (Art. 19 LFPDPPP) y dar trámite a las solicitudes de Derechos ARCO recibidas en **{email}** o en el domicilio físico antes señalado.
 
-### III. CATEGORÍAS DE DATOS SOMETIDOS A TRATAMIENTO Y FINALIDADES PRIMARIAS
-1. **Datos de Identificación, Laborales y Contacto:** Nombre, RFC, CURP, NSS, domicilio, teléfono y correo electrónico.
-2. **Datos Patrimoniales y Financieros (Art. 8 LFPDPPP):** Cuentas CLABE, datos de facturación CFDI 4.0 (Régimen Fiscal y Uso CFDI) e historial crediticio comercial.
-3. **Datos Personales Sensibles y Biométricos (Art. 9 LFPDPPP):** Huella dactilar, reconocimiento facial para control de asistencia o seguridad de acceso en **{domicilio}**, y certificados médicos exigidos por las Normas Oficiales Mexicanas de la STPS.
-* **Finalidades Primarias:** Cumplimiento de obligaciones contractuales, laborales, timbrado de nómina y facturación CFDI 4.0 ante el SAT, altas ante el IMSS ({reg_patronal}) y seguridad de instalaciones.
+### III. CATEGORÍAS DE DATOS Y FINALIDADES PRIMARIAS
+1. **Datos de Identificación, Laborales y Contacto:** Nombre completo, RFC, CURP, NSS, domicilio, teléfono y correo electrónico.
+2. **Datos Patrimoniales y Financieros (Art. 8 LFPDPPP):** Cuentas CLABE, datos fiscales para emisión de CFDI 4.0 y referencias comerciales.
+3. **Datos Personales Sensibles y Biométricos (Art. 9 LFPDPPP):** Huella dactilar, reconocimiento facial para control de asistencia o seguridad de acceso en **{domicilio}**, y certificados médicos requeridos por las Normas Oficiales Mexicanas de la STPS.
 
-### IV. TRANSFERENCIAS DE DATOS (ARTS. 36 Y 37 LFPDPPP) Y DERECHOS ARCO (ARTS. 22 A 35)
-Sus datos sólo se transfieren a autoridades fiscalizadoras (SAT, IMSS, INFONAVIT, STPS) y encargados sujetos a este aviso. Para ejercer sus derechos de **Acceso, Rectificación, Cancelación u Oposición (ARCO)** o revocar su consentimiento, envíe su solicitud a **{email}** dirigida a **{oficial}**. Plazo máximo legal de respuesta: **20 días hábiles** (Art. 32 LFPDPPP).
+### IV. TRANSFERENCIAS (ARTS. 36 Y 37 LFPDPPP) Y EJERCICIO DE DERECHOS ARCO (ARTS. 22 A 35)
+Sus datos sólo se transfieren a autoridades fiscalizadoras (SAT, IMSS, INFONAVIT, STPS) y encargados sujetos a este aviso. Para ejercer sus derechos de **Acceso, Rectificación, Cancelación u Oposición (ARCO)** o revocar su consentimiento, envíe su solicitud a **{email}**. Plazo máximo legal de respuesta: **20 días hábiles** (Art. 32 LFPDPPP).
 
 ---
 
-### ACTA DE EMISIÓN Y CONSENTIMIENTO EXPRESO DE DATOS SENSIBLES Y BIOMÉTRICOS (ART. 9 LFPDPPP)
-El titular de los datos manifiesta su consentimiento expreso y por escrito para el tratamiento de sus datos sensibles, biométricos y patrimoniales conforme a los términos aquí establecidos.
+### FORMATO DE CONSENTIMIENTO EXPRESO PARA DATOS SENSIBLES Y BIOMÉTRICOS (ART. 9 LFPDPPP)
+Yo, _________________________________________________________, otorgo mi consentimiento expreso y autógrafo para que mis datos personales sensibles, biométricos y patrimoniales sean tratados por **{razon}** ({rfc}) conforme al presente Aviso de Privacidad Integral.
 
-| **RESPONSABLE LEGAL ({razon})** | **OFICIAL DE PRIVACIDAD DESIGNADO** | **CONFORMIDAD DEL TITULAR** |
+| **POR EL RESPONSABLE ({razon})** | **OFICIAL DE PRIVACIDAD** | **FIRMA AUTÓGRAFA DEL TITULAR** |
 | :--- | :--- | :--- |
-| **{rep_legal}** | **{oficial}** | Nombre y Firma Autógrafa del Titular |
-| Cargo: {cargo} | Canal ARCO: {email} | Fecha de Emisión: {fecha} |
+| **{rep_legal}** | **{oficial}** | ________________________________________ |
+| Cargo: {cargo} | Canal ARCO: {email} | Fecha: {fecha} |
 
 *Sello de Integridad Criptográfica SHA-256:* `{hash}`
 "#,
                 razon = razon_social, rfc = tax_id, domicilio = domicilio, cp = cp_fiscal,
                 jurisdiccion = jurisdiccion, oficial = oficial_privacidad, cargo = rep_cargo,
                 email = email_arco, tel = telefono_corp, rep_legal = rep_legal,
-                escritura = escritura_num, reg_patronal = reg_patronal, fecha = fecha, hash = empresa.audit_hash
+                escritura = escritura_num, fecha = fecha, hash = empresa.audit_hash
             ),
         },
 
@@ -164,24 +146,24 @@ r#"# POLÍTICA DE PREVENCIÓN DE RIESGOS PSICOSOCIALES Y PROTOCOLO DE ACTUACIÓN
 
 ---
 
-### 1. COMPROMISO PATRONAL VINCULANTE
-La representación legal de **{razon}**, encabezada por **{rep_legal}** ({cargo}), establece como norma obligatoria en este centro de trabajo la prevención de los factores de riesgo psicosocial, la erradicación de cualquier forma de violencia laboral (acoso, hostigamiento y malos tratos) y la promoción de un entorno organizacional favorable.
+### 1. COMPROMISO PATRONAL DE PREVENCIÓN PSICOSOCIAL
+La representación legal de **{razon}**, por conducto de **{rep_legal}** ({cargo}), establece como directriz obligatoria en este centro de trabajo la prevención de los factores de riesgo psicosocial, la erradicación de la violencia laboral y la promoción de un entorno organizacional favorable.
 
-### 2. APLICACIÓN DE GUÍAS DE REFERENCIA Y VIGILANCIA
-1. **Identificación de Acontecimientos Traumáticos Severos (Guía de Referencia I):** Aplicable al 100% de los trabajadores bajo la coordinación de **{csh_coord}**.
-2. **Evaluación de Factores Psicosociales y Entorno Organizacional (Guías II y III):** Aplicación periódica conforme a la plantilla activa del centro de trabajo y respeto estricto al horario de jornada ({horario}).
-3. **Línea Confidencial de Denuncia Interna (Numeral 8.1 b):** Todo colaborador cuenta con el canal confidencial **{email}** (supervisado por **{oficial}**) y ante el representante de los trabajadores **{csh_sec}** para reportar actos de violencia laboral con garantía de cero represalias.
+### 2. APLICACIÓN DE GUÍAS DE REFERENCIA Y CANAL CONFIDENCIAL
+1. **Identificación de Acontecimientos Traumáticos Severos (Guía de Referencia I):** Aplicable a toda la plantilla bajo seguimiento del Coordinador de Seguridad **{csh_coord}**.
+2. **Evaluación de Factores Psicosociales y Entorno Organizacional (Guías II y III):** Aplicación conforme al número de colaboradores del establecimiento y respeto a la jornada laboral ({horario}).
+3. **Buzón Confidencial de Denuncia Interna (Numeral 8.1 b):** Todo trabajador cuenta con el canal confidencial **{email}** y con la representación laboral (**{csh_sec}**) para reportar actos opuestos al entorno organizacional favorable con garantía de cero represalias.
 
-| **APROBACIÓN PATRONAL ({razon})** | **REPRESENTACIÓN DE LOS TRABAJADORES** |
+| **REPRESENTACIÓN PATRONAL ({razon})** | **REPRESENTACIÓN DE LOS TRABAJADORES** |
 | :--- | :--- |
-| **{rep_legal}** ({cargo}) | **{csh_sec}** (Secretario Comisión) |
-| Fecha de Vigencia: {fecha} | Sello SHA-256: `{hash}` |
+| **{rep_legal}** ({cargo}) | **{csh_sec}** |
+| Fecha de Emisión: {fecha} | Sello SHA-256: `{hash}` |
 "#,
                 razon = razon_social, rfc = tax_id, reg_patronal = reg_patronal,
                 domicilio = domicilio, cp = cp_fiscal, jurisdiccion = jurisdiccion,
                 giro = giro_scian, rep_legal = rep_legal, cargo = rep_cargo,
                 csh_coord = csh_coord, horario = horario_jornada, email = email_arco,
-                oficial = oficial_privacidad, csh_sec = csh_sec, fecha = fecha, hash = empresa.audit_hash
+                csh_sec = csh_sec, fecha = fecha, hash = empresa.audit_hash
             ),
         },
 
@@ -194,29 +176,24 @@ r#"# ACTA CONSTITUTIVA DE LA COMISIÓN MIXTA DE SEGURIDAD E HIGIENE (NOM-019-STP
 
 ---
 
-### I. DATOS OFICIALES DEL CENTRO DE TRABAJO (EXIGIDOS POR EL NUMERAL 7.4 NOM-019-STPS-2011)
+### I. DATOS OFICIALES DEL CENTRO DE TRABAJO (NUMERAL 7.4 NOM-019-STPS-2011)
 * **Denominación o Razón Social:** {razon}
 * **Registro Federal de Contribuyentes (RFC):** {rfc} | **Registro Patronal IMSS:** {reg_patronal}
-* **Domicilio Completo:** {domicilio}, C.P. {cp}, {jurisdiccion}
-* **Rama o Actividad Económica (SCIAN):** {giro}
-* **Fecha Formal de Constitución:** {fecha}
+* **Domicilio del Centro de Trabajo:** {domicilio}, C.P. {cp}, {jurisdiccion}
+* **Actividad Económica (SCIAN):** {giro} | **Fecha de Constitución:** {fecha}
 
-### II. CUADRO DE INTEGRACIÓN FORMAL DE LA COMISIÓN MIXTA DE SEGURIDAD E HIGIENE
-Reunidos en el domicilio del centro de trabajo, el representante legal **{rep_legal}** ({cargo}) y la representación de los trabajadores declaran formalmente constituida la Comisión Mixta de Seguridad e Higiene con los siguientes integrantes titulares:
+### II. INTEGRACIÓN DE LA COMISIÓN MIXTA DE SEGURIDAD E HIGIENE
+Reunidos en el centro de trabajo, la representación patronal (**{rep_legal}** — {cargo}) y la representación de los trabajadores constituyen formalmente la Comisión Mixta de Seguridad e Higiene:
 
-| **CARGO OFICIAL NOM-019** | **NOMBRE COMPLETO DEL DESIGNADO** | **REPRESENTACIÓN** | **ESTATUS** |
+| **CARGO EN LA COMISIÓN** | **NOMBRE DEL INTEGRANTE DESIGNADO** | **SECTOR REPRESENTADO** | **FIRMA AUTÓGRAFA** |
 | :--- | :--- | :--- | :--- |
-| **Coordinador de la Comisión** | **{csh_coord}** | Representante Patronal | En Funciones |
-| **Secretario de la Comisión** | **{csh_sec}** | Representante Trabajadores | En Funciones |
-| **Vocal 1 de Verificación** | **{csh_vocal_pat}** | Vocal Patronal | En Funciones |
-| **Vocal 2 de Verificación** | **{csh_vocal_trab}** | Vocal de los Trabajadores | En Funciones |
+| **Coordinador** | **{csh_coord}** | Representante Patronal | ________________________ |
+| **Secretario** | **{csh_sec}** | Representante Trabajadores | ________________________ |
+| **Vocal 1** | **{csh_vocal_pat}** | Vocal Patronal | ________________________ |
+| **Vocal 2** | **{csh_vocal_trab}** | Vocal Trabajadores | ________________________ |
 
-### III. NOMBRAMIENTO DEL RESPONSABLE DE SERVICIOS PREVENTIVOS SST (NOM-030-STPS-2009)
-En cumplimiento al Numeral 4.1 de la **NOM-030-STPS-2009**, **{razon}** designa formalmente a **{csh_coord}** como **Responsable de Seguridad y Salud en el Trabajo**, encargado de ejecutar el Diagnóstico Integral y el Programa Anual de Prevención (NOM-001 Edificios, NOM-002 Incendios, NOM-017 EPP, NOM-025 Iluminación, NOM-026 Señalética y NOM-029 Instalaciones Eléctricas).
-
-| **COORDINADOR PATRONAL Y RESP. NOM-030** | **SECRETARIO (REP. TRABAJADORES)** | **REPRESENTANTE LEGAL** |
-| :--- | :--- | :--- |
-| **{csh_coord}** | **{csh_sec}** | **{rep_legal}** |
+### III. DESIGNACIÓN DEL RESPONSABLE DE SERVICIOS PREVENTIVOS SST (NOM-030-STPS-2009)
+En cumplimiento al Numeral 4.1 de la **NOM-030-STPS-2009**, se designa a **{csh_coord}** como **Responsable de Seguridad y Salud en el Trabajo**, a cargo del Diagnóstico Integral y del Programa Anual de Prevención (NOM-001, NOM-002, NOM-017, NOM-025, NOM-026 y NOM-029).
 
 *Sello Criptográfico SHA-256:* `{hash}`
 "#,
@@ -238,22 +215,21 @@ r#"# POLÍTICA DE TELETRABAJO, DERECHO A LA DESCONEXIÓN Y CONDICIONES ERGONÓMI
 
 ---
 
-### 1. JORNADA CONTRACTUAL Y DERECHO A LA DESCONEXIÓN DIGITAL (ART. 330-E FRACC. VI LFT)
-**{razon}**, a través de su representante legal **{rep_legal}**, garantiza el **Derecho a la Desconexión Digital** fuera de la jornada laboral establecida de **{horario}**, así como durante descansos, incapacidades y vacaciones.
+### 1. JORNADA LABORAL Y DERECHO A LA DESCONEXIÓN DIGITAL (ART. 330-E FRACC. VI LFT)
+**{razon}** garantiza el **Derecho a la Desconexión Digital** al término de la jornada laboral pactada ({horario}), así como durante pausas de alimentos, días de descanso, incapacidades y periodos vacacionales.
 
-### 2. COMPENSACIÓN PROPORCIONAL DE INSUMOS (ART. 330-E FRACC. III LFT)
-Para las posiciones que laboren más del 40% del tiempo en modalidad remota, el patrón cubrirá en el CFDI de nómina una asignación mensual proporcional de **${apoyo} MXN** por concepto de pago proporcional de telecomunicaciones (internet) y energía eléctrica, además de proveer el equipo ergonómico validado por la Comisión Mixta (**{csh_coord}** y **{csh_sec}**).
+### 2. COMPENSACIÓN PROPORCIONAL DE SERVICIOS E INSUMOS (ART. 330-E FRACC. III LFT)
+Para el personal que desempeñe más del 40% de su jornada en modalidad remota, el patrón cubrirá mensualmente la cantidad de **${apoyo} MXN** por concepto de pago proporcional de internet y energía eléctrica, además de validar las condiciones ergonómicas mediante la Comisión Mixta.
 
-| **POR EL PATRÓN ({razon})** | **COMISIÓN DE SEGURIDAD E HIGIENE** |
+| **POR EL PATRÓN ({razon})** | **CONFORMIDAD DEL TRABAJADOR EN TELETRABAJO** |
 | :--- | :--- |
-| **{rep_legal}** ({cargo}) | **{csh_coord}** / **{csh_sec}** |
+| **{rep_legal}** ({cargo}) | ________________________________________ |
 
 *Fecha Cierta de Emisión:* {fecha} | *Sello SHA-256:* `{hash}`
 "#,
                 razon = razon_social, rfc = tax_id, domicilio = domicilio, cp = cp_fiscal,
-                jurisdiccion = jurisdiccion, rep_legal = rep_legal, horario = horario_jornada,
-                apoyo = apoyo_teletrabajo, csh_coord = csh_coord, csh_sec = csh_sec,
-                cargo = rep_cargo, fecha = fecha, hash = empresa.audit_hash
+                jurisdiccion = jurisdiccion, horario = horario_jornada, apoyo = apoyo_teletrabajo,
+                rep_legal = rep_legal, cargo = rep_cargo, fecha = fecha, hash = empresa.audit_hash
             ),
         },
 
@@ -266,22 +242,22 @@ r#"# CONTRATO MARCO DE PRESTACIÓN DE SERVICIOS CON CLÁUSULA DE MATERIALIDAD FI
 
 ---
 
-### DECLARACIONES VINCULANTES DE LAS PARTES
-1. **Declara "EL CLIENTE" ({razon}):** Persona moral/física con RFC **{rfc}**, domicilio fiscal en **{domicilio}, C.P. {cp}, {jurisdiccion}**, representada en este acto por **{rep_legal}** en su carácter de **{cargo}** ({escritura}).
-2. **Declara "EL PROVEEDOR" ({prov_nombre}):** Contribuyente activo con RFC **{prov_rfc}**, Opinión de Cumplimiento 32-D Positiva, domicilio fiscal Localizado y exento de los supuestos del Artículo 69 y 69-B del CFF.
+### DECLARACIONES DE LAS PARTES
+1. **Declara "EL CLIENTE" ({razon}):** Contribuyente activo con RFC **{rfc}**, con domicilio fiscal en **{domicilio}, C.P. {cp}, {jurisdiccion}**, representado por **{rep_legal}** en su carácter de **{cargo}** (Instrumento N° {escritura}).
+2. **Declara "EL PROVEEDOR" ({prov_nombre}):** Contribuyente con RFC **{prov_rfc}**, con Opinión de Cumplimiento 32-D en sentido Positivo, domicilio fiscal Localizado y exento de los supuestos de los Artículos 69 y 69-B del CFF.
 
 ---
 
 ### CLÁUSULAS DE SUSTANCIA ECONÓMICA Y MATERIALIDAD
-**PRIMERA (OBJETO ESPECÍFICO AUDITABLE):** EL PROVEEDOR (**{prov_nombre}** — **{prov_rfc}**) se obliga a ejecutar en favor de **{razon}** las operaciones y servicios consistentes en: **{prov_objeto}**. Todo CFDI 4.0 deberá vincularse a los entregables descritos en este instrumento.
+**PRIMERA (OBJETO ESPECÍFICO AUDITABLE):** EL PROVEEDOR (**{prov_nombre}** — RFC: **{prov_rfc}**) se obliga a prestar en favor de **{razon}** los servicios consistentes en: **{prov_objeto}**. Todo CFDI 4.0 emitido deberá referenciar los entregables de la bitácora anexa.
 
-**SEGUNDA (DOSSIER DE MATERIALIDAD ART. 69-B CFF Y RAZÓN DE NEGOCIOS ART. 5-A CFF):** Para liberar cada pago, EL PROVEEDOR entregará bajo supervisión de **{testigo}**: (i) Orden de servicio fechada; (ii) Entregable técnico verificable (reportes, planos, bitácoras o evidencia fotográfica/digital); (iii) Opinión 32-D vigente; y (iv) CFDI 4.0 y Complemento de Pago (REP).
+**SEGUNDA (EXPEDIENTE DE MATERIALIDAD ART. 69-B CFF Y RAZÓN DE NEGOCIOS ART. 5-A CFF):** Será requisito para cada pago integrar: (i) Orden de compra previa fechada; (ii) Evidencia material del entregable (informes, minutas, bitácoras o memoria fotográfica/técnica); (iii) Opinión 32-D vigente; y (iv) CFDI 4.0 y Complemento de Pago (REP).
 
-**TERCERA (INDEMNIDAD FISCAL Y FECHA CIERTA DIGITAL):** Si EL PROVEEDOR apareciera en listados del Art. 69-B del CFF, indemnizará al 100% a **{razon}**. El presente instrumento queda sellado con huella criptográfica SHA-256 (`{hash}`) en Árbol de Merkle el día **{fecha}**, dotándolo de Fecha Cierta Digital conforme al Código de Comercio.
+**TERCERA (INDEMNIDAD FISCAL Y FECHA CIERTA DIGITAL):** En caso de publicación del proveedor en listados del Art. 69-B del CFF, éste indemnizará al 100% a **{razon}**. El presente instrumento cuenta con huella criptográfica SHA-256 (`{hash}`) de fecha **{fecha}**.
 
-| **POR "EL CLIENTE": {razon} ({rfc})** | **POR "EL PROVEEDOR": {prov_nombre} ({prov_rfc})** | **TESTIGO / AUDITOR DE MATERIALIDAD** |
+| **POR "EL CLIENTE": {razon} ({rfc})** | **POR "EL PROVEEDOR": {prov_nombre}** | **TESTIGO / AUDITOR DE MATERIALIDAD** |
 | :--- | :--- | :--- |
-| **{rep_legal}** ({cargo}) | Representante Acreditado de {prov_nombre} | **{testigo}** |
+| **{rep_legal}** ({cargo}) | Firma Representante Legal | **{testigo}** |
 "#,
                 razon = razon_social, rfc = tax_id, domicilio = domicilio, cp = cp_fiscal,
                 jurisdiccion = jurisdiccion, rep_legal = rep_legal, cargo = rep_cargo,
@@ -296,15 +272,15 @@ r#"# CONTRATO MARCO DE PRESTACIÓN DE SERVICIOS CON CLÁUSULA DE MATERIALIDAD FI
             content: format!(
 r#"# PROTOCOLO PATRONAL IMSS 32-D, PRIMA DE RIESGO Y BLINDAJE DE RESPONSABILIDAD SOLIDARIA REPSE (ICSOE / SISSUB)
 **Patrón:** {razon} ({rfc}) | **Registro Patronal IMSS:** {reg_patronal}
-**Clasificación de Riesgo Declarada (Arts. 71-75 LSS):** {clase_prima} | **Estatus/Folio REPSE:** {repse}
-**Domicilio:** {domicilio}, C.P. {cp}, {jurisdiccion} | **Responsable Legal:** {rep_legal} ({cargo})
+**Clasificación de Riesgo (Arts. 71-75 LSS):** {clase_prima} | **Folio REPSE:** {repse}
+**Domicilio:** {domicilio}, C.P. {cp}, {jurisdiccion} | **Representación Legal:** {rep_legal} ({cargo})
 
 ---
 
 ### 1. INTEGRACIÓN DEL EXPEDIENTE MENSUAL DE CONTRATISTAS ESPECIALIZADOS (ART. 15-A LSS Y ART. 27 FRACC. V LISR)
-Por instrucción vinculante de **{rep_legal}** y bajo auditoría de **{testigo}**, para la deducibilidad de ISR y acreditamiento de IVA en servicios especializados (proveedor **{prov_nombre}** — **{prov_rfc}**), se resguardan mensualmente: (1) Registro REPSE vigente ({repse}); (2) CFDI de nómina de los trabajadores asignados; (3) Entero bancario de retenciones ISR; (4) Pago mensual de IVA; (5) Pago SUA de cuotas IMSS; (6) Pago bimestral INFONAVIT; y (7) Acuses cuatrimestrales **ICSOE (IMSS)** y **SISSUB (INFONAVIT)** presentados a más tardar el día 17 de enero, mayo y septiembre.
+Para la deducibilidad de ISR y acreditamiento de IVA en servicios especializados (Contratista: **{prov_nombre}** — RFC: **{prov_rfc}**), se verifican y resguardan mensualmente: (1) Registro REPSE vigente ({repse}); (2) CFDI de nómina de los trabajadores asignados; (3) Comprobante bancario de retenciones ISR; (4) Declaración y pago mensual de IVA; (5) Cédula SUA y pago de cuotas IMSS; (6) Pago bimestral INFONAVIT; y (7) Acuses cuatrimestrales **ICSOE (IMSS)** y **SISSUB (INFONAVIT)**.
 
-| **DIRECCIÓN PATRONAL ({razon})** | **CONTRALORÍA / AUDITORÍA DE CUMPLIMIENTO** |
+| **DIRECCIÓN PATRONAL ({razon})** | **AUDITORÍA DE CUMPLIMIENTO** |
 | :--- | :--- |
 | **{rep_legal}** ({cargo}) | **{testigo}** |
 
@@ -334,18 +310,18 @@ Todo producto o servicio comercializado por **{razon}** exhibe su precio total e
 
 ### 2. DERECHO DE REVOCACIÓN (5 DÍAS HÁBILES) Y PÓLIZA DE GARANTÍA ({garantia} DÍAS NATURALES)
 1. **Revocación y Reembolso (Art. 56 LFPC):** El consumidor cuenta con **5 días hábiles** a partir de la entrega para revocar su compra a distancia solicitándolo en **{email}**.
-2. **Garantía Legal Expresa (Arts. 77 y 78 LFPC):** **{razon}** otorga una garantía de **{garantia} días naturales** (cumpliendo y superando el mínimo legal de 90 días del Art. 77 LFPC) efectiva directamente en **{domicilio}, C.P. {cp}, {jurisdiccion}**.
+2. **Garantía Legal Expresa (Arts. 77 y 78 LFPC):** **{razon}** otorga una garantía de **{garantia} días naturales** efectiva directamente en **{domicilio}, C.P. {cp}, {jurisdiccion}**.
 
-| **EMISOR COMERCIAL ({razon})** | **RESPONSABLE DE ATENCIÓN AL CONSUMIDOR** |
+| **EMISOR COMERCIAL ({razon})** | **ATENCIÓN AL CONSUMIDOR** |
 | :--- | :--- |
-| **{rep_legal}** ({cargo}) | **{oficial}** ({email}) |
+| **{rep_legal}** ({cargo}) | Canal Oficial: {email} |
 
 *Emitido el {fecha} | Sello Criptográfico SHA-256:* `{hash}`
 "#,
                 razon = razon_social, rfc = tax_id, domicilio = domicilio, cp = cp_fiscal,
                 jurisdiccion = jurisdiccion, rep_legal = rep_legal, cargo = rep_cargo,
                 email = email_arco, tel = telefono_corp, garantia = dias_garantia,
-                oficial = oficial_privacidad, fecha = fecha, hash = empresa.audit_hash
+                fecha = fecha, hash = empresa.audit_hash
             ),
         },
     ]
