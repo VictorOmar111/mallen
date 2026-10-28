@@ -1,12 +1,14 @@
 (function () {
-    let wasmExports = null;
     let spotlightEl = null;
     let mainConsoleEl = null;
+    let redWaveEl = null;
+    let greenWaveEl = null;
 
-    let curX = -1000, curY = -1000;
-    let tgtX = -1000, tgtY = -1000;
-    let isAnimating = false;
+    let lastX = window.innerWidth * 0.5;
+    let lastY = window.innerHeight * 0.5;
+    let currentScale = 1.0;
     let defaultRgb = '59, 130, 246';
+    let burstActive = false;
 
     const PALETTE = {
         red:     '239, 68, 68',
@@ -21,19 +23,6 @@
     };
 
     const COLOR_REGEX = /(?:text|border|bg)-(red|purple|amber|cyan|teal|indigo|sky|emerald|blue)-(?:300|400|500|600|700|800|900)/;
-
-    async function loadRustPhotonWasm() {
-        try {
-            const response = await fetch('/wasm/photon_engine.wasm?v=2026.10');
-            const bytes = await response.arrayBuffer();
-            const { instance } = await WebAssembly.instantiate(bytes);
-            wasmExports = instance.exports;
-        } catch (_) {
-            wasmExports = {
-                lerp: (c, t, f) => c + (t - c) * f
-            };
-        }
-    }
 
     function detectElementRgb(el, fallback) {
         const ownMatch = (el.className || '').match(COLOR_REGEX);
@@ -76,6 +65,11 @@
         document.documentElement.style.setProperty('--scene-b', parts[2].trim());
     }
 
+    function applySpotlightTransform() {
+        if (!spotlightEl) return;
+        spotlightEl.style.transform = `translate3d(${lastX}px, ${lastY}px, 0) scale3d(${currentScale}, ${currentScale}, 1)`;
+    }
+
     function setSpotlightColor(rgb) {
         if (spotlightEl && spotlightEl.dataset.rgb !== rgb) {
             spotlightEl.dataset.rgb = rgb;
@@ -86,6 +80,38 @@
             mainConsoleEl.style.setProperty('--console-rgb', rgb);
         }
     }
+
+    // Dispara la explosión Roja -> Haz Verde Expandido -> Retorno a la página (100% GPU)
+    window.triggerPhotonicBurst = function () {
+        if (!redWaveEl || !greenWaveEl) return;
+
+        redWaveEl.classList.remove('fire-wave');
+        greenWaveEl.classList.remove('fire-wave');
+        void redWaveEl.offsetWidth; // Reiniciar animación en compositor GPU
+        redWaveEl.classList.add('fire-wave');
+        greenWaveEl.classList.add('fire-wave');
+
+        burstActive = true;
+        // Fase 1: Destello Rojo en el haz del puntero
+        setSpotlightColor(PALETTE.red);
+        currentScale = 1.45;
+        applySpotlightTransform();
+
+        // Fase 2 (220ms): Transformación a Haz Verde Más Grande
+        setTimeout(() => {
+            setSpotlightColor(PALETTE.emerald);
+            currentScale = 1.95;
+            applySpotlightTransform();
+        }, 220);
+
+        // Fase 3 (950ms): Regreso fluido al tamaño y color de la página
+        setTimeout(() => {
+            currentScale = 1.0;
+            burstActive = false;
+            setSpotlightColor(defaultRgb);
+            applySpotlightTransform();
+        }, 950);
+    };
 
     function bindCards() {
         const cardSelectors = [
@@ -112,34 +138,30 @@
             const rgb = detectElementRgb(c, defaultRgb);
             c.style.setProperty('--card-rgb', rgb);
 
-            // Cambio de color instantáneo solo al entrar/salir del cuadro (Cero costo durante mousemove)
-            c.addEventListener('pointerenter', () => setSpotlightColor(rgb), { passive: true });
-            c.addEventListener('pointerleave', () => setSpotlightColor(defaultRgb), { passive: true });
+            c.addEventListener('pointerenter', () => {
+                if (!burstActive) setSpotlightColor(rgb);
+            }, { passive: true });
+            c.addEventListener('pointerleave', () => {
+                if (!burstActive) setSpotlightColor(defaultRgb);
+            }, { passive: true });
         });
     }
 
-    function tickSpotlight() {
-        curX = wasmExports.lerp(curX, tgtX, 0.35);
-        curY = wasmExports.lerp(curY, tgtY, 0.35);
-
-        if (spotlightEl) {
-            spotlightEl.style.transform = `translate3d(${curX.toFixed(1)}px, ${curY.toFixed(1)}px, 0)`;
-        }
-
-        if (Math.abs(tgtX - curX) > 0.5 || Math.abs(tgtY - curY) > 0.5) {
-            requestAnimationFrame(tickSpotlight);
-        } else {
-            isAnimating = false;
-        }
-    }
-
-    async function initQuantumLighting() {
-        await loadRustPhotonWasm();
+    function initQuantumLighting() {
         configurePageScene();
 
         spotlightEl = document.createElement('div');
         spotlightEl.id = 'mallen-wasm-spotlight';
+        spotlightEl.style.transition = 'transform 0.015s linear';
         document.body.appendChild(spotlightEl);
+
+        redWaveEl = document.createElement('div');
+        redWaveEl.className = 'photonic-wave-red';
+        document.body.appendChild(redWaveEl);
+
+        greenWaveEl = document.createElement('div');
+        greenWaveEl.className = 'photonic-wave-green';
+        document.body.appendChild(greenWaveEl);
 
         const consoles = document.querySelectorAll('#express-check > div > div.rounded-2xl, body > div.max-w-3xl.rounded-2xl, body > div.max-w-5xl.rounded-2xl');
         consoles.forEach((con) => {
@@ -156,18 +178,11 @@
             obs.observe(liveRes, { attributes: true, attributeFilter: ['class'] });
         }
 
-        // En mousemove solo actualizamos las 2 coordenadas numéricas — Cero lecturas ni mutaciones de estilos
+        // SEGUIMIENTO 1:1 INSTANTÁNEO CON EL PUNTERO (Cero retraso, misma velocidad física que el mouse)
         window.addEventListener('pointermove', (e) => {
-            tgtX = e.clientX;
-            tgtY = e.clientY;
-            if (curX < -500) {
-                curX = tgtX;
-                curY = tgtY;
-            }
-            if (!isAnimating) {
-                isAnimating = true;
-                requestAnimationFrame(tickSpotlight);
-            }
+            lastX = e.clientX;
+            lastY = e.clientY;
+            applySpotlightTransform();
         }, { passive: true });
     }
 

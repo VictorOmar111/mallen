@@ -174,3 +174,147 @@ input:not([type="checkbox"]):focus, textarea:focus {
         0 0 18px -3px rgba(var(--card-rgb, 59, 130, 246), 0.55) !important;
     outline: none !important;
 }
+
+/* ==========================================================================
+   SISTEMA DE EXPLOSIÓN FOTÓNICA (ROJO -> HAZ VERDE EXPANDIDO) EN MODALES
+   100% GPU COMPOSITOR THREAD (SOLO scale3d Y opacity — CERO LAG)
+   ========================================================================== */
+
+/* Fondo del modal transparente/translúcido (deja ver claramente la página detrás) */
+.photonic-modal-backdrop {
+    background: radial-gradient(
+        circle at 50% 50%,
+        rgba(15, 23, 42, 0.18) 0%,
+        rgba(2, 6, 23, 0.42) 100%
+    ) !important;
+}
+
+/* Contenedor de cristal claro translúcido (No negro) */
+.photonic-modal-card {
+    position: relative;
+    background: linear-gradient(
+        145deg,
+        rgba(30, 41, 59, 0.48) 0%,
+        rgba(15, 23, 42, 0.58) 55%,
+        rgba(6, 78, 59, 0.36) 100%
+    ) !important;
+    border: 1.5px solid rgba(52, 211, 153, 0.65) !important;
+    box-shadow:
+        0 25px 65px -12px rgba(0, 0, 0, 0.55),
+        0 0 55px -5px rgba(16, 185, 129, 0.42),
+        inset 0 1px 2px 0 rgba(255, 255, 255, 0.35) !important;
+    transform-origin: center center;
+    will-change: transform, opacity;
+}
+
+/* Animación de entrada del cristal: destello rojo inicial que estabiliza en esmeralda */
+.photonic-modal-card.is-exploding-in {
+    animation: modalCrystalIgnition 0.85s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@keyframes modalCrystalIgnition {
+    0% {
+        opacity: 0;
+        transform: scale3d(0.82, 0.82, 1);
+        border-color: rgba(239, 68, 68, 0.98);
+    }
+    32% {
+        opacity: 1;
+        transform: scale3d(1.03, 1.03, 1);
+        border-color: rgba(239, 68, 68, 0.95);
+    }
+    100% {
+        opacity: 1;
+        transform: scale3d(1, 1, 1);
+        border-color: rgba(52, 211, 153, 0.78);
+    }
+}
+
+/* Onda 1: Detonación Roja Inicial */
+.photonic-wave-red {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    width: 520px;
+    height: 520px;
+    margin-left: -260px;
+    margin-top: -260px;
+    border-radius: 9999px;
+    pointer-events: none;
+    z-index: 48;
+    background: radial-gradient(
+        circle,
+        rgba(239, 68, 68, 0.72) 0%,
+        rgba(239, 68, 68, 0.32) 38%,
+        transparent 70%
+    );
+    opacity: 0;
+    transform: scale3d(0.1, 0.1, 1);
+    will-change: transform, opacity;
+}
+
+.photonic-wave-red.fire-wave {
+    animation: redShockwaveDetonation 0.72s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@keyframes redShockwaveDetonation {
+    0% {
+        opacity: 0.95;
+        transform: scale3d(0.15, 0.15, 1);
+    }
+    45% {
+        opacity: 0.85;
+        transform: scale3d(1.55, 1.55, 1);
+    }
+    100% {
+        opacity: 0;
+        transform: scale3d(2.1, 2.1, 1);
+    }
+}
+
+/* Onda 2: Haz Verde Esmeralda Más Grande que absorbe la onda roja y regresa a la página */
+.photonic-wave-green {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    width: 680px;
+    height: 680px;
+    margin-left: -340px;
+    margin-top: -340px;
+    border-radius: 9999px;
+    pointer-events: none;
+    z-index: 49;
+    background: radial-gradient(
+        circle,
+        rgba(16, 185, 129, 0.62) 0%,
+        rgba(52, 211, 153, 0.28) 42%,
+        rgba(6, 182, 212, 0.12) 60%,
+        transparent 74%
+    );
+    opacity: 0;
+    transform: scale3d(0.2, 0.2, 1);
+    will-change: transform, opacity;
+}
+
+.photonic-wave-green.fire-wave {
+    animation: greenMegaBeamExpansion 1.15s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@keyframes greenMegaBeamExpansion {
+    0% {
+        opacity: 0;
+        transform: scale3d(0.3, 0.3, 1);
+    }
+    28% {
+        opacity: 0.92;
+        transform: scale3d(1.35, 1.35, 1);
+    }
+    70% {
+        opacity: 0.55;
+        transform: scale3d(2.35, 2.35, 1);
+    }
+    100% {
+        opacity: 0;
+        transform: scale3d(2.85, 2.85, 1);
+    }
+}

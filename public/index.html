@@ -11,8 +11,8 @@
         body { font-family: 'Inter', sans-serif; background-color: #020617; background-image: radial-gradient(at 12% 12%, rgba(37, 99, 235, 0.32) 0px, transparent 48%), radial-gradient(at 88% 18%, rgba(16, 185, 129, 0.25) 0px, transparent 48%), radial-gradient(at 50% 82%, rgba(99, 102, 241, 0.28) 0px, transparent 52%); background-attachment: fixed; }
         .font-mono-code { font-family: 'JetBrains Mono', monospace; }
     </style>
-    <link rel="stylesheet" href="/css/quantum-glass.css?v=2026.10">
-    <script src="/js/quantum-lights.js?v=2026.10" defer></script>
+    <link rel="stylesheet" href="/css/quantum-glass.css?v=2026.11">
+    <script src="/js/quantum-lights.js?v=2026.11" defer></script>
 </head>
 <body class="bg-slate-950 text-slate-100 min-h-screen selection:bg-blue-600 selection:text-white">
 
@@ -429,25 +429,63 @@
         </div>
     </section>
 
-    <!-- Modal Anti-Abandono de Carrito (Exit-Intent Lead Magnet) -->
-    <div id="exit-intent-modal" class="hidden fixed inset-0 bg-slate-950/85 z-50 items-center justify-center p-4">
-        <div class="bg-white/[0.05] shadow-[0_8px_32px_rgba(0,0,0,0.5)] border-2 border-red-500/50 rounded-2xl max-w-lg w-full p-8 shadow-2xl font-mono-code text-xs relative">
-            <button onclick="closeExitModal()" class="absolute top-4 right-4 text-slate-400 hover:text-white text-base">✕</button>
-            <span class="inline-block bg-red-950 text-red-400 border border-red-700 px-3 py-1 rounded-full text-[10px] font-bold uppercase mb-4">
+        <!-- Modal 1: Rescate Anti-Abandono (Cristal Translúcido + Explosión Fotónica Roja a Verde) -->
+    <div id="exit-intent-modal" class="hidden fixed inset-0 photonic-modal-backdrop z-50 items-center justify-center p-4">
+        <div class="photonic-modal-card rounded-2xl max-w-lg w-full p-8 font-mono-code text-xs relative">
+            <button onclick="closeExitModal()" class="absolute top-4 right-4 text-slate-300 hover:text-white text-base">✕</button>
+            <span class="inline-block bg-red-500/20 text-red-300 border border-red-400/50 px-3 py-1 rounded-full text-[10px] font-bold uppercase mb-4">
                 Alerta Preventiva de Inspección STPS
             </span>
-            <h3 class="text-xl font-extrabold text-white font-sans mb-2">
+            <h3 class="text-2xl font-extrabold text-white font-sans mb-2 tracking-tight">
                 Espera: No te vayas a ciegas.
             </h3>
-            <p class="text-slate-300 leading-relaxed mb-6">
-                Antes de cerrar esta ventana, descarga <strong>sin costo</strong> tu <strong>Micro-Dictamen Pericial en PDF</strong> para <span id="exit-rfc-label" class="text-emerald-400 font-bold">EST850628K51</span> y descarta tu alerta más crítica ante la STPS (NOM-035 / NOM-019 / NOM-030).
+            <p class="text-slate-100 leading-relaxed mb-6">
+                Antes de cerrar esta ventana, descarga sin costo tu <strong>Pre-Dictamen Pericial en PDF</strong> para <span id="exit-rfc-label" class="text-emerald-300 font-bold">EST850628K51</span> y verifica tu exposición crítica ante la STPS (NOM-035, NOM-019 y NOM-030) con sello criptográfico SHA-256.
             </p>
             <div class="flex flex-col sm:flex-row gap-3">
-                <a id="exit-micro-pdf-link" href="/api/micro_scan/EST850628K51" onclick="closeExitModal()" class="flex-1 bg-gradient-to-r from-amber-500 to-red-600 hover:from-amber-400 hover:to-red-500 text-white text-center font-bold py-3.5 px-5 rounded-xl transition uppercase">
+                <a id="exit-micro-pdf-link" href="/api/micro_scan/EST850628K51" onclick="closeExitModal()" class="flex-1 bg-gradient-to-r from-emerald-600 to-teal-500 hover:from-emerald-500 hover:to-teal-400 text-white text-center font-bold py-3.5 px-5 rounded-xl transition uppercase shadow-lg shadow-emerald-500/25">
                     Descargar Pre-Dictamen Preliminar
                 </a>
-                <button onclick="closeExitModal()" class="bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold py-3.5 px-5 rounded-xl transition">
+                <button onclick="closeExitModal()" class="bg-white/10 hover:bg-white/20 text-white border border-white/20 font-bold py-3.5 px-5 rounded-xl transition">
                     Continuar en el Portal
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal 2: Consentimiento Criptográfico de Privacidad (LFPDPPP), Cookies Técnicas y Términos (Art. 89 C.Com) -->
+    <div id="legal-consent-modal" class="hidden fixed inset-0 photonic-modal-backdrop z-50 items-center justify-center p-4">
+        <div class="photonic-modal-card rounded-2xl max-w-xl w-full p-8 font-mono-code text-xs relative">
+            <div class="flex items-center justify-between mb-4">
+                <span class="inline-block bg-emerald-500/20 text-emerald-300 border border-emerald-400/50 px-3 py-1 rounded-full text-[10px] font-bold uppercase">
+                    Protocolo de Gobernanza, Privacidad & Fecha Cierta
+                </span>
+                <span class="text-[10px] text-slate-300">LFPDPPP • Art. 89 C.Com</span>
+            </div>
+            <h3 class="text-xl sm:text-2xl font-extrabold text-white font-sans mb-3 tracking-tight">
+                Consentimiento Informado de Privacidad, Términos y Cookies Técnicas
+            </h3>
+            <p class="text-slate-100 leading-relaxed mb-4">
+                Para garantizar la integridad pericial de su sesión, <strong>Firma Pericial Mallen (mallen.lat)</strong> opera bajo estricto apego a la legislación federal vigente:
+            </p>
+            <div class="space-y-2.5 mb-6 text-[11px] text-slate-200 bg-slate-950/35 border border-white/15 rounded-xl p-4">
+                <div>
+                    <strong class="text-emerald-300">Aviso de Privacidad Integral (LFPDPPP / SABG):</strong> Los datos registrales e indicadores ingresados se procesan exclusivamente para la emisión de su diagnóstico y sus instrumentos jurídicos personalizados.
+                </div>
+                <div>
+                    <strong class="text-blue-300">Cookies Técnicas de Integridad Criptográfica:</strong> Utilizamos únicamente almacenamiento técnico de sesión para sincronizar el cálculo de sus multas con sus PDFs y resguardar la huella SHA-256 de su expediente (cero cookies publicitarias de terceros).
+                </div>
+                <div>
+                    <strong class="text-purple-300">Términos de Servicio y Alcance OSINT (Art. 89 C.Com):</strong> Todo dictamen preventivo se emite con sello de tiempo conforme a la NOM-151-SCFI-2016 y Jurisprudencia SCJN de Fecha Cierta.
+                </div>
+            </div>
+            <div class="flex flex-col sm:flex-row items-center justify-between gap-3">
+                <div class="flex gap-4 text-[11px] text-emerald-300">
+                    <a href="/privacy" class="hover:underline">Leer Aviso de Privacidad</a>
+                    <a href="/terms" class="hover:underline">Leer Términos del Servicio</a>
+                </div>
+                <button onclick="acceptLegalConsentModal()" class="w-full sm:w-auto bg-gradient-to-r from-blue-600 to-emerald-600 hover:from-blue-500 hover:to-emerald-500 text-white font-bold py-3.5 px-7 rounded-xl transition uppercase shadow-lg shadow-emerald-600/25">
+                    Aceptar y Continuar al Portal
                 </button>
             </div>
         </div>
@@ -463,12 +501,13 @@
             <div class="flex space-x-6">
                 <a href="/privacy" class="hover:text-slate-300 transition">Aviso de Privacidad Integral</a>
                 <a href="/terms" class="hover:text-slate-300 transition">Términos del Servicio</a>
+                <button type="button" onclick="openLegalConsentModal()" class="hover:text-emerald-300 transition">Privacidad & Cookies</button>
                 <a href="/dashboard.html" class="text-blue-400 hover:text-blue-300 transition">Modo Contador B2B2B</a>
             </div>
         </div>
     </footer>
 
-    <script src="/js/app.js?v=2026.3" defer></script>
-    <script src="/js/badge.js?v=2026.3" defer></script>
+    <script src="/js/app.js?v=2026.11" defer></script>
+    <script src="/js/badge.js?v=2026.11" defer></script>
 </body>
 </html>

@@ -2,8 +2,25 @@
     let exitIntentShown = false;
     let currentTaxId = "EST850628K51";
 
+    function animateModalExplosion(modalEl) {
+        if (!modalEl) return;
+        const card = modalEl.querySelector('.photonic-modal-card');
+        if (card) {
+            card.classList.remove('is-exploding-in');
+            void card.offsetWidth;
+            card.classList.add('is-exploding-in');
+        }
+        if (typeof window.triggerPhotonicBurst === 'function') {
+            window.triggerPhotonicBurst();
+        }
+    }
+
+    // 1. Disparador del Modal "Espera: No te vayas a ciegas" con explosión Roja -> Verde
     document.addEventListener("mouseleave", (e) => {
         if (e.clientY <= 0 && !exitIntentShown) {
+            const consentModal = document.getElementById("legal-consent-modal");
+            if (consentModal && !consentModal.classList.contains("hidden")) return;
+
             const modal = document.getElementById("exit-intent-modal");
             if (modal) {
                 exitIntentShown = true;
@@ -15,6 +32,7 @@
                 if (link) link.href = `/api/micro_scan/${encodeURIComponent(currentTaxId)}`;
                 modal.classList.remove("hidden");
                 modal.classList.add("flex");
+                animateModalExplosion(modal);
             }
         }
     });
@@ -22,10 +40,56 @@
     window.closeExitModal = function () {
         const modal = document.getElementById("exit-intent-modal");
         if (modal) {
+            if (typeof window.triggerPhotonicBurst === "function") {
+                window.triggerPhotonicBurst();
+            }
             modal.classList.add("hidden");
             modal.classList.remove("flex");
         }
     };
+
+    // 2. Modal Translúcido de Consentimiento Legal (Privacidad LFPDPPP, Términos Art. 89 C.Com y Cookies Técnicas)
+    window.openLegalConsentModal = function () {
+        const modal = document.getElementById("legal-consent-modal");
+        if (modal) {
+            modal.classList.remove("hidden");
+            modal.classList.add("flex");
+            animateModalExplosion(modal);
+        }
+    };
+
+    window.acceptLegalConsentModal = function () {
+        try {
+            localStorage.setItem(
+                "mallen_legal_consent_2026",
+                JSON.stringify({
+                    accepted_at_utc: new Date().toISOString(),
+                    lfpdppp_privacy: true,
+                    ccom_art89_terms: true,
+                    session_integrity_cookies: true
+                })
+            );
+        } catch (_) {}
+
+        const modal = document.getElementById("legal-consent-modal");
+        if (modal) {
+            if (typeof window.triggerPhotonicBurst === "function") {
+                window.triggerPhotonicBurst();
+            }
+            modal.classList.add("hidden");
+            modal.classList.remove("flex");
+        }
+    };
+
+    document.addEventListener("DOMContentLoaded", () => {
+        try {
+            if (!localStorage.getItem("mallen_legal_consent_2026")) {
+                setTimeout(() => {
+                    window.openLegalConsentModal();
+                }, 650);
+            }
+        } catch (_) {}
+    });
 
     function setIfEmpty(id, val) {
         const el = document.getElementById(id);
@@ -100,7 +164,6 @@
             });
             const data = await resp.json();
 
-            // Pre-llenar automáticamente el desplegable con los datos detectados en DENUE / OSINT
             setIfEmpty("dos_razon", data.razon_social);
             setIfEmpty("dos_giro", `${data.codigo_scian} - ${data.actividad_scian_desc}`);
             setIfEmpty("dos_domicilio", data.domicilio_fiscal_o_denue);
@@ -112,6 +175,10 @@
                 const d = data.calibration_applied.dossier;
                 setIfEmpty("dos_email", d.email_arco_privacidad);
                 setIfEmpty("dos_tel", d.telefono_corporativo);
+            }
+
+            if (typeof window.triggerPhotonicBurst === "function") {
+                window.triggerPhotonicBurst();
             }
 
             const box = document.getElementById("live-scan-result");
