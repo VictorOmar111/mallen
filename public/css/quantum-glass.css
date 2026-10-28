@@ -1,38 +1,26 @@
-@property --laser-angle {
-    syntax: '<angle>';
-    initial-value: 0deg;
-    inherits: false;
-}
-
-:root {
-    --mx: 50vw;
-    --my: 50vh;
-}
-
 body {
     background-color: #020617 !important;
     position: relative;
     overflow-x: hidden;
 }
 
-/* CAPA 1: Núcleos volumétricos de luz ambiental en todo el recorrido de la página */
+/* CAPA 1: Iluminación volumétrica estática en GPU (Sin filter:blur ni animaciones de repintado) */
 body::before {
     content: "";
     position: fixed;
-    inset: -15%;
+    inset: 0;
     z-index: 0;
     pointer-events: none;
     background:
-        radial-gradient(650px circle at 14% 12%, rgba(37, 99, 235, 0.26), transparent 60%),
-        radial-gradient(600px circle at 86% 22%, rgba(16, 185, 129, 0.20), transparent 60%),
-        radial-gradient(750px circle at 50% 52%, rgba(79, 70, 229, 0.18), transparent 65%),
-        radial-gradient(620px circle at 18% 82%, rgba(6, 182, 212, 0.16), transparent 60%),
-        radial-gradient(680px circle at 84% 88%, rgba(16, 185, 129, 0.18), transparent 65%);
-    filter: blur(45px);
-    animation: mallenAuroraPulse 16s ease-in-out infinite alternate;
+        radial-gradient(650px circle at 14% 12%, rgba(37, 99, 235, 0.22), transparent 70%),
+        radial-gradient(600px circle at 86% 20%, rgba(16, 185, 129, 0.16), transparent 70%),
+        radial-gradient(750px circle at 50% 54%, rgba(79, 70, 229, 0.14), transparent 72%),
+        radial-gradient(620px circle at 18% 86%, rgba(6, 182, 212, 0.14), transparent 70%),
+        radial-gradient(650px circle at 84% 88%, rgba(16, 185, 129, 0.15), transparent 70%);
+    transform: translateZ(0);
 }
 
-/* CAPA 2: Retícula técnica revelada dinámicamente por el haz de luz del cursor */
+/* CAPA 2: Retícula arquitectónica ultra-ligera (Sin mask-image dinámico en :root) */
 body::after {
     content: "";
     position: fixed;
@@ -40,17 +28,27 @@ body::after {
     z-index: 0;
     pointer-events: none;
     background-image:
-        linear-gradient(to right, rgba(148, 163, 184, 0.07) 1px, transparent 1px),
-        linear-gradient(to bottom, rgba(148, 163, 184, 0.07) 1px, transparent 1px);
-    background-size: 44px 44px;
-    mask-image: radial-gradient(480px circle at var(--mx) var(--my), rgba(0, 0, 0, 0.95) 0%, rgba(0, 0, 0, 0.25) 45%, transparent 100%);
-    -webkit-mask-image: radial-gradient(480px circle at var(--mx) var(--my), rgba(0, 0, 0, 0.95) 0%, rgba(0, 0, 0, 0.25) 45%, transparent 100%);
+        linear-gradient(to right, rgba(148, 163, 184, 0.04) 1px, transparent 1px),
+        linear-gradient(to bottom, rgba(148, 163, 184, 0.04) 1px, transparent 1px);
+    background-size: 48px 48px;
+    transform: translateZ(0);
 }
 
-@keyframes mallenAuroraPulse {
-    0% { transform: scale(1) translate3d(0px, 0px, 0px); }
-    50% { transform: scale(1.05) translate3d(18px, -14px, 0px); }
-    100% { transform: scale(1.02) translate3d(-15px, 12px, 0px); }
+/* Haz de luz movido exclusivamente por hardware GPU (transform: translate3d — Cero Repaint) */
+#mallen-wasm-spotlight {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 560px;
+    height: 560px;
+    margin-left: -280px;
+    margin-top: -280px;
+    border-radius: 9999px;
+    pointer-events: none;
+    z-index: 0;
+    background: radial-gradient(circle, rgba(56, 189, 248, 0.10) 0%, rgba(16, 185, 129, 0.05) 38%, transparent 70%);
+    will-change: transform;
+    transform: translate3d(-1000px, -1000px, 0);
 }
 
 header, section, main, footer, .max-w-7xl, .max-w-5xl, .max-w-4xl, .max-w-3xl {
@@ -58,29 +56,29 @@ header, section, main, footer, .max-w-7xl, .max-w-5xl, .max-w-4xl, .max-w-3xl {
     z-index: 1;
 }
 
-/* CAPA 3: Cristal Esmerilado con Iluminación de Proximidad Vectorial y Bisel Especular */
+/* CAPA 3: Cristal de Alto Rendimiento (Sin saturar el compositor en el scroll) */
 .quantum-card {
     position: relative;
-    background: linear-gradient(145deg, rgba(15, 23, 42, 0.62) 0%, rgba(2, 6, 23, 0.78) 100%) !important;
-    backdrop-filter: blur(24px) saturate(165%) !important;
-    -webkit-backdrop-filter: blur(24px) saturate(165%) !important;
+    background: linear-gradient(145deg, rgba(15, 23, 42, 0.78) 0%, rgba(2, 6, 23, 0.88) 100%) !important;
     border: 1px solid rgba(255, 255, 255, 0.09) !important;
     box-shadow:
-        0 20px 45px -15px rgba(0, 0, 0, 0.7),
-        inset 0 1px 0 0 rgba(255, 255, 255, 0.18) !important;
-    transition: transform 0.28s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.28s ease !important;
+        0 16px 36px -12px rgba(0, 0, 0, 0.65),
+        inset 0 1px 0 0 rgba(255, 255, 255, 0.16) !important;
+    transition: transform 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease !important;
     overflow: hidden;
+    contain: paint;
 }
 
 .quantum-card:hover {
-    transform: translateY(-3px);
+    transform: translateY(-2px);
+    border-color: rgba(56, 189, 248, 0.45) !important;
     box-shadow:
-        0 28px 60px -12px rgba(2, 6, 23, 0.85),
-        0 0 35px -8px rgba(37, 99, 235, 0.32),
-        inset 0 1px 0 0 rgba(255, 255, 255, 0.32) !important;
+        0 22px 45px -12px rgba(2, 6, 23, 0.85),
+        0 0 28px -8px rgba(37, 99, 235, 0.35),
+        inset 0 1px 0 0 rgba(255, 255, 255, 0.28) !important;
 }
 
-/* Resplandor interno en la superficie del cristal que sigue al mouse */
+/* Borde e iluminación puntual activada únicamente en la tarjeta cercana por el motor Wasm */
 .quantum-card::before {
     content: "";
     position: absolute;
@@ -88,17 +86,16 @@ header, section, main, footer, .max-w-7xl, .max-w-5xl, .max-w-4xl, .max-w-3xl {
     pointer-events: none;
     border-radius: inherit;
     background: radial-gradient(
-        460px circle at var(--cx, -500px) var(--cy, -500px),
-        rgba(56, 189, 248, 0.13),
-        rgba(16, 185, 129, 0.06) 42%,
+        380px circle at var(--cx, -500px) var(--cy, -500px),
+        rgba(56, 189, 248, 0.14),
+        rgba(16, 185, 129, 0.06) 45%,
         transparent 75%
     );
     opacity: var(--card-active, 0);
-    transition: opacity 0.3s ease;
+    transition: opacity 0.18s ease;
     z-index: 0;
 }
 
-/* Borde láser de proximidad que ilumina únicamente la arista cercana al cursor */
 .quantum-card::after {
     content: "";
     position: absolute;
@@ -107,16 +104,16 @@ header, section, main, footer, .max-w-7xl, .max-w-5xl, .max-w-4xl, .max-w-3xl {
     border-radius: inherit;
     padding: 1.2px;
     background: radial-gradient(
-        300px circle at var(--cx, -500px) var(--cy, -500px),
-        rgba(56, 189, 248, 0.9),
-        rgba(16, 185, 129, 0.65) 45%,
+        260px circle at var(--cx, -500px) var(--cy, -500px),
+        rgba(56, 189, 248, 0.92),
+        rgba(16, 185, 129, 0.65) 48%,
         transparent 75%
     );
     -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
     -webkit-mask-composite: xor;
     mask-composite: exclude;
     opacity: var(--card-active, 0);
-    transition: opacity 0.3s ease;
+    transition: opacity 0.18s ease;
     z-index: 2;
 }
 
@@ -125,57 +122,33 @@ header, section, main, footer, .max-w-7xl, .max-w-5xl, .max-w-4xl, .max-w-3xl {
     z-index: 1;
 }
 
-/* CAPA 4: Haz Orbital Continuo para la Consola Principal de Auditoría */
+/* Consola Principal con Bisel Luminoso Estático de Cero Costo en GPU */
 .quantum-laser-console {
     position: relative;
-    background: linear-gradient(160deg, rgba(15, 23, 42, 0.72) 0%, rgba(2, 6, 23, 0.88) 100%) !important;
-    backdrop-filter: blur(28px) saturate(180%) !important;
-    -webkit-backdrop-filter: blur(28px) saturate(180%) !important;
+    background: linear-gradient(160deg, rgba(15, 23, 42, 0.82) 0%, rgba(2, 6, 23, 0.92) 100%) !important;
+    backdrop-filter: blur(16px) !important;
+    -webkit-backdrop-filter: blur(16px) !important;
+    border: 1px solid rgba(56, 189, 248, 0.28) !important;
     box-shadow:
-        0 30px 70px -15px rgba(0, 0, 0, 0.8),
-        0 0 50px -15px rgba(37, 99, 235, 0.28),
-        inset 0 1px 0 0 rgba(255, 255, 255, 0.22) !important;
+        0 25px 60px -15px rgba(0, 0, 0, 0.8),
+        0 0 40px -12px rgba(37, 99, 235, 0.28),
+        inset 0 1px 0 0 rgba(255, 255, 255, 0.24) !important;
 }
 
-.quantum-laser-console::before {
-    content: "";
-    position: absolute;
-    inset: 0;
-    border-radius: inherit;
-    padding: 1.5px;
-    background: conic-gradient(
-        from var(--laser-angle),
-        transparent 55%,
-        rgba(37, 99, 235, 0.85) 75%,
-        rgba(56, 189, 248, 1) 86%,
-        rgba(16, 185, 129, 0.95) 95%,
-        transparent 100%
-    );
-    -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
-    -webkit-mask-composite: xor;
-    mask-composite: exclude;
-    animation: mallenLaserOrbit 7s linear infinite;
-    pointer-events: none;
-}
-
-@keyframes mallenLaserOrbit {
-    to { --laser-angle: 360deg; }
-}
-
-/* Halo Fotónico en Cajas de Texto Interactivas */
+/* Cajas de captura sin backdrop-filter anidado (Elimina el lag al escribir o hacer scroll) */
 input:not([type="checkbox"]), textarea {
-    background-color: rgba(2, 6, 23, 0.65) !important;
-    backdrop-filter: blur(12px);
-    border: 1px solid rgba(255, 255, 255, 0.12) !important;
-    transition: border-color 0.22s ease, box-shadow 0.22s ease, background-color 0.22s ease !important;
+    background-color: rgba(2, 6, 23, 0.82) !important;
+    border: 1px solid rgba(255, 255, 255, 0.13) !important;
+    box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.5) !important;
+    transition: border-color 0.18s ease, box-shadow 0.18s ease !important;
 }
 
 input:not([type="checkbox"]):focus, textarea:focus {
-    background-color: rgba(15, 23, 42, 0.85) !important;
-    border-color: rgba(56, 189, 248, 0.75) !important;
+    background-color: rgba(15, 23, 42, 0.95) !important;
+    border-color: rgba(56, 189, 248, 0.8) !important;
     box-shadow:
         0 0 0 1px rgba(16, 185, 129, 0.35),
-        0 0 24px -4px rgba(37, 99, 235, 0.5),
+        0 0 20px -4px rgba(37, 99, 235, 0.48),
         inset 0 1px 0 0 rgba(255, 255, 255, 0.15) !important;
     outline: none !important;
 }
