@@ -173,9 +173,9 @@ async fn handle_live_scan(
 
     let d_in = &req.calibration.dossier;
 
-    let mut denue_email = String::new();
-    let mut denue_tel = String::new();
-    let mut denue_entidad = String::new();
+    let denue_email = String::new();
+    let denue_tel = String::new();
+    let denue_entidad = String::new();
     let (razon_social, nombre_comercial, codigo_scian, actividad_desc, domicilio, estrato) =
         if is_mallen_self {
             (
@@ -757,11 +757,98 @@ async fn download_pdf_report(Path(hash): Path<String>) -> impl IntoResponse {
     (StatusCode::NOT_FOUND, "Dictamen PDF no encontrado").into_response()
 }
 
+async fn build_empresa_from_db_or_default(state: &AppState, clean_tax: &str) -> EmpresaB2B {
+    if let Ok(Some((saved, _is_acc))) = state.db.get_audit_session(clean_tax).await {
+        let d = &saved.calibration_applied.dossier;
+        return EmpresaB2B {
+            id: saved.audit_id.clone(),
+            nombre: d.razon_social_oficial.clone().filter(|s| !s.is_empty()).unwrap_or(saved.razon_social),
+            actividad: d.giro_scian_descripcion.clone().filter(|s| !s.is_empty()).unwrap_or(format!("{} - {}", saved.codigo_scian, saved.actividad_scian_desc)),
+            telefono: d.telefono_corporativo.clone().unwrap_or_default(),
+            email: d.email_arco_privacidad.clone().unwrap_or_default(),
+            direccion: d.domicilio_fiscal_completo.clone().filter(|s| !s.is_empty()).unwrap_or(saved.domicilio_fiscal_o_denue),
+            estado: d.entidad_jurisdiccion.clone().filter(|s| !s.is_empty()).unwrap_or_else(|| "MÉXICO".to_string()),
+            sitio_web: if saved.web_telemetry.target_url.is_empty() { None } else { Some(saved.web_telemetry.target_url) },
+            status_web: Some(saved.web_telemetry.http_status.max(200)),
+            e_mail_verificado: Some(true),
+            country_code: "MX".to_string(),
+            tax_id: Some(clean_tax.to_string()),
+            language: Some("es".to_string()),
+            audit_hash: format!("0x{}", &saved.audit_sha256_hash[..16.min(saved.audit_sha256_hash.len())]),
+            risk_score: if clean_tax.starts_with("MALLEN") { 0 } else { saved.risk_score },
+            audit_flags: Vec::new(),
+            estimated_fine_mxn: if clean_tax.starts_with("MALLEN") { 0.0 } else { saved.total_estimated_fine_mxn },
+            shield_price_usd: 330.0,
+            accountant_signature: saved.partner_whitelabel_name,
+        };
+    }
+
+    let denue = state
+        .db
+        .find_denue_by_name_or_domain(None, Some(clean_tax))
+        .await
+        .ok()
+        .flatten();
+
+    let mut hasher = Sha256::new();
+    hasher.update(format!("MALLEN_SEAL_2026::{}", clean_tax).as_bytes());
+    let audit_hash = format!("0x{}", &format!("{:x}", hasher.finalize())[..16]);
+
+    let mut emp = if let Some(d) = denue {
+        EmpresaB2B {
+            id: d.id_denue,
+            nombre: if d.raz_social.is_empty() { d.nom_estab } else { d.raz_social },
+            actividad: format!("{} - {}", d.codigo_scian, d.nombre_act),
+            telefono: d.telefono,
+            email: d.email,
+            direccion: format!("{} ({})", d.direccion, d.per_ocu),
+            estado: d.entidad,
+            sitio_web: if d.www.is_empty() { None } else { Some(d.www) },
+            status_web: Some(200),
+            e_mail_verificado: Some(true),
+            country_code: "MX".to_string(),
+            tax_id: Some(clean_tax.to_string()),
+            language: Some("es".to_string()),
+            audit_hash,
+            risk_score: 85,
+            audit_flags: Vec::new(),
+            estimated_fine_mxn: 0.0,
+            shield_price_usd: 330.00,
+            accountant_signature: Some(apply_accountant_signature(&AccountantProfile::default(), clean_tax)),
+        }
+    } else {
+        EmpresaB2B {
+            id: clean_tax.to_string(),
+            nombre: format!("CORPORATIVO {} S.A. DE C.V.", clean_tax),
+            actividad: "541610 - Servicios de consultoría y operación corporativa B2B".to_string(),
+            telefono: String::new(),
+            email: String::new(),
+            direccion: "Domicilio Fiscal Registrado en Territorio Nacional (México)".to_string(),
+            estado: "CIUDAD DE MÉXICO".to_string(),
+            sitio_web: None,
+            status_web: Some(200),
+            e_mail_verificado: Some(true),
+            country_code: "MX".to_string(),
+            tax_id: Some(clean_tax.to_string()),
+            language: Some("es".to_string()),
+            audit_hash,
+            risk_score: 85,
+            audit_flags: Vec::new(),
+            estimated_fine_mxn: 0.0,
+            shield_price_usd: 330.00,
+            accountant_signature: Some(apply_accountant_signature(&AccountantProfile::default(), clean_tax)),
+        }
+    };
+
+    evaluate_risk(&mut emp);
+    emp
+}
+
 async fn handle_checkout_path(
     State(state): State<Arc<AppState>>,
     Path(id): Path<String>,
 ) -> impl IntoResponse {
-    render_checkout_page(&state, id).await
+    render_checkout_page_with_state(state, id).await
 }
 
 async fn handle_checkout(
@@ -773,224 +860,234 @@ async fn handle_checkout(
         .or(params.r#ref)
         .or(params.hash)
         .unwrap_or_else(|| "EST850628K51".to_string());
-    render_checkout_page(&state, ref_code).await
+    render_checkout_page_with_state(state, ref_code).await
 }
 
-/// Renderiza la Pasarela de Personalización Legal Completa + Pago 3D Secure para que ningún dato se suponga.
-async fn render_checkout_page(state: &AppState, ref_code: String) -> Html<String> {
-    let clean_ref = ref_code.trim().to_uppercase();
-    let (emp, session_opt) = build_empresa_and_session(state, &clean_ref).await;
-    let d = session_opt
-        .as_ref()
-        .map(|(m, _)| m.calibration_applied.dossier.clone())
+async fn render_checkout_page_with_state(state: Arc<AppState>, raw_ref: String) -> Html<String> {
+    let ref_code = raw_ref.trim().to_uppercase();
+    let disclaimer_hash = StripeDisputeGuard::compute_disclaimer_hash();
+
+    let emp = build_empresa_from_db_or_default(&state, &ref_code).await;
+    let session_opt = state.db.get_audit_session(&ref_code).await.ok().flatten();
+
+    // Sincronizar monto exacto: si no hay sesión previa, calcular con la misma matriz de 39 NOMs
+    let fine_mxn = match &session_opt {
+        Some((m, _)) if m.total_estimated_fine_mxn > 0.0 => m.total_estimated_fine_mxn,
+        _ => {
+            let findings = build_full_regulatory_findings(
+                "434222",
+                &emp.nombre,
+                45,
+                "LIMPIO",
+                "LIMPIO",
+                false,
+                false,
+                &WebOsintTelemetry::default(),
+                &worker_inegi_engine::engine::models::CalibrationAnswers::default(),
+            );
+            let (_, _, est, _) = summarize_findings_financials(&findings);
+            est
+        }
+    };
+    let fine_formatted = worker_inegi_engine::engine::pdf_generator::format_currency_mxn(fine_mxn);
+
+    let d_opt = session_opt.as_ref().map(|(m, _)| &m.calibration_applied.dossier);
+    let pre_razon = d_opt
+        .and_then(|d| d.razon_social_oficial.clone())
+        .unwrap_or_else(|| emp.nombre.clone());
+    let pre_giro = d_opt
+        .and_then(|d| d.giro_scian_descripcion.clone())
+        .unwrap_or_else(|| emp.actividad.clone());
+    let pre_dom = d_opt
+        .and_then(|d| d.domicilio_fiscal_completo.clone())
+        .unwrap_or_else(|| emp.direccion.clone());
+    let pre_cp = d_opt
+        .and_then(|d| d.codigo_postal_fiscal.clone())
+        .unwrap_or_default();
+    let pre_estado = d_opt
+        .and_then(|d| d.entidad_jurisdiccion.clone())
+        .unwrap_or_else(|| emp.estado.clone());
+    let pre_rep = d_opt
+        .and_then(|d| d.representante_legal_nombre.clone())
+        .unwrap_or_default();
+    let pre_cargo = d_opt
+        .and_then(|d| d.representante_legal_cargo.clone())
+        .unwrap_or_default();
+    let pre_oficial = d_opt
+        .and_then(|d| d.oficial_privacidad_nombre.clone())
+        .unwrap_or_default();
+    let pre_email = d_opt
+        .and_then(|d| d.email_arco_privacidad.clone())
+        .unwrap_or_else(|| emp.email.clone());
+    let pre_tel = d_opt
+        .and_then(|d| d.telefono_corporativo.clone())
+        .unwrap_or_else(|| emp.telefono.clone());
+    let pre_reg_imss = d_opt
+        .and_then(|d| d.registro_patronal_imss.clone())
+        .unwrap_or_default();
+    let pre_coord = d_opt
+        .and_then(|d| d.comision_coordinador_patronal.clone())
+        .unwrap_or_default();
+    let pre_sec = d_opt
+        .and_then(|d| d.comision_secretario_trabajadores.clone())
+        .unwrap_or_default();
+    let pre_prov_nom = d_opt
+        .and_then(|d| d.proveedor_principal_razon_social.clone())
+        .unwrap_or_default();
+    let pre_prov_rfc = d_opt
+        .and_then(|d| d.proveedor_principal_rfc.clone())
+        .unwrap_or_default();
+    let pre_prov_obj = d_opt
+        .and_then(|d| d.proveedor_principal_servicio_objeto.clone())
         .unwrap_or_default();
 
-    let rz_val = d.razon_social_oficial.unwrap_or_else(|| emp.nombre.clone());
-    let dom_val = d
-        .domicilio_fiscal_completo
-        .unwrap_or_else(|| emp.direccion.clone());
-    let cp_val = d.codigo_postal_fiscal.unwrap_or_else(|| "06600".to_string());
-    let jur_val = d
-        .entidad_jurisdiccion
-        .unwrap_or_else(|| "Ciudad de México".to_string());
-    let giro_val = d
-        .giro_scian_descripcion
-        .unwrap_or_else(|| emp.actividad.clone());
-    let rep_val = d
-        .representante_legal_nombre
-        .unwrap_or_else(|| format!("Representante Legal de {}", rz_val));
-    let cargo_val = d
-        .representante_legal_cargo
-        .unwrap_or_else(|| "Administrador Único / Apoderado General".to_string());
-    let priv_val = d
-        .oficial_privacidad_nombre
-        .unwrap_or_else(|| rep_val.clone());
-    let email_val = d.email_arco_privacidad.unwrap_or_else(|| {
-        if emp.email.is_empty() {
-            "juridico@empresa.com.mx".to_string()
-        } else {
-            emp.email.clone()
-        }
-    });
-    let tel_val = d.telefono_corporativo.unwrap_or_else(|| {
-        if emp.telefono.is_empty() {
-            "55-5354-2200".to_string()
-        } else {
-            emp.telefono.clone()
-        }
-    });
-    let rp_val = d
-        .registro_patronal_imss
-        .unwrap_or_else(|| format!("Y60-{}-10-9", &clean_ref[..4.min(clean_ref.len())]));
-    let coord_val = d
-        .comision_coordinador_patronal
-        .unwrap_or_else(|| rep_val.clone());
-    let sec_val = d
-        .comision_secretario_trabajadores
-        .unwrap_or_else(|| "Representante Electo de los Trabajadores (Secretario CSH)".to_string());
-    let prov_rz_val = d.proveedor_principal_razon_social.unwrap_or_else(|| {
-        "PROVEEDOR CORPORATIVO DE SERVICIOS ESPECIALIZADOS S.A. DE C.V.".to_string()
-    });
-    let prov_rfc_val = d
-        .proveedor_principal_rfc
-        .unwrap_or_else(|| "PCS200101AA1".to_string());
-    let prov_obj_val = d.proveedor_principal_servicio_objeto.unwrap_or_else(|| {
-        "Servicios especializados, soporte operativo y entregables B2B conforme a orden de compra"
-            .to_string()
-    });
-
-    let disclaimer_hash = StripeDisputeGuard::compute_disclaimer_hash();
     let html = format!(
         r#"<!DOCTYPE html>
 <html lang="es">
 <head>
     <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Personalización Jurídica & Activación 3D Secure — Firma Pericial Mallen</title>
+    <title>Activación de Blindaje Corporativo y CFDI 4.0 — Firma Pericial Mallen</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
     <style>body {{ font-family: 'Inter', sans-serif; }} .font-mono-code {{ font-family: 'JetBrains Mono', monospace; }}</style>
 </head>
 <body class="bg-slate-950 text-slate-100 min-h-screen p-6 flex items-center justify-center selection:bg-blue-600 selection:text-white">
-    <div class="max-w-3xl w-full bg-slate-900 border border-slate-800 p-8 rounded-2xl font-mono-code text-xs shadow-2xl">
-        <div class="flex justify-between items-center mb-6 pb-4 border-b border-slate-800">
+    <div class="max-w-3xl w-full bg-white/[0.05] backdrop-blur-2xl shadow-[0_8px_32px_rgba(0,0,0,0.5)] border border-white/15 p-8 rounded-2xl font-mono-code text-xs shadow-2xl">
+        <div class="flex justify-between items-center mb-6 pb-4 border-b border-white/15">
             <div>
-                <span class="text-xs font-bold text-blue-400 block uppercase">FIRMA PERICIAL MALLEN • CERO PLACEHOLDERS</span>
-                <span class="text-[10px] text-slate-500">Ficha de Personalización Jurídica Completa + Pago 3D Secure + Timbrado CFDI 4.0</span>
+                <span class="text-xs font-bold text-blue-400 block uppercase">FIRMA PERICIAL MALLEN • PASARELA CORPORATIVA 3D SECURE</span>
+                <span class="text-[10px] text-slate-500">Instrumentación Jurídica Personalizada + Pago 3D Secure + Timbrado CFDI 4.0</span>
             </div>
-            <a href="/" class="text-[10px] text-slate-400 hover:text-white transition">← Volver</a>
+            <a href="/" class="text-[10px] text-slate-400 hover:text-white transition">Volver al Portal</a>
         </div>
 
-        <div class="bg-slate-950 border border-slate-800 rounded-xl p-4 mb-5 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
+        <div class="bg-slate-950 border border-white/15 rounded-xl p-5 mb-6 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
             <div>
-                <span class="text-[10px] text-emerald-400 font-bold block">EXPEDIENTE PERSONALIZADO AL 100% PARA SU USO LEGAL INMEDIATO</span>
-                <span class="text-sm font-bold text-white">RFC: {clean_ref} — Contingencia Cubierta: ${fine:.2} MXN</span>
-                <span class="text-[10px] text-slate-400 block mt-0.5">Confirme o edite los datos legales exactos que se imprimirán en sus 10 Certificados y 7 Kits Jurídicos (PDF y Word).</span>
+                <span class="text-[10px] text-emerald-400 font-bold uppercase block">EXPEDIENTE CORPORATIVO DE CUMPLIMIENTO INTEGRAL</span>
+                <span class="text-sm font-bold text-white block mt-0.5">RFC: {ref_code} — Contingencia Auditada: <span class="text-red-400">${fine_formatted} MXN</span></span>
+                <span class="text-[10px] text-slate-400 block mt-1">Los datos públicos detectados por su RFC y sitio web se pre-cargan automáticamente abajo. Los campos que deje en blanco (como los datos de un proveedor específico para el Contrato Art. 69-B o los firmantes internos) se generarán con líneas jurídicas formales de llenado (____________________) para que pueda reutilizar sus contratos con múltiples proveedores.</span>
             </div>
-            <div class="text-right">
-                <span class="text-lg font-extrabold text-emerald-400">$5,940.00</span>
+            <div class="text-right shrink-0">
+                <span class="text-xl font-extrabold text-white">$5,940.00</span>
                 <span class="text-[10px] text-slate-500 block">MXN (IVA Incluido)</span>
             </div>
         </div>
 
-        <form id="checkoutForm" onsubmit="processCheckoutPayment(event)" class="space-y-4">
-            <!-- BLOQUE 1: IDENTIDAD SOCIETARIA Y REPRESENTACIÓN LEGAL -->
-            <div class="bg-slate-950 border border-slate-800 p-4 rounded-xl space-y-3">
-                <span class="text-[10px] font-bold text-blue-400 uppercase block">1. Datos Societarios, Domicilio Fiscal y Representación Legal (Certificados y CFDI 4.0)</span>
+        <form id="checkoutForm" onsubmit="processCheckoutPayment(event)" class="space-y-5">
+            <div class="bg-slate-950 border border-white/15 p-4 rounded-xl space-y-3">
+                <span class="text-[10px] font-bold text-blue-400 uppercase block">Datos Societarios, Domicilio Fiscal y Representación Legal</span>
                 <div class="grid sm:grid-cols-2 gap-3">
                     <div>
-                        <label class="text-[10px] text-slate-400 block mb-1">Razón Social Oficial Completa *</label>
-                        <input id="d_razon" type="text" required value="{rz_val}" class="w-full bg-slate-900 border border-slate-800 rounded-lg px-3 py-2 text-white">
+                        <label class="text-[10px] text-slate-400 block mb-1">Denominación o Razón Social Oficial</label>
+                        <input id="pay_razon" type="text" required value="{pre_razon}" class="w-full bg-white/[0.05] backdrop-blur-2xl shadow-[0_8px_32px_rgba(0,0,0,0.5)] border border-white/15 rounded-lg px-3.5 py-2.5 text-white">
                     </div>
                     <div>
-                        <label class="text-[10px] text-slate-400 block mb-1">Giro / Actividad Económica SCIAN *</label>
-                        <input id="d_giro" type="text" required value="{giro_val}" class="w-full bg-slate-900 border border-slate-800 rounded-lg px-3 py-2 text-white">
+                        <label class="text-[10px] text-slate-400 block mb-1">Giro o Actividad Económica SCIAN</label>
+                        <input id="pay_giro" type="text" required value="{pre_giro}" class="w-full bg-white/[0.05] backdrop-blur-2xl shadow-[0_8px_32px_rgba(0,0,0,0.5)] border border-white/15 rounded-lg px-3.5 py-2.5 text-white">
                     </div>
                     <div class="sm:col-span-2">
-                        <label class="text-[10px] text-slate-400 block mb-1">Domicilio Fiscal y del Centro de Trabajo Completo *</label>
-                        <input id="d_dom" type="text" required value="{dom_val}" class="w-full bg-slate-900 border border-slate-800 rounded-lg px-3 py-2 text-white">
+                        <label class="text-[10px] text-slate-400 block mb-1">Domicilio Fiscal y del Centro de Trabajo</label>
+                        <input id="pay_dom" type="text" required value="{pre_dom}" class="w-full bg-white/[0.05] backdrop-blur-2xl shadow-[0_8px_32px_rgba(0,0,0,0.5)] border border-white/15 rounded-lg px-3.5 py-2.5 text-white">
                     </div>
                     <div>
-                        <label class="text-[10px] text-slate-400 block mb-1">Código Postal Fiscal (5 dígitos CFDI 4.0) *</label>
-                        <input id="d_cp" type="text" required maxlength="5" value="{cp_val}" class="w-full bg-slate-900 border border-slate-800 rounded-lg px-3 py-2 text-white">
+                        <label class="text-[10px] text-slate-400 block mb-1">Código Postal Fiscal (CFDI 4.0)</label>
+                        <input id="pay_cp" type="text" maxlength="5" value="{pre_cp}" class="w-full bg-white/[0.05] backdrop-blur-2xl shadow-[0_8px_32px_rgba(0,0,0,0.5)] border border-white/15 rounded-lg px-3.5 py-2.5 text-white">
                     </div>
                     <div>
-                        <label class="text-[10px] text-slate-400 block mb-1">Entidad Federativa / Jurisdicción *</label>
-                        <input id="d_jur" type="text" required value="{jur_val}" class="w-full bg-slate-900 border border-slate-800 rounded-lg px-3 py-2 text-white">
+                        <label class="text-[10px] text-slate-400 block mb-1">Entidad Federativa / Jurisdicción</label>
+                        <input id="pay_estado" type="text" required value="{pre_estado}" class="w-full bg-white/[0.05] backdrop-blur-2xl shadow-[0_8px_32px_rgba(0,0,0,0.5)] border border-white/15 rounded-lg px-3.5 py-2.5 text-white">
                     </div>
                     <div>
-                        <label class="text-[10px] text-slate-400 block mb-1">Nombre Completo del Representante Legal *</label>
-                        <input id="d_rep" type="text" required value="{rep_val}" class="w-full bg-slate-900 border border-slate-800 rounded-lg px-3 py-2 text-white">
+                        <label class="text-[10px] text-slate-400 block mb-1">Nombre del Representante Legal</label>
+                        <input id="pay_rep" type="text" value="{pre_rep}" class="w-full bg-white/[0.05] backdrop-blur-2xl shadow-[0_8px_32px_rgba(0,0,0,0.5)] border border-white/15 rounded-lg px-3.5 py-2.5 text-white">
                     </div>
                     <div>
-                        <label class="text-[10px] text-slate-400 block mb-1">Cargo Societario del Representante *</label>
-                        <input id="d_cargo" type="text" required value="{cargo_val}" class="w-full bg-slate-900 border border-slate-800 rounded-lg px-3 py-2 text-white">
+                        <label class="text-[10px] text-slate-400 block mb-1">Cargo Societario del Representante</label>
+                        <input id="pay_cargo" type="text" value="{pre_cargo}" class="w-full bg-white/[0.05] backdrop-blur-2xl shadow-[0_8px_32px_rgba(0,0,0,0.5)] border border-white/15 rounded-lg px-3.5 py-2.5 text-white">
                     </div>
                 </div>
             </div>
 
-            <!-- BLOQUE 2: OFICIAL DE PRIVACIDAD (LFPDPPP) Y COMISIÓN MIXTA STPS (NOM-019 / NOM-030) -->
-            <div class="bg-slate-950 border border-slate-800 p-4 rounded-xl space-y-3">
-                <span class="text-[10px] font-bold text-emerald-400 uppercase block">2. Oficial de Privacidad (LFPDPPP) y Comisión Mixta STPS (NOM-019 / NOM-030 / IMSS)</span>
+            <div class="bg-slate-950 border border-white/15 p-4 rounded-xl space-y-3">
+                <span class="text-[10px] font-bold text-emerald-400 uppercase block">Oficial de Privacidad (LFPDPPP), Contacto y Comisión Mixta STPS</span>
                 <div class="grid sm:grid-cols-3 gap-3">
                     <div>
-                        <label class="text-[10px] text-slate-400 block mb-1">Oficial de Privacidad (Art. 17) *</label>
-                        <input id="d_priv" type="text" required value="{priv_val}" class="w-full bg-slate-900 border border-slate-800 rounded-lg px-3 py-2 text-white">
+                        <label class="text-[10px] text-slate-400 block mb-1">Oficial de Privacidad (Art. 17)</label>
+                        <input id="pay_oficial" type="text" value="{pre_oficial}" class="w-full bg-white/[0.05] backdrop-blur-2xl shadow-[0_8px_32px_rgba(0,0,0,0.5)] border border-white/15 rounded-lg px-3.5 py-2.5 text-white">
                     </div>
                     <div>
-                        <label class="text-[10px] text-slate-400 block mb-1">Correo Oficial Derechos ARCO y CFDI *</label>
-                        <input id="d_email" type="email" required value="{email_val}" class="w-full bg-slate-900 border border-slate-800 rounded-lg px-3 py-2 text-white">
+                        <label class="text-[10px] text-slate-400 block mb-1">Correo Derechos ARCO y CFDI</label>
+                        <input id="pay_email" type="email" value="{pre_email}" class="w-full bg-white/[0.05] backdrop-blur-2xl shadow-[0_8px_32px_rgba(0,0,0,0.5)] border border-white/15 rounded-lg px-3.5 py-2.5 text-white">
                     </div>
                     <div>
-                        <label class="text-[10px] text-slate-400 block mb-1">Teléfono Atención PROFECO / ARCO *</label>
-                        <input id="d_tel" type="text" required value="{tel_val}" class="w-full bg-slate-900 border border-slate-800 rounded-lg px-3 py-2 text-white">
+                        <label class="text-[10px] text-slate-400 block mb-1">Teléfono Corporativo</label>
+                        <input id="pay_tel" type="text" value="{pre_tel}" class="w-full bg-white/[0.05] backdrop-blur-2xl shadow-[0_8px_32px_rgba(0,0,0,0.5)] border border-white/15 rounded-lg px-3.5 py-2.5 text-white">
                     </div>
                     <div>
-                        <label class="text-[10px] text-slate-400 block mb-1">Registro Patronal IMSS (NOM-019) *</label>
-                        <input id="d_rp" type="text" required value="{rp_val}" class="w-full bg-slate-900 border border-slate-800 rounded-lg px-3 py-2 text-white">
+                        <label class="text-[10px] text-slate-400 block mb-1">Registro Patronal IMSS</label>
+                        <input id="pay_reg_imss" type="text" value="{pre_reg_imss}" class="w-full bg-white/[0.05] backdrop-blur-2xl shadow-[0_8px_32px_rgba(0,0,0,0.5)] border border-white/15 rounded-lg px-3.5 py-2.5 text-white">
                     </div>
                     <div>
-                        <label class="text-[10px] text-slate-400 block mb-1">Coordinador Patronal CSH y NOM-030 *</label>
-                        <input id="d_coord" type="text" required value="{coord_val}" class="w-full bg-slate-900 border border-slate-800 rounded-lg px-3 py-2 text-white">
+                        <label class="text-[10px] text-slate-400 block mb-1">Coordinador Patronal NOM-019</label>
+                        <input id="pay_coord" type="text" value="{pre_coord}" class="w-full bg-white/[0.05] backdrop-blur-2xl shadow-[0_8px_32px_rgba(0,0,0,0.5)] border border-white/15 rounded-lg px-3.5 py-2.5 text-white">
                     </div>
                     <div>
-                        <label class="text-[10px] text-slate-400 block mb-1">Secretario CSH (Rep. Trabajadores) *</label>
-                        <input id="d_sec" type="text" required value="{sec_val}" class="w-full bg-slate-900 border border-slate-800 rounded-lg px-3 py-2 text-white">
+                        <label class="text-[10px] text-slate-400 block mb-1">Secretario Trabajadores NOM-019</label>
+                        <input id="pay_sec" type="text" value="{pre_sec}" class="w-full bg-white/[0.05] backdrop-blur-2xl shadow-[0_8px_32px_rgba(0,0,0,0.5)] border border-white/15 rounded-lg px-3.5 py-2.5 text-white">
                     </div>
                 </div>
             </div>
 
-            <!-- BLOQUE 3: CONTRATO DE MATERIALIDAD FISCAL B2B (SAT ART. 69-B) -->
-            <div class="bg-slate-950 border border-slate-800 p-4 rounded-xl space-y-3">
-                <span class="text-[10px] font-bold text-amber-400 uppercase block">3. Datos del Proveedor / Contraparte para Contrato de Materialidad (SAT Art. 69-B)</span>
+            <div class="bg-slate-950 border border-white/15 p-4 rounded-xl space-y-3">
+                <span class="text-[10px] font-bold text-purple-400 uppercase block">Datos de Contraparte para Contrato de Materialidad SAT Art. 69-B</span>
                 <div class="grid sm:grid-cols-2 gap-3">
                     <div>
-                        <label class="text-[10px] text-slate-400 block mb-1">Razón Social del Proveedor a Blindar *</label>
-                        <input id="d_prov_rz" type="text" required value="{prov_rz_val}" class="w-full bg-slate-900 border border-slate-800 rounded-lg px-3 py-2 text-white">
+                        <label class="text-[10px] text-slate-400 block mb-1">Razón Social del Proveedor</label>
+                        <input id="pay_prov_nom" type="text" value="{pre_prov_nom}" class="w-full bg-white/[0.05] backdrop-blur-2xl shadow-[0_8px_32px_rgba(0,0,0,0.5)] border border-white/15 rounded-lg px-3.5 py-2.5 text-white">
                     </div>
                     <div>
-                        <label class="text-[10px] text-slate-400 block mb-1">RFC del Proveedor *</label>
-                        <input id="d_prov_rfc" type="text" required value="{prov_rfc_val}" class="w-full bg-slate-900 border border-slate-800 rounded-lg px-3 py-2 text-white">
+                        <label class="text-[10px] text-slate-400 block mb-1">RFC del Proveedor</label>
+                        <input id="pay_prov_rfc" type="text" value="{pre_prov_rfc}" class="w-full bg-white/[0.05] backdrop-blur-2xl shadow-[0_8px_32px_rgba(0,0,0,0.5)] border border-white/15 rounded-lg px-3.5 py-2.5 text-white">
                     </div>
                     <div class="sm:col-span-2">
-                        <label class="text-[10px] text-slate-400 block mb-1">Objeto Específico del Servicio / Entregable Auditado (Art. 5-A y 69-B CFF) *</label>
-                        <input id="d_prov_obj" type="text" required value="{prov_obj_val}" class="w-full bg-slate-900 border border-slate-800 rounded-lg px-3 py-2 text-white">
+                        <label class="text-[10px] text-slate-400 block mb-1">Objeto del Servicio / Entregable Auditado (Art. 5-A y 69-B CFF)</label>
+                        <input id="pay_prov_obj" type="text" value="{pre_prov_obj}" class="w-full bg-white/[0.05] backdrop-blur-2xl shadow-[0_8px_32px_rgba(0,0,0,0.5)] border border-white/15 rounded-lg px-3.5 py-2.5 text-white">
                     </div>
                 </div>
             </div>
 
-            <!-- BLOQUE 4: TARJETA CORPORATIVA 3D SECURE -->
-            <div class="bg-slate-950 border border-slate-800 p-4 rounded-xl space-y-3">
+            <div class="bg-slate-950 border border-white/15 p-4 rounded-xl space-y-3">
                 <div class="flex justify-between items-center">
-                    <span class="text-[10px] font-bold text-blue-400 uppercase">4. Método de Pago Corporativo (Tokenización TLS 1.3 / 3DS)</span>
-                    <span class="text-[10px] text-emerald-400">🔒 PCI-DSS Nivel 1</span>
+                    <span class="text-[10px] font-bold text-blue-400 uppercase">Método de Pago Corporativo (Tokenización TLS 1.3 / 3DS)</span>
+                    <span class="text-[10px] text-emerald-400 font-bold">Estándar PCI-DSS Nivel 1</span>
                 </div>
-                <div class="grid sm:grid-cols-3 gap-3">
-                    <input type="text" required placeholder="Número de Tarjeta" value="4242 •••• •••• 4242" class="sm:col-span-1 bg-slate-900 border border-slate-800 rounded-lg px-3.5 py-2.5 text-white">
-                    <input type="text" required placeholder="MM/AA" value="12/28" class="bg-slate-900 border border-slate-800 rounded-lg px-3.5 py-2.5 text-white">
-                    <input type="password" required placeholder="CVC" value="888" class="bg-slate-900 border border-slate-800 rounded-lg px-3.5 py-2.5 text-white">
+                <input type="text" required value="4242 •••• •••• 4242" class="w-full bg-white/[0.05] backdrop-blur-2xl shadow-[0_8px_32px_rgba(0,0,0,0.5)] border border-white/15 rounded-lg px-3.5 py-2.5 text-white">
+                <div class="grid grid-cols-2 gap-3">
+                    <input type="text" required value="12/28" class="bg-white/[0.05] backdrop-blur-2xl shadow-[0_8px_32px_rgba(0,0,0,0.5)] border border-white/15 rounded-lg px-3.5 py-2.5 text-white">
+                    <input type="password" required value="888" class="bg-white/[0.05] backdrop-blur-2xl shadow-[0_8px_32px_rgba(0,0,0,0.5)] border border-white/15 rounded-lg px-3.5 py-2.5 text-white">
                 </div>
             </div>
 
-            <div class="bg-slate-950 border border-slate-800 p-3.5 rounded-xl text-[10px] text-slate-400 leading-relaxed">
+            <div class="bg-slate-950 border border-white/15 p-3.5 rounded-xl text-[10px] text-slate-400 leading-relaxed">
                 <label class="flex items-start gap-2.5 cursor-pointer">
                     <input id="chk-disclaimer" type="checkbox" required checked class="mt-1 accent-emerald-500">
                     <span>
-                        <strong class="text-slate-200">Manifiesto de Exactitud de Datos y Alcance Pericial (Art. 89 C.Com):</strong> Confirmo que los datos societarios, de representación legal y comisiones arriba ingresados son exactos para su impresión definitiva en los 10 Certificados y 7 Instrumentos Jurídicos del RFC <b>{clean_ref}</b>.
+                        <strong class="text-slate-200">Manifiesto de Alcance Pericial y Exactitud de Datos (Art. 89 C.Com):</strong> Confirmo los datos ingresados para la emisión de los 10 Certificados y 7 Instrumentos Jurídicos del RFC <b>{ref_code}</b> y su factura CFDI 4.0.
                         <span class="block text-[9px] text-slate-600 mt-1">SHA-256 Disclaimer: {disclaimer_hash}</span>
                     </span>
                 </label>
             </div>
 
             <button id="btnPayNow" type="submit" class="w-full bg-gradient-to-r from-blue-600 to-emerald-600 hover:from-blue-500 hover:to-emerald-500 text-white font-bold py-4 rounded-xl transition shadow-lg shadow-emerald-600/20 uppercase tracking-wider">
-                Personalizar Documentos, Timbrar CFDI 4.0 y Descargar Paquete ZIP →
+                Confirmar Datos, Timbrar CFDI 4.0 y Descargar Paquete ZIP
             </button>
         </form>
 
         <div id="paymentSuccessBox" class="hidden mt-5 bg-emerald-950/40 border border-emerald-500/50 rounded-xl p-5 text-center space-y-3">
-            <span class="text-emerald-400 font-bold text-sm block">✓ EXPEDIENTE 100% PERSONALIZADO, SELLADO Y CFDI 4.0 TIMBRADO</span>
-            <p class="text-slate-300 text-[11px]">Sus 10 Certificados PDF y 7 Kits Jurídicos en PDF y Word han sido generados con sus datos reales y sin líneas en blanco.</p>
-            <a href="/download/zip/{clean_ref}" class="inline-block w-full bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-3.5 rounded-xl uppercase">
-                📦 Descargar Paquete ZIP Completo Ahora ({clean_ref})
+            <span class="text-emerald-400 font-bold text-sm block">PAGO 3D SECURE AUTORIZADO Y EXPEDIENTE COMPILADO</span>
+            <p class="text-slate-300 text-[11px]">Su expediente de 18 documentos en PDF y Word junto con su factura XML CFDI 4.0 está listo.</p>
+            <a href="/download/zip/{ref_code}" class="inline-block w-full bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-3.5 rounded-xl uppercase">
+                Descargar Paquete Corporativo ZIP ({ref_code})
             </a>
         </div>
     </div>
@@ -1000,39 +1097,47 @@ async fn render_checkout_page(state: &AppState, ref_code: String) -> Html<String
             e.preventDefault();
             const btn = document.getElementById("btnPayNow");
             btn.disabled = true;
-            btn.textContent = "Personalizando 18 Documentos Legales y Timbrando CFDI 4.0...";
+            btn.textContent = "Compilando Expediente Personalizado y Timbrando CFDI 4.0...";
 
-            const dossier = {{
-                razon_social_oficial: document.getElementById("d_razon").value.trim(),
-                giro_scian_descripcion: document.getElementById("d_giro").value.trim(),
-                domicilio_fiscal_completo: document.getElementById("d_dom").value.trim(),
-                codigo_postal_fiscal: document.getElementById("d_cp").value.trim(),
-                entidad_jurisdiccion: document.getElementById("d_jur").value.trim(),
-                representante_legal_nombre: document.getElementById("d_rep").value.trim(),
-                representante_legal_cargo: document.getElementById("d_cargo").value.trim(),
-                oficial_privacidad_nombre: document.getElementById("d_priv").value.trim(),
-                email_arco_privacidad: document.getElementById("d_email").value.trim(),
-                telefono_corporativo: document.getElementById("d_tel").value.trim(),
-                registro_patronal_imss: document.getElementById("d_rp").value.trim(),
-                comision_coordinador_patronal: document.getElementById("d_coord").value.trim(),
-                comision_secretario_trabajadores: document.getElementById("d_sec").value.trim(),
-                proveedor_principal_razon_social: document.getElementById("d_prov_rz").value.trim(),
-                proveedor_principal_rfc: document.getElementById("d_prov_rfc").value.trim(),
-                proveedor_principal_servicio_objeto: document.getElementById("d_prov_obj").value.trim()
+            const valOrNull = (id) => {{
+                const v = document.getElementById(id)?.value?.trim();
+                return v ? v : null;
             }};
 
-            // 1. Guardar primero la Ficha de Personalización Jurídica en SQLite WAL
-            await fetch("/api/dossier/save", {{
+            await fetch("/api/calibrate", {{
                 method: "POST",
                 headers: {{ "Content-Type": "application/json" }},
-                body: JSON.stringify({{ tax_id: "{clean_ref}", dossier }})
+                body: JSON.stringify({{
+                    tax_id: "{ref_code}",
+                    razon_social_override: valOrNull("pay_razon"),
+                    email_contacto: valOrNull("pay_email"),
+                    calibration: {{
+                        dossier: {{
+                            razon_social_oficial: valOrNull("pay_razon"),
+                            giro_scian_descripcion: valOrNull("pay_giro"),
+                            domicilio_fiscal_completo: valOrNull("pay_dom"),
+                            codigo_postal_fiscal: valOrNull("pay_cp"),
+                            entidad_jurisdiccion: valOrNull("pay_estado"),
+                            representante_legal_nombre: valOrNull("pay_rep"),
+                            representante_legal_cargo: valOrNull("pay_cargo"),
+                            oficial_privacidad_nombre: valOrNull("pay_oficial"),
+                            email_arco_privacidad: valOrNull("pay_email"),
+                            telefono_corporativo: valOrNull("pay_tel"),
+                            registro_patronal_imss: valOrNull("pay_reg_imss"),
+                            comision_coordinador_patronal: valOrNull("pay_coord"),
+                            comision_secretario_trabajadores: valOrNull("pay_sec"),
+                            proveedor_principal_razon_social: valOrNull("pay_prov_nom"),
+                            proveedor_principal_rfc: valOrNull("pay_prov_rfc"),
+                            proveedor_principal_servicio_objeto: valOrNull("pay_prov_obj")
+                        }}
+                    }}
+                }})
             }});
 
-            // 2. Crear sesión de pago en Stripe
             const res = await fetch("/api/checkout/session", {{
                 method: "POST",
                 headers: {{ "Content-Type": "application/json" }},
-                body: JSON.stringify({{ ref_code: "{clean_ref}", email: dossier.email_arco_privacidad, accepted_disclaimer: true, dossier }})
+                body: JSON.stringify({{ ref_code: "{ref_code}", email: valOrNull("pay_email"), accepted_disclaimer: true }})
             }});
             const sessionData = await res.json();
 
@@ -1041,46 +1146,29 @@ async fn render_checkout_page(state: &AppState, ref_code: String) -> Html<String
                 return;
             }}
 
-            // 3. Disparar Webhook de liquidación y timbrado CFDI 4.0
             await fetch("/api/webhook_stripe", {{
                 method: "POST",
                 headers: {{ "Content-Type": "application/json" }},
                 body: JSON.stringify({{
                     id: "evt_live_" + Date.now(),
-                    tax_id: "{clean_ref}",
-                    data: {{ object: {{ client_reference_id: "{clean_ref}" }} }}
+                    tax_id: "{ref_code}",
+                    data: {{ object: {{ client_reference_id: "{ref_code}" }} }}
                 }})
             }});
 
             document.getElementById("checkoutForm").classList.add("hidden");
             document.getElementById("paymentSuccessBox").classList.remove("hidden");
-            window.location.href = "/download/zip/{clean_ref}";
+            setTimeout(() => {{ window.location.href = "/download/zip/{ref_code}"; }}, 1400);
         }}
     </script>
 </body>
-</html>"#,
-        clean_ref = clean_ref,
-        fine = emp.estimated_fine_mxn,
-        rz_val = rz_val,
-        giro_val = giro_val,
-        dom_val = dom_val,
-        cp_val = cp_val,
-        jur_val = jur_val,
-        rep_val = rep_val,
-        cargo_val = cargo_val,
-        priv_val = priv_val,
-        email_val = email_val,
-        tel_val = tel_val,
-        rp_val = rp_val,
-        coord_val = coord_val,
-        sec_val = sec_val,
-        prov_rz_val = prov_rz_val,
-        prov_rfc_val = prov_rfc_val,
-        prov_obj_val = prov_obj_val,
-        disclaimer_hash = disclaimer_hash
+</html>"#
     );
     Html(html)
 }
+
+
+
 
 async fn create_payment_session(
     State(state): State<Arc<AppState>>,
@@ -1280,11 +1368,11 @@ async fn handle_privacy() -> impl IntoResponse {
     <title>Aviso de Privacidad Integral — Firma Pericial Mallen</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
-    <style>body { font-family: 'Inter', sans-serif; } .font-mono-code { font-family: 'JetBrains Mono', monospace; }</style>
+    <style>body { font-family: 'Inter', sans-serif; background-color: #020617; background-image: radial-gradient(at 12% 12%, rgba(37, 99, 235, 0.32) 0px, transparent 48%), radial-gradient(at 88% 18%, rgba(16, 185, 129, 0.25) 0px, transparent 48%), radial-gradient(at 50% 82%, rgba(99, 102, 241, 0.28) 0px, transparent 52%); background-attachment: fixed; } .font-mono-code { font-family: 'JetBrains Mono', monospace; }</style>
 </head>
 <body class="bg-slate-950 text-slate-300 min-h-screen p-6 md:p-12 border-t-4 border-blue-600">
-    <div class="max-w-4xl mx-auto bg-slate-900 border border-slate-800 p-8 md:p-12 shadow-2xl rounded-2xl">
-        <div class="flex items-center justify-between pb-6 mb-8 border-b border-slate-800">
+    <div class="max-w-4xl mx-auto bg-white/[0.05] backdrop-blur-2xl shadow-[0_8px_32px_rgba(0,0,0,0.5)] border border-white/15 p-8 md:p-12 shadow-2xl rounded-2xl">
+        <div class="flex items-center justify-between pb-6 mb-8 border-b border-white/15">
             <div>
                 <span class="text-xs font-bold text-blue-400 font-mono-code uppercase tracking-wider block">FIRMA PERICIAL MALLEN</span>
                 <span class="text-xs text-slate-500 font-mono-code">Aviso de Privacidad Integral conforme a la LFPDPPP vigente (SABG / Transparencia para el Pueblo)</span>
@@ -1320,11 +1408,11 @@ async fn handle_terms() -> impl IntoResponse {
     <title>Términos del Servicio & Alcance Pericial — Firma Pericial Mallen</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
-    <style>body { font-family: 'Inter', sans-serif; } .font-mono-code { font-family: 'JetBrains Mono', monospace; }</style>
+    <style>body { font-family: 'Inter', sans-serif; background-color: #020617; background-image: radial-gradient(at 12% 12%, rgba(37, 99, 235, 0.32) 0px, transparent 48%), radial-gradient(at 88% 18%, rgba(16, 185, 129, 0.25) 0px, transparent 48%), radial-gradient(at 50% 82%, rgba(99, 102, 241, 0.28) 0px, transparent 52%); background-attachment: fixed; } .font-mono-code { font-family: 'JetBrains Mono', monospace; }</style>
 </head>
 <body class="bg-slate-950 text-slate-300 min-h-screen p-6 md:p-12 border-t-4 border-indigo-600">
-    <div class="max-w-4xl mx-auto bg-slate-900 border border-slate-800 p-8 md:p-12 shadow-2xl rounded-2xl">
-        <div class="flex items-center justify-between pb-6 mb-8 border-b border-slate-800">
+    <div class="max-w-4xl mx-auto bg-white/[0.05] backdrop-blur-2xl shadow-[0_8px_32px_rgba(0,0,0,0.5)] border border-white/15 p-8 md:p-12 shadow-2xl rounded-2xl">
+        <div class="flex items-center justify-between pb-6 mb-8 border-b border-white/15">
             <div>
                 <span class="text-xs font-bold text-indigo-400 font-mono-code uppercase tracking-wider block">FIRMA PERICIAL MALLEN</span>
                 <span class="text-xs text-slate-500 font-mono-code">Términos y Condiciones del Sistema de Auditoría 360°</span>
@@ -1397,13 +1485,13 @@ fn render_norma_category(
     let mut cards_html = String::new();
     for (code_slug, codigo, nombre, desc) in items {
         cards_html.push_str(&format!(
-            r#"<div class="bg-slate-900/90 border {} rounded-2xl p-6 hover:{} transition shadow-lg flex flex-col justify-between group">
+            r#"<div class="bg-white/[0.04] backdrop-blur-2xl shadow-[0_8px_32px_rgba(0,0,0,0.5)] border {} rounded-2xl p-6 hover:{} transition shadow-lg flex flex-col justify-between group">
                 <div>
                     <span class="inline-block border text-xs px-2.5 py-1 rounded font-mono mb-3 {}">{}</span>
                     <h3 class="text-base font-bold text-white mb-2 group-hover:{} transition">{}</h3>
                     <p class="text-xs text-slate-400 font-mono leading-relaxed mb-4">{}</p>
                 </div>
-                <a href="/normas/{}/{}" class="text-xs font-bold {} font-mono flex items-center gap-1 transition pt-4 border-t border-slate-800">
+                <a href="/normas/{}/{}" class="text-xs font-bold {} font-mono flex items-center gap-1 transition pt-4 border-t border-white/15">
                     Inspeccionar matriz de riesgo →
                 </a>
             </div>"#,
@@ -1432,7 +1520,7 @@ fn render_norma_category(
 </head>
 <body class="bg-slate-950 text-slate-100 min-h-screen p-6 md:p-12 selection:bg-slate-700 selection:text-white">
     <div class="max-w-7xl mx-auto">
-        <div class="flex items-center justify-between pb-6 mb-10 border-b border-slate-800">
+        <div class="flex items-center justify-between pb-6 mb-10 border-b border-white/15">
             <a href="/" class="flex items-center space-x-3 cursor-pointer group">
                 <div class="w-10 h-10 bg-gradient-to-tr from-blue-700 via-indigo-600 to-emerald-500 rounded-xl flex items-center justify-center font-extrabold text-xl text-white group-hover:scale-105 transition shadow-lg">M</div>
                 <div>
@@ -1698,20 +1786,20 @@ async fn handle_subnorma_detail(Path((cat, code)): Path<(String, String)>) -> im
 </head>
 <body class="bg-slate-950 text-slate-100 min-h-screen p-6 md:p-12 selection:bg-slate-700 selection:text-white border-t-4 {}">
     <div class="max-w-4xl mx-auto">
-        <div class="flex items-center justify-between pb-6 mb-8 border-b border-slate-800">
+        <div class="flex items-center justify-between pb-6 mb-8 border-b border-white/15">
             <div>
                 <span class="text-xs font-bold {} font-mono-code uppercase tracking-wider block">FIRMA PERICIAL MALLEN</span>
                 <span class="text-xs text-slate-500 font-mono-code">Ficha Técnica — Especificación Regulatoria</span>
             </div>
             <a href="/normas/{}" class="text-xs {} hover:underline font-mono-code transition">← Regresar a {}</a>
         </div>
-        <div class="bg-slate-900 border {} rounded-2xl p-8 shadow-2xl mb-8">
-            <div class="flex justify-between items-center mb-4 pb-4 border-b border-slate-800">
+        <div class="bg-white/[0.05] backdrop-blur-2xl shadow-[0_8px_32px_rgba(0,0,0,0.5)] border {} rounded-2xl p-8 shadow-2xl mb-8">
+            <div class="flex justify-between items-center mb-4 pb-4 border-b border-white/15">
                 <span class="text-xs font-bold {} uppercase font-mono-code tracking-widest">Análisis Estadístico de Contención</span>
                 <span class="text-xs font-mono-code px-3 py-1 rounded border {}">{}</span>
             </div>
             <h1 class="text-2xl sm:text-3xl font-extrabold text-white mb-4">{}</h1>
-            <div class="grid md:grid-cols-2 gap-4 text-xs font-mono-code mb-6 bg-slate-950 p-4 rounded-xl border border-slate-800">
+            <div class="grid md:grid-cols-2 gap-4 text-xs font-mono-code mb-6 bg-slate-950 p-4 rounded-xl border border-white/15">
                 <div>
                     <span class="text-slate-500 block mb-1">Fundamento Legal:</span>
                     <span class="text-slate-200">{}</span>
@@ -1723,20 +1811,20 @@ async fn handle_subnorma_detail(Path((cat, code)): Path<(String, String)>) -> im
             </div>
             <h3 class="text-xs font-bold uppercase text-slate-300 mb-2 font-mono-code">Alcance y Riesgo Operativo</h3>
             <p class="text-xs text-slate-400 font-mono-code leading-relaxed mb-6">{}</p>
-            <div class="mb-8 border-t border-b border-slate-800 py-6">
+            <div class="mb-8 border-t border-b border-white/15 py-6">
                 <h3 class="text-xs font-bold uppercase text-slate-300 mb-4 font-mono-code">Matriz Paramétrica de Riesgo Sancionatorio</h3>
                 <div class="grid sm:grid-cols-3 gap-4 font-mono-code text-xs">
-                    <div class="bg-slate-950 p-4 rounded-xl border border-slate-800">
+                    <div class="bg-slate-950 p-4 rounded-xl border border-white/15">
                         <span class="text-[10px] text-emerald-400 uppercase block mb-1">Bajo Riesgo / Cumplido</span>
                         <span class="text-base font-bold text-emerald-400 block mb-1">{}</span>
                         <p class="text-[10px] text-slate-500 leading-tight">Soporte pericial y sello SHA-256.</p>
                     </div>
-                    <div class="bg-slate-950 p-4 rounded-xl border border-slate-800">
+                    <div class="bg-slate-950 p-4 rounded-xl border border-white/15">
                         <span class="text-[10px] text-amber-400 uppercase block mb-1">Riesgo Medio / Parcial</span>
                         <span class="text-base font-bold text-amber-400 block mb-1">{}</span>
                         <p class="text-[10px] text-slate-500 leading-tight">Documento simple sin sello externo.</p>
                     </div>
-                    <div class="bg-slate-950 p-4 rounded-xl border border-slate-800">
+                    <div class="bg-slate-950 p-4 rounded-xl border border-white/15">
                         <span class="text-[10px] text-red-400 uppercase block mb-1">Riesgo Crítico / Omisión</span>
                         <span class="text-base font-bold text-red-400 block mb-1">{}</span>
                         <p class="text-[10px] text-slate-500 leading-tight">Omisión total o falta de expediente.</p>
@@ -1840,7 +1928,7 @@ async fn handle_validez_detail(Path(slug): Path<String>) -> impl IntoResponse {
 </head>
 <body class="bg-slate-950 text-slate-100 min-h-screen p-6 md:p-12 border-t-4 {}">
     <div class="max-w-4xl mx-auto">
-        <div class="flex items-center justify-between pb-6 mb-8 border-b border-slate-800">
+        <div class="flex items-center justify-between pb-6 mb-8 border-b border-white/15">
             <div>
                 <span class="text-xs font-bold text-slate-400 font-mono-code uppercase tracking-wider block">FIRMA PERICIAL MALLEN</span>
                 <span class="text-xs text-slate-500 font-mono-code">Garantía Pericial & Marco Procesal</span>
@@ -1848,15 +1936,15 @@ async fn handle_validez_detail(Path(slug): Path<String>) -> impl IntoResponse {
             <a href="/" class="text-xs text-blue-400 hover:text-blue-300 font-mono-code transition">← Regresar a la Portada</a>
         </div>
 
-        <div class="bg-slate-900 border border-slate-800 rounded-2xl p-8 shadow-2xl mb-8">
-            <div class="flex justify-between items-center mb-4 pb-4 border-b border-slate-800">
+        <div class="bg-white/[0.05] backdrop-blur-2xl shadow-[0_8px_32px_rgba(0,0,0,0.5)] border border-white/15 rounded-2xl p-8 shadow-2xl mb-8">
+            <div class="flex justify-between items-center mb-4 pb-4 border-b border-white/15">
                 <span class="text-xs font-bold text-emerald-400 uppercase font-mono-code tracking-widest">Sustento Legal & Procesal</span>
-                <span class="text-xs font-mono-code px-3 py-1 bg-slate-950 border border-slate-800 text-slate-300 rounded">Respaldo Oficial</span>
+                <span class="text-xs font-mono-code px-3 py-1 bg-slate-950 border border-white/15 text-slate-300 rounded">Respaldo Oficial</span>
             </div>
 
             <h1 class="text-2xl sm:text-3xl font-extrabold text-white mb-4">{}</h1>
             
-            <div class="grid md:grid-cols-2 gap-4 text-xs font-mono-code mb-6 bg-slate-950 p-4 rounded-xl border border-slate-800">
+            <div class="grid md:grid-cols-2 gap-4 text-xs font-mono-code mb-6 bg-slate-950 p-4 rounded-xl border border-white/15">
                 <div>
                     <span class="text-slate-500 block mb-1">Marco Legal y Técnico:</span>
                     <span class="text-slate-200">{}</span>

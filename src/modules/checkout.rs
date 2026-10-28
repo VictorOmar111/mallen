@@ -45,7 +45,7 @@ pub async fn handle_verify(Path(id): Path<String>) -> impl IntoResponse {
     } else {
         format!(
             r#"<div class="flex flex-col sm:flex-row gap-4 justify-center items-center font-sans">
-                <a href="/api/micro_scan/{upper_id}" class="w-full sm:w-auto px-6 py-3.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-amber-400 border border-amber-500/40 text-xs font-bold uppercase tracking-wider transition text-center shadow-lg block">
+                <a href="/api/micro_scan/{upper_id}" class="w-full sm:w-auto px-6 py-3.5 rounded-xl bg-white/[0.05] backdrop-blur-2xl shadow-[0_8px_32px_rgba(0,0,0,0.5)] hover:bg-slate-800 text-amber-400 border border-amber-500/40 text-xs font-bold uppercase tracking-wider transition text-center shadow-lg block">
                     Descargar Pre-Dictamen Preliminar PDF
                 </a>
                 <a href="/checkout?ref={upper_id}" class="w-full sm:w-auto px-6 py-3.5 rounded-xl bg-gradient-to-r from-blue-600 to-emerald-600 hover:from-blue-500 hover:to-emerald-500 text-white text-xs font-bold uppercase tracking-wider transition text-center shadow-lg shadow-emerald-600/20 block">
@@ -66,7 +66,7 @@ pub async fn handle_verify(Path(id): Path<String>) -> impl IntoResponse {
 </head>
 <body class="bg-slate-950 text-slate-100 font-serif min-h-screen antialiased flex flex-col justify-between selection:bg-blue-600 selection:text-white">
 
-    <header class="border-b border-slate-800 bg-slate-900/60 backdrop-blur-md sticky top-0 z-50">
+    <header class="border-b border-white/15 bg-slate-900/60 backdrop-blur-md sticky top-0 z-50">
         <div class="max-w-4xl mx-auto px-6 py-4 flex flex-col sm:flex-row justify-between items-center gap-2">
             <a href="/" class="flex items-center space-x-3">
                 <div class="w-3 h-3 rounded-full bg-emerald-500 animate-pulse"></div>
@@ -95,8 +95,8 @@ pub async fn handle_verify(Path(id): Path<String>) -> impl IntoResponse {
             </div>
         </div>
 
-        <div class="bg-slate-900/80 border border-slate-800 rounded-xl p-6 mb-6 shadow-xl font-sans text-xs">
-            <h3 class="text-sm font-bold text-slate-200 uppercase tracking-wider mb-4 border-b border-slate-800 pb-2">
+        <div class="bg-white/[0.04] backdrop-blur-2xl shadow-[0_8px_32px_rgba(0,0,0,0.5)] border border-white/15 rounded-xl p-6 mb-6 shadow-xl font-sans text-xs">
+            <h3 class="text-sm font-bold text-slate-200 uppercase tracking-wider mb-4 border-b border-white/15 pb-2">
                 Ficha Técnica de la Entidad Dictaminada
             </h3>
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-slate-300">
@@ -136,7 +136,7 @@ pub async fn handle_verify(Path(id): Path<String>) -> impl IntoResponse {
         {action_buttons_html}
     </main>
 
-    <footer class="border-t border-slate-800 py-6 text-center text-xs font-sans text-slate-500 bg-slate-900/40">
+    <footer class="border-t border-white/15 py-6 text-center text-xs font-sans text-slate-500 bg-slate-900/40">
         <p>© 2026 Firma Pericial Mallen (mallen.lat). Todos los derechos reservados.</p>
     </footer>
 </body>

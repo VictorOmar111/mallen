@@ -8,14 +8,14 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
     <style>
         html { scroll-behavior: smooth; }
-        body { font-family: 'Inter', sans-serif; }
+        body { font-family: 'Inter', sans-serif; background-color: #020617; background-image: radial-gradient(at 12% 12%, rgba(37, 99, 235, 0.32) 0px, transparent 48%), radial-gradient(at 88% 18%, rgba(16, 185, 129, 0.25) 0px, transparent 48%), radial-gradient(at 50% 82%, rgba(99, 102, 241, 0.28) 0px, transparent 52%); background-attachment: fixed; }
         .font-mono-code { font-family: 'JetBrains Mono', monospace; }
     </style>
 </head>
 <body class="bg-slate-950 text-slate-100 min-h-screen selection:bg-blue-600 selection:text-white">
 
     <!-- Header / Navegación Principal -->
-    <header class="border-b border-slate-800 bg-slate-950/90 backdrop-blur sticky top-0 z-50">
+    <header class="border-b border-white/15 bg-white/[0.03] backdrop-blur-xl backdrop-blur sticky top-0 z-50">
         <div class="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
             <a href="/" class="flex items-center space-x-3 group">
                 <div class="w-10 h-10 bg-gradient-to-tr from-blue-700 via-indigo-600 to-emerald-500 rounded-xl flex items-center justify-center font-extrabold text-xl text-white shadow-lg shadow-blue-500/20 group-hover:scale-105 transition">M</div>
@@ -51,7 +51,7 @@
                 <a href="#express-check" class="w-full sm:w-auto bg-gradient-to-r from-blue-600 to-emerald-600 hover:from-blue-500 hover:to-emerald-500 text-white font-bold text-xs sm:text-sm px-8 py-4 rounded-xl transition shadow-xl shadow-blue-600/20 uppercase tracking-wider font-mono-code">
                     Auditar RFC o Ingresar Folio
                 </a>
-                <a href="#cobertura-resumen" class="w-full sm:w-auto bg-slate-900 hover:bg-slate-800 text-slate-300 border border-slate-800 font-bold text-xs sm:text-sm px-8 py-4 rounded-xl transition font-mono-code">
+                <a href="#cobertura-resumen" class="w-full sm:w-auto bg-white/[0.05] backdrop-blur-2xl shadow-[0_8px_32px_rgba(0,0,0,0.5)] hover:bg-slate-800 text-slate-300 border border-white/15 font-bold text-xs sm:text-sm px-8 py-4 rounded-xl transition font-mono-code">
                     Ver Directorio Regulatorio
                 </a>
             </div>
@@ -59,7 +59,7 @@
     </section>
 
     <!-- Directorio de Cobertura Normativa -->
-    <section id="cobertura-resumen" class="py-20 border-b border-slate-900 bg-slate-950">
+    <section id="cobertura-resumen" class="py-20 border-b border-white/10 bg-transparent">
         <div class="max-w-7xl mx-auto px-6">
             <div class="text-center mb-16">
                 <span class="text-xs font-bold text-emerald-400 uppercase tracking-widest font-mono-code">Vectores de Auditoría Corporativa</span>
@@ -71,7 +71,7 @@
 
             <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
                 <!-- STPS -->
-                <a href="/normas/stps" class="bg-slate-900/90 border border-blue-900/40 hover:border-blue-500/80 rounded-2xl p-6 transition group shadow-lg hover:shadow-blue-500/10 flex flex-col justify-between">
+                <a href="/normas/stps" class="bg-white/[0.04] backdrop-blur-2xl shadow-[0_8px_32px_rgba(0,0,0,0.5)] border border-blue-900/40 hover:border-blue-500/80 rounded-2xl p-6 transition group shadow-lg hover:shadow-blue-500/10 flex flex-col justify-between">
                     <div>
                         <div class="flex items-center justify-between mb-4">
                             <span class="text-xs font-bold text-blue-400 font-mono-code uppercase bg-blue-950/80 px-2.5 py-1 rounded border border-blue-800/50">STPS</span>
@@ -82,13 +82,13 @@
                             Inspección de las 39 NOMs por código SCIAN, factores psicosociales (NOM-035), teletrabajo (NOM-037) y Comisiones Mixtas (NOM-019).
                         </p>
                     </div>
-                    <span class="text-xs font-bold text-blue-400 font-mono-code flex items-center gap-1 group-hover:translate-x-1 transition pt-4 border-t border-slate-800/80">
+                    <span class="text-xs font-bold text-blue-400 font-mono-code flex items-center gap-1 group-hover:translate-x-1 transition pt-4 border-t border-white/15/80">
                         Ver ficha técnica STPS →
                     </span>
                 </a>
 
                 <!-- SAT / CFF -->
-                <a href="/normas/sat" class="bg-slate-900/90 border border-emerald-900/40 hover:border-emerald-500/80 rounded-2xl p-6 transition group shadow-lg hover:shadow-emerald-500/10 flex flex-col justify-between">
+                <a href="/normas/sat" class="bg-white/[0.04] backdrop-blur-2xl shadow-[0_8px_32px_rgba(0,0,0,0.5)] border border-emerald-900/40 hover:border-emerald-500/80 rounded-2xl p-6 transition group shadow-lg hover:shadow-emerald-500/10 flex flex-col justify-between">
                     <div>
                         <div class="flex items-center justify-between mb-4">
                             <span class="text-xs font-bold text-emerald-400 font-mono-code uppercase bg-emerald-950/80 px-2.5 py-1 rounded border border-emerald-800/50">SAT / CFF</span>
@@ -99,13 +99,13 @@
                             Prevención del Art. 69-B (EFOS/EDOS), Fecha Cierta SCJN, Buzón Tributario (17-K), CSD (17-H Bis) y Carta Porte CFDI 4.0.
                         </p>
                     </div>
-                    <span class="text-xs font-bold text-emerald-400 font-mono-code flex items-center gap-1 group-hover:translate-x-1 transition pt-4 border-t border-slate-800/80">
+                    <span class="text-xs font-bold text-emerald-400 font-mono-code flex items-center gap-1 group-hover:translate-x-1 transition pt-4 border-t border-white/15/80">
                         Ver ficha técnica SAT →
                     </span>
                 </a>
 
                 <!-- IMSS / INFONAVIT -->
-                <a href="/normas/imss" class="bg-slate-900/90 border border-purple-900/40 hover:border-purple-500/80 rounded-2xl p-6 transition group shadow-lg hover:shadow-purple-500/10 flex flex-col justify-between">
+                <a href="/normas/imss" class="bg-white/[0.04] backdrop-blur-2xl shadow-[0_8px_32px_rgba(0,0,0,0.5)] border border-purple-900/40 hover:border-purple-500/80 rounded-2xl p-6 transition group shadow-lg hover:shadow-purple-500/10 flex flex-col justify-between">
                     <div>
                         <div class="flex items-center justify-between mb-4">
                             <span class="text-xs font-bold text-purple-400 font-mono-code uppercase bg-purple-950/80 px-2.5 py-1 rounded border border-purple-800/50">IMSS / INFONAVIT</span>
@@ -116,13 +116,13 @@
                             Conciliación de plantilla DENUE vs SBC, Prima de Riesgo (Art. 72 LSS), Opinión 32-D e informativas ICSOE y SISSUB.
                         </p>
                     </div>
-                    <span class="text-xs font-bold text-purple-400 font-mono-code flex items-center gap-1 group-hover:translate-x-1 transition pt-4 border-t border-slate-800/80">
+                    <span class="text-xs font-bold text-purple-400 font-mono-code flex items-center gap-1 group-hover:translate-x-1 transition pt-4 border-t border-white/15/80">
                         Ver ficha técnica IMSS →
                     </span>
                 </a>
 
                 <!-- SABG / INAI -->
-                <a href="/normas/inai" class="bg-slate-900/90 border border-cyan-900/40 hover:border-cyan-500/80 rounded-2xl p-6 transition group shadow-lg hover:shadow-cyan-500/10 flex flex-col justify-between">
+                <a href="/normas/inai" class="bg-white/[0.04] backdrop-blur-2xl shadow-[0_8px_32px_rgba(0,0,0,0.5)] border border-cyan-900/40 hover:border-cyan-500/80 rounded-2xl p-6 transition group shadow-lg hover:shadow-cyan-500/10 flex flex-col justify-between">
                     <div>
                         <div class="flex items-center justify-between mb-4">
                             <span class="text-xs font-bold text-cyan-400 font-mono-code uppercase bg-cyan-950/80 px-2.5 py-1 rounded border border-cyan-800/50">SABG / INAI</span>
@@ -133,13 +133,13 @@
                             Avisos de Privacidad Integrales, Derechos ARCO, Consentimiento Expreso Biométrico (Art. 9) y Seguridad TLS (Art. 19).
                         </p>
                     </div>
-                    <span class="text-xs font-bold text-cyan-400 font-mono-code flex items-center gap-1 group-hover:translate-x-1 transition pt-4 border-t border-slate-800/80">
+                    <span class="text-xs font-bold text-cyan-400 font-mono-code flex items-center gap-1 group-hover:translate-x-1 transition pt-4 border-t border-white/15/80">
                         Ver ficha técnica LFPDPPP →
                     </span>
                 </a>
 
                 <!-- PLD / SECTORIALES -->
-                <a href="/normas/pld" class="bg-slate-900/90 border border-amber-900/40 hover:border-amber-500/80 rounded-2xl p-6 transition group shadow-lg hover:shadow-amber-500/10 flex flex-col justify-between">
+                <a href="/normas/pld" class="bg-white/[0.04] backdrop-blur-2xl shadow-[0_8px_32px_rgba(0,0,0,0.5)] border border-amber-900/40 hover:border-amber-500/80 rounded-2xl p-6 transition group shadow-lg hover:shadow-amber-500/10 flex flex-col justify-between">
                     <div>
                         <div class="flex items-center justify-between mb-4">
                             <span class="text-xs font-bold text-amber-400 font-mono-code uppercase bg-amber-950/80 px-2.5 py-1 rounded border border-amber-800/50">9 MÓDULOS SECTORIALES</span>
@@ -150,13 +150,13 @@
                             Activación automática de CNBV/LFPIORPI, COFEPRIS, Protección Civil (PIPC >100m²), SEMARNAT, SICT, SEP, SECTUR y SSPC.
                         </p>
                     </div>
-                    <span class="text-xs font-bold text-amber-400 font-mono-code flex items-center gap-1 group-hover:translate-x-1 transition pt-4 border-t border-slate-800/80">
+                    <span class="text-xs font-bold text-amber-400 font-mono-code flex items-center gap-1 group-hover:translate-x-1 transition pt-4 border-t border-white/15/80">
                         Ver módulos sectoriales →
                     </span>
                 </a>
 
                 <!-- PROFECO / SE -->
-                <a href="/normas/comercio" class="bg-slate-900/90 border border-teal-900/40 hover:border-teal-500/80 rounded-2xl p-6 transition group shadow-lg hover:shadow-teal-500/10 flex flex-col justify-between">
+                <a href="/normas/comercio" class="bg-white/[0.04] backdrop-blur-2xl shadow-[0_8px_32px_rgba(0,0,0,0.5)] border border-teal-900/40 hover:border-teal-500/80 rounded-2xl p-6 transition group shadow-lg hover:shadow-teal-500/10 flex flex-col justify-between">
                     <div>
                         <div class="flex items-center justify-between mb-4">
                             <span class="text-xs font-bold text-teal-400 font-mono-code uppercase bg-teal-950/80 px-2.5 py-1 rounded border border-teal-800/50">PROFECO / SE</span>
@@ -167,7 +167,7 @@
                             Auditoría de E-Commerce (Art. 76 BIS LFPC), garantías de 90 días, Contratos de Adhesión RRPAC y Fecha Cierta NOM-151.
                         </p>
                     </div>
-                    <span class="text-xs font-bold text-teal-400 font-mono-code flex items-center gap-1 group-hover:translate-x-1 transition pt-4 border-t border-slate-800/80">
+                    <span class="text-xs font-bold text-teal-400 font-mono-code flex items-center gap-1 group-hover:translate-x-1 transition pt-4 border-t border-white/15/80">
                         Ver comercio digital →
                     </span>
                 </a>
@@ -176,7 +176,7 @@
     </section>
 
     <!-- Módulo de Validez Legal y Respaldo Pericial -->
-    <section id="validez-legal" class="py-20 border-b border-slate-900 bg-slate-950">
+    <section id="validez-legal" class="py-20 border-b border-white/10 bg-transparent">
         <div class="max-w-7xl mx-auto px-6">
             <div class="text-center mb-16">
                 <span class="text-xs font-bold text-emerald-400 uppercase tracking-widest font-mono-code">Sustento Legal & Procesal</span>
@@ -187,7 +187,7 @@
             </div>
 
             <div class="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
-                <a href="/validez/nom-151" class="bg-slate-900/80 border border-slate-800 rounded-2xl p-6 hover:border-blue-500/50 transition group flex flex-col justify-between">
+                <a href="/validez/nom-151" class="bg-white/[0.04] backdrop-blur-2xl shadow-[0_8px_32px_rgba(0,0,0,0.5)] border border-white/15 rounded-2xl p-6 hover:border-blue-500/50 transition group flex flex-col justify-between">
                     <div>
                         <div class="w-10 h-10 bg-blue-950 border border-blue-800/80 text-blue-400 rounded-xl flex items-center justify-center font-bold text-lg mb-4">⚖️</div>
                         <h3 class="text-sm font-bold text-white mb-2">Fecha Cierta SCJN & NOM-151</h3>
@@ -198,7 +198,7 @@
                     <span class="text-[10px] font-bold font-mono-code text-blue-400 group-hover:translate-x-1 transition">Ver marco procesal →</span>
                 </a>
 
-                <a href="/validez/dictamen-pericial" class="bg-slate-900/80 border border-slate-800 rounded-2xl p-6 hover:border-emerald-500/50 transition group flex flex-col justify-between">
+                <a href="/validez/dictamen-pericial" class="bg-white/[0.04] backdrop-blur-2xl shadow-[0_8px_32px_rgba(0,0,0,0.5)] border border-white/15 rounded-2xl p-6 hover:border-emerald-500/50 transition group flex flex-col justify-between">
                     <div>
                         <div class="w-10 h-10 bg-emerald-950 border border-emerald-800/80 text-emerald-400 rounded-xl flex items-center justify-center font-bold text-lg mb-4">📜</div>
                         <h3 class="text-sm font-bold text-white mb-2">Dictamen Pericial Certificado</h3>
@@ -209,7 +209,7 @@
                     <span class="text-[10px] font-bold font-mono-code text-emerald-400 group-hover:translate-x-1 transition">Ver acreditación C.P.C. →</span>
                 </a>
 
-                <a href="/validez/cifrado-sha256" class="bg-slate-900/80 border border-slate-800 rounded-2xl p-6 hover:border-indigo-500/50 transition group flex flex-col justify-between">
+                <a href="/validez/cifrado-sha256" class="bg-white/[0.04] backdrop-blur-2xl shadow-[0_8px_32px_rgba(0,0,0,0.5)] border border-white/15 rounded-2xl p-6 hover:border-indigo-500/50 transition group flex flex-col justify-between">
                     <div>
                         <div class="w-10 h-10 bg-indigo-950 border border-indigo-800/80 text-indigo-400 rounded-xl flex items-center justify-center font-bold text-lg mb-4">🔐</div>
                         <h3 class="text-sm font-bold text-white mb-2">Cifrado Merkle SHA-256</h3>
@@ -220,7 +220,7 @@
                     <span class="text-[10px] font-bold font-mono-code text-indigo-400 group-hover:translate-x-1 transition">Ver protocolo Merkle →</span>
                 </a>
 
-                <a href="/validez/lfpdppp-privacidad" class="bg-slate-900/80 border border-slate-800 rounded-2xl p-6 hover:border-sky-500/50 transition group flex flex-col justify-between">
+                <a href="/validez/lfpdppp-privacidad" class="bg-white/[0.04] backdrop-blur-2xl shadow-[0_8px_32px_rgba(0,0,0,0.5)] border border-white/15 rounded-2xl p-6 hover:border-sky-500/50 transition group flex flex-col justify-between">
                     <div>
                         <div class="w-10 h-10 bg-sky-950 border border-sky-800/80 text-sky-400 rounded-xl flex items-center justify-center font-bold text-lg mb-4">🛡️</div>
                         <h3 class="text-sm font-bold text-white mb-2">Sanitización PII & LFPDPPP</h3>
@@ -235,9 +235,9 @@
     </section>
 
     <!-- Módulo Express Check + Cuestionario de Certeza Pericial -->
-    <section id="express-check" class="py-20 bg-slate-950">
+    <section id="express-check" class="py-20 bg-transparent">
         <div class="max-w-4xl mx-auto px-6">
-            <div class="bg-slate-900 border border-slate-800 rounded-2xl p-8 sm:p-12 shadow-2xl relative overflow-hidden">
+            <div class="bg-white/[0.05] backdrop-blur-2xl shadow-[0_8px_32px_rgba(0,0,0,0.5)] border border-white/15 rounded-2xl p-8 sm:p-12 shadow-2xl relative overflow-hidden">
                 <div class="text-center mb-8">
                     <span class="text-xs font-bold text-blue-400 uppercase tracking-widest font-mono-code">Motor de Diagnóstico OSINT & Calibración Pericial</span>
                     <h2 class="text-2xl sm:text-3xl font-extrabold text-white mt-1 tracking-tight">Auditoría Exprés por RFC y Dominio</h2>
@@ -248,57 +248,57 @@
 
                 <form onsubmit="runLiveCalibrationScan(event)" class="space-y-4">
                     <div class="grid sm:grid-cols-2 gap-3">
-                        <input type="text" id="folioInput" value="EST850628K51" placeholder="RFC o Folio (Ej. EST850628K51)" required class="bg-slate-950 border border-slate-800 rounded-xl px-5 py-4 text-xs font-mono-code text-white placeholder-slate-600 focus:outline-none focus:border-blue-500">
-                        <input type="text" id="domainInput" value="steren.com.mx" placeholder="Dominio Web (Ej. steren.com.mx)" class="bg-slate-950 border border-slate-800 rounded-xl px-5 py-4 text-xs font-mono-code text-white placeholder-slate-600 focus:outline-none focus:border-blue-500">
+                        <input type="text" id="folioInput" value="EST850628K51" placeholder="RFC o Folio (Ej. EST850628K51)" required class="bg-slate-950 border border-white/15 rounded-xl px-5 py-4 text-xs font-mono-code text-white placeholder-slate-600 focus:outline-none focus:border-blue-500">
+                        <input type="text" id="domainInput" value="steren.com.mx" placeholder="Dominio Web (Ej. steren.com.mx)" class="bg-slate-950 border border-white/15 rounded-xl px-5 py-4 text-xs font-mono-code text-white placeholder-slate-600 focus:outline-none focus:border-blue-500">
                     </div>
 
                     <!-- Acordeón del Cuestionario de Certeza Pericial (12 Vectores Internos) -->
-                    <details class="bg-slate-950/90 border border-slate-800 rounded-xl p-4 text-xs font-mono-code text-slate-300">
+                    <details class="bg-white/[0.03] backdrop-blur-xl border border-white/15 rounded-xl p-4 text-xs font-mono-code text-slate-300">
                         <summary class="cursor-pointer font-bold text-blue-400 hover:text-blue-300 select-none">
                             Calibración Pericial de Variables Internas (Opcional — Confirmar Variables Internas STPS / LFPDPPP / SAT)
                         </summary>
-                        <div class="grid sm:grid-cols-2 gap-3 mt-4 pt-4 border-t border-slate-800 text-[11px]">
-                            <label class="flex items-center justify-between bg-slate-900 p-2.5 rounded-lg border border-slate-800">
+                        <div class="grid sm:grid-cols-2 gap-3 mt-4 pt-4 border-t border-white/15 text-[11px]">
+                            <label class="flex items-center justify-between bg-white/[0.05] backdrop-blur-2xl shadow-[0_8px_32px_rgba(0,0,0,0.5)] p-2.5 rounded-lg border border-white/15">
                                 <span>Plantilla exacta de empleados:</span>
                                 <input id="cal_emp" type="number" value="45" min="1" class="w-20 bg-slate-950 border border-slate-700 rounded px-2 py-1 text-right text-emerald-400 font-bold">
                             </label>
-                            <label class="flex items-center gap-2 bg-slate-900 p-2.5 rounded-lg border border-slate-800 cursor-pointer">
+                            <label class="flex items-center gap-2 bg-white/[0.05] backdrop-blur-2xl shadow-[0_8px_32px_rgba(0,0,0,0.5)] p-2.5 rounded-lg border border-white/15 cursor-pointer">
                                 <input id="cal_nom037" type="checkbox" checked class="accent-blue-500">
                                 <span>Personal en Home Office >40% (NOM-037)</span>
                             </label>
-                            <label class="flex items-center gap-2 bg-slate-900 p-2.5 rounded-lg border border-slate-800 cursor-pointer">
+                            <label class="flex items-center gap-2 bg-white/[0.05] backdrop-blur-2xl shadow-[0_8px_32px_rgba(0,0,0,0.5)] p-2.5 rounded-lg border border-white/15 cursor-pointer">
                                 <input id="cal_repse" type="checkbox" checked class="accent-blue-500">
                                 <span>Contrata limpieza/vigilancia/terceros (REPSE)</span>
                             </label>
-                            <label class="flex items-center gap-2 bg-slate-900 p-2.5 rounded-lg border border-slate-800 cursor-pointer">
+                            <label class="flex items-center gap-2 bg-white/[0.05] backdrop-blur-2xl shadow-[0_8px_32px_rgba(0,0,0,0.5)] p-2.5 rounded-lg border border-white/15 cursor-pointer">
                                 <input id="cal_bio" type="checkbox" checked class="accent-blue-500">
                                 <span>Usa reloj checador biométrico / datos salud</span>
                             </label>
-                            <label class="flex items-center gap-2 bg-slate-900 p-2.5 rounded-lg border border-slate-800 cursor-pointer">
+                            <label class="flex items-center gap-2 bg-white/[0.05] backdrop-blur-2xl shadow-[0_8px_32px_rgba(0,0,0,0.5)] p-2.5 rounded-lg border border-white/15 cursor-pointer">
                                 <input id="cal_69b" type="checkbox" checked class="accent-blue-500">
                                 <span>Paga servicios intangibles B2B (Art. 69-B)</span>
                             </label>
-                            <label class="flex items-center gap-2 bg-slate-900 p-2.5 rounded-lg border border-slate-800 cursor-pointer">
+                            <label class="flex items-center gap-2 bg-white/[0.05] backdrop-blur-2xl shadow-[0_8px_32px_rgba(0,0,0,0.5)] p-2.5 rounded-lg border border-white/15 cursor-pointer">
                                 <input id="cal_nom006" type="checkbox" checked class="accent-blue-500">
                                 <span>Manejo de cargas / almacén (NOM-006/036)</span>
                             </label>
-                            <label class="flex items-center gap-2 bg-slate-900 p-2.5 rounded-lg border border-slate-800 cursor-pointer">
+                            <label class="flex items-center gap-2 bg-white/[0.05] backdrop-blur-2xl shadow-[0_8px_32px_rgba(0,0,0,0.5)] p-2.5 rounded-lg border border-white/15 cursor-pointer">
                                 <input id="cal_nom020" type="checkbox" class="accent-blue-500">
                                 <span>Usa compresores o calderas (NOM-020)</span>
                             </label>
-                            <label class="flex items-center gap-2 bg-slate-900 p-2.5 rounded-lg border border-slate-800 cursor-pointer">
+                            <label class="flex items-center gap-2 bg-white/[0.05] backdrop-blur-2xl shadow-[0_8px_32px_rgba(0,0,0,0.5)] p-2.5 rounded-lg border border-white/15 cursor-pointer">
                                 <input id="cal_nom005" type="checkbox" class="accent-blue-500">
                                 <span>Sustancias químicas peligrosas (NOM-005/018)</span>
                             </label>
-                            <label class="flex items-center gap-2 bg-slate-900 p-2.5 rounded-lg border border-slate-800 cursor-pointer">
+                            <label class="flex items-center gap-2 bg-white/[0.05] backdrop-blur-2xl shadow-[0_8px_32px_rgba(0,0,0,0.5)] p-2.5 rounded-lg border border-white/15 cursor-pointer">
                                 <input id="cal_transfer" type="checkbox" checked class="accent-blue-500">
                                 <span>Comparte datos con despachos/nube (Art. 36)</span>
                             </label>
-                            <label class="flex items-center gap-2 bg-slate-900 p-2.5 rounded-lg border border-slate-800 cursor-pointer">
+                            <label class="flex items-center gap-2 bg-white/[0.05] backdrop-blur-2xl shadow-[0_8px_32px_rgba(0,0,0,0.5)] p-2.5 rounded-lg border border-white/15 cursor-pointer">
                                 <input id="cal_cartaporte" type="checkbox" class="accent-blue-500">
                                 <span>Transporte en tramos federales (Carta Porte)</span>
                             </label>
-                            <label class="flex items-center gap-2 bg-slate-900 p-2.5 rounded-lg border border-slate-800 cursor-pointer sm:col-span-2">
+                            <label class="flex items-center gap-2 bg-white/[0.05] backdrop-blur-2xl shadow-[0_8px_32px_rgba(0,0,0,0.5)] p-2.5 rounded-lg border border-white/15 cursor-pointer sm:col-span-2">
                                 <input id="cal_pld" type="checkbox" class="accent-blue-500">
                                 <span>Realiza Actividades Vulnerables Antilavado (Art. 17 LFPIORPI: mutuo, inmuebles, blindaje, activos)</span>
                             </label>
@@ -306,7 +306,7 @@
                     </details>
 
                                                             <!-- Desplegable con Pre-llenado Automático y Campos en Blanco para Uso Multi-Proveedor -->
-                    <details id="dossier-details-box" class="bg-slate-950/90 border border-emerald-900/60 rounded-xl p-4 text-xs font-mono-code text-slate-300">
+                    <details id="dossier-details-box" class="bg-white/[0.03] backdrop-blur-xl border border-emerald-900/60 rounded-xl p-4 text-xs font-mono-code text-slate-300">
                         <summary class="cursor-pointer font-bold text-emerald-400 hover:text-emerald-300 select-none flex items-center justify-between">
                             <span>Personalización de Instrumentos Jurídicos y Datos Pre-Cargados (Opcional)</span>
                             <span class="text-[10px] bg-emerald-950 text-emerald-300 border border-emerald-800 px-2 py-0.5 rounded">Pre-llenado Automático</span>
@@ -314,72 +314,72 @@
                         <p class="text-[11px] text-slate-400 mt-2 mb-3 leading-relaxed">
                             Los datos públicos detectados por su RFC y sitio web se pre-cargan automáticamente abajo. <strong>Los campos que deje en blanco</strong> (como los datos de un proveedor específico para el Contrato Art. 69-B o los firmantes internos) se generarán con <strong>líneas jurídicas formales de llenado (<code>____________________</code>)</strong> para que pueda reutilizar sus contratos con múltiples proveedores:
                         </p>
-                        <div class="grid sm:grid-cols-2 gap-3 pt-2 border-t border-slate-800 text-[11px]">
+                        <div class="grid sm:grid-cols-2 gap-3 pt-2 border-t border-white/15 text-[11px]">
                             <div>
                                 <label class="text-[10px] text-slate-400 block mb-1">Denominación o Razón Social</label>
-                                <input id="dos_razon" type="text" placeholder="" class="w-full bg-slate-900 border border-slate-800 rounded-lg px-3 py-2 text-white">
+                                <input id="dos_razon" type="text" placeholder="" class="w-full bg-white/[0.05] backdrop-blur-2xl shadow-[0_8px_32px_rgba(0,0,0,0.5)] border border-white/15 rounded-lg px-3 py-2 text-white">
                             </div>
                             <div>
                                 <label class="text-[10px] text-slate-400 block mb-1">Giro o Actividad Económica (SCIAN)</label>
-                                <input id="dos_giro" type="text" placeholder="" class="w-full bg-slate-900 border border-slate-800 rounded-lg px-3 py-2 text-white">
+                                <input id="dos_giro" type="text" placeholder="" class="w-full bg-white/[0.05] backdrop-blur-2xl shadow-[0_8px_32px_rgba(0,0,0,0.5)] border border-white/15 rounded-lg px-3 py-2 text-white">
                             </div>
                             <div>
                                 <label class="text-[10px] text-slate-400 block mb-1">Domicilio del Centro de Trabajo</label>
-                                <input id="dos_domicilio" type="text" placeholder="" class="w-full bg-slate-900 border border-slate-800 rounded-lg px-3 py-2 text-white">
+                                <input id="dos_domicilio" type="text" placeholder="" class="w-full bg-white/[0.05] backdrop-blur-2xl shadow-[0_8px_32px_rgba(0,0,0,0.5)] border border-white/15 rounded-lg px-3 py-2 text-white">
                             </div>
                             <div class="grid grid-cols-2 gap-2">
                                 <div>
                                     <label class="text-[10px] text-slate-400 block mb-1">Código Postal Fiscal</label>
-                                    <input id="dos_cp" type="text" maxlength="5" placeholder="" class="w-full bg-slate-900 border border-slate-800 rounded-lg px-3 py-2 text-white">
+                                    <input id="dos_cp" type="text" maxlength="5" placeholder="" class="w-full bg-white/[0.05] backdrop-blur-2xl shadow-[0_8px_32px_rgba(0,0,0,0.5)] border border-white/15 rounded-lg px-3 py-2 text-white">
                                 </div>
                                 <div>
                                     <label class="text-[10px] text-slate-400 block mb-1">Entidad / Jurisdicción</label>
-                                    <input id="dos_estado" type="text" placeholder="" class="w-full bg-slate-900 border border-slate-800 rounded-lg px-3 py-2 text-white">
+                                    <input id="dos_estado" type="text" placeholder="" class="w-full bg-white/[0.05] backdrop-blur-2xl shadow-[0_8px_32px_rgba(0,0,0,0.5)] border border-white/15 rounded-lg px-3 py-2 text-white">
                                 </div>
                             </div>
                             <div>
                                 <label class="text-[10px] text-slate-400 block mb-1">Correo de Atención a Derechos ARCO</label>
-                                <input id="dos_email" type="email" placeholder="" class="w-full bg-slate-900 border border-slate-800 rounded-lg px-3 py-2 text-white">
+                                <input id="dos_email" type="email" placeholder="" class="w-full bg-white/[0.05] backdrop-blur-2xl shadow-[0_8px_32px_rgba(0,0,0,0.5)] border border-white/15 rounded-lg px-3 py-2 text-white">
                             </div>
                             <div>
                                 <label class="text-[10px] text-slate-400 block mb-1">Teléfono Corporativo</label>
-                                <input id="dos_tel" type="text" placeholder="" class="w-full bg-slate-900 border border-slate-800 rounded-lg px-3 py-2 text-white">
+                                <input id="dos_tel" type="text" placeholder="" class="w-full bg-white/[0.05] backdrop-blur-2xl shadow-[0_8px_32px_rgba(0,0,0,0.5)] border border-white/15 rounded-lg px-3 py-2 text-white">
                             </div>
                             <div>
                                 <label class="text-[10px] text-slate-400 block mb-1">Nombre del Representante Legal</label>
-                                <input id="dos_rep_nombre" type="text" placeholder="" class="w-full bg-slate-900 border border-slate-800 rounded-lg px-3 py-2 text-white">
+                                <input id="dos_rep_nombre" type="text" placeholder="" class="w-full bg-white/[0.05] backdrop-blur-2xl shadow-[0_8px_32px_rgba(0,0,0,0.5)] border border-white/15 rounded-lg px-3 py-2 text-white">
                             </div>
                             <div>
                                 <label class="text-[10px] text-slate-400 block mb-1">Cargo del Representante Legal</label>
-                                <input id="dos_rep_cargo" type="text" placeholder="" class="w-full bg-slate-900 border border-slate-800 rounded-lg px-3 py-2 text-white">
+                                <input id="dos_rep_cargo" type="text" placeholder="" class="w-full bg-white/[0.05] backdrop-blur-2xl shadow-[0_8px_32px_rgba(0,0,0,0.5)] border border-white/15 rounded-lg px-3 py-2 text-white">
                             </div>
                             <div>
                                 <label class="text-[10px] text-slate-400 block mb-1">Oficial de Privacidad (Art. 17 LFPDPPP)</label>
-                                <input id="dos_oficial_priv" type="text" placeholder="" class="w-full bg-slate-900 border border-slate-800 rounded-lg px-3 py-2 text-white">
+                                <input id="dos_oficial_priv" type="text" placeholder="" class="w-full bg-white/[0.05] backdrop-blur-2xl shadow-[0_8px_32px_rgba(0,0,0,0.5)] border border-white/15 rounded-lg px-3 py-2 text-white">
                             </div>
                             <div>
                                 <label class="text-[10px] text-slate-400 block mb-1">Registro Patronal IMSS</label>
-                                <input id="dos_reg_patronal" type="text" placeholder="" class="w-full bg-slate-900 border border-slate-800 rounded-lg px-3 py-2 text-white">
+                                <input id="dos_reg_patronal" type="text" placeholder="" class="w-full bg-white/[0.05] backdrop-blur-2xl shadow-[0_8px_32px_rgba(0,0,0,0.5)] border border-white/15 rounded-lg px-3 py-2 text-white">
                             </div>
                             <div>
                                 <label class="text-[10px] text-slate-400 block mb-1">Coordinador Comisión Mixta (NOM-019 / NOM-030)</label>
-                                <input id="dos_csh_coord" type="text" placeholder="" class="w-full bg-slate-900 border border-slate-800 rounded-lg px-3 py-2 text-white">
+                                <input id="dos_csh_coord" type="text" placeholder="" class="w-full bg-white/[0.05] backdrop-blur-2xl shadow-[0_8px_32px_rgba(0,0,0,0.5)] border border-white/15 rounded-lg px-3 py-2 text-white">
                             </div>
                             <div>
                                 <label class="text-[10px] text-slate-400 block mb-1">Secretario Comisión Mixta (NOM-019)</label>
-                                <input id="dos_csh_sec" type="text" placeholder="" class="w-full bg-slate-900 border border-slate-800 rounded-lg px-3 py-2 text-white">
+                                <input id="dos_csh_sec" type="text" placeholder="" class="w-full bg-white/[0.05] backdrop-blur-2xl shadow-[0_8px_32px_rgba(0,0,0,0.5)] border border-white/15 rounded-lg px-3 py-2 text-white">
                             </div>
                             <div>
                                 <label class="text-[10px] text-slate-400 block mb-1">Razón Social del Proveedor (Contrato Art. 69-B)</label>
-                                <input id="dos_prov_nombre" type="text" placeholder="" class="w-full bg-slate-900 border border-slate-800 rounded-lg px-3 py-2 text-white">
+                                <input id="dos_prov_nombre" type="text" placeholder="" class="w-full bg-white/[0.05] backdrop-blur-2xl shadow-[0_8px_32px_rgba(0,0,0,0.5)] border border-white/15 rounded-lg px-3 py-2 text-white">
                             </div>
                             <div>
                                 <label class="text-[10px] text-slate-400 block mb-1">RFC del Proveedor (Contrato Art. 69-B)</label>
-                                <input id="dos_prov_rfc" type="text" placeholder="" class="w-full bg-slate-900 border border-slate-800 rounded-lg px-3 py-2 text-white">
+                                <input id="dos_prov_rfc" type="text" placeholder="" class="w-full bg-white/[0.05] backdrop-blur-2xl shadow-[0_8px_32px_rgba(0,0,0,0.5)] border border-white/15 rounded-lg px-3 py-2 text-white">
                             </div>
                             <div class="sm:col-span-2">
                                 <label class="text-[10px] text-slate-400 block mb-1">Objeto / Servicio del Contrato de Materialidad (Art. 69-B CFF)</label>
-                                <input id="dos_prov_obj" type="text" placeholder="" class="w-full bg-slate-900 border border-slate-800 rounded-lg px-3 py-2 text-white">
+                                <input id="dos_prov_obj" type="text" placeholder="" class="w-full bg-white/[0.05] backdrop-blur-2xl shadow-[0_8px_32px_rgba(0,0,0,0.5)] border border-white/15 rounded-lg px-3 py-2 text-white">
                             </div>
                         </div>
                     </details>
@@ -396,7 +396,7 @@
                 </form>
 
                 <!-- Resultado Instantáneo del Escaneo -->
-                <div id="live-scan-result" class="hidden mt-8 pt-8 border-t border-slate-800 font-mono-code text-xs space-y-4">
+                <div id="live-scan-result" class="hidden mt-8 pt-8 border-t border-white/15 font-mono-code text-xs space-y-4">
                     <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center bg-slate-950 p-4 rounded-xl border border-red-500/40 gap-3">
                         <div>
                             <span class="text-[10px] text-red-400 uppercase font-bold block">Diagnóstico Concluido en Vivo</span>
@@ -408,7 +408,7 @@
                             <span id="res-fine" class="text-lg font-extrabold text-red-400"></span>
                         </div>
                     </div>
-                    <div class="text-[11px] text-slate-400 bg-slate-950 p-3 rounded-lg border border-slate-800 break-all">
+                    <div class="text-[11px] text-slate-400 bg-slate-950 p-3 rounded-lg border border-white/15 break-all">
                         Sello SHA-256 Generado: <span id="res-hash" class="text-emerald-400 font-bold"></span>
                     </div>
                     <div class="grid sm:grid-cols-3 gap-3">
@@ -429,7 +429,7 @@
 
     <!-- Modal Anti-Abandono de Carrito (Exit-Intent Lead Magnet) -->
     <div id="exit-intent-modal" class="hidden fixed inset-0 bg-slate-950/85 backdrop-blur-md z-50 items-center justify-center p-4">
-        <div class="bg-slate-900 border-2 border-red-500/50 rounded-2xl max-w-lg w-full p-8 shadow-2xl font-mono-code text-xs relative">
+        <div class="bg-white/[0.05] backdrop-blur-2xl shadow-[0_8px_32px_rgba(0,0,0,0.5)] border-2 border-red-500/50 rounded-2xl max-w-lg w-full p-8 shadow-2xl font-mono-code text-xs relative">
             <button onclick="closeExitModal()" class="absolute top-4 right-4 text-slate-400 hover:text-white text-base">✕</button>
             <span class="inline-block bg-red-950 text-red-400 border border-red-700 px-3 py-1 rounded-full text-[10px] font-bold uppercase mb-4">
                 Alerta Preventiva de Inspección STPS
