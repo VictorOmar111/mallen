@@ -145,7 +145,7 @@ fn build_report_typst_markup_full(
     empresa: &EmpresaB2B,
     osint: &OsintResult,
     master_opt: Option<&AuditMasterJson>,
-    is_accredited: bool,
+    _is_accredited: bool,
     is_censored_micro_report: bool,
 ) -> String {
     let tax_id = empresa.tax_id.as_deref().unwrap_or("SIN-RFC");

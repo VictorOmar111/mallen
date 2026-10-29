@@ -950,8 +950,8 @@ async fn render_checkout_page_with_state(state: Arc<AppState>, raw_ref: String) 
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
     <style>body {{ font-family: 'Inter', sans-serif; }} .font-mono-code {{ font-family: 'JetBrains Mono', monospace; }}</style>
-    <link rel="stylesheet" href="/css/quantum-glass.css?v=2026.14">
-    <script src="/js/quantum-lights.js?v=2026.14" defer></script>
+    <link rel="stylesheet" href="/css/quantum-glass.css?v=2026.15">
+    <script src="/js/quantum-lights.js?v=2026.15" defer></script>
 </head>
 <body class="bg-slate-950 text-slate-100 min-h-screen p-6 flex items-center justify-center selection:bg-blue-600 selection:text-white">
     <div class="max-w-3xl w-full bg-white/[0.05] shadow-[0_8px_32px_rgba(0,0,0,0.5)] border border-white/15 p-8 rounded-2xl font-mono-code text-xs shadow-2xl">
@@ -1371,8 +1371,8 @@ async fn handle_privacy() -> impl IntoResponse {
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
     <style>body { font-family: 'Inter', sans-serif; background-color: #020617; background-image: radial-gradient(at 12% 12%, rgba(37, 99, 235, 0.32) 0px, transparent 48%), radial-gradient(at 88% 18%, rgba(16, 185, 129, 0.25) 0px, transparent 48%), radial-gradient(at 50% 82%, rgba(99, 102, 241, 0.28) 0px, transparent 52%); background-attachment: fixed; } .font-mono-code { font-family: 'JetBrains Mono', monospace; }</style>
-    <link rel="stylesheet" href="/css/quantum-glass.css?v=2026.14">
-    <script src="/js/quantum-lights.js?v=2026.14" defer></script>
+    <link rel="stylesheet" href="/css/quantum-glass.css?v=2026.15">
+    <script src="/js/quantum-lights.js?v=2026.15" defer></script>
 </head>
 <body class="bg-slate-950 text-slate-300 min-h-screen p-6 md:p-12 border-t-4 border-blue-600">
     <div class="max-w-4xl mx-auto bg-white/[0.05] shadow-[0_8px_32px_rgba(0,0,0,0.5)] border border-white/15 p-8 md:p-12 shadow-2xl rounded-2xl">
@@ -1413,8 +1413,8 @@ async fn handle_terms() -> impl IntoResponse {
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
     <style>body { font-family: 'Inter', sans-serif; background-color: #020617; background-image: radial-gradient(at 12% 12%, rgba(37, 99, 235, 0.32) 0px, transparent 48%), radial-gradient(at 88% 18%, rgba(16, 185, 129, 0.25) 0px, transparent 48%), radial-gradient(at 50% 82%, rgba(99, 102, 241, 0.28) 0px, transparent 52%); background-attachment: fixed; } .font-mono-code { font-family: 'JetBrains Mono', monospace; }</style>
-    <link rel="stylesheet" href="/css/quantum-glass.css?v=2026.14">
-    <script src="/js/quantum-lights.js?v=2026.14" defer></script>
+    <link rel="stylesheet" href="/css/quantum-glass.css?v=2026.15">
+    <script src="/js/quantum-lights.js?v=2026.15" defer></script>
 </head>
 <body class="bg-slate-950 text-slate-300 min-h-screen p-6 md:p-12 border-t-4 border-indigo-600">
     <div class="max-w-4xl mx-auto bg-white/[0.05] shadow-[0_8px_32px_rgba(0,0,0,0.5)] border border-white/15 p-8 md:p-12 shadow-2xl rounded-2xl">
@@ -1442,544 +1442,111 @@ async fn handle_terms() -> impl IntoResponse {
     Html(html)
 }
 
-fn render_norma_category(
-    cat_slug: &str,
-    titulo: &str,
-    sub: &str,
-    institucion: &str,
-    items: Vec<(&str, &str, &str, &str)>,
-) -> Html<String> {
-    let (theme_border, theme_badge, theme_text, theme_accent) = match cat_slug {
-        "stps" => (
-            "border-blue-900/50",
-            "bg-blue-950/80 border-blue-800/80 text-blue-400",
-            "text-blue-400",
-            "border-blue-500/80",
-        ),
-        "sat" => (
-            "border-emerald-900/50",
-            "bg-emerald-950/80 border-emerald-800/80 text-emerald-400",
-            "text-emerald-400",
-            "border-emerald-500/80",
-        ),
-        "imss" => (
-            "border-purple-900/50",
-            "bg-purple-950/80 border-purple-800/80 text-purple-400",
-            "text-purple-400",
-            "border-purple-500/80",
-        ),
-        "inai" => (
-            "border-cyan-900/50",
-            "bg-cyan-950/80 border-cyan-800/80 text-cyan-400",
-            "text-cyan-400",
-            "border-cyan-500/80",
-        ),
-        "pld" => (
-            "border-amber-900/50",
-            "bg-amber-950/80 border-amber-800/80 text-amber-400",
-            "text-amber-400",
-            "border-amber-500/80",
-        ),
-        _ => (
-            "border-teal-900/50",
-            "bg-teal-950/80 border-teal-800/80 text-teal-400",
-            "text-teal-400",
-            "border-teal-500/80",
-        ),
-    };
-
-    let mut cards_html = String::new();
-    for (code_slug, codigo, nombre, desc) in items {
-        cards_html.push_str(&format!(
-            r#"<div class="bg-white/[0.04] shadow-[0_8px_32px_rgba(0,0,0,0.5)] border {} rounded-2xl p-6 hover:{} transition shadow-lg flex flex-col justify-between group">
-                <div>
-                    <span class="inline-block border text-xs px-2.5 py-1 rounded font-mono mb-3 {}">{}</span>
-                    <h3 class="text-base font-bold text-white mb-2 group-hover:{} transition">{}</h3>
-                    <p class="text-xs text-slate-400 font-mono leading-relaxed mb-4">{}</p>
-                </div>
-                <a href="/normas/{}/{}" class="text-xs font-bold {} font-mono flex items-center gap-1 transition pt-4 border-t border-white/15">
-                    Inspeccionar matriz de riesgo →
-                </a>
-            </div>"#,
-            theme_border,
-            theme_accent,
-            theme_badge,
-            codigo,
-            theme_text,
-            nombre,
-            desc,
-            cat_slug,
-            code_slug,
-            theme_text
-        ));
-    }
-
-    let html = format!(
-        r#"<!DOCTYPE html>
-<html lang="es">
-<head>
-    <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{} — Firma Pericial Mallen</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
-    <style>body {{ font-family: 'Inter', sans-serif; }} .font-mono-code {{ font-family: 'JetBrains Mono', monospace; }}</style>
-    <link rel="stylesheet" href="/css/quantum-glass.css?v=2026.14">
-    <script src="/js/quantum-lights.js?v=2026.14" defer></script>
-</head>
-<body class="bg-slate-950 text-slate-100 min-h-screen p-6 md:p-12 selection:bg-slate-700 selection:text-white">
-    <div class="max-w-7xl mx-auto">
-        <div class="flex items-center justify-between pb-6 mb-10 border-b border-white/15">
-            <a href="/" class="flex items-center space-x-3 cursor-pointer group">
-                <div class="w-10 h-10 bg-gradient-to-tr from-blue-700 via-indigo-600 to-emerald-500 rounded-xl flex items-center justify-center font-extrabold text-xl text-white group-hover:scale-105 transition shadow-lg">M</div>
-                <div>
-                    <span class="text-sm font-bold text-white block leading-none">FIRMA PERICIAL MALLEN</span>
-                    <span class="text-[10px] {} font-bold uppercase font-mono-code">Directorio Técnico de Inspección</span>
-                </div>
-            </a>
-            <a href="/" class="text-xs {} hover:underline font-mono-code transition">← Volver a la Portada</a>
-        </div>
-        <div class="mb-10">
-            <span class="text-xs font-bold {} uppercase tracking-widest font-mono-code">{}</span>
-            <h1 class="text-3xl sm:text-4xl font-extrabold text-white mt-1">{}</h1>
-            <p class="text-slate-400 text-xs sm:text-sm max-w-3xl mt-3 font-mono-code leading-relaxed">{}</p>
-        </div>
-        <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {}
-        </div>
-    </div>
-</body>
-</html>"#,
-        titulo, theme_text, theme_text, theme_text, institucion, titulo, sub, cards_html
-    );
-    Html(html)
+fn render_norma_category(cat_slug: &str) -> Html<String> {
+    worker_inegi_engine::modules::encyclopedia::render_norma_category(cat_slug)
 }
 
 async fn handle_normas_stps() -> impl IntoResponse {
-    render_norma_category(
-        "stps",
-        "Secretaría del Trabajo y Previsión Social (39 NOMs STPS)",
-        "Inspección integral de las 39 Normas Oficiales Mexicanas: Seguridad, Salud, Organización, Ergonomía, Psicosocial (NOM-035), Teletrabajo (NOM-037) y Específicas por SCIAN.",
-        "Marco Normativo STPS Completo",
-        vec![
-            ("nom-001", "NOM-001-STPS-2008", "Edificios e Instalaciones", "Condiciones de seguridad en las instalaciones y áreas de trabajo."),
-            ("nom-002", "NOM-002-STPS-2010", "Protección contra Incendios", "Sistemas de prevención, combate de incendios y rutas de evacuación."),
-            ("nom-004", "NOM-004-STPS-1999", "Protección en Maquinaria", "Sistemas de protección y dispositivos de seguridad en maquinaria."),
-            ("nom-005", "NOM-005-STPS-1998", "Sustancias Químicas Peligrosas", "Manejo, transporte y almacenamiento seguro de químicos."),
-            ("nom-006", "NOM-006-STPS-2014", "Manejo y Almacenamiento", "Seguridad en la carga, descarga, montacargas y estiba de materiales."),
-            ("nom-009", "NOM-009-STPS-2011", "Trabajos en Altura", "Medidas de seguridad para trabajos en altura superior a 1.80m."),
-            ("nom-010", "NOM-010-STPS-2014", "Agentes Químicos Contaminantes", "Reconocimiento, evaluación y control de agentes químicos en aire."),
-            ("nom-011", "NOM-011-STPS-2001", "Ruido Ocupacional", "Límites máximos permisibles de exposición al ruido y audiometrías."),
-            ("nom-012", "NOM-012/013-STPS", "Radiaciones Ionizantes y No Ionizantes", "Seguridad radiológica, UV, láser y campos electromagnéticos."),
-            ("nom-015", "NOM-015-STPS-2001", "Condiciones Térmicas Elevadas/Abatidas", "Control de estrés térmico en hornos y cámaras de refrigeración."),
-            ("nom-017", "NOM-017-STPS-2008", "Equipo de Protección Personal", "Determinación por puesto, selección y entrega firmada de EPP."),
-            ("nom-018", "NOM-018-STPS-2015", "Sistema Armonizado (SGA / GHS)", "Hojas de Datos de Seguridad (HDS) y pictogramas químicos."),
-            ("nom-019", "NOM-019-STPS-2011", "Comisiones Mixtas de Seguridad", "Acta constitutiva, programación anual y recorridos trimestrales."),
-            ("nom-020", "NOM-020-STPS-2011", "Recipientes Sujetos a Presión", "Autorización STPS y pruebas en calderas, compresores y criogénicos."),
-            ("nom-022", "NOM-022/029-STPS", "Electricidad Estática y Mantenimiento", "Medición anual de tierras físicas, pararrayos y diagrama unifilar."),
-            ("nom-025", "NOM-025/026-STPS", "Iluminación y Señalética", "Estudios de luxometría, colores de seguridad y fluidos en tuberías."),
-            ("nom-027", "NOM-027/033-STPS", "Soldadura y Espacios Confinados", "Permisos de trabajo en caliente y monitoreo de atmósfera en tanques."),
-            ("nom-030", "NOM-030-STPS-2009", "Servicios Preventivos de Salud", "Designación de responsable, diagnóstico integral y programa PASST."),
-            ("nom-031", "NOM-031/003/023-STPS", "Específicas (Construcción, Agro, Minería)", "Normas sectoriales activadas automáticamente por código SCIAN."),
-            ("nom-035", "NOM-035-STPS-2018", "Factores de Riesgo Psicosocial", "Política psicosocial, Guías I, II y III y buzón confidencial."),
-            ("nom-036", "NOM-036-1-STPS-2018", "Ergonomía en Manejo de Cargas", "Prevención de riesgos musculoesqueléticos en cargas manuales."),
-            ("nom-037", "NOM-037-STPS-2023", "Teletrabajo (Home Office >40%)", "Política de desconexión digital y checklist de seguridad remota.")
-        ],
-    )
+    render_norma_category("stps")
 }
 
 async fn handle_normas_sat() -> impl IntoResponse {
-    render_norma_category(
-        "sat",
-        "Servicio de Administración Tributaria (SAT / CFF)",
-        "Evaluación paramétrica de materialidad de operaciones B2B, Fecha Cierta SCJN, Buzón Tributario, Contabilidad Electrónica, CFDI 4.0 y Plataformas Digitales.",
-        "Gobernanza Fiscal & Materialidad CFF",
-        vec![
-            ("art-69b", "Art. 69-B CFF", "Materialidad y Sustancia Económica (EFOS/EDOS)", "Contratos con Fecha Cierta SCJN, bitácoras de entregables y cruce O(1) contra listas negras."),
-            ("art-17k", "Arts. 17-K y 86-C CFF", "Buzón Tributario Habilitado", "Validación de medios de contacto actualizados y prevención de notificaciones por estrados."),
-            ("art-29", "Arts. 29 y 29-A CFF", "CFDI 4.0, Carta Porte 3.1, REP y Nómina", "Validación de Complemento Carta Porte en tramos federales y Complementos de Pago."),
-            ("art-28", "Art. 28 CFF", "Contabilidad Electrónica Mensual", "Envío de catálogo de cuentas con código agrupador y balanzas de comprobación."),
-            ("art-27", "Arts. 27, 17-H Bis y 32-D CFF", "Domicilio Localizado y Blindaje de CSD", "Prevención de restricción temporal del Certificado de Sello Digital para facturar."),
-            ("art-113a", "Arts. 113-A LISR / 18-J LIVA", "Comercio Electrónico y Plataformas", "Cumplimiento fiscal y retenciones en portales con pasarela de pagos digital.")
-        ],
-    )
+    render_norma_category("sat")
 }
 
 async fn handle_normas_imss() -> impl IntoResponse {
-    render_norma_category(
-        "imss",
-        "IMSS e INFONAVIT (Seguridad Social, SBC y REPSE)",
-        "Fiscalización de plantilla DENUE vs SUA, Salario Base de Cotización (SBC), informativas ICSOE/SISSUB, Prima de Riesgo y Opinión 32-D.",
-        "Seguridad Social & Vivienda",
-        vec![
-            ("art-15", "Arts. 15 LSS y 29 LINFONAVIT", "Afiliación y Salario Base de Cotización (SBC)", "Conciliación entre plantilla visible en DENUE, Visor de Nómina SAT y cédulas SUA."),
-            ("repse", "Art. 15-A LSS / Art. 13 LFT", "REPSE, ICSOE (IMSS) y SISSUB (INFONAVIT)", "Reportes cuatrimestrales obligatorios y vigencia en el padrón público REPSE."),
-            ("prima-riesgo", "Arts. 71 al 75 LSS", "Prima de Riesgo de Trabajo", "Autoclasificación en catálogo de actividades y declaración anual de siniestralidad en febrero."),
-            ("opinion-32d", "Art. 39 LSS / 32-D CFF", "Opinión de Cumplimiento 32-D Positiva", "Conciliación de emisiones EMA/EBA y prevención de bloqueo en licitaciones y cobros B2B."),
-            ("solidaria", "Art. 15-B LSS / 27 LISR", "Responsabilidad Solidaria B2B", "Integración de los 7 documentos mensuales obligatorios de contratistas en sitio.")
-        ],
-    )
+    render_norma_category("imss")
 }
 
 async fn handle_normas_inai() -> impl IntoResponse {
-    render_norma_category(
-        "inai",
-        "Protección de Datos Personales (LFPDPPP — SABG / ex-INAI)",
-        "Gobernanza de privacidad, Avisos Integrales y Simplificados, Derechos ARCO, Consentimiento Expreso Biométrico y Seguridad Técnica SSL/TLS.",
-        "Marco LFPDPPP Vigente",
-        vec![
-            ("avisos", "Arts. 8, 15 y 16 LFPDPPP", "Aviso de Privacidad Integral, Simplificado y Corto", "Auditoría de visibilidad en portales web, formularios de contacto y establecimientos físicos."),
-            ("arco", "Arts. 22 al 35 LFPDPPP", "Procedimiento de Derechos ARCO", "Canales y plazos legales (20 días hábiles) para Acceso, Rectificación, Cancelación y Oposición."),
-            ("sensibles", "Arts. 9 y 16 LFPDPPP", "Datos Sensibles y Biométricos (Doble Multa)", "Formato de consentimiento expreso y autógrafo para huella dactilar, rostro, salud y nómina."),
-            ("seguridad", "Arts. 19 y 63 LFPDPPP", "Medidas de Seguridad Técnicas (SSL/TLS)", "Detección de certificados SSL vencidos y subdominios huérfanos expuestos en Certificate Transparency."),
-            ("transferencias", "Arts. 36, 37 y 17 LFPDPPP", "Transferencias a Terceros y Oficial de Privacidad", "Convenios de encargado con despachos/nube y designación formal del Departamento de Datos.")
-        ],
-    )
+    render_norma_category("inai")
 }
 
 async fn handle_normas_pld() -> impl IntoResponse {
-    render_norma_category(
-        "pld",
-        "Módulos Regulatorios Sectoriales (CNBV, COFEPRIS, PIPC, SEMARNAT, SICT)",
-        "Activación algorítmica según código SCIAN del INEGI: Prevención de Lavado de Dinero, Regulación Sanitaria, Protección Civil, Ambiental y Transporte Federal.",
-        "9 Módulos Sectoriales Especializados",
-        vec![
-            ("lfpiorpi", "CNBV / CONDUSEF / LFPIORPI", "Fintech, Financiero y Actividades Vulnerables", "Identificación KYC de Beneficiario Controlador y Avisos Antilavado en SPPLD SAT."),
-            ("cofepris", "COFEPRIS (LGS / NOM-051 / 251)", "Salud, Alimentos, Restaurantes y Farmacia", "Aviso de Funcionamiento DIGIPRIS, Licencia Sanitaria, Responsable y etiquetado."),
-            ("pipc", "PROTECCIÓN CIVIL (PIPC >100 m²)", "Programa Interno PIPC y Dictámenes", "Carpeta PIPC por Tercer Acreditado, Dictamen Eléctrico UVIE, Estructural y Gas."),
-            ("semarnat", "SEMARNAT / ASEA / PROFEPA", "Impacto Ambiental y Residuos Peligrosos", "Licencia Ambiental Única (LAU), COA y Generador de Residuos Peligrosos (NOM-052)."),
-            ("sict", "SICT / CAPUFE / SEP / SECTUR / SSPC", "Transporte Federal, Educación, Turismo y Seguridad", "Permisos SICT y Carta Porte, RVOE educativo SEP, RNT turístico SECTUR y DGSP.")
-        ],
-    )
+    render_norma_category("pld")
 }
 
 async fn handle_normas_comercio() -> impl IntoResponse {
-    render_norma_category(
-        "comercio",
-        "PROFECO (LFPC Comercio Electrónico) & Fecha Cierta NOM-151",
-        "Auditoría de portales B2C/B2B conforme al Art. 76 BIS LFPC, Políticas de Reembolso, Contratos de Adhesión RRPAC y Conservación de Mensajes de Datos.",
-        "PROFECO LFPC & Criptografía Legal",
-        vec![
-            ("art-76bis", "Art. 76 BIS LFPC", "Transparencia en Comercio Electrónico", "Exhibición de domicilio físico en México, teléfonos y precios totales con IVA incluido."),
-            ("devoluciones", "Art. 76 BIS III/VII y Art. 77 LFPC", "Devoluciones, Revocación (5 días) y Garantías (90 días)", "Mecanismos claros de reembolso y póliza de garantía mínima legal de 90 días."),
-            ("rrpac", "Arts. 85, 86 y 87 LFPC", "Contratos de Adhesión y Registro RRPAC", "Verificación de inscripción obligatoria en el Registro Público de Contratos de Adhesión."),
-            ("publicidad", "Arts. 32, 128 y 128 BIS LFPC", "Publicidad Veraz y Seguridad en Pagos", "Prevención de prácticas engañosas y candados TLS/PCI-DSS en pasarelas de cobro."),
-            ("nom-151", "NOM-151-SCFI-2016 & Merkle L2", "Fecha Cierta y Conservación Digital", "Integridad criptográfica SHA-256 conforme al Código de Comercio y Jurisprudencia SCJN.")
-        ],
-    )
+    render_norma_category("comercio")
 }
 
-async fn handle_subnorma_detail(Path((cat, code)): Path<(String, String)>) -> impl IntoResponse {
-    let clean_code = code.to_lowercase();
-    let clean_cat = cat.to_lowercase();
-
-    let (theme_color, theme_badge, theme_text, theme_border) = match clean_cat.as_str() {
-        "stps" => (
-            "border-blue-500",
-            "bg-blue-950/80 border-blue-800 text-blue-400",
-            "text-blue-400",
-            "border-blue-900/50",
-        ),
-        "sat" => (
-            "border-emerald-500",
-            "bg-emerald-950/80 border-emerald-800 text-emerald-400",
-            "text-emerald-400",
-            "border-emerald-900/50",
-        ),
-        "imss" => (
-            "border-purple-500",
-            "bg-purple-950/80 border-purple-800 text-purple-400",
-            "text-purple-400",
-            "border-purple-900/50",
-        ),
-        "inai" => (
-            "border-cyan-500",
-            "bg-cyan-950/80 border-cyan-800 text-cyan-400",
-            "text-cyan-400",
-            "border-cyan-900/50",
-        ),
-        "pld" => (
-            "border-amber-500",
-            "bg-amber-950/80 border-amber-800 text-amber-400",
-            "text-amber-400",
-            "border-amber-900/50",
-        ),
-        _ => (
-            "border-teal-500",
-            "bg-teal-950/80 border-teal-800 text-teal-400",
-            "text-teal-400",
-            "border-teal-900/50",
-        ),
-    };
-
-    let (
-        titulo_norma,
-        fundamento,
-        sanciones,
-        prob_inspeccion,
-        descripcion,
-        requisitos,
-        prob_baja,
-        prob_media,
-        prob_alta,
-    ) = match (clean_cat.as_str(), clean_code.as_str()) {
-        ("stps", c) if c.contains("035") => (
-            "NOM-035-STPS-2018 — Factores de Riesgo Psicosocial",
-            "Artículo 132 Fracc. XVI y 994 Fracc. V LFT; Reglamento Federal de SST.",
-            "De 250 a 5,000 UMA ($28,285.00 a $565,700.00 MXN por trabajador afectado).",
-            "92% Frecuencia de Inspección",
-            "Obliga a identificar, analizar y prevenir factores de riesgo psicosocial (estrés grave, violencia laboral) y promover un entorno organizacional favorable.",
-            vec![
-                "Política de prevención de riesgos psicosociales difundida al 100% de la plantilla.",
-                "Aplicación de cuestionarios de evaluación (Guías I, II o III) según número de empleados.",
-                "Buzón confidencial de denuncias para violencia laboral.",
-                "Canalización clínica para trabajadores expuestos a Acontecimientos Traumáticos Severos (ATS).",
-            ],
-            "12% (Política y guías aplicadas con acuse de recepción)",
-            "58% (Sin buzón de denuncias ni seguimiento a ATS)",
-            "92% (Ausencia total de cuestionarios o denuncias de colaboradores)",
-        ),
-        ("sat", c) if c.contains("69") || c.contains("materialidad") => (
-            "Artículo 69-B CFF — Materialidad de Operaciones (EFOS / EDOS)",
-            "Artículo 69-B del Código Fiscal de la Federación y Jurisprudencia SCJN 2a./J. 161/2019.",
-            "No deducibilidad total + Multa del 55% al 75% + Restricción de CSD (Art. 17-H Bis).",
-            "98% Frecuencia de Fiscalización Electrónica",
-            "Procedimiento de presunción de inexistencia de operaciones cuando el SAT detecta emisión de comprobantes sin acreditar sustancia económica ni Fecha Cierta.",
-            vec![
-                "Expediente técnico pericial de entregables (bitácoras, minutas, reportes, fotografías).",
-                "Contratos de prestación de servicios respaldados con Fecha Cierta Digital.",
-                "Acreditación de la capacidad operativa y plantilla laboral del proveedor al momento del servicio.",
-                "Trazabilidad bancaria y contable 1:1 con el CFDI 4.0 emitido y recibido.",
-            ],
-            "5% (Expediente técnico con Fecha Cierta y bitácora de entregables)",
-            "45% (Contrato simple sin Fecha Cierta ni entregables certificados)",
-            "98% (Solo contar con el XML de la factura y la transferencia bancaria)",
-        ),
-        _ => (
-            "Matriz de Inspección y Cumplimiento Normativo 360°",
-            "Disposición Regulatoria & Marco Legal Mexicano Vigente (UMA 2026).",
-            "De 250 a 5,000 UMA ($28,285.00 a $565,700.00 MXN por observación).",
-            "85% Frecuencia de Inspección",
-            "Evaluación de vectores de cumplimiento normativo y ponderación paramétrica de contingencias sancionatorias.",
-            vec![
-                "Verificación documental y técnica de la matriz de cumplimiento específica.",
-                "Prueba de inalterabilidad criptográfica basada en Merkle Tree SHA-256.",
-                "Instrumentos jurídicos personalizados listos para firma autógrafa.",
-                "Dictamen respaldado por el Consejo Colegiado de Auditoría Pericial.",
-            ],
-            "10% (Documentación completa y dictamen de inalterabilidad)",
-            "50% (Cumplimiento parcial documental sin soporte técnico)",
-            "85% (Omisión total de registros obligatorios ante la autoridad)",
-        ),
-    };
-
-    let mut req_html = String::new();
-    for req in requisitos {
-        req_html.push_str(&format!(
-            r#"<li class="flex items-start gap-2 text-xs font-mono-code text-slate-300">
-                <span class="{} font-bold">✓</span> {}
-            </li>"#,
-            theme_text, req
-        ));
-    }
-
-    let html = format!(
-        r#"<!DOCTYPE html>
-<html lang="es">
-<head>
-    <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{} — Firma Pericial Mallen</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
-    <style>body {{ font-family: 'Inter', sans-serif; }} .font-mono-code {{ font-family: 'JetBrains Mono', monospace; }}</style>
-    <link rel="stylesheet" href="/css/quantum-glass.css?v=2026.14">
-    <script src="/js/quantum-lights.js?v=2026.14" defer></script>
-</head>
-<body class="bg-slate-950 text-slate-100 min-h-screen p-6 md:p-12 selection:bg-slate-700 selection:text-white border-t-4 {}">
-    <div class="max-w-4xl mx-auto">
-        <div class="flex items-center justify-between pb-6 mb-8 border-b border-white/15">
-            <div>
-                <span class="text-xs font-bold {} font-mono-code uppercase tracking-wider block">FIRMA PERICIAL MALLEN</span>
-                <span class="text-xs text-slate-500 font-mono-code">Ficha Técnica — Especificación Regulatoria</span>
-            </div>
-            <a href="/normas/{}" class="text-xs {} hover:underline font-mono-code transition">← Regresar a {}</a>
-        </div>
-        <div class="bg-white/[0.05] shadow-[0_8px_32px_rgba(0,0,0,0.5)] border {} rounded-2xl p-8 shadow-2xl mb-8">
-            <div class="flex justify-between items-center mb-4 pb-4 border-b border-white/15">
-                <span class="text-xs font-bold {} uppercase font-mono-code tracking-widest">Análisis Estadístico de Contención</span>
-                <span class="text-xs font-mono-code px-3 py-1 rounded border {}">{}</span>
-            </div>
-            <h1 class="text-2xl sm:text-3xl font-extrabold text-white mb-4">{}</h1>
-            <div class="grid md:grid-cols-2 gap-4 text-xs font-mono-code mb-6 bg-slate-950 p-4 rounded-xl border border-white/15">
-                <div>
-                    <span class="text-slate-500 block mb-1">Fundamento Legal:</span>
-                    <span class="text-slate-200">{}</span>
-                </div>
-                <div>
-                    <span class="text-slate-500 block mb-1">Riesgo / Multa Máxima:</span>
-                    <span class="text-red-400 font-bold">{}</span>
-                </div>
-            </div>
-            <h3 class="text-xs font-bold uppercase text-slate-300 mb-2 font-mono-code">Alcance y Riesgo Operativo</h3>
-            <p class="text-xs text-slate-400 font-mono-code leading-relaxed mb-6">{}</p>
-            <div class="mb-8 border-t border-b border-white/15 py-6">
-                <h3 class="text-xs font-bold uppercase text-slate-300 mb-4 font-mono-code">Matriz Paramétrica de Riesgo Sancionatorio</h3>
-                <div class="grid sm:grid-cols-3 gap-4 font-mono-code text-xs">
-                    <div class="bg-slate-950 p-4 rounded-xl border border-white/15">
-                        <span class="text-[10px] text-emerald-400 uppercase block mb-1">Bajo Riesgo / Cumplido</span>
-                        <span class="text-base font-bold text-emerald-400 block mb-1">{}</span>
-                        <p class="text-[10px] text-slate-500 leading-tight">Soporte pericial y sello SHA-256.</p>
-                    </div>
-                    <div class="bg-slate-950 p-4 rounded-xl border border-white/15">
-                        <span class="text-[10px] text-amber-400 uppercase block mb-1">Riesgo Medio / Parcial</span>
-                        <span class="text-base font-bold text-amber-400 block mb-1">{}</span>
-                        <p class="text-[10px] text-slate-500 leading-tight">Documento simple sin sello externo.</p>
-                    </div>
-                    <div class="bg-slate-950 p-4 rounded-xl border border-white/15">
-                        <span class="text-[10px] text-red-400 uppercase block mb-1">Riesgo Crítico / Omisión</span>
-                        <span class="text-base font-bold text-red-400 block mb-1">{}</span>
-                        <p class="text-[10px] text-slate-500 leading-tight">Omisión total o falta de expediente.</p>
-                    </div>
-                </div>
-            </div>
-            <h3 class="text-xs font-bold uppercase text-slate-300 mb-3 font-mono-code">Requerimientos Periciales Incluidos en su Kit</h3>
-            <ul class="space-y-2 mb-6">
-                {}
-            </ul>
-        </div>
-    </div>
-</body>
-</html>"#,
-        titulo_norma,
-        theme_color,
-        theme_text,
-        cat,
-        theme_text,
-        cat.to_uppercase(),
-        theme_border,
-        theme_text,
-        theme_badge,
-        prob_inspeccion,
-        titulo_norma,
-        fundamento,
-        sanciones,
-        descripcion,
-        prob_baja,
-        prob_media,
-        prob_alta,
-        req_html
-    );
-
-    Html(html)
+async fn handle_subnorma_detail(Path((cat, _code)): Path<(String, String)>) -> impl IntoResponse {
+    render_norma_category(&cat)
 }
 
 async fn handle_validez_detail(Path(slug): Path<String>) -> impl IntoResponse {
-    let (titulo, marco_legal, valor_probatorio, descripcion, pilares_tecnicos, theme_border) =
-        match slug.as_str() {
-            "nom-151" => (
-                "Fecha Cierta Digital, NOM-151-SCFI-2016 y Anclaje Merkle L2",
-                "NOM-151-SCFI-2016; Código de Comercio Arts. 89 a 95; Jurisprudencia SCJN 2a./J. 161/2019.",
-                "Valor Probatorio Documental ante el TFJA y Autoridades Fiscalizadoras.",
-                "Otorga estampa de tiempo digital e inalterabilidad criptográfica SHA-256 a los expedientes técnicos periciales y contratos mercantiles B2B.",
-                vec![
-                    "Generación de huella criptográfica SHA-256 única por expediente e instrumento legal.",
-                    "Agrupación diaria en Árbol de Merkle con commit on-chain en Arbitrum One / Base L2.",
-                    "Inmutabilidad verificable públicamente mediante prueba matemática O(log N).",
-                    "Alineación a los criterios de la Segunda Sala de la SCJN sobre Fecha Cierta en documentos privados.",
-                ],
-                "border-blue-600",
-            ),
-            "dictamen-pericial" => (
-                "Dictaminación Pericial Certificada en Materia Contable-Fiscal y Regulatoria",
-                "Código Federal de Procedimientos Civiles Arts. 143 a 160 y 210-A; CFF Art. 52.",
-                "Prueba Pericial Documental de Soporte Técnico y Patrimonial.",
-                "Consolida los vectores de auditoría OSINT y cruce registral público en un expediente estructurado bajo la supervisión de Contador Público Certificado (C.P.C.).",
-                vec![
-                    "Supervisión metodológica por C.P.C. Víctor Omar Malpica Guillén (Reg. CED-2026-MALLEN).",
-                    "Cobertura integral de las 39 NOMs STPS, SAT, SABG/LFPDPPP, IMSS, PROFECO y 9 Sectoriales.",
-                    "Entrega inmediata de los 7 Kits Legales personalizados listos para firma autógrafa.",
-                    "Cuantificación financiera precisa en Unidades de Medida y Actualización (UMA 2026).",
-                ],
-                "border-emerald-600",
-            ),
-            _ => (
-                "Secreto Profesional, Sanitización PII & Cumplimiento LFPDPPP",
-                "Ley Federal de Protección de Datos Personales en Posesión de los Particulares vigente.",
-                "Blindaje de Confidencialidad y Procesamiento en Memoria Volátil (RAM).",
-                "Protección rigurosa de la información corporativa evaluada mediante filtros Regex de enmascaramiento de datos personales sensibles.",
-                vec![
-                    "Aviso de Privacidad Integral actualizado a los lineamientos de la Autoridad Garante SABG.",
-                    "Sanitización automática de CURPs, correos personales y teléfonos antes de persistir logs.",
-                    "Cifrado en tránsito mediante protocolos TLS 1.3 y protección Anti-SSRF.",
-                    "Módulos WebAssembly client-side para no custodiar llaves privadas (.key) en el servidor.",
-                ],
-                "border-sky-600",
-            ),
-        };
+    render_validez_detail(&slug)
+}
 
-    let mut pilares_html = String::new();
-    for pilar in pilares_tecnicos {
-        pilares_html.push_str(&format!(
-            r#"<li class="flex items-start gap-2 text-xs font-mono-code text-slate-300">
-                <span class="text-emerald-400 font-bold">✓</span> {}
-            </li>"#,
-            pilar
-        ));
-    }
+fn render_validez_detail(slug: &str) -> Html<String> {
+    let (badge, title, subtitle, legal_basis, body_p1, body_p2) = match slug {
+        "merkle" => (
+            "CRIPTOGRAFÍA SHA-256 • ÁRBOL DE MERKLE Y FECHA CIERTA SCJN",
+            "Inmutabilidad Criptográfica y Anclaje en Blockchain L2 (Arbitrum One)",
+            "Cumplimiento técnico con la Jurisprudencia 2a./J. 161/2019 (10a.) de la Suprema Corte de Justicia de la Nación y NOM-151-SCFI-2016.",
+            "Artículos 89 a 94 del Código de Comercio • Art. 210-A del CFPC • NOM-151-SCFI-2016",
+            "La Segunda Sala de la Suprema Corte de Justicia de la Nación determinó en la Jurisprudencia obligatoria 2a./J. 161/2019 (10a.) que los documentos privados exhibidos ante la autoridad fiscal (SAT) para acreditar la materialidad de operaciones (Art. 69-B CFF) deben contar con Fecha Cierta, demostrando fehacientemente que no fueron elaborados ni antedatados con posterioridad al inicio de las facultades de comprobación.",
+            "Cada expediente emitido por Firma Pericial Mallen genera un resumen criptográfico SHA-256 único sobre el binario ZIP y PDF, integrándolo en un Árbol de Merkle cuya raíz se ancla de forma inmutable en red pública L2, garantizando no repudio e integridad matemática verificable en mallen.lat/verify/{rfc}."
+        ),
+        "colegiado" => (
+            "DICTAMINACIÓN PERICIAL COLEGIADA • RESPONSABILIDAD PROFESIONAL",
+            "Validez Probatoria de Dictamen Técnico y Papeles de Trabajo",
+            "Instrumentación respaldada por Contador Público Certificado y Agente Capacitador Externo STPS.",
+            "Artículo 52 del Código Fiscal de la Federación • Artículos 153-A a 153-X de la LFT",
+            "Todos los certificados normativos, matrices de exposición en UMAs y papeles de trabajo (PT-STPS, PT-SAT, PT-IMSS, PT-SABG y PT-PROFECO) se encuentran estructurados bajo estándares de auditoría forense y suscritos por el C.P.C. Víctor Omar Malpica Guillén (Cédula CED-2026-MALLEN | Reg. STPS DC-5: MAVG-850101-STPS-0019).",
+            "El expediente bifurcado entrega por separado la Cédula Ejecutiva Financiera para el Consejo de Administración y el Anexo Técnico Pericial con la evidencia OSINT y los 7 Instrumentos Jurídicos listos para firma autógrafa."
+        ),
+        "secreto" => (
+            "CUSTODIA CERO DE LLAVES PRIVADAS • WEBCRYPTO WASM EN RAM",
+            "Secreto Profesional y Procesamiento Criptográfico Client-Side",
+            "Sus archivos .key y contraseñas de e.firma jamás abandonan la memoria RAM de su navegador.",
+            "Ley Federal de Protección de Datos Personales en Posesión de los Particulares (LFPDPPP)",
+            "Las validaciones opcionales de certificados digitales (.cer y .key) se ejecutan localmente en el navegador del usuario mediante WebCrypto API y WebAssembly. Ninguna llave privada ni contraseña es transmitida ni almacenada en servidores externos.",
+            "Asimismo, antes de persistir cualquier bitácora en SQLite WAL, el sanitizador de expresión regular enmascara automáticamente CURPs, teléfonos personales y correos de personas físicas para garantizar cumplimiento estricto con la LFPDPPP."
+        ),
+        _ => (
+            "AUDITORÍA NORMATIVA 360° • CRUCE MULTIDIMENSIONAL",
+            "Respaldo Técnico y Jurídico del Expediente Mallen 360°",
+            "Sincronización determinística entre padrones públicos y telemetría pasiva OSINT.",
+            "STPS (39 NOMs) • SAT (CFF) • IMSS (LSS/REPSE) • SABG (LFPDPPP) • PROFECO (LFPC)",
+            "El motor pericial cruza en menos de 2 milisegundos los padrones públicos del INEGI DENUE, SAT Art. 69 y 69-B, STPS REPSE y SFP Sancionados con la telemetría TLS/DOM del dominio auditado.",
+            "Cada hallazgo se cuantifica conforme al valor vigente de la Unidad de Medida y Actualización ($113.14 MXN) y al tabulador oficial aplicable al estrato de personal de la empresa."
+        ),
+    };
 
     let html = format!(
         r#"<!DOCTYPE html>
 <html lang="es">
 <head>
     <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{} — Firma Pericial Mallen</title>
+    <title>{title} — Validez Probatoria | Firma Pericial Mallen</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
     <style>body {{ font-family: 'Inter', sans-serif; }} .font-mono-code {{ font-family: 'JetBrains Mono', monospace; }}</style>
-    <link rel="stylesheet" href="/css/quantum-glass.css?v=2026.14">
-    <script src="/js/quantum-lights.js?v=2026.14" defer></script>
+    <link rel="stylesheet" href="/css/quantum-glass.css?v=2026.15">
+    <script src="/js/quantum-lights.js?v=2026.15" defer></script>
 </head>
-<body class="bg-slate-950 text-slate-100 min-h-screen p-6 md:p-12 border-t-4 {}">
+<body class="bg-slate-950 text-slate-100 min-h-screen p-6 md:p-12 border-t-4 border-emerald-500">
     <div class="max-w-4xl mx-auto">
-        <div class="flex items-center justify-between pb-6 mb-8 border-b border-white/15">
-            <div>
-                <span class="text-xs font-bold text-slate-400 font-mono-code uppercase tracking-wider block">FIRMA PERICIAL MALLEN</span>
-                <span class="text-xs text-slate-500 font-mono-code">Garantía Pericial & Marco Procesal</span>
-            </div>
-            <a href="/" class="text-xs text-blue-400 hover:text-blue-300 font-mono-code transition">← Regresar a la Portada</a>
+        <div class="flex justify-between items-center pb-6 mb-8 border-b border-white/15">
+            <span class="text-xs font-bold text-emerald-400 font-mono-code uppercase">{badge}</span>
+            <a href="/" class="text-xs font-mono-code text-slate-300 hover:text-white px-3 py-1.5 rounded-lg bg-slate-900 border border-white/10 transition">Volver al Portal Principal</a>
         </div>
-
-        <div class="bg-white/[0.05] shadow-[0_8px_32px_rgba(0,0,0,0.5)] border border-white/15 rounded-2xl p-8 shadow-2xl mb-8">
-            <div class="flex justify-between items-center mb-4 pb-4 border-b border-white/15">
-                <span class="text-xs font-bold text-emerald-400 uppercase font-mono-code tracking-widest">Sustento Legal & Procesal</span>
-                <span class="text-xs font-mono-code px-3 py-1 bg-slate-950 border border-white/15 text-slate-300 rounded">Respaldo Oficial</span>
+        <div class="quantum-laser-console rounded-2xl p-8 mb-8">
+            <h1 class="text-2xl sm:text-3xl font-extrabold text-white mb-2">{title}</h1>
+            <p class="text-sm text-slate-300 font-mono-code mb-4">{subtitle}</p>
+            <span class="inline-block text-[11px] font-mono-code text-emerald-300 bg-emerald-950/60 border border-emerald-500/30 px-3 py-1 rounded-lg">{legal_basis}</span>
+        </div>
+        <div class="quantum-card rounded-2xl p-8 space-y-4 text-xs font-mono-code text-slate-200 leading-relaxed">
+            <p>{body_p1}</p>
+            <p>{body_p2}</p>
+            <div class="pt-4 border-t border-white/10 flex justify-end">
+                <a href="/#express-check" class="bg-gradient-to-r from-blue-600 to-emerald-600 text-white font-bold px-6 py-3 rounded-xl uppercase">Auditar mi RFC</a>
             </div>
-
-            <h1 class="text-2xl sm:text-3xl font-extrabold text-white mb-4">{}</h1>
-            
-            <div class="grid md:grid-cols-2 gap-4 text-xs font-mono-code mb-6 bg-slate-950 p-4 rounded-xl border border-white/15">
-                <div>
-                    <span class="text-slate-500 block mb-1">Marco Legal y Técnico:</span>
-                    <span class="text-slate-200">{}</span>
-                </div>
-                <div>
-                    <span class="text-slate-500 block mb-1">Efecto Procesal:</span>
-                    <span class="text-emerald-400 font-bold">{}</span>
-                </div>
-            </div>
-
-            <h3 class="text-xs font-bold uppercase text-slate-300 mb-2 font-mono-code">Alcance y Mecanismo Pericial</h3>
-            <p class="text-xs text-slate-400 font-mono-code leading-relaxed mb-6">{}</p>
-
-            <h3 class="text-xs font-bold uppercase text-slate-300 mb-3 font-mono-code">Garantías Técnicas y de Inalterabilidad Incluidas</h3>
-            <ul class="space-y-2 mb-6">
-                {}
-            </ul>
         </div>
     </div>
 </body>
-</html>"#,
-        titulo, theme_border, titulo, marco_legal, valor_probatorio, descripcion, pilares_html
+</html>"#
     );
-
     Html(html)
 }

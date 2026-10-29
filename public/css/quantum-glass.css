@@ -329,3 +329,12 @@ header.sticky {
     border-bottom: 1px solid rgba(255, 255, 255, 0.12) !important;
     box-shadow: 0 10px 30px -10px rgba(0, 0, 0, 0.75) !important;
 }
+
+/* Header con difuminado de alta densidad: conserva elegancia de cristal sin encimar jamás los textos inferiores */
+header.sticky {
+    background: linear-gradient(180deg, rgba(2, 6, 23, 0.95) 0%, rgba(15, 23, 42, 0.91) 100%) !important;
+    backdrop-filter: blur(28px) saturate(190%) !important;
+    -webkit-backdrop-filter: blur(28px) saturate(190%) !important;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.15) !important;
+    box-shadow: 0 12px 32px -8px rgba(0, 0, 0, 0.88) !important;
+}
