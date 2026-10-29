@@ -185,6 +185,27 @@
             if (box) {
                 box.classList.remove("hidden");
                 document.getElementById("res-razon").textContent = `${data.razon_social} (${data.tax_id})`;
+                // Actualizar el Tablero de Cruce contra Padrones y Listas Negras Oficiales
+                const setBadge = (id, text, isAlert, isWarn) => {
+                    const el = document.getElementById(id);
+                    if (!el) return;
+                    el.textContent = text;
+                    el.className = "text-[11px] font-bold block mt-0.5 " + (isAlert ? "text-red-400" : isWarn ? "text-amber-400" : "text-emerald-400");
+                };
+                const s69b = (data.sat_69b_status || "LIMPIO").toUpperCase();
+                setBadge("blk-69b", s69b.includes("LIMPIO") ? "SIN ANTECEDENTES 69-B" : `ALERTA: ${s69b}`, !s69b.includes("LIMPIO"), false);
+
+                const s69 = (data.sat_69_status || "LIMPIO").toUpperCase();
+                setBadge("blk-69", s69.includes("LIMPIO") ? "LOCALIZADO / SIN CRÉDITOS" : `ALERTA: ${s69}`, !s69.includes("LIMPIO"), false);
+
+                setBadge("blk-repse", data.repse_registered ? "PADRÓN REPSE ACTIVO" : "REQUIERE VALIDACIÓN ICSOE", false, !data.repse_registered);
+                setBadge("blk-sfp", data.sfp_sanctioned ? "INHABILITADO EN SFP" : "SIN SANCIONES SFP", !!data.sfp_sanctioned, false);
+
+                const profecoOk = data.web_telemetry && data.web_telemetry.has_profeco_rrpac_mention;
+                setBadge("blk-profeco", profecoOk ? "CONTRATO RRPAC VISIBLE" : "SIN FOLIO RRPAC WEB", false, !profecoOk);
+
+                const isImmune = Number(data.total_estimated_fine_mxn || 0) === 0;
+                setBadge("blk-laboral", isImmune ? "BLINDAJE PATRONAL 100%" : "REQUIERE ACTAS STPS/LFT", !isImmune, false);
                 document.getElementById("res-score").textContent = `${data.risk_score}/100 PUNTOS`;
                 document.getElementById("res-fine").textContent =
                     "$" + Number(data.total_estimated_fine_mxn || 0).toLocaleString("es-MX", { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + " MXN";

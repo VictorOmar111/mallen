@@ -702,8 +702,8 @@ pub fn render_norma_category(category: &str) -> Html<String> {
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
     <style>body {{ font-family: 'Inter', sans-serif; }} .font-mono-code {{ font-family: 'JetBrains Mono', monospace; }}</style>
-    <link rel="stylesheet" href="/css/quantum-glass.css?v=2026.15">
-    <script src="/js/quantum-lights.js?v=2026.15" defer></script>
+    <link rel="stylesheet" href="/css/quantum-glass.css?v=2026.16">
+    <script src="/js/quantum-lights.js?v=2026.16" defer></script>
 </head>
 <body class="bg-slate-950 text-slate-100 min-h-screen p-6 md:p-12 border-t-4 {border_top}">
     <div class="max-w-6xl mx-auto">

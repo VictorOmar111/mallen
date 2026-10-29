@@ -1,7 +1,7 @@
 #set page(
   paper: "a4",
   margin: (x: 1.2cm, top: 1.2cm, bottom: 1.2cm),
-  header: align(right)[#text(size: 6.8pt, fill: rgb("#64748b"), weight: "bold")[FIRMA PERICIAL MALLEN | ACREDITACIÓN TÉCNICA Y NORMATIVA B2B]],
+  header: align(right)[#text(size: 6.8pt, fill: rgb("#64748b"), weight: "bold")[FIRMA PERICIAL MALLEN | ACREDITACIÓN TÉCNICA Y NORMATIVA Corporativo]],
   footer: [
     #line(length: 100%, stroke: 0.4pt + rgb("#cbd5e1"))
     #v(1.5pt)

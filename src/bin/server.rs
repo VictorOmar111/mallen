@@ -182,7 +182,7 @@ async fn handle_live_scan(
                 "FIRMA PERICIAL MALLEN S.A.S. DE C.V.".to_string(),
                 "FIRMA PERICIAL MALLEN".to_string(),
                 "541110".to_string(),
-                "Auditoría Pericial, Gobernanza Regulatoria y Criptografía Legal B2B".to_string(),
+                "Auditoría Pericial, Gobernanza Regulatoria y Criptografía Legal Corporativo".to_string(),
                 "Av. Paseo de la Reforma, Juárez, Cuauhtémoc, Ciudad de México".to_string(),
                 "11 a 30 personas".to_string(),
             )
@@ -226,7 +226,7 @@ async fn handle_live_scan(
                 .giro_scian_descripcion
                 .clone()
                 .filter(|s| !s.trim().is_empty())
-                .unwrap_or_else(|| "541610 - Servicios de consultoría y operación corporativa B2B".to_string());
+                .unwrap_or_else(|| "541610 - Servicios de consultoría y operación corporativa Corporativo".to_string());
             (
                 rz.clone(),
                 rz,
@@ -620,7 +620,7 @@ async fn build_empresa_and_session(
         EmpresaB2B {
             id: clean_tax.to_string(),
             nombre: "FIRMA PERICIAL MALLEN S.A.S. DE C.V.".to_string(),
-            actividad: "541110 - Auditoría Pericial, Gobernanza y Criptografía Legal B2B".to_string(),
+            actividad: "541110 - Auditoría Pericial, Gobernanza y Criptografía Legal Corporativo".to_string(),
             telefono: "55-5000-0000".to_string(),
             email: "dictamenes@mallen.lat".to_string(),
             direccion: "Av. Paseo de la Reforma, Juárez, Cuauhtémoc, CDMX".to_string(),
@@ -674,7 +674,7 @@ async fn build_empresa_and_session(
         EmpresaB2B {
             id: clean_tax.to_string(),
             nombre: format!("CORPORATIVO {} S.A. DE C.V.", clean_tax),
-            actividad: "541610 - Servicios de consultoría y operación corporativa B2B".to_string(),
+            actividad: "541610 - Servicios de consultoría y operación corporativa Corporativo".to_string(),
             telefono: "55-5000-0000".to_string(),
             email: "".to_string(),
             direccion: "11 a 30 personas — Domicilio Fiscal en México".to_string(),
@@ -820,7 +820,7 @@ async fn build_empresa_from_db_or_default(state: &AppState, clean_tax: &str) -> 
         EmpresaB2B {
             id: clean_tax.to_string(),
             nombre: format!("CORPORATIVO {} S.A. DE C.V.", clean_tax),
-            actividad: "541610 - Servicios de consultoría y operación corporativa B2B".to_string(),
+            actividad: "541610 - Servicios de consultoría y operación corporativa Corporativo".to_string(),
             telefono: String::new(),
             email: String::new(),
             direccion: "Domicilio Fiscal Registrado en Territorio Nacional (México)".to_string(),
@@ -950,8 +950,8 @@ async fn render_checkout_page_with_state(state: Arc<AppState>, raw_ref: String) 
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
     <style>body {{ font-family: 'Inter', sans-serif; }} .font-mono-code {{ font-family: 'JetBrains Mono', monospace; }}</style>
-    <link rel="stylesheet" href="/css/quantum-glass.css?v=2026.15">
-    <script src="/js/quantum-lights.js?v=2026.15" defer></script>
+    <link rel="stylesheet" href="/css/quantum-glass.css?v=2026.16">
+    <script src="/js/quantum-lights.js?v=2026.16" defer></script>
 </head>
 <body class="bg-slate-950 text-slate-100 min-h-screen p-6 flex items-center justify-center selection:bg-blue-600 selection:text-white">
     <div class="max-w-3xl w-full bg-white/[0.05] shadow-[0_8px_32px_rgba(0,0,0,0.5)] border border-white/15 p-8 rounded-2xl font-mono-code text-xs shadow-2xl">
@@ -1371,8 +1371,8 @@ async fn handle_privacy() -> impl IntoResponse {
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
     <style>body { font-family: 'Inter', sans-serif; background-color: #020617; background-image: radial-gradient(at 12% 12%, rgba(37, 99, 235, 0.32) 0px, transparent 48%), radial-gradient(at 88% 18%, rgba(16, 185, 129, 0.25) 0px, transparent 48%), radial-gradient(at 50% 82%, rgba(99, 102, 241, 0.28) 0px, transparent 52%); background-attachment: fixed; } .font-mono-code { font-family: 'JetBrains Mono', monospace; }</style>
-    <link rel="stylesheet" href="/css/quantum-glass.css?v=2026.15">
-    <script src="/js/quantum-lights.js?v=2026.15" defer></script>
+    <link rel="stylesheet" href="/css/quantum-glass.css?v=2026.16">
+    <script src="/js/quantum-lights.js?v=2026.16" defer></script>
 </head>
 <body class="bg-slate-950 text-slate-300 min-h-screen p-6 md:p-12 border-t-4 border-blue-600">
     <div class="max-w-4xl mx-auto bg-white/[0.05] shadow-[0_8px_32px_rgba(0,0,0,0.5)] border border-white/15 p-8 md:p-12 shadow-2xl rounded-2xl">
@@ -1413,8 +1413,8 @@ async fn handle_terms() -> impl IntoResponse {
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
     <style>body { font-family: 'Inter', sans-serif; background-color: #020617; background-image: radial-gradient(at 12% 12%, rgba(37, 99, 235, 0.32) 0px, transparent 48%), radial-gradient(at 88% 18%, rgba(16, 185, 129, 0.25) 0px, transparent 48%), radial-gradient(at 50% 82%, rgba(99, 102, 241, 0.28) 0px, transparent 52%); background-attachment: fixed; } .font-mono-code { font-family: 'JetBrains Mono', monospace; }</style>
-    <link rel="stylesheet" href="/css/quantum-glass.css?v=2026.15">
-    <script src="/js/quantum-lights.js?v=2026.15" defer></script>
+    <link rel="stylesheet" href="/css/quantum-glass.css?v=2026.16">
+    <script src="/js/quantum-lights.js?v=2026.16" defer></script>
 </head>
 <body class="bg-slate-950 text-slate-300 min-h-screen p-6 md:p-12 border-t-4 border-indigo-600">
     <div class="max-w-4xl mx-auto bg-white/[0.05] shadow-[0_8px_32px_rgba(0,0,0,0.5)] border border-white/15 p-8 md:p-12 shadow-2xl rounded-2xl">
@@ -1523,8 +1523,8 @@ fn render_validez_detail(slug: &str) -> Html<String> {
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
     <style>body {{ font-family: 'Inter', sans-serif; }} .font-mono-code {{ font-family: 'JetBrains Mono', monospace; }}</style>
-    <link rel="stylesheet" href="/css/quantum-glass.css?v=2026.15">
-    <script src="/js/quantum-lights.js?v=2026.15" defer></script>
+    <link rel="stylesheet" href="/css/quantum-glass.css?v=2026.16">
+    <script src="/js/quantum-lights.js?v=2026.16" defer></script>
 </head>
 <body class="bg-slate-950 text-slate-100 min-h-screen p-6 md:p-12 border-t-4 border-emerald-500">
     <div class="max-w-4xl mx-auto">
