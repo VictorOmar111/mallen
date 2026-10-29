@@ -318,3 +318,14 @@ input:not([type="checkbox"]):focus, textarea:focus {
         transform: scale3d(2.85, 2.85, 1);
     }
 }
+
+/* ==========================================================================
+   HEADER SUPERIOR CON DIFUMINADO PROFUNDO (EVITA LETRAS SOBREPUESTAS AL SCROLL)
+   ========================================================================== */
+header.sticky {
+    background: linear-gradient(180deg, rgba(2, 6, 23, 0.86) 0%, rgba(15, 23, 42, 0.76) 100%) !important;
+    backdrop-filter: blur(22px) saturate(180%) !important;
+    -webkit-backdrop-filter: blur(22px) saturate(180%) !important;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.12) !important;
+    box-shadow: 0 10px 30px -10px rgba(0, 0, 0, 0.75) !important;
+}

@@ -63,8 +63,8 @@ pub async fn handle_verify(Path(id): Path<String>) -> impl IntoResponse {
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Cédula de Verificación Oficial | Firma Pericial Mallen</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <link rel="stylesheet" href="/css/quantum-glass.css?v=2026.11">
-    <script src="/js/quantum-lights.js?v=2026.11" defer></script>
+    <link rel="stylesheet" href="/css/quantum-glass.css?v=2026.14">
+    <script src="/js/quantum-lights.js?v=2026.14" defer></script>
 </head>
 <body class="bg-slate-950 text-slate-100 font-serif min-h-screen antialiased flex flex-col justify-between selection:bg-blue-600 selection:text-white">
 
