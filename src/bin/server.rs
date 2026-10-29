@@ -950,8 +950,8 @@ async fn render_checkout_page_with_state(state: Arc<AppState>, raw_ref: String) 
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
     <style>body {{ font-family: 'Inter', sans-serif; }} .font-mono-code {{ font-family: 'JetBrains Mono', monospace; }}</style>
-    <link rel="stylesheet" href="/css/quantum-glass.css?v=2026.16">
-    <script src="/js/quantum-lights.js?v=2026.16" defer></script>
+    <link rel="stylesheet" href="/css/quantum-glass.css?v=2026.18">
+    <script src="/js/quantum-lights.js?v=2026.18" defer></script>
 </head>
 <body class="bg-slate-950 text-slate-100 min-h-screen p-6 flex items-center justify-center selection:bg-blue-600 selection:text-white">
     <div class="max-w-3xl w-full bg-white/[0.05] shadow-[0_8px_32px_rgba(0,0,0,0.5)] border border-white/15 p-8 rounded-2xl font-mono-code text-xs shadow-2xl">
@@ -1371,8 +1371,8 @@ async fn handle_privacy() -> impl IntoResponse {
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
     <style>body { font-family: 'Inter', sans-serif; background-color: #020617; background-image: radial-gradient(at 12% 12%, rgba(37, 99, 235, 0.32) 0px, transparent 48%), radial-gradient(at 88% 18%, rgba(16, 185, 129, 0.25) 0px, transparent 48%), radial-gradient(at 50% 82%, rgba(99, 102, 241, 0.28) 0px, transparent 52%); background-attachment: fixed; } .font-mono-code { font-family: 'JetBrains Mono', monospace; }</style>
-    <link rel="stylesheet" href="/css/quantum-glass.css?v=2026.16">
-    <script src="/js/quantum-lights.js?v=2026.16" defer></script>
+    <link rel="stylesheet" href="/css/quantum-glass.css?v=2026.18">
+    <script src="/js/quantum-lights.js?v=2026.18" defer></script>
 </head>
 <body class="bg-slate-950 text-slate-300 min-h-screen p-6 md:p-12 border-t-4 border-blue-600">
     <div class="max-w-4xl mx-auto bg-white/[0.05] shadow-[0_8px_32px_rgba(0,0,0,0.5)] border border-white/15 p-8 md:p-12 shadow-2xl rounded-2xl">
@@ -1413,8 +1413,8 @@ async fn handle_terms() -> impl IntoResponse {
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
     <style>body { font-family: 'Inter', sans-serif; background-color: #020617; background-image: radial-gradient(at 12% 12%, rgba(37, 99, 235, 0.32) 0px, transparent 48%), radial-gradient(at 88% 18%, rgba(16, 185, 129, 0.25) 0px, transparent 48%), radial-gradient(at 50% 82%, rgba(99, 102, 241, 0.28) 0px, transparent 52%); background-attachment: fixed; } .font-mono-code { font-family: 'JetBrains Mono', monospace; }</style>
-    <link rel="stylesheet" href="/css/quantum-glass.css?v=2026.16">
-    <script src="/js/quantum-lights.js?v=2026.16" defer></script>
+    <link rel="stylesheet" href="/css/quantum-glass.css?v=2026.18">
+    <script src="/js/quantum-lights.js?v=2026.18" defer></script>
 </head>
 <body class="bg-slate-950 text-slate-300 min-h-screen p-6 md:p-12 border-t-4 border-indigo-600">
     <div class="max-w-4xl mx-auto bg-white/[0.05] shadow-[0_8px_32px_rgba(0,0,0,0.5)] border border-white/15 p-8 md:p-12 shadow-2xl rounded-2xl">
@@ -1447,31 +1447,31 @@ fn render_norma_category(cat_slug: &str) -> Html<String> {
 }
 
 async fn handle_normas_stps() -> impl IntoResponse {
-    render_norma_category("stps")
+    worker_inegi_engine::modules::encyclopedia::render_norma_category("stps")
 }
 
 async fn handle_normas_sat() -> impl IntoResponse {
-    render_norma_category("sat")
+    worker_inegi_engine::modules::encyclopedia::render_norma_category("sat")
 }
 
 async fn handle_normas_imss() -> impl IntoResponse {
-    render_norma_category("imss")
+    worker_inegi_engine::modules::encyclopedia::render_norma_category("imss")
 }
 
 async fn handle_normas_inai() -> impl IntoResponse {
-    render_norma_category("inai")
+    worker_inegi_engine::modules::encyclopedia::render_norma_category("inai")
 }
 
 async fn handle_normas_pld() -> impl IntoResponse {
-    render_norma_category("pld")
+    worker_inegi_engine::modules::encyclopedia::render_norma_category("pld")
 }
 
 async fn handle_normas_comercio() -> impl IntoResponse {
-    render_norma_category("comercio")
+    worker_inegi_engine::modules::encyclopedia::render_norma_category("comercio")
 }
 
 async fn handle_subnorma_detail(Path((cat, _code)): Path<(String, String)>) -> impl IntoResponse {
-    render_norma_category(&cat)
+    worker_inegi_engine::modules::encyclopedia::render_norma_category(&cat)
 }
 
 async fn handle_validez_detail(Path(slug): Path<String>) -> impl IntoResponse {
@@ -1523,8 +1523,8 @@ fn render_validez_detail(slug: &str) -> Html<String> {
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
     <style>body {{ font-family: 'Inter', sans-serif; }} .font-mono-code {{ font-family: 'JetBrains Mono', monospace; }}</style>
-    <link rel="stylesheet" href="/css/quantum-glass.css?v=2026.16">
-    <script src="/js/quantum-lights.js?v=2026.16" defer></script>
+    <link rel="stylesheet" href="/css/quantum-glass.css?v=2026.18">
+    <script src="/js/quantum-lights.js?v=2026.18" defer></script>
 </head>
 <body class="bg-slate-950 text-slate-100 min-h-screen p-6 md:p-12 border-t-4 border-emerald-500">
     <div class="max-w-4xl mx-auto">
