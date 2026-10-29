@@ -1470,8 +1470,8 @@ async fn handle_normas_comercio() -> impl IntoResponse {
     worker_inegi_engine::modules::encyclopedia::render_norma_category("comercio")
 }
 
-async fn handle_subnorma_detail(Path((cat, _code)): Path<(String, String)>) -> impl IntoResponse {
-    worker_inegi_engine::modules::encyclopedia::render_norma_category(&cat)
+async fn handle_subnorma_detail(Path((cat, code)): Path<(String, String)>) -> impl IntoResponse {
+    worker_inegi_engine::modules::encyclopedia::render_subnorma_detail(&cat, &code)
 }
 
 async fn handle_validez_detail(Path(slug): Path<String>) -> impl IntoResponse {
