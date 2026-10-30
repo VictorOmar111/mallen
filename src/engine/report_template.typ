@@ -1,210 +1,247 @@
-#set page(paper: "a4", margin: (x: 1.5cm, y: 1.35cm))
-#set text(size: 8.3pt)
-
-#rect(width: 100%, fill: rgb("#0f172a"), inset: 10pt, radius: 4pt)[
-  #align(center)[
-    #text(fill: white, weight: "bold", size: 11.8pt)[DICTAMEN PERICIAL DE AUDITORÍA LEGAL, FISCAL Y REGULATORIA] \
-    #v(0.2em)
-    #text(fill: rgb("#cbd5e1"), size: 7.6pt)[{{PARTNER_HEADER}} — EVALUACIÓN INTEGRAL DE RIESGO NORMATIVO Y PROTECCIÓN PATRIMONIAL B2B]
+#set page(
+  paper: "us-letter",
+  margin: (top: 1.2cm, bottom: 1.3cm, left: 1.3cm, right: 1.3cm),
+  fill: rgb("#ffffff"),
+  header: context {
+    if counter(page).get().first() > 1 [
+      #grid(
+        columns: (1fr, auto),
+        align(left)[#text(size: 6.5pt, weight: "bold", fill: rgb("#475569"))[FIRMA PERICIAL MALLEN • EXPEDIENTE FORENSE DE CUMPLIMIENTO 360° • {{EMPRESA_TAX_ID}}]],
+        align(right)[#text(size: 6.5pt, fill: rgb("#64748b"))[HUELLA CRIPTOGRÁFICA SHA-256: {{AUDIT_HASH}}]]
+      )
+      #v(-0.15cm)
+      #line(length: 100%, stroke: 0.4pt + rgb("#cbd5e1"))
+    ]
+  },
+  footer: context [
+    #line(length: 100%, stroke: 0.4pt + rgb("#cbd5e1"))
+    #v(0.1cm)
+    #grid(
+      columns: (1fr, auto),
+      align(left)[#text(size: 6pt, fill: rgb("#64748b"))[Dictamen Preventivo de Cumplimiento Técnico-Documental (Arts. 89–93 Código de Comercio). Verificación pública: https://mallen.lat/verify/{{REF_TAX}}]],
+      align(right)[#text(size: 6.5pt, weight: "bold", fill: rgb("#0f172a"))[Página #counter(page).display("1 de 1", both: true)]]
+    )
   ]
+)
+
+#set text(font: ("DejaVu Sans", "Liberation Sans", "Arial"), size: 7.8pt, fill: rgb("#1e293b"), lang: "es")
+#set par(justify: true, leading: 0.48em)
+
+// ==================== ENCABEZADO INSTITUCIONAL TIER-1 ====================
+#box(
+  width: 100%,
+  fill: rgb("#0f172a"),
+  radius: 5pt,
+  inset: (x: 12pt, y: 10pt),
+  stroke: 1pt + rgb("#10b981")
+)[
+  #grid(
+    columns: (1fr, auto),
+    gutter: 10pt,
+    [
+      #text(size: 6.8pt, weight: "bold", fill: rgb("#34d399"))[FIRMA PERICIAL MALLEN • INTELIGENCIA REGULATORIA, AUDITORÍA FORENSE Y COMPLIANCE GRC]
+      #linebreak()
+      #text(size: 11.5pt, weight: "bold", fill: rgb("#ffffff"))[DICTAMEN PERICIAL DETERMINÍSTICO DE EXPOSICIÓN NORMATIVA 360°]
+      #linebreak()
+      #text(size: 7pt, fill: rgb("#cbd5e1"))[Cruce Multivariable INEGI DENUE • SAT (Arts. 69 y 69-B) • STPS (39 NOMs + REPSE) • IMSS • LFPDPPP • 9 Sectoriales • PROFECO]
+    ],
+    align(right + horizon)[
+      #box(fill: rgb("#1e293b"), stroke: 0.6pt + rgb("#34d399"), radius: 4pt, inset: 6pt)[
+        #text(size: 6.5pt, fill: rgb("#94a3b8"))[FOLIO CRIPTOGRÁFICO]
+        #linebreak()
+        #text(size: 7.5pt, weight: "bold", fill: rgb("#34d399"))[{{AUDIT_HASH}}]
+        #linebreak()
+        #text(size: 6pt, fill: rgb("#cbd5e1"))[CORTE UTC: {{SCAN_DATE}}]
+      ]
+    ]
+  )
 ]
 
 #v(0.25em)
 
+// ==================== FICHA FORENSE DEL ENTE AUDITADO Y PERFIL SCIAN ====================
+#table(
+  columns: (18%, 32%, 18%, 32%),
+  inset: (x: 6pt, y: 4.5pt),
+  stroke: 0.5pt + rgb("#cbd5e1"),
+  fill: (x, y) => if calc.odd(x) { rgb("#ffffff") } else { rgb("#f8fafc") },
+  [#text(weight: "bold", size: 7pt, fill: rgb("#334155"))[ENTE AUDITADO:]],
+  [#text(weight: "bold", size: 7.4pt, fill: rgb("#0f172a"))[{{EMPRESA_NOMBRE}}]],
+  [#text(weight: "bold", size: 7pt, fill: rgb("#334155"))[RFC / ID BÚSQUEDA:]],
+  [#text(weight: "bold", size: 7.4pt, fill: rgb("#0f172a"))[{{EMPRESA_TAX_ID}}]],
+
+  [#text(weight: "bold", size: 7pt, fill: rgb("#334155"))[GIRO SCIAN OFICIAL:]],
+  [#text(size: 7.1pt, fill: rgb("#0f172a"))[{{EMPRESA_SCIAN}}]],
+  [#text(weight: "bold", size: 7pt, fill: rgb("#334155"))[REPRESENTACIÓN:]],
+  [#text(size: 7.1pt, fill: rgb("#0f172a"))[{{REPRESENTANTE_LEGAL}}]],
+
+  [#text(weight: "bold", size: 7pt, fill: rgb("#334155"))[DOMICILIO / DENUE:]],
+  [#text(size: 7pt, fill: rgb("#0f172a"))[{{EMPRESA_DOMICILIO}}]],
+  [#text(weight: "bold", size: 7pt, fill: rgb("#334155"))[ESTATUS DICTAMEN:]],
+  [#text(weight: "bold", size: 7.2pt, fill: rgb("#b91c1c"))[{{ESTATUS_GLOBAL}}]]
+)
+
+#v(0.2em)
+
+// ==================== SECCIÓN 1: DIAGNÓSTICO POLIMÓRFICO POR GIRO SCIAN Y PRIMA IMSS ====================
+#text(size: 8.5pt, weight: "bold", fill: rgb("#0f172a"))[1. PERFIL DE RIESGO INDUSTRIAL POR GIRO SCIAN, PLANTILLA Y CLASIFICACIÓN IMSS (ART. 196 RACERF)]
+#v(0.1em)
+El presente dictamen pericial ha sido compilado de forma específica para la unidad económica *"{{EMPRESA_NOMBRE}}"* (`{{EMPRESA_TAX_ID}}`), aplicando el motor de reglas paramétricas sobre su actividad económica registrada (*{{EMPRESA_SCIAN}}*) y su factor de dimensión operativa. A diferencia de una lista genérica, las cargas normativas y multas en Unidades de Medida y Actualización (UMA 2026: \$113.14 MXN) han sido ponderadas conforme a la capacidad económica y plantilla del centro de trabajo (Art. 992 LFT y Art. 75 CFF), sincronizadas 1:1 con el expediente verificable en `https://mallen.lat/verify/{{REF_TAX}}`.
+
+#v(0.18em)
+
+// ==================== SECCIÓN 2: CRUCE CONTRA BASES DE DATOS OFICIALES Y LISTAS NEGRAS ====================
+#text(size: 8.5pt, weight: "bold", fill: rgb("#0f172a"))[2. COMPULSA FORENSE CONTRA PADRONES FEDERALES, LISTAS NEGRAS Y TELEMETRÍA OSINT]
+#v(0.1em)
+#table(
+  columns: (22%, 28%, 22%, 28%),
+  inset: (x: 6pt, y: 4pt),
+  stroke: 0.5pt + rgb("#cbd5e1"),
+  fill: (x, y) => if calc.even(x) { rgb("#f1f5f9") } else { rgb("#ffffff") },
+  [#text(weight: "bold", size: 6.8pt)[SAT ART. 69-B (EFOS/EDOS):]],
+  [#text(weight: "bold", size: 6.8pt, fill: rgb("#0f172a"))[{{SAT_69B_STATUS}}]],
+  [#text(weight: "bold", size: 6.8pt)[SAT ART. 69 (CRÉDITOS/CSD):]],
+  [#text(weight: "bold", size: 6.8pt, fill: rgb("#0f172a"))[{{SAT_69_STATUS}}]],
+
+  [#text(weight: "bold", size: 6.8pt)[PADRÓN STPS REPSE:]],
+  [#text(weight: "bold", size: 6.8pt, fill: rgb("#0f172a"))[{{REPSE_STATUS}}]],
+  [#text(weight: "bold", size: 6.8pt)[SFP INHABILITADOS:]],
+  [#text(weight: "bold", size: 6.8pt, fill: rgb("#0f172a"))[{{SFP_STATUS}}]],
+
+  [#text(weight: "bold", size: 6.8pt)[CIFRADO TLS/SSL (ART. 19):]],
+  [#text(weight: "bold", size: 6.8pt, fill: rgb("#0f172a"))[{{SSL_STATUS}}]],
+  [#text(weight: "bold", size: 6.8pt)[AVISO PRIVACIDAD LFPDPPP:]],
+  [#text(weight: "bold", size: 6.8pt, fill: rgb("#0f172a"))[{{INAI_STATUS}}]]
+)
+
+#v(0.22em)
+
+// ==================== SECCIÓN 3: CUANTIFICACIÓN MATEMÁTICA POR ÓRGANO REGULADOR ====================
+#text(size: 8.5pt, weight: "bold", fill: rgb("#0f172a"))[3. MATRIZ CONSOLIDADA DE CONTINGENCIA PATRIMONIAL POR ÓRGANO REGULADOR (UMA 2026)]
+#v(0.1em)
+#table(
+  columns: (27%, 21%, 52%),
+  inset: (x: 6pt, y: 4.5pt),
+  stroke: 0.5pt + rgb("#cbd5e1"),
+  fill: (x, y) => if y == 0 { rgb("#0f172a") } else if y == 7 { rgb("#fef2f2") } else if calc.odd(y) { rgb("#f8fafc") } else { rgb("#ffffff") },
+  [#text(fill: white, weight: "bold", size: 7pt)[ÓRGANO REGULADOR / MARCO]],
+  [#text(fill: white, weight: "bold", size: 7pt)[EXPOSICIÓN ESTIMADA]],
+  [#text(fill: white, weight: "bold", size: 7pt)[DICTAMINACIÓN TÉCNICA ESPECÍFICA AL GIRO AUDITADO]],
+
+  [#text(weight: "bold", size: 7pt)[1. STPS (39 NOMs + LFT)]],
+  [#text(weight: "bold", size: 7.2pt, fill: rgb("#b91c1c"))[\$ {{FINE_STPS}} MXN]],
+  [#text(size: 6.8pt)[{{DESC_STPS}}]],
+
+  [#text(weight: "bold", size: 7pt)[2. SAT (CFF / LISR / CFDI 4.0)]],
+  [#text(weight: "bold", size: 7.2pt, fill: rgb("#b91c1c"))[\$ {{FINE_SAT}} MXN]],
+  [#text(size: 6.8pt)[{{DESC_SAT}}]],
+
+  [#text(weight: "bold", size: 7pt)[3. SABG / LFPDPPP (Privacidad)]],
+  [#text(weight: "bold", size: 7.2pt, fill: rgb("#b91c1c"))[\$ {{FINE_INAI}} MXN]],
+  [#text(size: 6.8pt)[{{DESC_INAI}}]],
+
+  [#text(weight: "bold", size: 7pt)[4. IMSS / INFONAVIT (LSS / REPSE)]],
+  [#text(weight: "bold", size: 7.2pt, fill: rgb("#b91c1c"))[\$ {{FINE_IMSS}} MXN]],
+  [#text(size: 6.8pt)[{{DESC_IMSS}}]],
+
+  [#text(weight: "bold", size: 7pt)[5. 9 SECTORIALES Y PIPC (SCIAN)]],
+  [#text(weight: "bold", size: 7.2pt, fill: rgb("#b91c1c"))[\$ {{FINE_PROT_CIVIL}} MXN]],
+  [#text(size: 6.8pt)[{{DESC_PROT_CIVIL}}]],
+
+  [#text(weight: "bold", size: 7pt)[6. PROFECO Y ECONOMÍA (LFPC)]],
+  [#text(weight: "bold", size: 7.2pt, fill: rgb("#b91c1c"))[\$ {{FINE_PROFECO}} MXN]],
+  [#text(size: 6.8pt)[{{DESC_PROFECO}}]],
+
+  [#text(weight: "bold", size: 7.4pt, fill: rgb("#991b1b"))[CONTINGENCIA TOTAL AUDITADA:]],
+  [#text(weight: "bold", size: 8pt, fill: rgb("#991b1b"))[\$ {{TOTAL_FINE_MXN}} MXN]],
+  [#text(weight: "bold", size: 6.8pt, fill: rgb("#7f1d1d"))[Suma determinística de los 37 vectores evaluados conforme a giro SCIAN y plantilla.]]
+)
+
+#v(0.22em)
+
+// ==================== SECCIÓN 4: IMPACTO OPERATIVO Y RETORNO DE INVERSIÓN ====================
 #grid(
-  columns: (1.28fr, 1.32fr),
-  gutter: 0.8em,
+  columns: (1fr, 1fr),
+  gutter: 8pt,
   [
-    #v(0.1em)
-    *EMPRESA AUDITADA:* {{EMPRESA_NOMBRE}} \
-    *IDENTIFICADOR / RFC:* {{EMPRESA_TAX_ID}} \
-    *REPRESENTANTE LEGAL:* {{REPRESENTANTE_LEGAL}} \
-    *SECTOR / SCIAN:* {{EMPRESA_ACTIVIDAD}} \
-    *DOMICILIO / PLANTILLA:* {{EMPRESA_DIRECCION}} \
-    *FECHA DE CORTE OSINT:* {{FECHA_EMISION}} \
-    *ESTATUS DICTAMEN:* #text(fill: rgb("{{STATUS_HEX}}"), weight: "bold")[{{ESTATUS_TEXTO}}]
+    #text(size: 8pt, weight: "bold", fill: rgb("#0f172a"))[4. RIESGOS CAUTELARES DE CONTINUIDAD OPERATIVA]
+    #v(0.08em)
+    #table(
+      columns: (36%, 64%),
+      inset: 4pt,
+      stroke: 0.4pt + rgb("#cbd5e1"),
+      [#text(weight: "bold", size: 6.5pt, fill: rgb("#991b1b"))[Restricción Sello CSD (Art. 17-H Bis CFF)]],
+      [#text(size: 6.5pt)[Suspensión de facturación CFDI 4.0 y bloqueo de cobranza comercial.]],
+      [#text(weight: "bold", size: 6.5pt, fill: rgb("#991b1b"))[Clausura STPS / PIPC / COFEPRIS]],
+      [#text(size: 6.5pt)[Imposición de sellos por falta de PIPC, estudios NOM-002 o avisos sectoriales.]],
+      [#text(weight: "bold", size: 6.5pt, fill: rgb("#b45309"))[Opinión 32-D Negativa y Rechazo B2B]],
+      [#text(size: 6.5pt)[Retención de pagos de clientes corporativos y no deducibilidad fiscal.]]
+    )
   ],
   [
-    #rect(width: 100%, fill: rgb("#f8fafc"), stroke: 1pt + rgb("#cbd5e1"), inset: 5pt, radius: 5pt)[
-      #align(center)[
-        #text(size: 7.4pt, weight: "bold", fill: rgb("#0f172a"))[ÍNDICE DE EXPOSICIÓN: {{RISK_SCORE}} / 100 PUNTOS] \
-        #v(0.25em)
-        #grid(
-          columns: (auto, 1fr),
-          gutter: 0.5em,
-          [
-            #box(width: 52pt, height: 52pt)[
-              #place(top + left, circle(radius: 26pt, fill: rgb("#e2e8f0")))
-              #place(top + left, circle(radius: 26pt, fill: rgb("#2563eb")))
-              #place(top + left, dx: 2pt, dy: 1pt, circle(radius: 24.5pt, fill: rgb("#dc2626")))
-              #place(top + left, dx: 4pt, dy: 2pt, circle(radius: 23pt, fill: rgb("#d97706")))
-              #place(top + left, dx: 6pt, dy: 3pt, circle(radius: 21pt, fill: rgb("#16a34a")))
-              #place(top + left, dx: 8pt, dy: 4pt, circle(radius: 19pt, fill: rgb("#ea580c")))
-              #place(top + left, dx: 10pt, dy: 5pt, circle(radius: 17pt, fill: rgb("#7c3aed")))
-              #place(top + left, dx: 12pt, dy: 12pt, circle(radius: 14pt, fill: rgb("#f8fafc")))
-              #place(center + horizon)[
-                #align(center)[
-                  #text(size: 10pt, weight: "bold", fill: rgb("#0f172a"))[{{RISK_SCORE}}] \
-                  #text(size: 4.5pt, weight: "bold", fill: rgb("#64748b"))[PTS]
-                ]
-              ]
-            ]
-          ],
-          [
-            #align(left + horizon)[
-              #text(size: 5.2pt)[
-                #box(fill: rgb("#2563eb"), width: 4pt, height: 4pt, radius: 1pt) *STPS (39 NOMs):* {{SCORE_STPS}} pts (\$ {{MULTA_STPS}}) \
-                #box(fill: rgb("#dc2626"), width: 4pt, height: 4pt, radius: 1pt) *SAT (CFF 69-B/CSD):* {{SCORE_SAT}} pts (\$ {{MULTA_SAT}}) \
-                #box(fill: rgb("#d97706"), width: 4pt, height: 4pt, radius: 1pt) *SABG / INAI (LFPDPPP):* {{SCORE_INAI}} pts (\$ {{MULTA_INAI}}) \
-                #box(fill: rgb("#16a34a"), width: 4pt, height: 4pt, radius: 1pt) *IMSS / INFONAVIT:* {{SCORE_IMSS}} pts (\$ {{MULTA_IMSS}}) \
-                #box(fill: rgb("#ea580c"), width: 4pt, height: 4pt, radius: 1pt) *SECTORIAL / PIPC:* {{SCORE_PC}} pts (\$ {{MULTA_PC}}) \
-                #box(fill: rgb("#7c3aed"), width: 4pt, height: 4pt, radius: 1pt) *PROFECO (LFPC):* {{SCORE_PROFECO}} pts (\$ {{MULTA_PROFECO}})
-              ]
-            ]
-          ]
-        )
-      ]
-    ]
+    #text(size: 8pt, weight: "bold", fill: rgb("#0f172a"))[5. COSTO EN DESPACHOS VS. EXPEDIENTE MALLEN 360°]
+    #v(0.08em)
+    #table(
+      columns: (58%, 22%, 20%),
+      inset: 4pt,
+      stroke: 0.4pt + rgb("#cbd5e1"),
+      [#text(size: 6.5pt)[Carpetas STPS (NOM-035, 037, 019, 030)]], [#text(size: 6.5pt)[\$25,000]], [#text(weight: "bold", size: 6.3pt, fill: rgb("#047857"))[INCLUIDO]],
+      [#text(size: 6.5pt)[Contrato 69-B Fecha Cierta + REPSE IMSS]], [#text(size: 6.5pt)[\$50,000]], [#text(weight: "bold", size: 6.3pt, fill: rgb("#047857"))[INCLUIDO]],
+      [#text(size: 6.5pt)[LFPDPPP Integral + PIPC + PROFECO]], [#text(size: 6.5pt)[\$52,000]], [#text(weight: "bold", size: 6.3pt, fill: rgb("#047857"))[INCLUIDO]],
+      [#text(weight: "bold", size: 6.6pt)[Consultoría Tradicional: \$127,000 MXN]], [#text(weight: "bold", size: 6.6pt, fill: rgb("#047857"))[Kit Mallen:]], [#text(weight: "bold", size: 6.8pt, fill: rgb("#047857"))[\${{KIT_PRICE_MXN}}]]
+    )
   ]
 )
 
 #v(0.2em)
 
-#rect(width: 100%, fill: rgb("{{BANNER_BG_HEX}}"), stroke: 1pt + rgb("{{BANNER_BORDER_HEX}}"), inset: 6pt, radius: 4pt)[
+// ==================== SECCIÓN 6: FIRMA PERICIAL Y FECHA CIERTA ====================
+#box(width: 100%, fill: rgb("#f8fafc"), stroke: 0.6pt + rgb("#94a3b8"), radius: 4pt, inset: 6pt)[
   #grid(
     columns: (1fr, auto),
     [
-      #text(fill: rgb("#0f172a"), weight: "bold", size: 7.8pt)[CONTINGENCIA ECONÓMICA TOTAL SINCRONIZADA (SUMA EXACTA DE LOS 6 ÓRGANOS EN UMA 2026):] \
-      #v(0.1em)
-      #text(fill: rgb("{{STATUS_HEX}}"), size: 12.2pt, weight: "bold")[\$ {{ESTIMATED_FINE}} MXN]
+      #text(size: 6.8pt, weight: "bold", fill: rgb("#0f172a"))[FIRMA PERICIAL EMISORA: Firma Pericial Mallen — Sistemas de Auditoría Forense y Compliance 360° (mallen.lat)]
+      #linebreak()
+      #text(size: 6.5pt, fill: rgb("#334155"))[PERITO DICTAMINADOR: {{AUDITOR_NOMBRE}} • Cédula Profesional: {{AUDITOR_CEDULA}} • Registro STPS: {{AUDITOR_STPS}}]
+      #linebreak()
+      #text(size: 6.2pt, fill: rgb("#475569"))[Jurisdicción: {{JURISDICCION}} • Oficial Privacidad: {{OFICIAL_PRIVACIDAD}} • Coordinador NOM-019: {{COORDINADOR_NOM019}} • Respuesta HTTP: {{HTTP_CODE}}]
     ],
-    [
-      #align(right + horizon)[
-        #box(fill: rgb("{{STATUS_HEX}}"), inset: (x: 6pt, y: 3pt), radius: 3pt)[
-          #text(fill: white, weight: "bold", size: 7.2pt)[{{BADGE_ACCION}}]
-        ]
-      ]
+    align(right + horizon)[
+      #text(size: 6.8pt, weight: "bold", fill: rgb("#047857"))[EXPEDIENTE + CFDI 4.0: \$ {{KIT_PRICE_MXN}} MXN]
+      #linebreak()
+      #text(size: 6pt, fill: rgb("#64748b"))[Ver pase a Página 2: Desglose de los 37 Vectores →]
     ]
   )
 ]
 
-#v(0.2em)
-#line(length: 100%, stroke: 0.5pt + rgb("#cbd5e1"))
-
-#text(size: 9pt, weight: "bold", fill: rgb("#0f172a"))[1. RESUMEN EJECUTIVO Y METODOLOGÍA DE EVALUACIÓN PERICIAL]
-#v(0.12em)
-El presente dictamen cuantifica de forma determinística la exposición legal, fiscal y administrativa de *"{{EMPRESA_NOMBRE}}"* ({{EMPRESA_TAX_ID}}), representada por *{{REPRESENTANTE_LEGAL}}*. Los montos aquí expresados están sincronizados 1:1 con el motor pericial en línea (`mallen.lat/verify/{{REF_TAX}}`).
-
-#v(0.25em)
-
-#text(size: 9pt, weight: "bold", fill: rgb("#0f172a"))[2. MARCO NORMATIVO AUDITADO (360° COMPLIANCE MEXICANO)]
-#v(0.12em)
-- *STPS (39 NOMs):* LFT Arts. 132, 330-A a 330-K, 509, 540 y 994 (Seguridad, Salud, NOM-019, NOM-030, NOM-035, NOM-036-1 y NOM-037).
-- *SAT (CFF / LISR / LIVA):* Art. 69-B (Materialidad B2B y Fecha Cierta SCJN), Art. 17-K (Buzón), Art. 17-H Bis (CSD), Art. 28 y Art. 29-A.
-- *PROTECCIÓN DE DATOS (LFPDPPP / SABG ex-INAI):* Arts. 8, 9, 15, 16, 17, 19, 22-37 y 63-64 (Avisos, ARCO, Biométricos y SSL).
-- *IMSS e INFONAVIT:* LSS Arts. 15, 15-A (REPSE / ICSOE / SISSUB), 39 (Opinión 32-D), 71-75 (Prima de Riesgo) y 304-A.
-- *SECTORIAL Y PROTECCIÓN CIVIL:* LGPC (PIPC >100 m²), COFEPRIS, SEMARNAT, CNBV/LFPIORPI, SICT, SEP y SECTUR según código SCIAN.
-- *PROFECO:* LFPC Arts. 32, 76 BIS (Comercio Digital), 85-87 (Contratos de Adhesión RRPAC) y 128 BIS.
-
-#v(0.25em)
-
-#text(size: 9pt, weight: "bold", fill: rgb("#0f172a"))[3. DESGLOSE MATEMÁTICO EXACTO DE CONTINGENCIA POR ÓRGANO REGULADOR]
-#v(0.12em)
-
-#table(
-  columns: (1.15fr, 1.15fr, 2.4fr),
-  fill: (x, y) => if y == 0 { rgb("#0f172a") } else if calc.even(y) { rgb("#f8fafc") } else { none },
-  stroke: (x, y) => if y == 0 { (bottom: 1.5pt + rgb("#0f172a")) } else { (bottom: 0.5pt + rgb("#e2e8f0")) },
-  table.header(
-    [*#text(fill: white)[ÓRGANO / NORMATIVA]*],
-    [*#text(fill: white)[CONTINGENCIA ESTIMADA]*],
-    [*#text(fill: white)[HALLAZGO TÉCNICO Y FUNDAMENTO]*]
-  ),
-  [STPS (39 NOMs Aplicables)], [\$ {{MULTA_STPS}} MXN], [{{HALLAZGO_TABLA_STPS}}],
-  [SAT (CFF Art. 69-B / CSD)], [\$ {{MULTA_SAT}} MXN], [{{HALLAZGO_TABLA_SAT}}],
-  [SABG / ex-INAI (LFPDPPP)], [\$ {{MULTA_INAI}} MXN], [{{INAI_OBS}}],
-  [IMSS / INFONAVIT (LSS / REPSE)], [\$ {{MULTA_IMSS}} MXN], [{{HALLAZGO_TABLA_IMSS}}],
-  [SECTORIAL / PROT. CIVIL], [\$ {{MULTA_PC}} MXN], [{{HALLAZGO_TABLA_PC}}],
-  [PROFECO (LFPC Art. 76 BIS)], [\$ {{MULTA_PROFECO}} MXN], [{{HALLAZGO_TABLA_PROFECO}}],
-  [*TOTAL ACUMULADO AUDITADO:*], [*\$ {{ESTIMATED_FINE}} MXN*], [*Suma exacta de los 6 vectores regulatorios evaluados en UMA 2026.*]
-)
-
+// ==================== PÁGINA 2: ANEXO TÉCNICO FORENSE DE LOS 37 VECTORES EVALUADOS ====================
 #pagebreak()
 
-#text(size: 9pt, weight: "bold", fill: rgb("#0f172a"))[4. MATRIZ DE IMPACTO OPERATIVO Y MEDIDAS DE APREMIO INMEDIATAS]
-#v(0.15em)
-#table(
-  columns: (1fr, 1.3fr, 2fr),
-  fill: (x, y) => if y == 0 { rgb("#1e293b") } else if calc.even(y) { rgb("#f8fafc") } else { none },
-  stroke: (x, y) => if y == 0 { (bottom: 1.5pt + rgb("#1e293b")) } else { (bottom: 0.5pt + rgb("#e2e8f0")) },
-  table.header(
-    [*#text(fill: white)[SEVERIDAD]*],
-    [*#text(fill: white)[MEDIDA CAUTELAR]*],
-    [*#text(fill: white)[CONSECUENCIA EN LA CONTINUIDAD DE NEGOCIO]*]
-  ),
-  [Crítica Patrimonial], [Restricción CSD (Art. 17-H Bis CFF)], [Parálisis inmediata de facturación CFDI 4.0 y congelamiento de cobros.],
-  [Crítica Operativa], [Clausura Total o Parcial (PIPC/STPS)], [Colocación de sellos de suspensión por riesgo inminente o falta de PIPC.],
-  [Alta Comercial], [Opinión 32-D Negativa (SAT/IMSS)], [Retención de pagos por clientes corporativos e inhabilitación en licitaciones.],
-)
-
-#v(0.3em)
-
-#text(size: 9pt, weight: "bold", fill: rgb("#0f172a"))[5. ANÁLISIS COSTO-BENEFICIO: DESPACHOS TRADICIONALES VS. KIT MALLEN 360°]
-#v(0.15em)
-#table(
-  columns: (2.1fr, 1.1fr, 1fr),
-  fill: (x, y) => if y == 0 { rgb("#0f172a") } else if calc.even(y) { rgb("#f8fafc") } else { none },
-  stroke: (x, y) => if y == 0 { (bottom: 1.5pt + rgb("#0f172a")) } else { (bottom: 0.5pt + rgb("#e2e8f0")) },
-  table.header(
-    [*#text(fill: white)[CONTRATACIÓN EN DESPACHOS POR SEPARADO]*],
-    [*#text(fill: white)[HONORARIOS MERCADO]*],
-    [*#text(fill: white)[EN KIT MALLEN]*]
-  ),
-  [Pólizas y Carpetas STPS (NOM-035, NOM-037, NOM-019 y NOM-030)], [\$25,000.00 MXN], [*INCLUIDO*],
-  [Aviso de Privacidad Integral, ARCO y Consentimiento Biométrico (LFPDPPP)], [\$12,000.00 MXN], [*INCLUIDO*],
-  [Contrato Marco de Materialidad B2B con Fecha Cierta y Bitácora 69-B], [\$35,000.00 MXN], [*INCLUIDO*],
-  [Guía de Programa Interno de Protección Civil (PIPC) y Actas de Brigada], [\$30,000.00 MXN], [*INCLUIDO*],
-  [Protocolo de Blindaje Patronal IMSS 32-D y Expediente REPSE/ICSOE], [\$15,000.00 MXN], [*INCLUIDO*],
-  [Términos y Condiciones E-Commerce Art. 76 BIS LFPC y Garantías PROFECO], [\$10,000.00 MXN], [*INCLUIDO*],
-  [*INVERSIÓN TOTAL EN CONSULTORÍA TRADICIONAL:*], [\$127,000.00 MXN], [*AHORRO > 95%*]
-)
-
-#v(0.3em)
-
-#text(size: 9pt, weight: "bold", fill: rgb("#0f172a"))[6. TELEMETRÍA TÉCNICA DE HUELLA DIGITAL Y ESCANEO OSINT]
-#v(0.15em)
-#rect(width: 100%, fill: rgb("#f8fafc"), stroke: 1pt + rgb("#cbd5e1"), inset: 5pt, radius: 4pt)[
-  #grid(
-    columns: (1fr, 1fr, 1fr),
-    [ *Cifrado TLS / SSL (Art. 19):* \ {{SSL_STATUS}} ],
-    [ *Aviso Privacidad LFPDPPP:* \ {{PRIVACY_STATUS}} ],
-    [ *Respuesta HTTP Dominio:* \ Código {{HTTP_STATUS}} ]
-  )
-  #v(0.2em)
-  *Jurisdicción Aplicada:* {{EMPRESA_JURISDICCION}} | *Oficial de Privacidad:* {{OFICIAL_PRIVACIDAD}} | *Coordinador NOM-019:* {{COORDINADOR_CSH}}
+#box(
+  width: 100%,
+  fill: rgb("#0f172a"),
+  radius: 4pt,
+  inset: (x: 10pt, y: 7pt),
+  stroke: 0.8pt + rgb("#3b82f6")
+)[
+  #text(size: 9.5pt, weight: "bold", fill: rgb("#ffffff"))[ANEXO PERICIAL: DESGLOSE INDIVIDUAL DE LOS 37 VECTORES NORMATIVOS AUDITADOS]
+  #linebreak()
+  #text(size: 6.8pt, fill: rgb("#93c5fd"))[Ente Auditado: {{EMPRESA_NOMBRE}} ({{EMPRESA_TAX_ID}}) • Giro Aplicado: {{EMPRESA_SCIAN}} • Sincronización Criptográfica: {{AUDIT_HASH}}]
 ]
 
-#v(0.3em)
+#v(0.2em)
 
-#text(size: 9pt, weight: "bold", fill: rgb("#0f172a"))[7. EXPEDIENTE DE INSTRUMENTOS PERSONALIZADOS ENTREGADOS EN SU ZIP]
+#text(size: 6.6pt, fill: rgb("#334155"))[
+  A continuación se presenta la evaluación individualizada de los **37 Vectores Oficiales de Cumplimiento Normativo Mexicano** (STPS, SAT, IMSS/INFONAVIT, SABG/LFPDPPP, 9 Módulos Sectoriales/PLD y PROFECO/Economía), determinando para cada vector su aplicabilidad al giro SCIAN de la empresa, su rango sancionatorio en UMAs vigentes y el requerimiento técnico-documental específico:
+]
+
 #v(0.15em)
-- [X] *10 Certificados de Acreditación Normativa (PDF):* Personalizados con Razón Social, Giro SCIAN, Jurisdicción y Representante Legal.
-- [X] *7 Instrumentos Jurídicos en PDF y Word-HTML (Formatos Ejecutivos PDF y Word):* Aviso Integral LFPDPPP, Política NOM-035, Acta Comisión Mixta NOM-019/030, Política Teletrabajo NOM-037, Contrato Materialidad Art. 69-B con Fecha Cierta, Protocolo IMSS REPSE y Términos E-Commerce Art. 76 BIS LFPC.
 
-#v(0.3em)
+{{VECTORS_37_TABLE_TYPST}}
 
-#text(size: 9pt, weight: "bold", fill: rgb("#0f172a"))[8. FIRMA PERICIAL Y SELLO CRIPTOGRÁFICO DE FECHA CIERTA]
-#v(0.15em)
-*FIRMA PERICIAL EMISORA:* Firma Pericial Mallen — GRC & Compliance Automatizado (`mallen.lat`) \
-*AUDITOR DICTAMINADOR:* {{AUDITOR_NOMBRE}} (Cédula: {{AUDITOR_CEDULA}} | Reg. STPS DC-5: {{AUDITOR_DC5}}) \
-*HUELLA CRIPTOGRÁFICA SHA-256:* #raw("{{AUDIT_HASH}}")
-
-#v(0.3em)
-
-#rect(width: 100%, fill: rgb("{{BANNER_BG_HEX}}"), stroke: 1.5pt + rgb("{{BANNER_BORDER_HEX}}"), inset: 6.5pt, radius: 5pt)[
-  #align(center)[
-    #text(fill: rgb("{{STATUS_HEX}}"), weight: "bold", size: 9.6pt)[ACTIVACIÓN DE BLINDAJE INTEGRAL 360° + CFDI 4.0: \$ {{ACTIVATION_PRICE}} MXN] \
-    #v(0.1em)
-    #text(fill: rgb("#0f172a"), weight: "bold", size: 7.8pt)[Verificación y Descarga: #raw("https://mallen.lat/verify/{{REF_TAX}}")]
+#v(0.2em)
+#box(width: 100%, fill: rgb("#f1f5f9"), stroke: 0.5pt + rgb("#cbd5e1"), radius: 4pt, inset: 5pt)[
+  #text(size: 6pt, fill: rgb("#475569"))[
+    *NOTA METODOLÓGICA Y ALCANCE LEGAL (ART. 89 CÓDIGO DE COMERCIO):* El presente Anexo Pericial forma parte indivisible del Dictamen con huella SHA-256 `{{AUDIT_HASH}}`. Los vectores marcados como *"EXENTO POR GIRO SCIAN"* o *"BLINDAJE VERIFICADO"* presentan contingencia de \$0.00 MXN al no actualizarse el supuesto normativo en la actividad económica evaluada o al haberse acreditado el control técnico correspondiente. El Kit de Blindaje Legal 360° entrega los 10 Certificados de Acreditación y los 7 Instrumentos Jurídicos listos para firma autógrafa o electrónica para subsanar de inmediato los vectores con exposición activa.
   ]
-]
+]listo

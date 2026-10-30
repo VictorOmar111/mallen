@@ -13,36 +13,44 @@
 
     window.openVectorsPopover = function () {
         const data = window.lastAuditData;
-        if (!data || !data.findings) return;
+        if (!data) return;
+        const rawList = data.findings || data.vectors || data.hallazgos || [];
+        if (!rawList.length) return;
+
         const pop = document.getElementById("vectors-37-popover");
         const list = document.getElementById("vectors-37-list");
         const title = document.getElementById("popover-company-title");
         if (!pop || !list) return;
 
         if (title) {
-            title.textContent = `${data.razon_social} (${data.tax_id}) — Desglose de los ${data.findings.length} Vectores Evaluados`;
+            title.textContent = `${data.razon_social} (${data.tax_id}) • ${rawList.length} Vectores Evaluados`;
         }
 
-        list.innerHTML = data.findings.map((f) => {
-            const isFine = Number(f.estimated_fine_mxn || 0) > 0;
+        list.innerHTML = rawList.map((f, idx) => {
+            const auth = f.authority || f.organo || f.dependencia || `Vector #${idx + 1}`;
+            const code = f.code || f.norma || f.precepto || f.titulo || "Precepto Normativo";
+            const desc = f.description || f.hallazgo || f.detalle || "";
+            const uma = f.uma_range || f.rango_uma || "Tabulador UMA 2026";
+            const fineVal = Number(f.estimated_fine_mxn ?? f.multa_mxn ?? f.multa ?? 0);
+            const isFine = fineVal > 0;
             const badgeClass = isFine
                 ? "bg-red-950/80 text-red-300 border-red-500/40"
                 : "bg-emerald-950/80 text-emerald-300 border-emerald-500/40";
             const fineTxt = isFine
-                ? "$" + Number(f.estimated_fine_mxn).toLocaleString("es-MX", { minimumFractionDigits: 2 }) + " MXN"
-                : "BLINDADO / EXENTO ($0.00)";
+                ? "$" + fineVal.toLocaleString("es-MX", { minimumFractionDigits: 2 }) + " MXN"
+                : "BLINDADO ($0.00)";
             return `
-                <div class="bg-slate-950/85 border border-white/10 rounded-xl p-3 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-                    <div class="space-y-0.5">
-                        <div class="flex items-center gap-2">
-                            <span class="text-[10px] font-bold px-2 py-0.5 rounded border ${badgeClass}">${f.authority}</span>
-                            <span class="text-xs font-bold text-white">${f.code}</span>
+                <div class="bg-slate-950/90 border border-white/10 rounded-lg p-2.5 flex items-center justify-between gap-3 hover:border-emerald-500/40 transition">
+                    <div class="min-w-0 flex-1">
+                        <div class="flex items-center gap-1.5 flex-wrap">
+                            <span class="text-[9px] font-bold px-1.5 py-0.5 rounded border ${badgeClass}">${auth}</span>
+                            <span class="text-[11px] font-bold text-white truncate">${code}</span>
                         </div>
-                        <p class="text-[11px] text-slate-300">${f.description}</p>
+                        <p class="text-[10px] text-slate-400 truncate mt-0.5">${desc}</p>
                     </div>
                     <div class="text-right shrink-0">
-                        <span class="text-xs font-extrabold ${isFine ? 'text-red-400' : 'text-emerald-400'} block">${fineTxt}</span>
-                        <span class="text-[9px] text-slate-400 block">Tabulador: ${f.uma_range}</span>
+                        <span class="text-[11px] font-extrabold ${isFine ? 'text-red-400' : 'text-emerald-400'} block">${fineTxt}</span>
+                        <span class="text-[8px] text-slate-500 block">${uma}</span>
                     </div>
                 </div>
             `;
@@ -51,21 +59,6 @@
         pop.classList.remove("hidden");
         pop.classList.add("flex");
     };
-
-    let currentTaxId = "EST850628K51";
-
-    function animateModalExplosion(modalEl) {
-        if (!modalEl) return;
-        const card = modalEl.querySelector('.photonic-modal-card');
-        if (card) {
-            card.classList.remove('is-exploding-in');
-            void card.offsetWidth;
-            card.classList.add('is-exploding-in');
-        }
-        if (typeof window.triggerPhotonicBurst === 'function') {
-            window.triggerPhotonicBurst();
-        }
-    }
 
     document.addEventListener("mouseleave", (e) => {
         if (e.clientY <= 0 && !exitIntentShown) {
