@@ -3,117 +3,496 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Panel Institucional & Monitoreo Continuo — Firma Pericial Mallen</title>
+    <title>Consola Institucional para Despachos y Corporativos — Firma Pericial Mallen</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
-    <style>body { font-family: 'Inter', sans-serif; background-color: #020617; background-image: radial-gradient(at 12% 12%, rgba(37, 99, 235, 0.32) 0px, transparent 48%), radial-gradient(at 88% 18%, rgba(16, 185, 129, 0.25) 0px, transparent 48%), radial-gradient(at 50% 82%, rgba(99, 102, 241, 0.28) 0px, transparent 52%); background-attachment: fixed; } .font-mono-code { font-family: 'JetBrains Mono', monospace; }</style>
-    <link rel="stylesheet" href="/css/quantum-glass.css?v=2026.25">
-    <script src="/js/quantum-lights.js?v=2026.25" defer></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+        .font-mono-code { font-family: 'JetBrains Mono', monospace; }
+    </style>
+    <link rel="stylesheet" href="/css/quantum-glass.css?v=2026.26">
+    <script src="/js/quantum-lights.js?v=2026.26" defer></script>
 </head>
-<body class="bg-slate-950 text-slate-100 min-h-screen p-6 md:p-10">
-    <div class="max-w-7xl mx-auto">
-        <header class="flex flex-col sm:flex-row justify-between items-start sm:items-center pb-6 mb-10 border-b border-white/15 gap-4">
-            <a href="/" class="flex items-center space-x-3">
-                <div class="w-10 h-10 bg-gradient-to-tr from-blue-700 via-indigo-600 to-emerald-500 rounded-xl flex items-center justify-center font-extrabold text-xl text-white">M</div>
+<body class="bg-slate-950 text-slate-100 min-h-screen border-t-4 border-purple-500">
+    <!-- Header Sticky con Cristal Difuminado -->
+    <header class="sticky top-0 z-40 px-6 py-4">
+        <div class="max-w-7xl mx-auto flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div class="flex items-center gap-3">
+                <div class="w-9 h-9 rounded-xl bg-gradient-to-br from-purple-600 to-blue-600 flex items-center justify-center font-mono-code font-extrabold text-white shadow-lg shadow-purple-500/20">
+                    M
+                </div>
                 <div>
-                    <span class="text-sm font-bold text-white block">MALLEN CONTINUOUS ENGINE & Institucional</span>
-                    <span class="text-[10px] text-emerald-400 font-mono-code uppercase">Modo Contador White-Label • Wasm Client-Side • Agente RAG DOF</span>
+                    <span class="text-xs font-extrabold tracking-wider text-purple-400 font-mono-code uppercase block">
+                        FIRMA PERICIAL MALLEN • CONSOLA MULTI-RFC TIER-1
+                    </span>
+                    <span class="text-[11px] text-slate-400 font-mono-code">
+                        Auditoría Masiva de Cartera para Despachos Contables, Firmas Legales y Grupos Empresariales
+                    </span>
                 </div>
-            </a>
-            <a href="/" class="text-xs text-blue-400 hover:underline font-mono-code">← Volver al Portal Principal</a>
-        </header>
+            </div>
+            <div class="flex items-center gap-3 text-xs font-mono-code">
+                <a href="/normas/stps" class="px-3 py-2 rounded-lg bg-slate-900 border border-white/10 hover:border-purple-400 text-slate-300 transition">
+                    Enciclopedia Normativa
+                </a>
+                <a href="/" class="px-4 py-2 rounded-lg bg-purple-600 hover:bg-purple-500 text-white font-bold transition">
+                    ← Volver al Portal Principal
+                </a>
+            </div>
+        </div>
+    </header>
 
-        <div class="grid lg:grid-cols-3 gap-8">
-            <!-- 1. MODO CONTADOR Institucional (AUDITORÍA EN LOTE WHITE-LABEL) -->
-            <div class="bg-white/[0.05] shadow-[0_8px_32px_rgba(0,0,0,0.5)] border border-white/15 rounded-2xl p-6 shadow-xl font-mono-code text-xs">
-                <span class="text-[10px] font-bold text-blue-400 uppercase">Módulo 1 • Institucional White-Label</span>
-                <h2 class="text-lg font-bold text-white font-sans mt-1 mb-3">Auditoría Masiva para Despachos</h2>
-                <p class="text-slate-400 text-[11px] mb-4">Procese carteras de clientes en lote imprimiendo la firma de su despacho contable en los dictámenes PDF.</p>
-                <div class="space-y-3">
-                    <input id="wl-partner" type="text" value="Despacho Malpica & Asociados S.C." placeholder="Nombre del Despacho Contable" class="w-full bg-slate-950 border border-white/15 rounded-xl px-4 py-3 text-white">
-                    <textarea id="wl-rfcs" rows="3" class="w-full bg-slate-950 border border-white/15 rounded-xl p-3 text-white" placeholder="Un RFC por línea">EST850628K51&#10;BIM010101AAA&#10;FEM980512BB2</textarea>
-                    <button onclick="runPartnerBatch()" class="w-full bg-blue-600 hover:bg-blue-500 text-white font-bold py-3 rounded-xl transition">
-                        Auditar Cartera en Ráfaga →
+    <main class="max-w-7xl mx-auto px-6 py-8">
+        <!-- Consola de Configuración White-Label e Ingesta de Cartera -->
+        <div class="quantum-laser-console rounded-2xl p-6 sm:p-8 mb-8">
+            <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-4 pb-6 mb-6 border-b border-white/10">
+                <div>
+                    <span class="inline-block text-[10px] font-mono-code font-bold uppercase px-2.5 py-1 rounded bg-purple-950/80 text-purple-300 border border-purple-500/40 mb-2">
+                        Motor de Auditoría Concurrente • Marca Blanca (Co-Branding) y Cadena de Suministro
+                    </span>
+                    <h1 class="text-2xl sm:text-3xl font-extrabold text-white tracking-tight">
+                        Auditoría Masiva de Cartera de Clientes y Proveedores
+                    </h1>
+                    <p class="text-xs text-slate-300 font-mono-code mt-1">
+                        Evalúe decenas de empresas simultáneamente contra los 5.5 millones de registros del DENUE, listas negras SAT (Art. 69 y 69-B), STPS (39 NOMs + REPSE), IMSS, LFPDPPP y PROFECO.
+                    </p>
+                </div>
+                <div class="flex flex-wrap gap-2 shrink-0 font-mono-code text-[11px]">
+                    <button type="button" onclick="loadSamplePortfolio('despacho')" class="px-3 py-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-purple-300 border border-purple-500/40 font-bold transition">
+                        ⚡ Cargar Cartera Demo (6 Empresas)
                     </button>
-                    <pre id="wl-output" class="bg-slate-950 border border-white/15 rounded-xl p-3 text-[10px] text-emerald-400 overflow-x-auto hidden"></pre>
+                    <button type="button" onclick="loadSamplePortfolio('proveedores')" class="px-3 py-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-emerald-300 border border-emerald-500/40 font-bold transition">
+                        🛡️ Demo Auditoría de Proveedores (69-B / REPSE)
+                    </button>
                 </div>
             </div>
 
-            <!-- 2. VERIFICACIÓN E.FIRMA EN NAVEGADOR (ZERO-SERVER EXPOSURE) -->
-            <div class="bg-white/[0.05] shadow-[0_8px_32px_rgba(0,0,0,0.5)] border border-white/15 rounded-2xl p-6 shadow-xl font-mono-code text-xs">
-                <span class="text-[10px] font-bold text-emerald-400 uppercase">Módulo 2 • WebCrypto / Wasm Sandbox</span>
-                <h2 class="text-lg font-bold text-white font-sans mt-1 mb-3">Validación Local e.firma (.cer/.key)</h2>
-                <p class="text-slate-400 text-[11px] mb-4">Sus archivos <code>.cer</code> y <code>.key</code> se procesan exclusivamente en la memoria RAM de su navegador sin subir claves privadas al servidor.</p>
-                <div class="space-y-3">
-                    <input id="efirma-cer" type="file" accept=".cer" class="w-full text-[11px] text-slate-400">
-                    <input id="efirma-key" type="file" accept=".key" class="w-full text-[11px] text-slate-400">
-                    <button onclick="testLocalEfirma()" class="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-3 rounded-xl transition">
-                        Verificar Huella X.509 en RAM Local →
-                    </button>
-                    <pre id="efirma-output" class="bg-slate-950 border border-white/15 rounded-xl p-3 text-[10px] text-cyan-400 overflow-x-auto hidden"></pre>
-                </div>
-            </div>
+            <div class="grid lg:grid-cols-12 gap-6">
+                <!-- Columna Izquierda: Configuración del Despacho + Drag & Drop CSV -->
+                <div class="lg:col-span-5 space-y-4 font-mono-code text-xs">
+                    <div class="bg-slate-950/70 border border-white/10 rounded-xl p-4">
+                        <label class="block text-[10px] text-purple-300 font-bold uppercase mb-1.5">
+                            1. Identidad del Despacho o Corporativo (Sello White-Label)
+                        </label>
+                        <input id="partnerName" type="text" value="DESPACHO CONTABLE Y FISCAL ASOCIADOS S.C."
+                            placeholder="Nombre de su Despacho o Firma Legal"
+                            class="w-full rounded-lg px-3.5 py-2.5 text-xs text-white mb-3">
 
-            <!-- 3. ASISTENTE PERICIAL RAG DETERMINÍSTICO (TEMP: 0.0) -->
-            <div class="bg-white/[0.05] shadow-[0_8px_32px_rgba(0,0,0,0.5)] border border-white/15 rounded-2xl p-6 shadow-xl font-mono-code text-xs">
-                <span class="text-[10px] font-bold text-purple-400 uppercase">Módulo 3 • Enjaulamiento DOF (Temp: 0.0)</span>
-                <h2 class="text-lg font-bold text-white font-sans mt-1 mb-3">Consultor Normativo Determinístico</h2>
-                <p class="text-slate-400 text-[11px] mb-4">Restringido estrictamente a preceptos del Diario Oficial de la Federación (DOF) y a su expediente pericial.</p>
-                <div class="space-y-3">
-                    <input id="rag-rfc" type="text" value="EST850628K51" class="w-full bg-slate-950 border border-white/15 rounded-xl px-4 py-2.5 text-white">
-                    <input id="rag-question" type="text" value="¿Qué exige la NOM-035 y el Art. 69-B de Fecha Cierta?" class="w-full bg-slate-950 border border-white/15 rounded-xl px-4 py-2.5 text-white">
-                    <button onclick="askDeterministicRag()" class="w-full bg-purple-600 hover:bg-purple-500 text-white font-bold py-3 rounded-xl transition">
-                        Consultar Precepto Oficial DOF →
-                    </button>
-                    <pre id="rag-output" class="bg-slate-950 border border-white/15 rounded-xl p-3 text-[10px] text-slate-200 whitespace-pre-wrap hidden"></pre>
+                        <div class="grid grid-cols-2 gap-2.5">
+                            <div>
+                                <label class="block text-[10px] text-slate-400 uppercase mb-1">Modalidad de Lote</label>
+                                <select id="auditMode" class="w-full bg-slate-900 border border-white/15 rounded-lg px-3 py-2 text-xs text-white">
+                                    <option value="cartera">Cartera de Clientes (360°)</option>
+                                    <option value="proveedores">Proveedores (69-B + REPSE + 32-D)</option>
+                                    <option value="holding">Grupo / Subsidiarias</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-[10px] text-slate-400 uppercase mb-1">Plantilla Base Estimada</label>
+                                <input id="defaultEmpCount" type="number" value="45" min="1" max="5000"
+                                    class="w-full rounded-lg px-3 py-2 text-xs text-white">
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Zona Drag & Drop para Archivo CSV / TXT -->
+                    <div id="dropZone"
+                        class="bg-slate-950/75 border-2 border-dashed border-purple-500/40 hover:border-purple-400 rounded-xl p-5 text-center transition cursor-pointer"
+                        onclick="document.getElementById('csvFileInput').click()">
+                        <input id="csvFileInput" type="file" accept=".csv,.txt" class="hidden" onchange="handleCsvUpload(event)">
+                        <span class="text-purple-400 font-bold text-xs block mb-1">
+                            📂 Arrastre aquí el archivo .CSV / .TXT de su cartera o haga clic para subirlo
+                        </span>
+                        <span class="text-[10px] text-slate-400 block">
+                            Acepta listas de RFCs, Nombres Comerciales o formato: <code class="text-emerald-300">RFC, Dominio, Razón Social</code>
+                        </span>
+                    </div>
+                </div>
+
+                <!-- Columna Derecha: Editor de Lote y Botón de Ejecución -->
+                <div class="lg:col-span-7 flex flex-col justify-between font-mono-code text-xs">
+                    <div>
+                        <div class="flex items-center justify-between mb-1.5">
+                            <label class="text-[10px] text-emerald-300 font-bold uppercase">
+                                2. Listado de Empresas a Auditar (1 por línea: RFC o Nombre Comercial, opcionalmente Dominio)
+                            </label>
+                            <span id="lineCounter" class="text-[10px] text-slate-400">6 empresas en cola</span>
+                        </div>
+                        <textarea id="batchInput" rows="7" oninput="updateLineCount()"
+                            class="w-full rounded-xl p-3.5 text-xs text-slate-100 font-mono-code leading-relaxed"
+                            placeholder="Ejemplo:&#10;EST850628K51, steren.com.mx&#10;PIZZERIA CANCINO, archipizza.com&#10;EFO190101AAA"></textarea>
+                    </div>
+
+                    <div class="flex flex-col sm:flex-row items-center justify-between gap-3 mt-4">
+                        <div class="text-[11px] text-slate-400">
+                            Procesamiento asíncrono con cruce inmediato contra SAT 69-B, Art. 69, DENUE, REPSE y SFP.
+                        </div>
+                        <button id="btnBatchRun" type="button" onclick="runTier1BatchAudit()"
+                            class="w-full sm:w-auto shrink-0 bg-gradient-to-r from-purple-600 via-indigo-600 to-emerald-600 hover:from-purple-500 hover:to-emerald-500 text-white font-extrabold py-3.5 px-7 rounded-xl uppercase tracking-wider shadow-lg shadow-purple-600/25 transition">
+                            Ejecutar Auditoría de Cartera →
+                        </button>
+                    </div>
                 </div>
             </div>
         </div>
-    </div>
 
-    <script src="/wasm/sat_imss_client.js"></script>
+        <!-- Barra de Progreso en Vivo -->
+        <div id="batchProgressBox" class="hidden quantum-card rounded-xl p-4 mb-6 font-mono-code text-xs">
+            <div class="flex justify-between items-center mb-2">
+                <span id="batchProgressLabel" class="text-purple-300 font-bold">Auditando cartera en paralelo...</span>
+                <span id="batchProgressPct" class="text-emerald-400 font-extrabold">0%</span>
+            </div>
+            <div class="w-full bg-slate-900 h-2.5 rounded-full overflow-hidden border border-white/10">
+                <div id="batchProgressBar" class="bg-gradient-to-r from-purple-500 to-emerald-400 h-full rounded-full transition-all duration-200" style="width: 0%"></div>
+            </div>
+        </div>
+
+        <!-- Panel de KPIs Consolidados de la Cartera -->
+        <div id="portfolioKpiSection" class="hidden space-y-6">
+            <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 font-mono-code">
+                <div class="quantum-card rounded-xl p-5 border border-purple-500/30">
+                    <span class="text-[10px] text-slate-400 uppercase block">Total Cartera Auditada</span>
+                    <span id="kpi-total-companies" class="text-2xl sm:text-3xl font-extrabold text-white block mt-1">0</span>
+                    <span id="kpi-partner-badge" class="text-[10px] text-purple-300 block mt-1 truncate">Sello White-Label Activo</span>
+                </div>
+                <div class="quantum-card rounded-xl p-5 border border-red-500/30">
+                    <span class="text-[10px] text-slate-400 uppercase block">Exposición Acumulada Cartera</span>
+                    <span id="kpi-total-fine" class="text-xl sm:text-2xl font-extrabold text-red-400 block mt-1">$0.00 MXN</span>
+                    <span class="text-[10px] text-amber-300 block mt-1">Calculado en UMAs Vigentes ($113.14)</span>
+                </div>
+                <div class="quantum-card rounded-xl p-5 border border-amber-500/30">
+                    <span class="text-[10px] text-slate-400 uppercase block">Alertas Listas Negras (69-B / 69 / SFP)</span>
+                    <span id="kpi-blacklist-hits" class="text-2xl sm:text-3xl font-extrabold text-amber-400 block mt-1">0</span>
+                    <span class="text-[10px] text-slate-300 block mt-1">Riesgo de rechazo fiscal o bloqueo CSD</span>
+                </div>
+                <div class="quantum-card rounded-xl p-5 border border-emerald-500/30">
+                    <span class="text-[10px] text-slate-400 uppercase block">Puntaje de Riesgo Promedio</span>
+                    <span id="kpi-avg-score" class="text-2xl sm:text-3xl font-extrabold text-emerald-400 block mt-1">0 / 100</span>
+                    <span id="kpi-high-risk-count" class="text-[10px] text-slate-300 block mt-1">0 clientes en prioridad crítica</span>
+                </div>
+            </div>
+
+            <!-- Controles de Filtrado y Exportación CSV/Excel para el Contador -->
+            <div class="quantum-card rounded-2xl p-6 border border-white/15">
+                <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-4 mb-4 border-b border-white/10 font-mono-code text-xs">
+                    <div class="flex flex-wrap items-center gap-2">
+                        <span class="text-slate-400 font-bold uppercase text-[10px] mr-1">Filtrar Semáforo:</span>
+                        <button type="button" onclick="filterPortfolioTable('ALL')" class="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-white font-bold transition">
+                            Todos
+                        </button>
+                        <button type="button" onclick="filterPortfolioTable('CRITICAL')" class="px-3 py-1.5 rounded-lg bg-red-950/70 hover:bg-red-900/70 text-red-300 border border-red-500/30 font-bold transition">
+                            🔴 Críticos / Listas Negras
+                        </button>
+                        <button type="button" onclick="filterPortfolioTable('MEDIUM')" class="px-3 py-1.5 rounded-lg bg-amber-950/70 hover:bg-amber-900/70 text-amber-300 border border-amber-500/30 font-bold transition">
+                            🟡 Preventivos
+                        </button>
+                        <input id="tableSearchInput" type="text" oninput="filterPortfolioTable(currentFilter)"
+                            placeholder="Buscar por RFC, Razón Social o SCIAN..."
+                            class="rounded-lg px-3 py-1.5 text-xs text-white ml-0 sm:ml-2 w-60">
+                    </div>
+                    <div class="flex flex-wrap gap-2">
+                        <button type="button" onclick="exportPortfolioToCsv()"
+                            class="px-4 py-2 rounded-xl bg-emerald-600/25 hover:bg-emerald-600/45 text-emerald-300 border border-emerald-500/40 font-bold transition">
+                            📊 Exportar Matriz a Excel / CSV
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Tabla Maestra de Resultados Multi-RFC -->
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left border-collapse font-mono-code text-xs">
+                        <thead>
+                            <tr class="border-b border-white/15 text-[10px] text-slate-400 uppercase">
+                                <th class="py-3 px-3">Semáforo</th>
+                                <th class="py-3 px-3">RFC / ID y Razón Social</th>
+                                <th class="py-3 px-3">Giro SCIAN (DENUE)</th>
+                                <th class="py-3 px-3">SAT 69-B / Art. 69</th>
+                                <th class="py-3 px-3">REPSE / SFP</th>
+                                <th class="py-3 px-3 text-right">Exposición (MXN)</th>
+                                <th class="py-3 px-3 text-center">Expediente y Entregables (1-Clic)</th>
+                            </tr>
+                        </thead>
+                        <tbody id="portfolioTableBody" class="divide-y divide-white/10 text-slate-200"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </main>
+
     <script>
-        async function runPartnerBatch() {
-            const partner = document.getElementById("wl-partner").value.trim();
-            const lines = document.getElementById("wl-rfcs").value.split("\n").map(s => s.trim()).filter(Boolean);
-            const targets = lines.map(tax_id => ({ tax_id, calibration: {} }));
-            const res = await fetch("/api/v1/partner/batch_scan", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ partner_name: partner, api_key: "PARTNER-LIVE-KEY", targets })
-            });
-            const data = await res.json();
-            const out = document.getElementById("wl-output");
-            out.classList.remove("hidden");
-            out.textContent = JSON.stringify(data, null, 2);
+        let portfolioResults = [];
+        let currentFilter = 'ALL';
+
+        const SAMPLES = {
+            despacho: [
+                "EST850628K51, steren.com.mx",
+                "PIZZERIA CANCINO, archipizza.com",
+                "CANCINO CIBELES, cancino.mx",
+                "EFO190101AAA",
+                "GNP9211244P0, gnp.com.mx",
+                "BIM011108DJ5, grupobimbo.com"
+            ].join("\n"),
+            proveedores: [
+                "EFO190101AAA",
+                "EST850628K51, steren.com.mx",
+                "PIZZERIA CANCINO, archipizza.com",
+                "SERVICIOS ESPECIALIZADOS DE LIMPIEZA INDUSTRIAL, limpieza.mx",
+                "TRANSPORTES Y LOGISTICA FEDERAL DEL NORTE, fletesnorte.mx"
+            ].join("\n")
+        };
+
+        function updateLineCount() {
+            const raw = document.getElementById("batchInput").value || "";
+            const lines = raw.split(/\r?\n/).map(l => l.trim()).filter(Boolean);
+            document.getElementById("lineCounter").textContent = `${lines.length} empresas en cola`;
         }
 
-        async function testLocalEfirma() {
-            const cer = document.getElementById("efirma-cer").files[0];
-            const key = document.getElementById("efirma-key").files[0];
-            const out = document.getElementById("efirma-output");
-            out.classList.remove("hidden");
-            try {
-                const res = await window.MallenEfirmaClient.validateLocalCerAndKey(cer, key, "");
-                out.textContent = JSON.stringify(res, null, 2);
-            } catch (e) {
-                out.textContent = "Modo demostración sin archivos locales: La clave privada (.key) se procesa en WebCrypto RAM (Zero-Server Exposure).";
+        function loadSamplePortfolio(type) {
+            document.getElementById("batchInput").value = SAMPLES[type] || SAMPLES.despacho;
+            updateLineCount();
+        }
+
+        function handleCsvUpload(ev) {
+            const file = ev.target.files?.[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = function (e) {
+                const content = String(e.target?.result || "");
+                const cleanLines = content
+                    .split(/\r?\n/)
+                    .map(l => l.trim())
+                    .filter(l => l.length >= 3 && !l.toLowerCase().startsWith("rfc,"));
+                document.getElementById("batchInput").value = cleanLines.join("\n");
+                updateLineCount();
+            };
+            reader.readAsText(file);
+        }
+
+        async function runTier1BatchAudit() {
+            const raw = document.getElementById("batchInput").value || "";
+            const lines = raw.split(/\r?\n/).map(l => l.trim()).filter(Boolean);
+            if (!lines.length) return;
+
+            const partnerName = document.getElementById("partnerName").value.trim() || "DESPACHO ASOCIADO";
+            const empCount = parseInt(document.getElementById("defaultEmpCount").value || "45", 10);
+
+            const btn = document.getElementById("btnBatchRun");
+            const progBox = document.getElementById("batchProgressBox");
+            const progBar = document.getElementById("batchProgressBar");
+            const progPct = document.getElementById("batchProgressPct");
+            const progLbl = document.getElementById("batchProgressLabel");
+
+            btn.disabled = true;
+            progBox.classList.remove("hidden");
+            portfolioResults = [];
+
+            for (let i = 0; i < lines.length; i++) {
+                const parts = lines[i].split(",").map(p => p.trim());
+                const taxOrName = parts[0].toUpperCase();
+                const dom = parts[1] || null;
+                const razonOverride = parts[2] || (taxOrName.includes(" ") ? taxOrName : null);
+
+                const pct = Math.round(((i + 1) / lines.length) * 100);
+                progLbl.textContent = `Auditando [${i + 1}/${lines.length}]: ${taxOrName} ...`;
+                progPct.textContent = `${pct}%`;
+                progBar.style.width = `${pct}%`;
+
+                try {
+                    const resp = await fetch("/api/scan", {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({
+                            tax_id: taxOrName,
+                            domain: dom,
+                            razon_social_override: razonOverride,
+                            calibration: {
+                                exact_employee_count: empCount,
+                                has_telework_over_40_percent: true,
+                                uses_subcontracted_services_repse: true,
+                                has_forklifts_or_manual_loads: true,
+                                uses_biometrics_or_health_data: true,
+                                transfers_data_to_third_parties: true,
+                                pays_intangible_b2b_services: true
+                            }
+                        })
+                    });
+                    if (resp.ok) {
+                        const data = await resp.json();
+                        portfolioResults.push(data);
+                    }
+                } catch (e) {
+                    console.error("Error auditando fila:", lines[i], e);
+                }
             }
+
+            // Ordenar automáticamente de mayor a menor riesgo financiero
+            portfolioResults.sort((a, b) => (b.total_estimated_fine_mxn || 0) - (a.total_estimated_fine_mxn || 0));
+
+            if (typeof window.triggerPhotonicBurst === "function") {
+                window.triggerPhotonicBurst();
+            }
+
+            renderPortfolioDashboard(partnerName);
+            btn.disabled = false;
+            setTimeout(() => progBox.classList.add("hidden"), 600);
         }
 
-        async function askDeterministicRag() {
-            const tax_id = document.getElementById("rag-rfc").value.trim();
-            const question = document.getElementById("rag-question").value.trim();
-            const res = await fetch("/api/rag/ask", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ tax_id, question })
+        function renderPortfolioDashboard(partnerName) {
+            document.getElementById("portfolioKpiSection").classList.remove("hidden");
+            document.getElementById("kpi-total-companies").textContent = String(portfolioResults.length);
+            document.getElementById("kpi-partner-badge").textContent = `Co-Branding: ${partnerName}`;
+
+            let totalFine = 0;
+            let blacklistHits = 0;
+            let scoreSum = 0;
+            let criticalCount = 0;
+
+            portfolioResults.forEach(r => {
+                totalFine += Number(r.total_estimated_fine_mxn || 0);
+                scoreSum += Number(r.risk_score || 0);
+                const s69b = String(r.sat_69b_status || "LIMPIO").toUpperCase();
+                const s69 = String(r.sat_69_status || "LIMPIO").toUpperCase();
+                const isBlk = !s69b.includes("LIMPIO") || !s69.includes("LIMPIO") || !!r.sfp_sanctioned;
+                if (isBlk) blacklistHits++;
+                if ((r.risk_score || 0) >= 75 || isBlk) criticalCount++;
             });
-            const data = await res.json();
-            const out = document.getElementById("rag-output");
-            out.classList.remove("hidden");
-            out.textContent = data.answer;
+
+            const avgScore = portfolioResults.length ? Math.round(scoreSum / portfolioResults.length) : 0;
+            document.getElementById("kpi-total-fine").textContent =
+                "$" + totalFine.toLocaleString("es-MX", { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + " MXN";
+            document.getElementById("kpi-blacklist-hits").textContent = `${blacklistHits} Empresas`;
+            document.getElementById("kpi-avg-score").textContent = `${avgScore} / 100`;
+            document.getElementById("kpi-high-risk-count").textContent = `${criticalCount} empresas en prioridad inmediata`;
+
+            filterPortfolioTable(currentFilter);
         }
+
+        function filterPortfolioTable(filterType) {
+            currentFilter = filterType;
+            const q = (document.getElementById("tableSearchInput")?.value || "").toLowerCase().trim();
+            const tbody = document.getElementById("portfolioTableBody");
+            tbody.innerHTML = "";
+
+            const filtered = portfolioResults.filter(r => {
+                const s69b = String(r.sat_69b_status || "LIMPIO").toUpperCase();
+                const s69 = String(r.sat_69_status || "LIMPIO").toUpperCase();
+                const isBlk = !s69b.includes("LIMPIO") || !s69.includes("LIMPIO") || !!r.sfp_sanctioned;
+                const isCrit = (r.risk_score || 0) >= 75 || isBlk;
+
+                if (filterType === "CRITICAL" && !isCrit) return false;
+                if (filterType === "MEDIUM" && isCrit) return false;
+
+                if (q) {
+                    const hay = `${r.tax_id} ${r.razon_social} ${r.codigo_scian} ${r.actividad_scian_desc}`.toLowerCase();
+                    if (!hay.includes(q)) return false;
+                }
+                return true;
+            });
+
+            filtered.forEach(r => {
+                const s69b = String(r.sat_69b_status || "LIMPIO").toUpperCase();
+                const s69 = String(r.sat_69_status || "LIMPIO").toUpperCase();
+                const is69bAlert = !s69b.includes("LIMPIO");
+                const is69Alert = !s69.includes("LIMPIO");
+                const isCrit = (r.risk_score || 0) >= 75 || is69bAlert || is69Alert;
+
+                const semBadge = is69bAlert
+                    ? `<span class="px-2.5 py-1 rounded-full text-[10px] font-extrabold bg-red-950 text-red-300 border border-red-500/50">🚨 EFO 69-B (${r.risk_score}/100)</span>`
+                    : isCrit
+                    ? `<span class="px-2.5 py-1 rounded-full text-[10px] font-bold bg-red-950/70 text-red-300 border border-red-500/40">🔴 CRÍTICO (${r.risk_score}/100)</span>`
+                    : `<span class="px-2.5 py-1 rounded-full text-[10px] font-bold bg-amber-950/70 text-amber-300 border border-amber-500/40">🟡 PREVENTIVO (${r.risk_score}/100)</span>`;
+
+                const satBadge = is69bAlert
+                    ? `<span class="text-red-400 font-bold block">ALERTA 69-B: ${s69b}</span>`
+                    : is69Alert
+                    ? `<span class="text-amber-400 font-bold block">ART. 69: ${s69}</span>`
+                    : `<span class="text-emerald-400 font-bold block">✓ LIMPIO (69 / 69-B)</span>`;
+
+                const repseBadge = r.repse_registered
+                    ? `<span class="text-emerald-400 font-bold block">✓ REPSE ACTIVO</span>`
+                    : `<span class="text-amber-300 block">Validar ICSOE/SISSUB</span>`;
+
+                const fineStr = "$" + Number(r.total_estimated_fine_mxn || 0).toLocaleString("es-MX", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+                const encId = encodeURIComponent(r.tax_id);
+
+                const tr = document.createElement("tr");
+                tr.className = "hover:bg-slate-900/60 transition";
+                tr.innerHTML = `
+                    <td class="py-3.5 px-3 whitespace-nowrap">${semBadge}</td>
+                    <td class="py-3.5 px-3">
+                        <div class="font-bold text-white text-xs">${r.razon_social}</div>
+                        <div class="text-[10px] text-purple-300">${r.tax_id} • ${(r.findings || []).length} vectores evaluados</div>
+                    </td>
+                    <td class="py-3.5 px-3">
+                        <span class="text-sky-300 font-bold">${r.codigo_scian}</span>
+                        <span class="text-[10px] text-slate-400 block max-w-xs truncate">${r.actividad_scian_desc}</span>
+                    </td>
+                    <td class="py-3.5 px-3 text-[11px]">${satBadge}</td>
+                    <td class="py-3.5 px-3 text-[11px]">${repseBadge}</td>
+                    <td class="py-3.5 px-3 text-right font-extrabold text-red-400 whitespace-nowrap">${fineStr}</td>
+                    <td class="py-3.5 px-3">
+                        <div class="flex items-center justify-center gap-1.5">
+                            <a href="/verify/${encId}" target="_blank" class="px-2.5 py-1.5 rounded-lg bg-blue-600/25 hover:bg-blue-600/45 text-blue-300 border border-blue-500/40 font-bold text-[10px] transition">
+                                Dictamen Web
+                            </a>
+                            <a href="/api/micro_scan/${encId}" class="px-2.5 py-1.5 rounded-lg bg-purple-600/25 hover:bg-purple-600/45 text-purple-300 border border-purple-500/40 font-bold text-[10px] transition">
+                                Pre-PDF
+                            </a>
+                            <a href="/api/download_kit/${encId}" class="px-2.5 py-1.5 rounded-lg bg-emerald-600/25 hover:bg-emerald-600/45 text-emerald-300 border border-emerald-500/40 font-bold text-[10px] transition">
+                                Kit ZIP 360°
+                            </a>
+                        </div>
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
+        function exportPortfolioToCsv() {
+            if (!portfolioResults.length) return;
+            const partner = document.getElementById("partnerName").value.trim() || "DESPACHO";
+            const headers = [
+                "DESPACHO_AUDITOR",
+                "RFC_ID",
+                "RAZON_SOCIAL",
+                "CODIGO_SCIAN",
+                "GIRO_ACTIVIDAD",
+                "PUNTAJE_RIESGO",
+                "ESTATUS_SAT_69B",
+                "ESTATUS_SAT_69",
+                "PADRON_REPSE",
+                "HALLAZGOS_DETECTADOS",
+                "EXPOSICION_TOTAL_MXN",
+                "HASH_SHA256_EXPEDIENTE"
+            ];
+            const rows = portfolioResults.map(r => [
+                `"${partner.replace(/"/g, '""')}"`,
+                `"${r.tax_id}"`,
+                `"${(r.razon_social || '').replace(/"/g, '""')}"`,
+                `"${r.codigo_scian}"`,
+                `"${(r.actividad_scian_desc || '').replace(/"/g, '""')}"`,
+                r.risk_score,
+                `"${r.sat_69b_status}"`,
+                `"${r.sat_69_status}"`,
+                r.repse_registered ? "ACTIVO" : "PENDIENTE",
+                (r.findings || []).length,
+                Number(r.total_estimated_fine_mxn || 0).toFixed(2),
+                `"${r.audit_sha256_hash}"`
+            ]);
+
+            const csvContent = "\uFEFF" + headers.join(",") + "\n" + rows.map(e => e.join(",")).join("\n");
+            const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement("a");
+            a.href = url;
+            a.download = `Auditoria_Cartera_Mallen360_${new Date().toISOString().slice(0, 10)}.csv`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+        }
+
+        document.addEventListener("DOMContentLoaded", () => {
+            loadSamplePortfolio("despacho");
+        });
     </script>
 </body>
 </html>
