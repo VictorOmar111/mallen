@@ -22,31 +22,43 @@ pub fn classify_imss_risk_by_scian(scian: &str) -> (&'static str, &'static str, 
         (
             "Clase V (Riesgo Máximo — Art. 196 RACERF)",
             "7.58875%",
-            "Construcción, edificación, autotransporte de carga pesada o seguridad privada con alta siniestralidad laboral",
+            "Construcción, edificación, autotransporte federal de carga o seguridad privada",
         )
     } else if s.starts_with("31") || s.starts_with("32") || s.starts_with("33") || s.starts_with("811") {
         (
             "Clase IV (Riesgo Alto — Art. 196 RACERF)",
             "4.65325%",
-            "Industria manufacturera, transformación, talleres mecánicos automotrices y mantenimiento de maquinaria",
+            "Industria manufacturera, transformación y talleres de reparación mecánica/eléctrica",
         )
-    } else if s.starts_with("722") || s.starts_with("721") || s.starts_with("622") || s.starts_with("43") || s.starts_with("488") {
+    } else if s.starts_with("43") {
         (
             "Clase III (Riesgo Medio — Art. 196 RACERF)",
             "2.59840%",
-            "Restaurantes, preparación de alimentos, hospitalidad, hospitales, logística aduanal y almacenes mayoristas",
+            "Comercio al por mayor, distribución de equipo eléctrico/electrónico y almacenes con manejo de inventarios",
+        )
+    } else if s.starts_with("488") || s.starts_with("48") || s.starts_with("49") {
+        (
+            "Clase III (Riesgo Medio — Art. 196 RACERF)",
+            "2.59840%",
+            "Servicios de logística, agencias aduanales, maniobras de almacén y coordinación de transporte",
+        )
+    } else if s.starts_with("722") || s.starts_with("721") || s.starts_with("622") {
+        (
+            "Clase III (Riesgo Medio — Art. 196 RACERF)",
+            "2.59840%",
+            "Restaurantes, preparación de alimentos y bebidas, hotelería y hospitales con equipamiento clínico",
         )
     } else if s.starts_with("46") || s.starts_with("621") || s.starts_with("61") || s.starts_with("56") {
         (
             "Clase II (Riesgo Bajo-Ordinario — Art. 196 RACERF)",
             "1.13065%",
-            "Comercio minorista, consultorios médicos, instituciones educativas y servicios de apoyo empresarial",
+            "Comercio al por menor en establecimientos, consultorios médicos, educación y servicios empresariales",
         )
     } else {
         (
             "Clase I (Riesgo Ordinario Mínimo — Art. 196 RACERF)",
             "0.54355%",
-            "Servicios profesionales, corporativos, financieros, aseguradoras y tecnología de la información",
+            "Servicios profesionales, corporativos, financieros, seguros y tecnologías de la información",
         )
     }
 }
@@ -98,19 +110,20 @@ pub fn sanitize_denue_address(raw_dir: &str, raw_ent: &str, id_denue: &str) -> S
     }
 }
 
-/// Escapa caracteres especiales de Typst para evitar cualquier error de compilación en el PDF
+/// Escapa caracteres especiales de Typst usando literales crudos para evitar cualquier error de compilación
 pub fn escape_typst(input: &str) -> String {
     input
-        .replace('\\', "\\\\")
-        .replace('#', "\\#")
-        .replace('$', "\\$")
-        .replace('*', "\\*")
-        .replace('_', "\\_")
+        .replace('\\', r"\\")
+        .replace('#', r"\#")
+        .replace('$', r"\$")
+        .replace('*', r"\*")
+        .replace('_', r"\_")
         .replace('[', "(")
         .replace(']', ")")
-        .replace('@', "\\@")
-        .replace('<', "(")
-        .replace('>', ")")
+        .replace('@', r"\@")
+        .replace('<', " menor a ")
+        .replace('>', " mayor a ")
+        .replace("..", ".")
 }
 
 pub fn format_mxn(val: f64) -> String {
@@ -131,20 +144,35 @@ pub fn format_mxn(val: f64) -> String {
 /// Genera el código Typst de la Tabla Forense con los 37 Vectores Evaluados para la Página 2 del Dictamen PDF
 pub fn render_vectors_37_typst_table(vectors: &[EvaluatedVector]) -> String {
     let mut out = String::from(
-        "#table(\n  columns: (5%, 16%, 29%, 34%, 16%),\n  inset: (x: 4pt, y: 2.8pt),\n  stroke: 0.35pt + rgb(\"#cbd5e1\"),\n  fill: (x, y) => if y == 0 { rgb(\"#0f172a\") } else if calc.odd(y) { rgb(\"#f8fafc\") } else { rgb(\"#ffffff\") },\n  [#text(fill: white, weight: \"bold\", size: 5.8pt)[\\#]],\n  [#text(fill: white, weight: \"bold\", size: 5.8pt)[ÓRGANO / ESTATUS]],\n  [#text(fill: white, weight: \"bold\", size: 5.8pt)[PRECEPTO Y VECTOR NORMATIVO]],\n  [#text(fill: white, weight: \"bold\", size: 5.8pt)[DICTAMINACIÓN ESPECÍFICA AL GIRO AUDITADO]],\n  [#text(fill: white, weight: \"bold\", size: 5.8pt)[CONTINGENCIA]],\n",
+        r##"#table(
+  columns: (4.5%, 14.5%, 28%, 37%, 16%),
+  inset: (x: 3.5pt, y: 1.85pt),
+  stroke: 0.3pt + rgb("#cbd5e1"),
+  fill: (x, y) => if y == 0 { rgb("#0f172a") } else if calc.odd(y) { rgb("#f8fafc") } else { rgb("#ffffff") },
+  [#text(fill: white, weight: "bold", size: 5.3pt)[\#]],
+  [#text(fill: white, weight: "bold", size: 5.3pt)[ÓRGANO / NIVEL]],
+  [#text(fill: white, weight: "bold", size: 5.3pt)[PRECEPTO Y VECTOR NORMATIVO]],
+  [#text(fill: white, weight: "bold", size: 5.3pt)[DICTAMINACIÓN ESPECÍFICA AL GIRO AUDITADO]],
+  [#text(fill: white, weight: "bold", size: 5.3pt)[EXPOSICIÓN (UMA)]],
+"##,
     );
 
     for v in vectors {
         let is_active = v.multa_estimada_mxn > 0.0;
         let color_hex = if is_active { "#b91c1c" } else { "#047857" };
         let fine_label = if is_active {
-            format!("\\$ {} MXN", format_mxn(v.multa_estimada_mxn))
+            format!(r"\$ {} MXN", format_mxn(v.multa_estimada_mxn))
         } else {
-            format!("{} (\\$0.00)", escape_typst(&v.estatus))
+            format!(r"{} (\$0.00)", escape_typst(&v.estatus))
         };
 
         out.push_str(&format!(
-            "  [#text(weight: \"bold\", size: 5.6pt)[{:02}]],\n  [#text(weight: \"bold\", size: 5.5pt, fill: rgb(\"{}\"))[{} • {}]],\n  [#text(weight: \"bold\", size: 5.6pt)[{} — {}]],\n  [#text(size: 5.4pt)[{}]],\n  [#text(weight: \"bold\", size: 5.6pt, fill: rgb(\"{}\"))[{} ({})]],\n",
+            r##"  [#text(weight: "bold", size: 5.1pt)[{:02}]],
+  [#text(weight: "bold", size: 5pt, fill: rgb("{}"))[{} • {}]],
+  [#text(weight: "bold", size: 5.1pt)[{} — {}]],
+  [#text(size: 5pt)[{}]],
+  [#text(weight: "bold", size: 5.1pt, fill: rgb("{}"))[{} ({})]],
+"##,
             v.num,
             color_hex,
             escape_typst(&v.organo),
@@ -160,6 +188,61 @@ pub fn render_vectors_37_typst_table(vectors: &[EvaluatedVector]) -> String {
 
     out.push_str(")\n");
     out
+}
+
+/// Genera la Gráfica Horizontal de Barras de Concentración de Riesgo en Typst para la Página 1
+pub fn render_visual_risk_chart_typst(
+    m_stps: f64,
+    m_sat: f64,
+    m_imss: f64,
+    m_inai: f64,
+    m_pc: f64,
+    m_profeco: f64,
+) -> String {
+    let total = (m_stps + m_sat + m_imss + m_inai + m_pc + m_profeco).max(1.0);
+    let items = [
+        ("STPS (Seguridad, Salud y NOMs)", m_stps, "#dc2626"),
+        ("SAT (Materialidad 69-B y CFDI 4.0)", m_sat, "#ea580c"),
+        ("IMSS / INFONAVIT (SUA y REPSE)", m_imss, "#d97706"),
+        ("SABG / LFPDPPP (Privacidad y ARCO)", m_inai, "#2563eb"),
+        ("9 Sectoriales y Prot. Civil (PIPC)", m_pc, "#7c3aed"),
+        ("PROFECO y Economía (LFPC Digital)", m_profeco, "#0891b2"),
+    ];
+
+    let mut rows = String::new();
+    for (label, val, hex) in items {
+        let pct = ((val / total) * 100.0).round().clamp(0.0, 100.0);
+        let bar_w = if val > 0.0 { pct.max(4.0) } else { 1.0 };
+        rows.push_str(&format!(
+            r##"  [#text(size: 6pt, weight: "bold", fill: rgb("#1e293b"))[{}]],
+  [
+    #box(width: 100%, height: 6.5pt, fill: rgb("#e2e8f0"), radius: 2pt)[
+      #box(width: {}%, height: 6.5pt, fill: rgb("{}"), radius: 2pt)
+    ]
+  ],
+  [#align(right)[#text(size: 6pt, weight: "bold", fill: rgb("{}"))[{:.0}% (\$ {})]]],
+"##,
+            label,
+            bar_w,
+            hex,
+            hex,
+            pct,
+            format_mxn(val)
+        ));
+    }
+
+    format!(
+        r##"#box(width: 100%, fill: rgb("#f8fafc"), stroke: 0.5pt + rgb("#cbd5e1"), radius: 4pt, inset: 6pt)[
+  #grid(
+    columns: (32%, 44%, 24%),
+    row-gutter: 4pt,
+    column-gutter: 6pt,
+    align: horizon,
+{}
+  )
+]"##,
+        rows
+    )
 }
 
 /// Evalúa los 37 Vectores Oficiales del Directorio Normativo 360° personalizando multas según plantilla real, SCIAN y telemetría
@@ -217,13 +300,23 @@ pub fn evaluate_all_37_vectors(
                    base_umas_calc: f64,
                    hallazgo: String| {
         let num = v.len() + 1;
-        let (estatus, severidad, multa) = if !applicable {
-            ("EXENTO SCIAN".to_string(), "EXENTO".to_string(), 0.0)
+        let (estatus, severidad, multa, final_hallazgo) = if !applicable {
+            (
+                "EXENTO SCIAN".to_string(),
+                "EXENTO".to_string(),
+                0.0,
+                format!("No exigible para la actividad económica SCIAN {} — Supuesto sectorial no actualizado ($0.00 MXN).", scian),
+            )
         } else if active_breach {
             let m = (base_umas_calc * UMA_2026 * emp_factor).round();
-            ("EXPOSICIÓN ACTIVA".to_string(), severidad_if_breach.to_string(), m)
+            ("EXPOSICIÓN ACTIVA".to_string(), severidad_if_breach.to_string(), m, hallazgo)
         } else {
-            ("BLINDADO".to_string(), "OPTIMIZADO".to_string(), 0.0)
+            (
+                "BLINDADO".to_string(),
+                "OPTIMIZADO".to_string(),
+                0.0,
+                format!("Control verificado sin hallazgos sancionables activos — {}", hallazgo),
+            )
         };
 
         v.push(EvaluatedVector {
@@ -235,13 +328,13 @@ pub fn evaluate_all_37_vectors(
             severidad,
             uma_rango: format!("{}-{} UMAs", uma_min, uma_max),
             multa_estimada_mxn: multa,
-            hallazgo_especifico: hallazgo,
+            hallazgo_especifico: final_hallazgo,
         });
     };
 
     // ==================== I. STPS (8 MÓDULOS CUBRIENDO LAS 39 NOMs) ====================
     let guia_035 = if emp_count > 50 {
-        "Guías I y III (Entorno Organizacional >50 trabajadores)"
+        "Guías I y III (Entorno Organizacional mayor a 50 trabajadores)"
     } else if emp_count >= 16 {
         "Guías I y II (Factores Psicosociales 16 a 50 trabajadores)"
     } else {
@@ -283,7 +376,7 @@ pub fn evaluate_all_37_vectors(
         250,
         5000,
         340.0,
-        format!("Análisis ergonómico por levantamiento/arrastre manual de cargas (>3 kg) y vigilancia médica en giro {}.", scian),
+        format!("Análisis ergonómico por levantamiento/arrastre manual de cargas (mayor a 3 kg) y vigilancia médica en giro {}.", scian),
     );
 
     add(
@@ -352,7 +445,7 @@ pub fn evaluate_all_37_vectors(
     );
 
     // ==================== II. SAT / CFF (6 MÓDULOS FISCALES) ====================
-    let is_69b_bad = !sat_69b_status.to_uppercase().contains("LIMPIO");
+    let is_69b_bad = !sat_69b_status.to_uppercase().contains("LIMPIO") && !sat_69b_status.to_uppercase().contains("SIN ANTECEDENTES");
     add(
         "SAT",
         "Art. 69-B CFF • SCJN 2a./J. 161/2019",
@@ -363,7 +456,7 @@ pub fn evaluate_all_37_vectors(
         450,
         4500,
         if is_69b_bad { 2200.0 } else { 540.0 },
-        format!("Compulsa SAT 69-B: [{}]. Exigibilidad de contratos con Fecha Cierta y dossier de entregables tangibles.", sat_69b_status),
+        format!("Compulsa SAT 69-B: ({}). Exigibilidad de contratos con Fecha Cierta y dossier de entregables tangibles.", sat_69b_status),
     );
 
     add(
@@ -379,7 +472,7 @@ pub fn evaluate_all_37_vectors(
         "Memoria económica que acredite que el beneficio cuantificable esperado es mayor al beneficio fiscal.".to_string(),
     );
 
-    let is_69_bad = !sat_69_status.to_uppercase().contains("LIMPIO");
+    let is_69_bad = !sat_69_status.to_uppercase().contains("LIMPIO") && !sat_69_status.to_uppercase().contains("ACTIVO");
     add(
         "SAT",
         "Arts. 17-K, 86-C y 86-D CFF",
@@ -390,7 +483,7 @@ pub fn evaluate_all_37_vectors(
         35,
         102,
         102.0,
-        format!("Estatus Art. 69 CFF: [{}]. Verificación de correo electrónico y teléfono móvil activos en Buzón Tributario.", sat_69_status),
+        format!("Estatus Art. 69 CFF: ({}). Verificación de correo electrónico y teléfono móvil activos en Buzón Tributario.", sat_69_status),
     );
 
     add(
@@ -456,7 +549,7 @@ pub fn evaluate_all_37_vectors(
         500,
         50000,
         620.0,
-        format!("Padrón REPSE: [{}]. Verificación mensual de los 7 comprobantes del Art. 27 Fracc. V LISR e informativas ICSOE/SISSUB.", if repse_registered { "ACTIVO" } else { "VALIDAR PROVEEDORES" }),
+        format!("Padrón REPSE: ({}). Verificación mensual de los 7 comprobantes del Art. 27 Fracc. V LISR e informativas ICSOE/SISSUB.", if repse_registered { "ACTIVO" } else { "VALIDAR PROVEEDORES" }),
     );
 
     add(
@@ -522,7 +615,7 @@ pub fn evaluate_all_37_vectors(
         100,
         160000,
         460.0,
-        format!("Escaneo DOM web: Aviso de Privacidad Integral [{}].", if has_privacy_notice { "LOCALIZADO" } else { "OMISIÓN DETECTADA" }),
+        format!("Escaneo DOM web: Aviso de Privacidad Integral ({}).", if has_privacy_notice { "LOCALIZADO" } else { "OMISIÓN DETECTADA" }),
     );
 
     add(
@@ -535,7 +628,7 @@ pub fn evaluate_all_37_vectors(
         200,
         320000,
         390.0,
-        format!("Mención expresa de canal y plazos ARCO en portal digital: [{}].", if has_arco_mention { "VERIFICADA" } else { "NO DETECTADA" }),
+        format!("Mención expresa de canal y plazos ARCO en portal digital: ({}).", if has_arco_mention { "VERIFICADA" } else { "NO DETECTADA" }),
     );
 
     add(
@@ -561,7 +654,7 @@ pub fn evaluate_all_37_vectors(
         200,
         320000,
         410.0,
-        format!("Cifrado TLS/SSL en dominio: [{}]. Se requiere Documento de Seguridad con inventario de bases de datos.", if has_ssl { "TLS ACTIVO" } else { "VULNERABLE" }),
+        format!("Cifrado TLS/SSL en dominio: ({}). Se requiere Documento de Seguridad con inventario de bases de datos.", if has_ssl { "TLS ACTIVO" } else { "VULNERABLE" }),
     );
 
     add(
@@ -666,7 +759,7 @@ pub fn evaluate_all_37_vectors(
         500,
         7000,
         270.0,
-        format!("Directorio SFP Inhabilitados: [{}]. Verificación de autorizaciones sectoriales por giro {}.", if sfp_sanctioned { "ALERTA SANCIONADO" } else { "SIN SANCIONES" }, scian),
+        format!("Directorio SFP Inhabilitados: ({}). Verificación de autorizaciones sectoriales por giro {}.", if sfp_sanctioned { "ALERTA SANCIONADO" } else { "SIN SANCIONES" }, scian),
     );
 
     // ==================== VI. PROFECO Y ECONOMÍA (5 MÓDULOS COMERCIALES) ====================

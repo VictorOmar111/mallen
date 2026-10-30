@@ -340,26 +340,53 @@ header.sticky {
 }
 
 
-/* ==================== MODO CLARO EJECUTIVO (LIGHT MODE) ==================== */
+/* ==================== MODO CLARO EJECUTIVO (LIGHT MODE TIER-1) ==================== */
+html.light-mode,
 html.light-mode body {
-    background-color: #f8fafc !important;
+    background-color: #f1f5f9 !important;
+    background-image: linear-gradient(180deg, #f8fafc 0%, #e2e8f0 100%) !important;
     color: #0f172a !important;
-    background-image: radial-gradient(circle at 20% 10%, rgba(16, 185, 129, 0.08), transparent 45%),
-                      radial-gradient(circle at 80% 80%, rgba(59, 130, 246, 0.08), transparent 45%) !important;
+}
+html.light-mode header,
+html.light-mode nav,
+html.light-mode footer {
+    background-color: rgba(255, 255, 255, 0.96) !important;
+    border-color: #cbd5e1 !important;
 }
 html.light-mode .quantum-laser-console,
-html.light-mode .bg-slate-950,
-html.light-mode .bg-slate-950\/90,
-html.light-mode .bg-slate-950\/85,
-html.light-mode .bg-slate-950\/80,
-html.light-mode .bg-slate-900,
-html.light-mode .bg-slate-900\/90,
-html.light-mode .bg-slate-900\/80,
-html.light-mode .bg-slate-900\/60 {
-    background-color: rgba(255, 255, 255, 0.94) !important;
+html.light-mode [class*="bg-slate-950"],
+html.light-mode [class*="bg-slate-900"],
+html.light-mode [class*="bg-slate-800"] {
+    background-color: #ffffff !important;
     color: #0f172a !important;
-    border-color: rgba(15, 23, 42, 0.14) !important;
-    box-shadow: 0 10px 28px -6px rgba(15, 23, 42, 0.08) !important;
+    border-color: #cbd5e1 !important;
+    box-shadow: 0 4px 20px -2px rgba(15, 23, 42, 0.06) !important;
+}
+html.light-mode [class*="bg-emerald-950"],
+html.light-mode [class*="bg-emerald-900"] {
+    background-color: #ecfdf5 !important;
+    color: #065f46 !important;
+    border-color: #6ee7b7 !important;
+}
+html.light-mode [class*="bg-red-950"],
+html.light-mode [class*="bg-red-900"] {
+    background-color: #fef2f2 !important;
+    color: #991b1b !important;
+    border-color: #fca5a5 !important;
+}
+html.light-mode [class*="bg-amber-950"],
+html.light-mode [class*="bg-amber-900"] {
+    background-color: #fffbeb !important;
+    color: #92400e !important;
+    border-color: #fcd34d !important;
+}
+html.light-mode [class*="bg-purple-950"],
+html.light-mode [class*="bg-purple-900"],
+html.light-mode [class*="bg-blue-950"],
+html.light-mode [class*="bg-cyan-950"] {
+    background-color: #eff6ff !important;
+    color: #1e40af !important;
+    border-color: #93c5fd !important;
 }
 html.light-mode .text-white,
 html.light-mode .text-slate-100,
@@ -367,8 +394,9 @@ html.light-mode .text-slate-200 {
     color: #0f172a !important;
 }
 html.light-mode .text-slate-300,
-html.light-mode .text-slate-400 {
-    color: #334155 !important;
+html.light-mode .text-slate-400,
+html.light-mode .text-slate-500 {
+    color: #475569 !important;
 }
 html.light-mode .text-emerald-300,
 html.light-mode .text-emerald-400 {
@@ -392,22 +420,20 @@ html.light-mode .text-amber-300,
 html.light-mode .text-amber-400 {
     color: #b45309 !important;
 }
+html.light-mode [class*="border-white/"] {
+    border-color: #cbd5e1 !important;
+}
 html.light-mode input,
 html.light-mode select,
 html.light-mode textarea {
-    background-color: #ffffff !important;
+    background-color: #f8fafc !important;
     color: #0f172a !important;
     border: 1px solid #94a3b8 !important;
 }
-html.light-mode input::placeholder,
-html.light-mode textarea::placeholder {
-    color: #64748b !important;
-}
 html.light-mode button.bg-gradient-to-r,
 html.light-mode a.bg-gradient-to-r,
-html.light-mode .bg-emerald-600,
-html.light-mode .bg-blue-600,
-html.light-mode .bg-purple-600 {
+html.light-mode button.bg-gradient-to-r *,
+html.light-mode a.bg-gradient-to-r * {
     color: #ffffff !important;
 }
 

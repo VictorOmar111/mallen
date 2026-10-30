@@ -146,7 +146,7 @@ fn build_report_typst_markup_full(
     osint: &OsintResult,
     master_opt: Option<&AuditMasterJson>,
     _is_accredited: bool,
-    is_censored_micro_report: bool,
+    _is_censored_micro_report: bool,
 ) -> String {
     let tax_id = empresa.tax_id.as_deref().unwrap_or("SIN-RFC");
     let is_immune = tax_id.starts_with("MALLEN");
@@ -340,8 +340,15 @@ fn build_report_typst_markup_full(
         scian_str.starts_with("52") || scian_str.starts_with("53") || scian_str.starts_with("23"),
     );
 
-    // Si no venía un master_opt o queremos asegurar sincronía matemática con los 37 vectores evaluados:
-    if !is_immune && m_stps == 0.0 && m_sat == 0.0 {
+    // SINCRONIZACIÓN MATEMÁTICA 1:1 ABSOLUTA:
+    // Los 6 subtotales de la Página 1 se calculan sumando directamente los 37 vectores de la Página 2
+    m_stps = 0.0;
+    m_sat = 0.0;
+    m_inai = 0.0;
+    m_imss = 0.0;
+    m_pc = 0.0;
+    m_profeco = 0.0;
+    if !is_immune {
         for v in &evaluated_37 {
             match v.organo.as_str() {
                 "STPS" => m_stps += v.multa_estimada_mxn,
@@ -354,6 +361,9 @@ fn build_report_typst_markup_full(
         }
     }
     let total_exact = ((m_stps + m_sat + m_inai + m_imss + m_pc + m_profeco) * 100.0).round() / 100.0;
+    let visual_chart_typst = crate::modules::vectors_37::render_visual_risk_chart_typst(
+        m_stps, m_sat, m_imss, m_inai, m_pc, m_profeco,
+    );
 
     let hallazgo_stps_str = if is_immune {
         format!("0 pts: Carpetas STPS ({}, NOM-019, NOM-030 y NOM-002) instrumentadas para {} trabajadores.", guia_nom035, emp_count)
@@ -492,6 +502,7 @@ fn build_report_typst_markup_full(
         .replace("{{SCORE_PROFECO}}", &(s_f * 0.10).round().to_string())
         .replace("{{REF_TAX}}", &tax_clean)
         .replace("{{VECTORS_37_TABLE_TYPST}}", &vectors_37_typst)
+        .replace("{{VISUAL_RISK_CHART_TYPST}}", &visual_chart_typst)
 }
 
 pub fn generate_pdf_report(
