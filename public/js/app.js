@@ -15,7 +15,6 @@
         }
     }
 
-    // 1. Disparador del Modal "Espera: No te vayas a ciegas" con explosión Roja -> Verde
     document.addEventListener("mouseleave", (e) => {
         if (e.clientY <= 0 && !exitIntentShown) {
             const consentModal = document.getElementById("legal-consent-modal");
@@ -48,7 +47,6 @@
         }
     };
 
-    // 2. Modal Translúcido de Consentimiento Legal (Privacidad LFPDPPP, Términos Art. 89 C.Com y Cookies Técnicas)
     window.openLegalConsentModal = function () {
         const modal = document.getElementById("legal-consent-modal");
         if (modal) {
@@ -91,25 +89,42 @@
         } catch (_) {}
     });
 
-    function setIfEmpty(id, val) {
+    function setField(id, val, overwrite) {
         const el = document.getElementById(id);
-        if (el && !el.value.trim() && val) {
+        if (el && val && (overwrite || !el.value.trim())) {
             el.value = val;
         }
     }
 
+    function safeSetText(id, text) {
+        const el = document.getElementById(id);
+        if (el) el.textContent = text;
+    }
+
+    function safeSetHref(id, href) {
+        const el = document.getElementById(id);
+        if (el) el.href = href;
+    }
+
     window.runLiveCalibrationScan = async function (event) {
         if (event) event.preventDefault();
-        const rfc = document.getElementById("folioInput").value.trim().toUpperCase();
+        const rawInput = document.getElementById("folioInput")?.value?.trim() || "";
         const domain = document.getElementById("domainInput")?.value?.trim() || "";
-        const razonOverride = document.getElementById("dos_razon")?.value?.trim() || null;
-        if (!rfc) return;
-        currentTaxId = rfc;
+        const razonManual = document.getElementById("dos_razon")?.value?.trim() || "";
+
+        if (!rawInput && !domain && !razonManual) return;
+
+        // Si el usuario escribió un nombre comercial (ej. "Pizzeria Cancino") en el primer campo y dejó vacío "Razón Social", lo usamos también como pista de nombre
+        const effectiveTaxOrName = (rawInput || razonManual || domain).toUpperCase();
+        const effectiveRazonOverride = razonManual ? razonManual : (rawInput.includes(" ") || rawInput.length < 12 ? rawInput : null);
+        currentTaxId = effectiveTaxOrName;
 
         const btn = document.getElementById("btnRunScan");
-        const origText = btn.textContent;
-        btn.textContent = "Auditando y Sincronizando Datos Registrales...";
-        btn.disabled = true;
+        const origText = btn ? btn.textContent : "Auditar Exposición Legal";
+        if (btn) {
+            btn.textContent = "Auditando Padrones Oficiales y Sitio Web...";
+            btn.disabled = true;
+        }
 
         const valOrNull = (id) => {
             const v = document.getElementById(id)?.value?.trim();
@@ -117,9 +132,9 @@
         };
 
         const payload = {
-            tax_id: rfc,
+            tax_id: effectiveTaxOrName,
             domain: domain ? domain : null,
-            razon_social_override: razonOverride,
+            razon_social_override: effectiveRazonOverride,
             email_contacto: valOrNull("dos_email"),
             calibration: {
                 exact_employee_count: parseInt(document.getElementById("cal_emp")?.value || "45", 10),
@@ -134,7 +149,7 @@
                 transports_goods_federal_highways: document.getElementById("cal_cartaporte")?.checked ?? false,
                 performs_vulnerable_activities_pld: document.getElementById("cal_pld")?.checked ?? false,
                 dossier: {
-                    razon_social_oficial: razonOverride,
+                    razon_social_oficial: effectiveRazonOverride,
                     domicilio_fiscal_completo: valOrNull("dos_domicilio"),
                     codigo_postal_fiscal: valOrNull("dos_cp"),
                     entidad_jurisdiccion: valOrNull("dos_estado"),
@@ -162,19 +177,23 @@
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify(payload)
             });
+            if (!resp.ok) throw new Error("HTTP " + resp.status);
             const data = await resp.json();
 
-            setIfEmpty("dos_razon", data.razon_social);
-            setIfEmpty("dos_giro", `${data.codigo_scian} - ${data.actividad_scian_desc}`);
-            setIfEmpty("dos_domicilio", data.domicilio_fiscal_o_denue);
+            currentTaxId = data.tax_id || effectiveTaxOrName;
+
+            // Actualizar los campos de la Cédula con los datos reales encontrados en DENUE / OSINT
+            setField("dos_razon", data.razon_social, true);
+            setField("dos_giro", `${data.codigo_scian} - ${data.actividad_scian_desc}`, true);
+            setField("dos_domicilio", data.domicilio_fiscal_o_denue, true);
             if (data.domicilio_fiscal_o_denue && data.domicilio_fiscal_o_denue.includes(",")) {
                 const parts = data.domicilio_fiscal_o_denue.split(",");
-                setIfEmpty("dos_estado", parts[parts.length - 1].trim());
+                setField("dos_estado", parts[parts.length - 1].trim(), true);
             }
             if (data.calibration_applied && data.calibration_applied.dossier) {
                 const d = data.calibration_applied.dossier;
-                setIfEmpty("dos_email", d.email_arco_privacidad);
-                setIfEmpty("dos_tel", d.telefono_corporativo);
+                setField("dos_email", d.email_arco_privacidad, false);
+                setField("dos_tel", d.telefono_corporativo, false);
             }
 
             if (typeof window.triggerPhotonicBurst === "function") {
@@ -184,8 +203,8 @@
             const box = document.getElementById("live-scan-result");
             if (box) {
                 box.classList.remove("hidden");
-                document.getElementById("res-razon").textContent = `${data.razon_social} (${data.tax_id})`;
-                // Actualizar el Tablero de Cruce contra Padrones y Listas Negras Oficiales
+                safeSetText("res-razon", `${data.razon_social} (${data.tax_id})`);
+
                 const setBadge = (id, text, isAlert, isWarn) => {
                     const el = document.getElementById(id);
                     if (!el) return;
@@ -198,29 +217,41 @@
                 const s69 = (data.sat_69_status || "LIMPIO").toUpperCase();
                 setBadge("blk-69", s69.includes("LIMPIO") ? "LOCALIZADO / SIN CRÉDITOS" : `ALERTA: ${s69}`, !s69.includes("LIMPIO"), false);
 
-                setBadge("blk-repse", data.repse_registered ? "PADRÓN REPSE ACTIVO" : "REQUIERE VALIDACIÓN ICSOE", false, !data.repse_registered);
+                setBadge("blk-repse", data.repse_registered ? "PADRÓN REPSE ACTIVO" : "VALIDAR ICSOE / SISSUB", false, !data.repse_registered);
                 setBadge("blk-sfp", data.sfp_sanctioned ? "INHABILITADO EN SFP" : "SIN SANCIONES SFP", !!data.sfp_sanctioned, false);
 
                 const profecoOk = data.web_telemetry && data.web_telemetry.has_profeco_rrpac_mention;
-                setBadge("blk-profeco", profecoOk ? "CONTRATO RRPAC VISIBLE" : "SIN FOLIO RRPAC WEB", false, !profecoOk);
+                setBadge("blk-profeco", profecoOk ? "CONTRATO RRPAC VISIBLE" : "REVISAR ART. 76 BIS", false, !profecoOk);
 
                 const isImmune = Number(data.total_estimated_fine_mxn || 0) === 0;
-                setBadge("blk-laboral", isImmune ? "BLINDAJE PATRONAL 100%" : "REQUIERE ACTAS STPS/LFT", !isImmune, false);
-                document.getElementById("res-score").textContent = `${data.risk_score}/100 PUNTOS`;
-                document.getElementById("res-fine").textContent =
-                    "$" + Number(data.total_estimated_fine_mxn || 0).toLocaleString("es-MX", { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + " MXN";
-                document.getElementById("res-findings-count").textContent =
-                    `${(data.findings || []).length} vectores normativos evaluados — Datos registrales pre-cargados en su Cédula`;
-                document.getElementById("res-hash").textContent = data.audit_sha256_hash;
-                document.getElementById("btn-go-verify").href = `/verify/${encodeURIComponent(data.tax_id)}`;
-                document.getElementById("btn-go-micro").href = `/api/micro_scan/${encodeURIComponent(data.tax_id)}`;
-                document.getElementById("btn-go-checkout").href = `/checkout?ref=${encodeURIComponent(data.tax_id)}`;
+                setBadge("blk-laboral", isImmune ? "BLINDAJE PATRONAL 100%" : `${(data.findings || []).length} BRECHAS DETECTADAS`, !isImmune, false);
+
+                safeSetText("res-score", `${data.risk_score}/100 PUNTOS`);
+                safeSetText(
+                    "res-fine",
+                    "$" + Number(data.total_estimated_fine_mxn || 0).toLocaleString("es-MX", { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + " MXN"
+                );
+                safeSetText(
+                    "res-findings-count",
+                    `Giro SCIAN ${data.codigo_scian} (${data.actividad_scian_desc}) • ${(data.findings || []).length} vectores evaluados`
+                );
+                safeSetText("res-hash", data.audit_sha256_hash);
+
+                const encodedId = encodeURIComponent(data.tax_id);
+                safeSetHref("btn-go-verify", `/verify/${encodedId}`);
+                safeSetHref("btn-go-micro", `/api/micro_scan/${encodedId}`);
+                safeSetHref("btn-go-checkout", `/checkout?ref=${encodedId}`);
+
+                box.scrollIntoView({ behavior: "smooth", block: "nearest" });
             }
-        } catch (_) {
-            window.location.href = `/verify/${encodeURIComponent(rfc)}`;
+        } catch (err) {
+            console.error("Error en escaneo:", err);
+            window.location.href = `/verify/${encodeURIComponent(effectiveTaxOrName)}`;
         } finally {
-            btn.textContent = origText;
-            btn.disabled = false;
+            if (btn) {
+                btn.textContent = origText;
+                btn.disabled = false;
+            }
         }
     };
 })();
