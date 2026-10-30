@@ -568,5 +568,27 @@
 
     <script src="/js/app.js?v=2026.25" defer></script>
     <script src="/js/badge.js?v=2026.25" defer></script>
+
+    <!-- Ventana Emergente Flotante (Popover Quantum Glass) de los 37 Vectores Evaluados (Se cierra sola cuando el puntero sale del recuadro) -->
+    <div id="vectors-37-popover"
+         onmouseleave="closeVectorsPopover()"
+         class="hidden fixed z-50 inset-x-4 sm:inset-x-auto sm:left-1/2 sm:-translate-x-1/2 top-16 sm:w-[92vw] max-w-5xl max-h-[82vh] flex-col rounded-2xl quantum-laser-console border border-emerald-500/50 shadow-2xl p-5 sm:p-6 font-mono-code text-xs overflow-hidden">
+        <div class="flex items-center justify-between pb-3 mb-3 border-b border-white/15 shrink-0">
+            <div>
+                <span class="text-[10px] font-bold text-emerald-400 uppercase tracking-widest block">
+                    MATRIZ PERICIAL 360° • DESGLOSE ÍNTEGRO EN TIEMPO REAL
+                </span>
+                <h3 id="popover-company-title" class="text-sm sm:text-base font-extrabold text-white">
+                    Los 37 Vectores Normativos Evaluados (STPS, SAT, IMSS, LFPDPPP, 9 Sectoriales y PROFECO)
+                </h3>
+            </div>
+            <div class="flex items-center gap-3">
+                <span class="text-[10px] text-slate-400 hidden sm:inline">Retire el puntero del recuadro para cerrar automáticamente</span>
+                <button type="button" onclick="closeVectorsPopover()" class="px-2.5 py-1 rounded-lg bg-slate-900 hover:bg-slate-800 text-slate-300 border border-white/15 font-bold">✕</button>
+            </div>
+        </div>
+        <div id="vectors-37-list" class="overflow-y-auto pr-1 space-y-2 max-h-[65vh]"></div>
+    </div>
+
 </body>
 </html>

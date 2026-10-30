@@ -162,7 +162,7 @@ fn build_report_typst_markup_full(
         .representante_legal_nombre
         .as_deref()
         .filter(|s| !s.trim().is_empty())
-        .unwrap_or("Representante Legal Acreditado");
+        .unwrap_or("[APODERADO LEGAL POR DESIGNAR EN CÉDULA]");
     let jurisdiccion = dossier
         .entidad_jurisdiccion
         .as_deref()
@@ -373,7 +373,7 @@ pub fn generate_pdf_report_with_session(
         .representante_legal_nombre
         .as_deref()
         .filter(|s| !s.trim().is_empty())
-        .unwrap_or("Representante Legal Acreditado");
+        .unwrap_or("[APODERADO LEGAL POR DESIGNAR EN CÉDULA]");
     let jurisdiccion = dossier
         .entidad_jurisdiccion
         .as_deref()

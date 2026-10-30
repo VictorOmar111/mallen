@@ -1,5 +1,57 @@
 (function () {
     let exitIntentShown = false;
+
+    window.lastAuditData = null;
+
+    window.closeVectorsPopover = function () {
+        const pop = document.getElementById("vectors-37-popover");
+        if (pop) {
+            pop.classList.add("hidden");
+            pop.classList.remove("flex");
+        }
+    };
+
+    window.openVectorsPopover = function () {
+        const data = window.lastAuditData;
+        if (!data || !data.findings) return;
+        const pop = document.getElementById("vectors-37-popover");
+        const list = document.getElementById("vectors-37-list");
+        const title = document.getElementById("popover-company-title");
+        if (!pop || !list) return;
+
+        if (title) {
+            title.textContent = `${data.razon_social} (${data.tax_id}) — Desglose de los ${data.findings.length} Vectores Evaluados`;
+        }
+
+        list.innerHTML = data.findings.map((f) => {
+            const isFine = Number(f.estimated_fine_mxn || 0) > 0;
+            const badgeClass = isFine
+                ? "bg-red-950/80 text-red-300 border-red-500/40"
+                : "bg-emerald-950/80 text-emerald-300 border-emerald-500/40";
+            const fineTxt = isFine
+                ? "$" + Number(f.estimated_fine_mxn).toLocaleString("es-MX", { minimumFractionDigits: 2 }) + " MXN"
+                : "BLINDADO / EXENTO ($0.00)";
+            return `
+                <div class="bg-slate-950/85 border border-white/10 rounded-xl p-3 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                    <div class="space-y-0.5">
+                        <div class="flex items-center gap-2">
+                            <span class="text-[10px] font-bold px-2 py-0.5 rounded border ${badgeClass}">${f.authority}</span>
+                            <span class="text-xs font-bold text-white">${f.code}</span>
+                        </div>
+                        <p class="text-[11px] text-slate-300">${f.description}</p>
+                    </div>
+                    <div class="text-right shrink-0">
+                        <span class="text-xs font-extrabold ${isFine ? 'text-red-400' : 'text-emerald-400'} block">${fineTxt}</span>
+                        <span class="text-[9px] text-slate-400 block">Tabulador: ${f.uma_range}</span>
+                    </div>
+                </div>
+            `;
+        }).join("");
+
+        pop.classList.remove("hidden");
+        pop.classList.add("flex");
+    };
+
     let currentTaxId = "EST850628K51";
 
     function animateModalExplosion(modalEl) {
@@ -179,6 +231,7 @@
             });
             if (!resp.ok) throw new Error("HTTP " + resp.status);
             const data = await resp.json();
+            window.lastAuditData = data;
 
             currentTaxId = data.tax_id || effectiveTaxOrName;
 
@@ -233,7 +286,7 @@
                 );
                 safeSetText(
                     "res-findings-count",
-                    `Giro SCIAN ${data.codigo_scian} (${data.actividad_scian_desc}) • ${(data.findings || []).length} vectores evaluados`
+                    `Giro SCIAN ${data.codigo_scian} • Ver los ${(data.findings || []).length} Vectores Evaluados (Clic / Pasar Cursor)`
                 );
                 safeSetText("res-hash", data.audit_sha256_hash);
 
