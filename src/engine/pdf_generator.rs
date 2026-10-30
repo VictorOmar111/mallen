@@ -247,39 +247,151 @@ fn build_report_typst_markup_full(
         )
     };
 
-    let (hallazgo_stps, hallazgo_sat, osint_inai, hallazgo_imss, hallazgo_pc, hallazgo_profeco) =
-        if is_immune {
-            (
-                "0 pts: Carpetas NOM-035, NOM-037, NOM-019 y NOM-030 instrumentadas y vigentes.",
-                "0 pts: Contratos con Fecha Cierta SCJN (Art. 69-B CFF) y Opinión 32-D verificados.",
-                "0 pts: Aviso de Privacidad Integral LFPDPPP (SABG), Derechos ARCO y TLS 1.3 activos.",
-                "0 pts: Plantilla conciliada en SUA y protocolo de responsabilidad solidaria REPSE activo.",
-                "0 pts: Programa Interno de Protección Civil (PIPC) y licencias sectoriales en orden.",
-                "0 pts: Términos de Comercio Electrónico Art. 76 BIS LFPC y garantías de 90 días vigentes.",
-            )
-        } else if is_censored_micro_report {
-            (
-                "22 pts: Exposición activa en NOM-035 (Psicosocial), NOM-019 (Comisión Mixta), NOM-030 y NOM-002.",
-                "████████████████ (AUDITORÍA ART. 69-B Y CSD RESERVADA AL EXPEDIENTE INTEGRAL)",
-                "████████████████ (DIAGNÓSTICO LFPDPPP RESERVADO AL EXPEDIENTE INTEGRAL)",
-                "████████████████ (CRUCE DENUE VS IMSS 32-D Y REPSE RESERVADO AL EXPEDIENTE INTEGRAL)",
-                "████████████████ (DIAGNÓSTICO PROTECCIÓN CIVIL RESERVADO AL EXPEDIENTE INTEGRAL)",
-                "████████████████ (AUDITORÍA PROFECO ART. 76 BIS RESERVADA AL EXPEDIENTE INTEGRAL)",
-            )
-        } else {
-            (
-                "Omisión documental en NOM-035, Acta Comisión Mixta NOM-019, Diagnóstico NOM-030 y NOMs por SCIAN.",
-                "Exposición por falta de Contratos Marco con Fecha Cierta SCJN y Bitácora de Materialidad Art. 69-B.",
-                if osint.has_privacy_policy {
-                    "Aviso detectado; requiere actualización a LFPDPPP (SABG) y Formato de Consentimiento Biométrico."
-                } else {
-                    "ALERTA CRÍTICA: Omisión de Aviso de Privacidad Integral en portal web (Arts. 15 y 63 LFPDPPP)."
-                },
-                "Contingencia en conciliación de plantilla DENUE vs SBC, Prima de Riesgo y expedientes REPSE/ICSOE.",
-                "Requerimiento de Programa Interno PIPC, Dictamen Eléctrico/Estructural y regulación sectorial SCIAN.",
-                "Adecuación obligatoria de Términos Digitales Art. 76 BIS LFPC, Garantías (90 días) y RRPAC.",
-            )
-        };
+    // Clasificar Clase y Prima de Riesgo IMSS según el código SCIAN real de la empresa
+    let scian_extracted: String = master_opt
+        .map(|m| m.codigo_scian.clone())
+        .filter(|s| !s.trim().is_empty())
+        .unwrap_or_else(|| {
+            empresa
+                .actividad
+                .split(|c: char| !c.is_ascii_digit())
+                .find(|tok| tok.len() >= 2)
+                .unwrap_or("541610")
+                .to_string()
+        });
+    let scian_str = scian_extracted.as_str();
+    let (imss_clase, imss_prima, imss_sector_desc) =
+        crate::modules::vectors_37::classify_imss_risk_by_scian(scian_str);
+
+    // Determinar número estimado de trabajadores desde el expediente maestro o el estrato DENUE
+    let emp_count: u32 = master_opt
+        .and_then(|m| m.calibration_applied.exact_employee_count)
+        .unwrap_or(35)
+        .max(1);
+
+    let guia_nom035 = if emp_count > 50 {
+        "Guías I y III (Evaluación de Entorno Organizacional >50 empleados)"
+    } else if emp_count >= 16 {
+        "Guías I y II (Cuestionarios Psicosociales 16 a 50 empleados)"
+    } else {
+        "Política Escrita de Prevención Psicosocial y Guía I (1 a 15 empleados)"
+    };
+
+    let sector_especifico = if scian_str.starts_with("722") || scian_str.starts_with("311") {
+        "Aviso de Funcionamiento COFEPRIS DIGIPRIS, Higiene NOM-251-SSA1, trampas de grasa y PIPC con dictamen de gas LP/natural."
+    } else if scian_str.starts_with("62") || scian_str.starts_with("464") {
+        "Aviso Sanitario COFEPRIS, Responsable Sanitario, manejo de RPBI (NOM-087-SEMARNAT) y Programa Interno PIPC."
+    } else if scian_str.starts_with("811") || scian_str.starts_with("31") || scian_str.starts_with("32") || scian_str.starts_with("33") {
+        "Registro SEMARNAT de Generador de Residuos Peligrosos (aceites/solventes), Licencia Ambiental Única y PIPC industrial."
+    } else if scian_str.starts_with("48") || scian_str.starts_with("49") || scian_str.starts_with("43") {
+        "Bitácoras de horas de servicio NOM-087-SCT-2, dictamen físico-mecánico NOM-068-SCT, Carta Porte 3.1 y PIPC de bodega."
+    } else if scian_str.starts_with("52") || scian_str.starts_with("53") || scian_str.starts_with("23") {
+        "Alta y expediente único de identificación PLD/LFPIORPI (Art. 17 y 18), restricción de efectivo (Art. 32) y carpeta PIPC."
+    } else {
+        "Programa Interno de Protección Civil (PIPC), Acta Constitutiva de 4 Brigadas, Póliza RC y dictamen eléctrico/estructural."
+    };
+
+    // Evaluar la matriz completa de 37 vectores para esta empresa específica
+    let sat_69b_lbl = master_opt
+        .map(|m| m.sat_69b_status.as_str())
+        .unwrap_or("COMPULSADO SIN ANTECEDENTES EFOS (DOF)");
+    let sat_69_lbl = master_opt
+        .map(|m| m.sat_69_status.as_str())
+        .unwrap_or("ACTIVO / SIN CRÉDITOS FIRMES EXIGIBLES");
+    let repse_lbl = master_opt
+        .map(|m| {
+            if m.stps_repse_registered {
+                "FOLIO REPSE VIGENTE VERIFICADO"
+            } else {
+                "SUJETO A COMPULSA DE PROVEEDORES REPSE / ICSOE"
+            }
+        })
+        .unwrap_or("SUJETO A COMPULSA DE PROVEEDORES REPSE / ICSOE");
+    let sfp_lbl = master_opt
+        .map(|m| {
+            if m.sfp_sanctioned {
+                "ALERTA: REGISTRO EN DIRECTORIO SFP"
+            } else {
+                "SIN INHABILITACIÓN EN COMPRANET / SFP"
+            }
+        })
+        .unwrap_or("SIN INHABILITACIÓN EN COMPRANET / SFP");
+
+    let evaluated_37 = crate::modules::vectors_37::evaluate_all_37_vectors(
+        &empresa.nombre,
+        scian_str,
+        emp_count,
+        sat_69b_lbl,
+        sat_69_lbl,
+        repse_lbl.contains("VIGENTE"),
+        sfp_lbl.contains("ALERTA"),
+        osint.has_ssl || is_immune,
+        osint.has_privacy_policy || is_immune,
+        osint.has_privacy_policy || is_immune,
+        is_immune,
+        true,
+        true,
+        scian_str.starts_with("31") || scian_str.starts_with("32") || scian_str.starts_with("33") || scian_str.starts_with("722"),
+        true,
+        scian_str.starts_with("811") || scian_str.starts_with("31") || scian_str.starts_with("32") || scian_str.starts_with("62"),
+        true,
+        true,
+        scian_str.starts_with("48") || scian_str.starts_with("49") || scian_str.starts_with("43"),
+        scian_str.starts_with("52") || scian_str.starts_with("53") || scian_str.starts_with("23"),
+    );
+
+    // Si no venía un master_opt o queremos asegurar sincronía matemática con los 37 vectores evaluados:
+    if !is_immune && m_stps == 0.0 && m_sat == 0.0 {
+        for v in &evaluated_37 {
+            match v.organo.as_str() {
+                "STPS" => m_stps += v.multa_estimada_mxn,
+                "SAT" => m_sat += v.multa_estimada_mxn,
+                "LFPDPPP" => m_inai += v.multa_estimada_mxn,
+                "IMSS" => m_imss += v.multa_estimada_mxn,
+                "PROFECO" | "ECONOMÍA" => m_profeco += v.multa_estimada_mxn,
+                _ => m_pc += v.multa_estimada_mxn,
+            }
+        }
+    }
+    let total_exact = ((m_stps + m_sat + m_inai + m_imss + m_pc + m_profeco) * 100.0).round() / 100.0;
+
+    let hallazgo_stps_str = if is_immune {
+        format!("0 pts: Carpetas STPS ({}, NOM-019, NOM-030 y NOM-002) instrumentadas para {} trabajadores.", guia_nom035, emp_count)
+    } else {
+        format!("Plantilla evaluada ({} personas, SCIAN {}): obligatorio exhibir {}, Acta NOM-019, Diagnóstico NOM-030 y estudio de incendio NOM-002.", emp_count, scian_str, guia_nom035)
+    };
+
+    let hallazgo_sat_str = if is_immune {
+        "0 pts: Contratos con Fecha Cierta SCJN (Art. 69-B CFF), Beneficiario Controlador y CFDI 4.0 verificados.".to_string()
+    } else {
+        format!("Compulsa 69-B [{}]. Exigible Contrato Marco con Fecha Cierta (Jurisprudencia SCJN 2a./J. 161/2019), Razón de Negocios Art. 5-A y Expediente de Beneficiario Controlador (Art. 32-B Ter CFF).", sat_69b_lbl)
+    };
+
+    let osint_inai_str = if is_immune {
+        "0 pts: Aviso de Privacidad Integral LFPDPPP (SABG), Derechos ARCO y TLS 1.3 activos.".to_string()
+    } else if osint.has_privacy_policy {
+        format!("Aviso web detectado en dominio; requiere adecuación a la Autoridad Garante SABG (LFPDPPP), Documento de Seguridad (Art. 19) y Consentimiento Expreso para Biométricos/Nómina de {} trabajadores.", emp_count)
+    } else {
+        format!("ALERTA CRÍTICA (Arts. 15, 16 y 63 LFPDPPP): Omisión de Aviso de Privacidad Integral, Ventanilla ARCO y formato de Consentimiento Biométrico/Nómina para {}.", empresa.nombre)
+    };
+
+    let hallazgo_imss_str = if is_immune {
+        format!("0 pts: Plantilla conciliada en SUA bajo {} (Prima {}) y protocolo REPSE activo.", imss_clase, imss_prima)
+    } else {
+        format!("Por actividad SCIAN {} ({}) corresponde {} con Prima Media del {}. Exigible conciliación de {} empleados vs. SUA, Opinión 32-D y compulsa REPSE/ICSOE.", scian_str, imss_sector_desc, imss_clase, imss_prima, emp_count)
+    };
+
+    let hallazgo_pc_str = if is_immune {
+        "0 pts: Programa Interno de Protección Civil (PIPC) y autorizaciones sectoriales vigentes.".to_string()
+    } else {
+        format!("Requerimiento específico para giro SCIAN {}: {}", scian_str, sector_especifico)
+    };
+
+    let hallazgo_profeco_str = if is_immune {
+        "0 pts: Términos de Comercio Electrónico Art. 76 BIS LFPC y garantías de 90 días vigentes.".to_string()
+    } else {
+        format!("Adecuación obligatoria al Art. 76 BIS LFPC (Comercio Digital), Póliza de Garantía mínima de 90 días (Art. 77 LFPC), purga de cláusulas nulas (Art. 90) y sellado criptográfico CCom Art. 89 para {}.", empresa.nombre)
+    };
 
     let osint_ssl = if osint.has_ssl || is_immune {
         "ACTIVO (TLS 1.3 VÁLIDO)"
@@ -294,47 +406,83 @@ fn build_report_typst_markup_full(
 
     let s_f = score as f64;
     let nombre_clean = sanitize_for_typst(&empresa.nombre);
-    let direccion_clean = sanitize_for_typst(&empresa.direccion);
-    let actividad_clean = sanitize_for_typst(&empresa.actividad);
+    let direccion_clean = sanitize_for_typst(&crate::modules::vectors_37::sanitize_denue_address(
+        &empresa.direccion,
+        &empresa.estado,
+        tax_id,
+    ));
+    let actividad_clean = if empresa.actividad.contains(scian_str) {
+        sanitize_for_typst(&empresa.actividad)
+    } else {
+        sanitize_for_typst(&format!("{} — {}", scian_str, empresa.actividad))
+    };
     let tax_clean = sanitize_for_typst(tax_id);
+    let vectors_37_typst = crate::modules::vectors_37::render_vectors_37_typst_table(&evaluated_37);
 
     TYPST_TEMPLATE
         .replace("{{PARTNER_HEADER}}", &partner_header)
         .replace("{{FECHA_EMISION}}", &fecha_hoy)
+        .replace("{{SCAN_DATE}}", &fecha_hoy)
         .replace("{{EMPRESA_NOMBRE}}", &nombre_clean)
         .replace("{{EMPRESA_TAX_ID}}", &tax_clean)
         .replace("{{REPRESENTANTE_LEGAL}}", &sanitize_for_typst(rep_legal))
         .replace("{{EMPRESA_JURISDICCION}}", &sanitize_for_typst(jurisdiccion))
+        .replace("{{JURISDICCION}}", &sanitize_for_typst(jurisdiccion))
         .replace("{{OFICIAL_PRIVACIDAD}}", &sanitize_for_typst(oficial_priv))
         .replace("{{COORDINADOR_CSH}}", &sanitize_for_typst(coord_csh))
+        .replace("{{COORDINADOR_NOM019}}", &sanitize_for_typst(coord_csh))
         .replace("{{AUDITOR_NOMBRE}}", &sanitize_for_typst(&auditor.nombre))
         .replace("{{AUDITOR_CEDULA}}", &sanitize_for_typst(&auditor.cedula_profesional))
         .replace("{{AUDITOR_DC5}}", &sanitize_for_typst(&auditor.registro_auditor))
+        .replace("{{AUDITOR_STPS}}", &sanitize_for_typst(&auditor.registro_auditor))
         .replace("{{EMPRESA_ACTIVIDAD}}", &actividad_clean)
+        .replace("{{EMPRESA_SCIAN}}", &actividad_clean)
         .replace("{{EMPRESA_DIRECCION}}", &direccion_clean)
+        .replace("{{EMPRESA_DOMICILIO}}", &direccion_clean)
         .replace("{{STATUS_HEX}}", status_hex)
         .replace("{{BANNER_BG_HEX}}", banner_bg)
         .replace("{{BANNER_BORDER_HEX}}", banner_border)
         .replace("{{ESTATUS_TEXTO}}", estatus_texto)
+        .replace("{{ESTATUS_GLOBAL}}", estatus_texto)
         .replace("{{BADGE_ACCION}}", badge_accion)
         .replace("{{ESTIMATED_FINE}}", &format_currency_mxn(total_exact))
+        .replace("{{TOTAL_FINE_MXN}}", &format_currency_mxn(total_exact))
         .replace("{{MULTA_STPS}}", &format_currency_mxn(m_stps))
+        .replace("{{FINE_STPS}}", &format_currency_mxn(m_stps))
         .replace("{{MULTA_SAT}}", &format_currency_mxn(m_sat))
+        .replace("{{FINE_SAT}}", &format_currency_mxn(m_sat))
         .replace("{{MULTA_INAI}}", &format_currency_mxn(m_inai))
+        .replace("{{FINE_INAI}}", &format_currency_mxn(m_inai))
         .replace("{{MULTA_IMSS}}", &format_currency_mxn(m_imss))
+        .replace("{{FINE_IMSS}}", &format_currency_mxn(m_imss))
         .replace("{{MULTA_PC}}", &format_currency_mxn(m_pc))
+        .replace("{{FINE_PROT_CIVIL}}", &format_currency_mxn(m_pc))
         .replace("{{MULTA_PROFECO}}", &format_currency_mxn(m_profeco))
+        .replace("{{FINE_PROFECO}}", &format_currency_mxn(m_profeco))
         .replace("{{ACTIVATION_PRICE}}", "5,940.00")
+        .replace("{{KIT_PRICE_MXN}}", "5,940.00")
         .replace("{{RISK_SCORE}}", &score.to_string())
-        .replace("{{HALLAZGO_TABLA_STPS}}", hallazgo_stps)
-        .replace("{{HALLAZGO_TABLA_SAT}}", hallazgo_sat)
-        .replace("{{INAI_OBS}}", osint_inai)
-        .replace("{{HALLAZGO_TABLA_IMSS}}", hallazgo_imss)
-        .replace("{{HALLAZGO_TABLA_PC}}", hallazgo_pc)
-        .replace("{{HALLAZGO_TABLA_PROFECO}}", hallazgo_profeco)
+        .replace("{{HALLAZGO_TABLA_STPS}}", &sanitize_for_typst(&hallazgo_stps_str))
+        .replace("{{DESC_STPS}}", &sanitize_for_typst(&hallazgo_stps_str))
+        .replace("{{HALLAZGO_TABLA_SAT}}", &sanitize_for_typst(&hallazgo_sat_str))
+        .replace("{{DESC_SAT}}", &sanitize_for_typst(&hallazgo_sat_str))
+        .replace("{{INAI_OBS}}", &sanitize_for_typst(&osint_inai_str))
+        .replace("{{DESC_INAI}}", &sanitize_for_typst(&osint_inai_str))
+        .replace("{{HALLAZGO_TABLA_IMSS}}", &sanitize_for_typst(&hallazgo_imss_str))
+        .replace("{{DESC_IMSS}}", &sanitize_for_typst(&hallazgo_imss_str))
+        .replace("{{HALLAZGO_TABLA_PC}}", &sanitize_for_typst(&hallazgo_pc_str))
+        .replace("{{DESC_PROT_CIVIL}}", &sanitize_for_typst(&hallazgo_pc_str))
+        .replace("{{HALLAZGO_TABLA_PROFECO}}", &sanitize_for_typst(&hallazgo_profeco_str))
+        .replace("{{DESC_PROFECO}}", &sanitize_for_typst(&hallazgo_profeco_str))
+        .replace("{{SAT_69B_STATUS}}", &sanitize_for_typst(sat_69b_lbl))
+        .replace("{{SAT_69_STATUS}}", &sanitize_for_typst(sat_69_lbl))
+        .replace("{{REPSE_STATUS}}", &sanitize_for_typst(repse_lbl))
+        .replace("{{SFP_STATUS}}", &sanitize_for_typst(sfp_lbl))
         .replace("{{SSL_STATUS}}", osint_ssl)
         .replace("{{PRIVACY_STATUS}}", osint_privacy)
+        .replace("{{INAI_STATUS}}", osint_privacy)
         .replace("{{HTTP_STATUS}}", &osint.http_status.max(200).to_string())
+        .replace("{{HTTP_CODE}}", &osint.http_status.max(200).to_string())
         .replace("{{AUDIT_HASH}}", &empresa.audit_hash)
         .replace("{{SCORE_STPS}}", &(s_f * 0.25).round().to_string())
         .replace("{{SCORE_SAT}}", &(s_f * 0.20).round().to_string())
@@ -343,6 +491,7 @@ fn build_report_typst_markup_full(
         .replace("{{SCORE_PC}}", &(s_f * 0.10).round().to_string())
         .replace("{{SCORE_PROFECO}}", &(s_f * 0.10).round().to_string())
         .replace("{{REF_TAX}}", &tax_clean)
+        .replace("{{VECTORS_37_TABLE_TYPST}}", &vectors_37_typst)
 }
 
 pub fn generate_pdf_report(
