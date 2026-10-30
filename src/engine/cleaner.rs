@@ -222,3 +222,12 @@ pub fn sanitize_pii_text(raw_text: &str) -> String {
         RE_PHONE_PII.replace_all(&without_personal_email, "[TEL-PROTEGIDO]");
     sanitized.into_owned()
 }
+
+
+use sha2::{Sha256, Digest};
+
+pub fn sha256_hex(data: &str) -> String {
+    let mut hasher = Sha256::new();
+    hasher.update(data);
+    format!("{:x}", hasher.finalize())
+}

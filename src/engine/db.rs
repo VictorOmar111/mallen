@@ -529,4 +529,53 @@ impl DbState {
             telefono: r.get("telefono"),
         }
     }
+
+    pub async fn process_arco_optout(
+        &self,
+        target: &str,
+        email: &str,
+        motivo: &str,
+    ) -> String {
+        let clean = target.trim().to_uppercase();
+        let _ = sqlx::query("DELETE FROM audit_cache WHERE upper(tax_id) = ?1 OR master_json LIKE ?2")
+            .bind(&clean)
+            .bind(format!("%{}%", clean))
+            .execute(&self.pool)
+            .await;
+
+        let folio = format!(
+            "ARCO-MALLEN-{}",
+            &crate::engine::cleaner::sha256_hex(&format!("{}:{}:{}", clean, email, motivo))[..10].to_uppercase()
+        );
+        let _ = sqlx::query(
+            "INSERT OR REPLACE INTO arco_optouts (folio, tax_id_or_domain, solicitante_email, motivo) VALUES (?1, ?2, ?3, ?4)",
+        )
+        .bind(&folio)
+        .bind(&clean)
+        .bind(email.trim())
+        .bind(motivo)
+        .execute(&self.pool)
+        .await;
+
+        folio
+    }
+
+    pub async fn log_delivery_receipt(
+        &self,
+        tax_id: &str,
+        artifact_type: &str,
+        artifact_sha256: &str,
+    ) {
+        let receipt_id = format!("ACK-{}-{}", tax_id, &artifact_sha256[..8].to_uppercase());
+        let _ = sqlx::query(
+            "INSERT OR REPLACE INTO delivery_receipts (receipt_id, tax_id, artifact_type, artifact_sha256) VALUES (?1, ?2, ?3, ?4)",
+        )
+        .bind(&receipt_id)
+        .bind(tax_id)
+        .bind(artifact_type)
+        .bind(artifact_sha256)
+        .execute(&self.pool)
+        .await;
+    }
+
 }

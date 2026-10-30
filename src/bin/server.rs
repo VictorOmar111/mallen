@@ -112,6 +112,10 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .route("/normas/pld", get(handle_normas_pld))
         .route("/normas/comercio", get(handle_normas_comercio))
         .route("/normas/:cat/:code", get(handle_subnorma_detail))
+        .route("/privacidad", get(handle_mallen_privacy))
+        .route("/terminos", get(handle_mallen_terms))
+        .route("/derechos-arco", get(handle_mallen_arco))
+        .route("/api/arco_optout", post(handle_api_arco_optout))
         .route("/validez/:slug", get(handle_validez_detail))
         .route("/verify/:id", get(checkout::handle_verify))
         .route("/download/zip/:tax_id", get(download_zip_handler))
@@ -1442,6 +1446,7 @@ async fn handle_terms() -> impl IntoResponse {
     Html(html)
 }
 
+#[allow(dead_code)]
 fn render_norma_category(cat_slug: &str) -> Html<String> {
     worker_inegi_engine::modules::encyclopedia::render_norma_category(cat_slug)
 }
@@ -1549,4 +1554,39 @@ fn render_validez_detail(slug: &str) -> Html<String> {
 </html>"#
     );
     Html(html)
+}
+
+
+#[derive(serde::Deserialize)]
+struct ArcoOptoutReq {
+    target: String,
+    email: String,
+    motivo: String,
+}
+
+async fn handle_mallen_privacy() -> impl IntoResponse {
+    worker_inegi_engine::modules::self_compliance::render_mallen_privacy_notice()
+}
+
+async fn handle_mallen_terms() -> impl IntoResponse {
+    worker_inegi_engine::modules::self_compliance::render_mallen_terms()
+}
+
+async fn handle_mallen_arco() -> impl IntoResponse {
+    worker_inegi_engine::modules::self_compliance::render_mallen_arco_portal()
+}
+
+async fn handle_api_arco_optout(
+    State(state): State<Arc<AppState>>,
+    Json(req): Json<ArcoOptoutReq>,
+) -> impl IntoResponse {
+    let folio = state
+        .db.process_arco_optout(&req.target, &req.email, &req.motivo)
+        .await;
+    Json(serde_json::json!({
+        "status": "ok",
+        "folio": folio,
+        "purged_target": req.target.trim().to_uppercase(),
+        "timestamp_utc": chrono::Utc::now().to_rfc3339()
+    }))
 }
