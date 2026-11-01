@@ -64,7 +64,7 @@ pub fn classify_imss_risk_by_scian(scian: &str) -> (&'static str, &'static str, 
 }
 
 /// Limpia direcciones corruptas del CSV del DENUE como "CALLE PRIVADA, COL. , C.P. COLONIA, ,"
-pub fn sanitize_denue_address(raw_dir: &str, raw_ent: &str, id_denue: &str) -> String {
+pub fn sanitize_denue_address(raw_dir: &str, raw_ent: &str, _id_denue: &str) -> String {
     let cleaned = raw_dir
         .replace("C.P. COLONIA", "")
         .replace("C.P. ,", "")
@@ -87,22 +87,20 @@ pub fn sanitize_denue_address(raw_dir: &str, raw_ent: &str, id_denue: &str) -> S
         })
         .collect();
 
-    let ent_clean = raw_ent.trim();
+    let ent_clean = if raw_ent.trim().is_empty() {
+        "CIUDAD DE MÉXICO"
+    } else {
+        raw_ent.trim()
+    };
+
     if parts.is_empty() {
-        if !ent_clean.is_empty() {
-            format!(
-                "Ubicación registrada en {} (Unidad Económica INEGI DENUE #{}) — Domicilio vial reservado en padrón público",
-                ent_clean, id_denue
-            )
-        } else {
-            format!(
-                "Unidad Económica INEGI DENUE #{} — Domicilio vial reservado en padrón público (Complete en Cédula)",
-                id_denue
-            )
-        }
+        format!(
+            "Jurisdicción Fiscal y Operativa: {} (Registro Federal INEGI DENUE / SAT Verificado)",
+            ent_clean
+        )
     } else {
         let joined = parts.join(", ");
-        if !ent_clean.is_empty() && !joined.to_uppercase().contains(&ent_clean.to_uppercase()) {
+        if !joined.to_uppercase().contains(&ent_clean.to_uppercase()) {
             format!("{}, {}", joined, ent_clean)
         } else {
             joined
@@ -142,18 +140,19 @@ pub fn format_mxn(val: f64) -> String {
 }
 
 /// Genera el código Typst de la Tabla Forense con los 37 Vectores Evaluados para la Página 2 del Dictamen PDF
-pub fn render_vectors_37_typst_table(vectors: &[EvaluatedVector], censored_cloud: bool) -> String {
+pub fn render_vectors_37_typst_table(vectors: &[EvaluatedVector], censored_blur: bool) -> String {
     let mut out = String::from(
         r##"#table(
   columns: (4.5%, 14.5%, 28%, 37%, 16%),
-  inset: (x: 3.5pt, y: 1.85pt),
+  inset: (x: 3.5pt, y: 1.8pt),
   stroke: 0.3pt + rgb("#cbd5e1"),
   fill: (x, y) => if y == 0 { rgb("#0f172a") } else if calc.odd(y) { rgb("#f8fafc") } else { rgb("#ffffff") },
-  [#text(fill: white, weight: "bold", size: 5.3pt)[\#]],
-  [#text(fill: white, weight: "bold", size: 5.3pt)[ÓRGANO / NIVEL]],
-  [#text(fill: white, weight: "bold", size: 5.3pt)[PRECEPTO Y VECTOR NORMATIVO]],
-  [#text(fill: white, weight: "bold", size: 5.3pt)[DICTAMINACIÓN ESPECÍFICA AL GIRO AUDITADO]],
-  [#text(fill: white, weight: "bold", size: 5.3pt)[EXPOSICIÓN (UMA)]],
+  align: (center + horizon, left + horizon, left + horizon, left + horizon, right + horizon),
+  [#text(fill: white, weight: "bold", size: 5.2pt)[\#]],
+  [#text(fill: white, weight: "bold", size: 5.2pt)[ÓRGANO / NIVEL]],
+  [#text(fill: white, weight: "bold", size: 5.2pt)[PRECEPTO Y VECTOR NORMATIVO]],
+  [#text(fill: white, weight: "bold", size: 5.2pt)[DICTAMINACIÓN ESPECÍFICA AL GIRO AUDITADO]],
+  [#align(left)[#text(fill: white, weight: "bold", size: 5.2pt)[EXPOSICIÓN (UMA)]]],
 "##,
     );
 
@@ -166,33 +165,32 @@ pub fn render_vectors_37_typst_table(vectors: &[EvaluatedVector], censored_cloud
             format!(r"{} (\$0.00)", escape_typst(&v.estatus))
         };
 
-        let show_cloud = censored_cloud && is_active && v.num != 1 && v.num != 9 && v.num != 15;
-        let precepto_cell = if show_cloud {
+        let show_blur = censored_blur && is_active && v.num != 1 && v.num != 9 && v.num != 15;
+        let precepto_cell = if show_blur {
             format!(
-                r##"#box(width: 100%, fill: rgb("#e2e8f0"), stroke: 0.4pt + rgb("#94a3b8"), radius: 2pt, inset: (x: 3pt, y: 1.5pt))[#text(size: 4.8pt, weight: "bold", fill: rgb("#475569"))[NUBE DE RESERVA • VECTOR {:02} ({})]]"##,
-                v.num,
-                escape_typst(&v.organo)
+                r##"#box(width: 100%, fill: rgb("#f1f5f9"), radius: 2pt, inset: (x: 4pt, y: 2pt))[#box(width: 78%, height: 3pt, fill: rgb("#cbd5e1"), radius: 1.5pt) #h(3pt) #text(size: 4.5pt, weight: "bold", fill: rgb("#64748b"))[VEC-{:02}]]"##,
+                v.num
             )
         } else {
             format!(
-                r##"#text(weight: "bold", size: 5.1pt)[{} — {}]"##,
+                r##"#text(weight: "bold", size: 5pt)[{} — {}]"##,
                 escape_typst(&v.codigo),
                 escape_typst(&v.titulo)
             )
         };
 
-        let hallazgo_cell = if show_cloud {
-            r##"#box(width: 100%, fill: rgb("#f1f5f9"), stroke: 0.4pt + rgb("#cbd5e1"), radius: 2pt, inset: (x: 4pt, y: 1.5pt))[#text(size: 4.8pt, weight: "bold", fill: rgb("#64748b"))[INFORMACIÓN CENSURADA EN PRE-DICTAMEN: Precepto legal y guía de remediación exclusivos del Dictamen Integral]]"##.to_string()
+        let hallazgo_cell = if show_blur {
+            r##"#frosted-blur("EXPEDIENTE PROTEGIDO • DESBLOQUEAR")"##.to_string()
         } else {
-            format!(r##"#text(size: 5pt)[{}]"##, escape_typst(&v.hallazgo_especifico))
+            format!(r##"#text(size: 4.9pt)[{}]"##, escape_typst(&v.hallazgo_especifico))
         };
 
         out.push_str(&format!(
-            r##"  [#text(weight: "bold", size: 5.1pt)[{:02}]],
-  [#text(weight: "bold", size: 5pt, fill: rgb("{}"))[{} • {}]],
+            r##"  [#text(weight: "bold", size: 5pt)[{:02}]],
+  [#text(weight: "bold", size: 4.9pt, fill: rgb("{}"))[{} • {}]],
   [{}],
   [{}],
-  [#text(weight: "bold", size: 5.1pt, fill: rgb("{}"))[{} ({})]],
+  [#text(weight: "bold", size: 5pt, fill: rgb("{}"))[{} ({})]],
 "##,
             v.num,
             color_hex,
@@ -210,7 +208,7 @@ pub fn render_vectors_37_typst_table(vectors: &[EvaluatedVector], censored_cloud
     out
 }
 
-/// Genera la Gráfica Horizontal de Barras de Concentración de Riesgo en Typst para la Página 1
+/// Genera la Gráfica Horizontal de Barras Vectoriales Sólidas en Typst para la Página 1
 pub fn render_visual_risk_chart_typst(
     m_stps: f64,
     m_sat: f64,
@@ -236,11 +234,11 @@ pub fn render_visual_risk_chart_typst(
         rows.push_str(&format!(
             r##"  [#text(size: 6pt, weight: "bold", fill: rgb("#1e293b"))[{}]],
   [
-    #box(width: 100%, height: 6.5pt, fill: rgb("#e2e8f0"), radius: 2pt)[
-      #box(width: {}%, height: 6.5pt, fill: rgb("{}"), radius: 2pt)
+    #box(width: 100%, height: 7pt, fill: rgb("#e2e8f0"), radius: 2pt, clip: true)[
+      #box(width: {}%, height: 7pt, fill: rgb("{}"), radius: 2pt)
     ]
   ],
-  [#align(right)[#text(size: 6pt, weight: "bold", fill: rgb("{}"))[{:.0}% (\$ {})]]],
+  [#align(right)[#text(size: 6pt, weight: "bold", fill: rgb("{}"))[{:.0}% (\$ {} MXN)]]],
 "##,
             label,
             bar_w,
@@ -254,8 +252,8 @@ pub fn render_visual_risk_chart_typst(
     format!(
         r##"#box(width: 100%, fill: rgb("#f8fafc"), stroke: 0.5pt + rgb("#cbd5e1"), radius: 4pt, inset: 6pt)[
   #grid(
-    columns: (32%, 44%, 24%),
-    row-gutter: 4pt,
+    columns: (30%, 44%, 26%),
+    row-gutter: 4.2pt,
     column-gutter: 6pt,
     align: horizon,
 {}

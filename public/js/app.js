@@ -155,7 +155,20 @@
         if (event) event.preventDefault();
         const rawInput = document.getElementById("folioInput")?.value?.trim() || "";
         const domain = document.getElementById("domainInput")?.value?.trim() || "";
-        const razonManual = document.getElementById("dos_razon")?.value?.trim() || "";
+        const dosRazonEl = document.getElementById("dos_razon");
+        if (dosRazonEl && dosRazonEl.dataset.autoFilled === "true" && rawInput) {
+            dosRazonEl.value = "";
+            dosRazonEl.dataset.autoFilled = "false";
+        }
+        const dosGiroEl = document.getElementById("dos_giro");
+        if (dosGiroEl && dosGiroEl.dataset.autoFilled === "true" && rawInput) {
+            dosGiroEl.value = "";
+        }
+        const dosDomEl = document.getElementById("dos_domicilio");
+        if (dosDomEl && dosDomEl.dataset.autoFilled === "true" && rawInput) {
+            dosDomEl.value = "";
+        }
+        const razonManual = dosRazonEl?.value?.trim() || "";
 
         if (!rawInput && !domain && !razonManual) return;
 
@@ -229,6 +242,12 @@
             currentTaxId = data.tax_id || effectiveTaxOrName;
 
             // Actualizar los campos de la Cédula con los datos reales encontrados en DENUE / OSINT
+            const rEl = document.getElementById("dos_razon");
+            if (rEl) rEl.dataset.autoFilled = "true";
+            const gEl = document.getElementById("dos_giro");
+            if (gEl) gEl.dataset.autoFilled = "true";
+            const dEl = document.getElementById("dos_domicilio");
+            if (dEl) dEl.dataset.autoFilled = "true";
             setField("dos_razon", data.razon_social, true);
             setField("dos_giro", `${data.codigo_scian} - ${data.actividad_scian_desc}`, true);
             setField("dos_domicilio", data.domicilio_fiscal_o_denue, true);
@@ -301,3 +320,11 @@
         }
     };
 })();
+
+
+document.addEventListener("DOMContentLoaded", () => {
+    const rInput = document.getElementById("dos_razon");
+    if (rInput) {
+        rInput.addEventListener("input", () => { rInput.dataset.autoFilled = "false"; });
+    }
+});

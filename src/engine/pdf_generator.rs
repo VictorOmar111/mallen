@@ -266,7 +266,7 @@ fn build_report_typst_markup_full(
     // Determinar número estimado de trabajadores desde el expediente maestro o el estrato DENUE
     let emp_count: u32 = master_opt
         .and_then(|m| m.calibration_applied.exact_employee_count)
-        .unwrap_or(35)
+        .unwrap_or(45)
         .max(1);
 
     let guia_nom035 = if emp_count > 50 {
@@ -317,27 +317,36 @@ fn build_report_typst_markup_full(
         })
         .unwrap_or("SIN INHABILITACIÓN EN COMPRANET / SFP");
 
+    let cal_opt = master_opt.map(|m| &m.calibration_applied);
     let evaluated_37 = crate::modules::vectors_37::evaluate_all_37_vectors(
         &empresa.nombre,
         scian_str,
         emp_count,
         sat_69b_lbl,
         sat_69_lbl,
-        repse_lbl.contains("VIGENTE"),
-        sfp_lbl.contains("ALERTA"),
+        repse_lbl.contains("VIGENTE") || repse_lbl.contains("ACTIVO"),
+        sfp_lbl.contains("ALERTA") || sfp_lbl.contains("SANCIONADO"),
         osint.has_ssl || is_immune,
         osint.has_privacy_policy || is_immune,
         osint.has_privacy_policy || is_immune,
         is_immune,
-        true,
-        true,
-        scian_str.starts_with("31") || scian_str.starts_with("32") || scian_str.starts_with("33") || scian_str.starts_with("722"),
-        true,
-        scian_str.starts_with("811") || scian_str.starts_with("31") || scian_str.starts_with("32") || scian_str.starts_with("62"),
-        true,
-        true,
-        scian_str.starts_with("48") || scian_str.starts_with("49") || scian_str.starts_with("43"),
-        scian_str.starts_with("52") || scian_str.starts_with("53") || scian_str.starts_with("23"),
+        cal_opt.and_then(|c| c.has_telework_over_40_percent).unwrap_or(true),
+        cal_opt.and_then(|c| c.uses_subcontracted_services_repse).unwrap_or(true),
+        cal_opt.and_then(|c| c.has_pressure_vessels_boilers).unwrap_or(
+            scian_str.starts_with("31") || scian_str.starts_with("32") || scian_str.starts_with("33") || scian_str.starts_with("722")
+        ),
+        cal_opt.and_then(|c| c.has_forklifts_or_manual_loads).unwrap_or(true),
+        cal_opt.and_then(|c| c.handles_hazardous_chemicals).unwrap_or(
+            scian_str.starts_with("811") || scian_str.starts_with("31") || scian_str.starts_with("32") || scian_str.starts_with("62")
+        ),
+        cal_opt.and_then(|c| c.uses_biometrics_or_health_data).unwrap_or(true),
+        cal_opt.and_then(|c| c.pays_intangible_b2b_services).unwrap_or(true),
+        cal_opt.and_then(|c| c.transports_goods_federal_highways).unwrap_or(
+            scian_str.starts_with("48") || scian_str.starts_with("49") || scian_str.starts_with("43")
+        ),
+        cal_opt.and_then(|c| c.performs_vulnerable_activities_pld).unwrap_or(
+            scian_str.starts_with("52") || scian_str.starts_with("53") || scian_str.starts_with("23")
+        ),
     );
 
     // SINCRONIZACIÓN MATEMÁTICA 1:1 ABSOLUTA:
@@ -473,37 +482,37 @@ fn build_report_typst_markup_full(
         .replace("{{KIT_PRICE_MXN}}", "5,940.00")
         .replace("{{RISK_SCORE}}", &score.to_string())
         .replace("{{HALLAZGO_TABLA_STPS}}", &sanitize_for_typst(&hallazgo_stps_str))
-        .replace("{{DESC_STPS}}", &sanitize_for_typst(&hallazgo_stps_str))
-        .replace("{{HALLAZGO_TABLA_SAT}}", &if is_censored_micro_report {
-            "[ NUBE DE RESERVA PERICIAL: Desglose de Materialidad Art. 69-B, CFDI 4.0 y Beneficiario Controlador reservado al Dictamen Integral ]".to_string()
+        .replace("{{HALLAZGO_TABLA_STPS_TYPST}}", &format!("#text(size: 6.2pt)[{}]", sanitize_for_typst(&hallazgo_stps_str)))
+        .replace("{{HALLAZGO_TABLA_SAT}}", &sanitize_for_typst(&hallazgo_sat_str))
+        .replace("{{HALLAZGO_TABLA_SAT_TYPST}}", &if is_censored_micro_report {
+            r##"#frosted-blur("DIAGNÓSTICO FISCAL ART. 69-B Y CFDI PROTEGIDO")"##.to_string()
         } else {
-            sanitize_for_typst(&hallazgo_sat_str)
+            format!("#text(size: 6.2pt)[{}]", sanitize_for_typst(&hallazgo_sat_str))
         })
-        .replace("{{DESC_SAT}}", &sanitize_for_typst(&hallazgo_sat_str))
-        .replace("{{INAI_OBS}}", &if is_censored_micro_report {
-            "[ NUBE DE RESERVA PERICIAL: Diagnóstico de Aviso Integral LFPDPPP, Derechos ARCO y Consentimiento Biométrico reservado al Dictamen Integral ]".to_string()
+        .replace("{{INAI_OBS}}", &sanitize_for_typst(&osint_inai_str))
+        .replace("{{HALLAZGO_TABLA_INAI_TYPST}}", &if is_censored_micro_report {
+            r##"#frosted-blur("AUDITORÍA LFPDPPP, ARCO Y BIOMÉTRICOS PROTEGIDA")"##.to_string()
         } else {
-            sanitize_for_typst(&osint_inai_str)
+            format!("#text(size: 6.2pt)[{}]", sanitize_for_typst(&osint_inai_str))
         })
-        .replace("{{DESC_INAI}}", &sanitize_for_typst(&osint_inai_str))
-        .replace("{{HALLAZGO_TABLA_IMSS}}", &if is_censored_micro_report {
-            "[ NUBE DE RESERVA PERICIAL: Cruce de Plantilla DENUE vs. SUA, Prima de Riesgo RACERF y protocolo REPSE/ICSOE reservado al Dictamen Integral ]".to_string()
+        .replace("{{HALLAZGO_TABLA_IMSS}}", &sanitize_for_typst(&hallazgo_imss_str))
+        .replace("{{HALLAZGO_TABLA_IMSS_TYPST}}", &if is_censored_micro_report {
+            r##"#frosted-blur("CONFRONTA IMSS SUA, RACERF Y REPSE PROTEGIDA")"##.to_string()
         } else {
-            sanitize_for_typst(&hallazgo_imss_str)
+            format!("#text(size: 6.2pt)[{}]", sanitize_for_typst(&hallazgo_imss_str))
         })
-        .replace("{{DESC_IMSS}}", &sanitize_for_typst(&hallazgo_imss_str))
-        .replace("{{HALLAZGO_TABLA_PC}}", &if is_censored_micro_report {
-            "[ NUBE DE RESERVA PERICIAL: Requerimientos de Carpeta PIPC, Brigadas y Licencias Sectoriales por código SCIAN reservados al Dictamen Integral ]".to_string()
+        .replace("{{HALLAZGO_TABLA_PC}}", &sanitize_for_typst(&hallazgo_pc_str))
+        .replace("{{HALLAZGO_TABLA_PC_TYPST}}", &if is_censored_micro_report {
+            r##"#frosted-blur("DICTAMINACIÓN PIPC Y 9 SECTORIALES PROTEGIDA")"##.to_string()
         } else {
-            sanitize_for_typst(&hallazgo_pc_str)
+            format!("#text(size: 6.2pt)[{}]", sanitize_for_typst(&hallazgo_pc_str))
         })
-        .replace("{{DESC_PROT_CIVIL}}", &sanitize_for_typst(&hallazgo_pc_str))
-        .replace("{{HALLAZGO_TABLA_PROFECO}}", &if is_censored_micro_report {
-            "[ NUBE DE RESERVA PERICIAL: Auditoría de Términos Digitales Art. 76 BIS LFPC, Garantías y Contratos de Adhesión reservada al Dictamen Integral ]".to_string()
+        .replace("{{HALLAZGO_TABLA_PROFECO}}", &sanitize_for_typst(&hallazgo_profeco_str))
+        .replace("{{HALLAZGO_TABLA_PROFECO_TYPST}}", &if is_censored_micro_report {
+            r##"#frosted-blur("AUDITORÍA PROFECO ART. 76 BIS Y RRPAC PROTEGIDA")"##.to_string()
         } else {
-            sanitize_for_typst(&hallazgo_profeco_str)
+            format!("#text(size: 6.2pt)[{}]", sanitize_for_typst(&hallazgo_profeco_str))
         })
-        .replace("{{DESC_PROFECO}}", &sanitize_for_typst(&hallazgo_profeco_str))
         .replace("{{SAT_69B_STATUS}}", &sanitize_for_typst(sat_69b_lbl))
         .replace("{{SAT_69_STATUS}}", &sanitize_for_typst(sat_69_lbl))
         .replace("{{REPSE_STATUS}}", &sanitize_for_typst(repse_lbl))

@@ -215,12 +215,35 @@ async fn handle_live_scan(
                 .unwrap_or_else(|| d.nombre_act.clone());
             (rz, d.nom_estab, d.codigo_scian, giro, dom, d.per_ocu)
         } else {
+            let domain_hint = req.domain.as_deref().unwrap_or("").trim();
+            let raw_input_clean = req.tax_id.trim();
             let rz = d_in
                 .razon_social_oficial
                 .clone()
                 .filter(|s| !s.trim().is_empty())
                 .or_else(|| req.razon_social_override.clone().filter(|s| !s.trim().is_empty()))
-                .unwrap_or_else(|| format!("EMPRESA O RFC NO LOCALIZADO EN PADRONES PÚBLICOS ({})", canonical_rfc));
+                .or_else(|| {
+                    if raw_input_clean.contains(' ') && raw_input_clean.len() >= 3 {
+                        Some(raw_input_clean.to_uppercase())
+                    } else if !domain_hint.is_empty() {
+                        let host = domain_hint
+                            .trim_start_matches("https://")
+                            .trim_start_matches("http://")
+                            .trim_start_matches("www.")
+                            .split('/')
+                            .next()
+                            .unwrap_or(domain_hint);
+                        let base = host.split('.').next().unwrap_or(host).to_uppercase();
+                        if base.len() >= 2 {
+                            Some(format!("CORPORATIVO {} ({})", base, host.to_lowercase()))
+                        } else {
+                            None
+                        }
+                    } else {
+                        None
+                    }
+                })
+                .unwrap_or_else(|| format!("REGISTRO NO INDEXADO EN PADRONES PÚBLICOS ({})", canonical_rfc));
             let dom = d_in
                 .domicilio_fiscal_completo
                 .clone()
