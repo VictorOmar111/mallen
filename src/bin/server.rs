@@ -99,7 +99,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     let state = Arc::new(AppState { db, http_client });
 
-    println!("🚀 Iniciando Servidor de Peritaje Corporativo Mallen 360° (mallen.lat) en puerto 8080...");
+    println!(" Iniciando Servidor de Peritaje Corporativo Mallen 360° (mallen.lat) en puerto 8080...");
 
     let app = Router::new()
         .route("/", get(handle_index))
@@ -138,7 +138,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .with_state(state);
 
     let addr = SocketAddr::from(([0, 0, 0, 0], 8080));
-    println!("🌐 Servidor escuchando en http://{}", addr);
+    println!(" Servidor escuchando en http://{}", addr);
 
     let listener = tokio::net::TcpListener::bind(addr).await?;
     axum::serve(listener, app).await?;
@@ -220,7 +220,7 @@ async fn handle_live_scan(
                 .clone()
                 .filter(|s| !s.trim().is_empty())
                 .or_else(|| req.razon_social_override.clone().filter(|s| !s.trim().is_empty()))
-                .unwrap_or_else(|| format!("CORPORATIVO {} S.A. DE C.V.", canonical_rfc));
+                .unwrap_or_else(|| format!("EMPRESA O RFC NO LOCALIZADO EN PADRONES PÚBLICOS ({})", canonical_rfc));
             let dom = d_in
                 .domicilio_fiscal_completo
                 .clone()
@@ -537,7 +537,7 @@ async fn download_zip_handler(
             }
         }
         Err(e) => {
-            eprintln!("⚠️ Error generando bundle para {}: {}", clean_tax, e);
+            eprintln!("️ Error generando bundle para {}: {}", clean_tax, e);
         }
     }
 
@@ -677,7 +677,7 @@ async fn build_empresa_and_session(
     } else {
         EmpresaB2B {
             id: clean_tax.to_string(),
-            nombre: format!("CORPORATIVO {} S.A. DE C.V.", clean_tax),
+            nombre: format!("EMPRESA O RFC NO LOCALIZADO EN PADRONES PÚBLICOS ({})", clean_tax),
             actividad: "541610 - Servicios de consultoría y operación corporativa Corporativo".to_string(),
             telefono: "55-5000-0000".to_string(),
             email: "".to_string(),
@@ -823,7 +823,7 @@ async fn build_empresa_from_db_or_default(state: &AppState, clean_tax: &str) -> 
     } else {
         EmpresaB2B {
             id: clean_tax.to_string(),
-            nombre: format!("CORPORATIVO {} S.A. DE C.V.", clean_tax),
+            nombre: format!("EMPRESA O RFC NO LOCALIZADO EN PADRONES PÚBLICOS ({})", clean_tax),
             actividad: "541610 - Servicios de consultoría y operación corporativa Corporativo".to_string(),
             telefono: String::new(),
             email: String::new(),

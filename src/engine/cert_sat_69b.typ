@@ -31,7 +31,7 @@
         [
           #text(weight: "bold", size: 9pt)[FECHA DE EMISIÓN] \
           #v(0.2em)
-          #text(size: 9pt)[05 de Octubre, 2026]
+          #text(size: 9pt)[{{FECHA_EMISION}}]
         ],
         [
           #text(weight: "bold", size: 9pt)[VIGENCIA DE COBERTURA] \

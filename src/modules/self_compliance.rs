@@ -174,7 +174,7 @@ pub fn render_mallen_arco_portal() -> Html<String> {
             const box = document.getElementById("arcoResultBox");
             box.classList.remove("hidden");
             box.innerHTML = `
-                <strong class="text-emerald-400 block uppercase mb-1">✓ Solicitud Procesada y Caché Purgado con Éxito</strong>
+                <strong class="text-emerald-400 block uppercase mb-1"> Solicitud Procesada y Caché Purgado con Éxito</strong>
                 <div>Folio Oficial ARCO: <span class="text-white font-bold">${data.folio}</span></div>
                 <div>Identificador Purgado: <span class="text-white">${data.purged_target}</span></div>
                 <div>Estampa UTC: <span class="text-slate-300">${data.timestamp_utc}</span></div>

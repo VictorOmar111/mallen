@@ -1,628 +1,628 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Firma Pericial Mallen — Gobernanza, Compliance & Auditoría W16</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
-    <style>
-        html { scroll-behavior: smooth; }
-        body { font-family: 'Inter', sans-serif; background-color: #020617; background-image: radial-gradient(at 12% 12%, rgba(37, 99, 235, 0.32) 0px, transparent 48%), radial-gradient(at 88% 18%, rgba(16, 185, 129, 0.25) 0px, transparent 48%), radial-gradient(at 50% 82%, rgba(99, 102, 241, 0.28) 0px, transparent 52%); background-attachment: fixed; }
-        .font-mono-code { font-family: 'JetBrains Mono', monospace; }
-    </style>
-    <link rel="stylesheet" href="/css/quantum-glass.css?v=2026.25">
-    <script src="/js/quantum-lights.js?v=2026.25" defer></script>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Firma Pericial Mallen — Gobernanza, Compliance & Auditoría W16</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    html { scroll-behavior: smooth; }
+    body { font-family: 'Inter', sans-serif; background-color: #020617; background-image: radial-gradient(at 12% 12%, rgba(37, 99, 235, 0.32) 0px, transparent 48%), radial-gradient(at 88% 18%, rgba(16, 185, 129, 0.25) 0px, transparent 48%), radial-gradient(at 50% 82%, rgba(99, 102, 241, 0.28) 0px, transparent 52%); background-attachment: fixed; }
+    .font-mono-code { font-family: 'JetBrains Mono', monospace; }
+  </style>
+  <link rel="stylesheet" href="/css/quantum-glass.css?v=2026.25">
+  <script src="/js/quantum-lights.js?v=2026.25" defer></script>
 </head>
 <body class="bg-slate-950 text-slate-100 min-h-screen selection:bg-blue-600 selection:text-white">
 
-    <!-- Header / Navegación Principal -->
-    <header class="border-b border-white/15 bg-white/[0.03] sticky top-0 z-50">
-        <div class="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
-            <a href="/" class="flex items-center space-x-3 group">
-                <div class="w-10 h-10 bg-gradient-to-tr from-blue-700 via-indigo-600 to-emerald-500 rounded-xl flex items-center justify-center font-extrabold text-xl text-white shadow-lg shadow-blue-500/20 group-hover:scale-105 transition">M</div>
-                <div>
-                    <span class="text-sm font-bold text-white block leading-none tracking-tight">FIRMA PERICIAL MALLEN</span>
-                    <span class="text-[10px] text-blue-400 font-bold font-mono-code uppercase tracking-wider">Sistema Pericial de Gestión de Riesgo W16</span>
-                </div>
-            </a>
-            <nav class="hidden md:flex items-center space-x-8 text-xs font-mono-code">
-                <a href="#cobertura-resumen" class="text-slate-400 hover:text-white transition">Cobertura Normativa</a>
-                <a href="#validez-legal" class="text-slate-400 hover:text-white transition">Validez Probatoria</a>
-                <a href="/dashboard.html" class="text-emerald-400 hover:text-emerald-300 transition">Panel para Despachos</a>
-                <a href="#express-check" class="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white font-bold px-5 py-2.5 rounded-xl shadow-lg shadow-blue-600/20 transition">
-                    Verificar Folio
-                </a>
-            </nav>
+  <!-- Header / Navegación Principal -->
+  <header class="border-b border-white/15 bg-white/[0.03] sticky top-0 z-50">
+    <div class="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
+      <a href="/" class="flex items-center space-x-3 group">
+        <div class="w-10 h-10 bg-gradient-to-tr from-blue-700 via-indigo-600 to-emerald-500 rounded-xl flex items-center justify-center font-extrabold text-xl text-white shadow-lg shadow-blue-500/20 group-hover:scale-105 transition">M</div>
+        <div>
+          <span class="text-sm font-bold text-white block leading-none tracking-tight">FIRMA PERICIAL MALLEN</span>
+          <span class="text-[10px] text-blue-400 font-bold font-mono-code uppercase tracking-wider">Sistema Pericial de Gestión de Riesgo W16</span>
         </div>
-    </header>
-
-    <!-- Hero de Alta Conversión Corporativo -->
-    <section class="py-20 border-b border-slate-900 relative overflow-hidden bg-gradient-to-b from-slate-950 via-slate-900/50 to-slate-950">
-        <div class="max-w-7xl mx-auto px-6 text-center relative z-10">
-            <span class="bg-blue-950/80 border border-blue-800/80 text-blue-300 text-[11px] font-mono-code px-4 py-1.5 rounded-full uppercase tracking-wider mb-6 inline-block shadow-inner">
-                Garantía Técnica & Prueba Pericial Preventiva
-            </span>
-            <h1 class="text-4xl sm:text-6xl font-extrabold text-white tracking-tight mb-6 max-w-4xl mx-auto leading-tight">
-                Acreditación Pericial Preventiva y Dictaminación Criptográfica
-            </h1>
-            <p class="text-slate-400 text-sm sm:text-base max-w-3xl mx-auto font-mono-code mb-10 leading-relaxed">
-                Evaluación técnica de riesgo sancionatorio ante la STPS (39 NOMs), SAT (Art. 69-B), IMSS (REPSE/32-D), SABG/INAI (LFPDPPP), UIF y PROFECO. Emisión de dictámenes con sellado de inalterabilidad Merkle Tree SHA-256 y Fecha Cierta SCJN.
-            </p>
-            <div class="flex flex-col sm:flex-row justify-center items-center gap-4">
-                <a href="#express-check" class="w-full sm:w-auto bg-gradient-to-r from-blue-600 to-emerald-600 hover:from-blue-500 hover:to-emerald-500 text-white font-bold text-xs sm:text-sm px-8 py-4 rounded-xl transition shadow-xl shadow-blue-600/20 uppercase tracking-wider font-mono-code">
-                    Auditar RFC o Ingresar Folio
-                </a>
-                <a href="#cobertura-resumen" class="w-full sm:w-auto bg-white/[0.05] shadow-[0_8px_32px_rgba(0,0,0,0.5)] hover:bg-slate-800 text-slate-300 border border-white/15 font-bold text-xs sm:text-sm px-8 py-4 rounded-xl transition font-mono-code">
-                    Ver Directorio Regulatorio
-                </a>
-            </div>
-        </div>
-    </section>
-
-    <!-- Directorio de Cobertura Normativa -->
-    <section id="cobertura-resumen" class="py-20 border-b border-white/10 bg-transparent">
-        <div class="max-w-7xl mx-auto px-6">
-            <div class="text-center mb-14">
-                <span class="text-xs font-bold text-emerald-400 uppercase tracking-widest font-mono-code">Seguridad Laboral, Continuidad Operativa & Blindaje Patrimonial</span>
-                <h2 class="text-3xl sm:text-4xl font-extrabold text-white mt-1 tracking-tight">Directorio de Cobertura Normativa 360°</h2>
-                <p class="text-slate-400 text-xs sm:text-sm max-w-3xl mx-auto mt-2 font-mono-code leading-relaxed">
-                    Estar al día con la ley no solo evita multas y clausuras: protege la salud de sus trabajadores, eleva la productividad de su equipo, reduce su Prima de Riesgo IMSS y califica a su empresa ante grandes clientes. Seleccione cualquier rama para ver la guía paso a paso por norma.
-                </p>
-            </div>
-
-            <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-6 mb-14">
-                <!-- STPS -->
-                <a href="/normas/stps" class="quantum-card border border-blue-900/40 hover:border-blue-500/80 rounded-2xl p-6 transition group flex flex-col justify-between">
-                    <div>
-                        <div class="flex items-center justify-between mb-3">
-                            <span class="text-xs font-bold text-blue-400 font-mono-code uppercase bg-blue-950/80 px-2.5 py-1 rounded border border-blue-800/50">STPS • 39 NOMs</span>
-                            <span class="text-[10px] bg-red-950/80 text-red-300 border border-red-800/60 px-2 py-0.5 rounded font-mono-code font-bold">71% Incumplimiento NOM-035</span>
-                        </div>
-                        <h3 class="text-base font-bold text-white mb-2 group-hover:text-blue-400 transition">Seguridad, Salud y Rendimiento en el Trabajo</h3>
-                        <p class="text-xs text-slate-300 font-mono-code leading-relaxed mb-3">
-                            Guía operativa de las 39 NOMs: NOM-035 (Clima laboral), NOM-037 (Teletrabajo), NOM-036-1 (Ergonomía), NOM-019/030 (Comisión Mixta), NOM-002 (Incendios) e Higiene Industrial.
-                        </p>
-                        <div class="text-[10px] text-emerald-300 font-mono-code bg-emerald-950/30 border border-emerald-500/25 rounded-lg p-2.5 mb-4">
-                            <strong>Beneficio Directo:</strong> Reduce hasta 38% el ausentismo y la rotación de personal, previene accidentes y blinda contra demandas laborales.
-                        </div>
-                    </div>
-                    <span class="text-xs font-bold text-blue-400 font-mono-code flex items-center gap-1 group-hover:translate-x-1 transition pt-4 border-t border-white/10">
-                        Ver normas, porcentajes y guía de cumplimiento →
-                    </span>
-                </a>
-
-                <!-- SAT / CFF -->
-                <a href="/normas/sat" class="quantum-card border border-emerald-900/40 hover:border-emerald-500/80 rounded-2xl p-6 transition group flex flex-col justify-between">
-                    <div>
-                        <div class="flex items-center justify-between mb-3">
-                            <span class="text-xs font-bold text-emerald-400 font-mono-code uppercase bg-emerald-950/80 px-2.5 py-1 rounded border border-emerald-800/50">SAT / CFF</span>
-                            <span class="text-[10px] bg-red-950/80 text-red-300 border border-red-800/60 px-2 py-0.5 rounded font-mono-code font-bold">81% Rechazo sin Fecha Cierta</span>
-                        </div>
-                        <h3 class="text-base font-bold text-white mb-2 group-hover:text-emerald-400 transition">Materialidad Fiscal, Fecha Cierta & Sellos CSD</h3>
-                        <p class="text-xs text-slate-300 font-mono-code leading-relaxed mb-3">
-                            Blindaje para Art. 69-B (EFOS/EDOS), Art. 5-A (Razón de Negocios), Art. 17-H Bis (Sellos Digitales CSD), Art. 28/32-B Ter (Contabilidad y Beneficiario Controlador) y Carta Porte 3.1.
-                        </p>
-                        <div class="text-[10px] text-emerald-300 font-mono-code bg-emerald-950/30 border border-emerald-500/25 rounded-lg p-2.5 mb-4">
-                            <strong>Beneficio Directo:</strong> Asegura el 100% de la deducibilidad de ISR e IVA y garantiza facturación continua 24/7 sin bloqueo de sellos.
-                        </div>
-                    </div>
-                    <span class="text-xs font-bold text-emerald-400 font-mono-code flex items-center gap-1 group-hover:translate-x-1 transition pt-4 border-t border-white/10">
-                        Ver artículos, porcentajes y guía de cumplimiento →
-                    </span>
-                </a>
-
-                <!-- IMSS / INFONAVIT -->
-                <a href="/normas/imss" class="quantum-card border border-purple-900/40 hover:border-purple-500/80 rounded-2xl p-6 transition group flex flex-col justify-between">
-                    <div>
-                        <div class="flex items-center justify-between mb-3">
-                            <span class="text-xs font-bold text-purple-400 font-mono-code uppercase bg-purple-950/80 px-2.5 py-1 rounded border border-purple-800/50">IMSS / INFONAVIT</span>
-                            <span class="text-[10px] bg-red-950/80 text-red-300 border border-red-800/60 px-2 py-0.5 rounded font-mono-code font-bold">57% Diferencias en SBC</span>
-                        </div>
-                        <h3 class="text-base font-bold text-white mb-2 group-hover:text-purple-400 transition">Seguridad Social, Prima de Riesgo & REPSE</h3>
-                        <p class="text-xs text-slate-300 font-mono-code leading-relaxed mb-3">
-                            Cubre Art. 15-A (REPSE, ICSOE y SISSUB), Art. 27 (Integración SBC vs. CFDI Nómina), Arts. 71-75 (Prima Anual de Riesgo), SIROC en obras y Opinión 32-D Positiva.
-                        </p>
-                        <div class="text-[10px] text-emerald-300 font-mono-code bg-emerald-950/30 border border-emerald-500/25 rounded-lg p-2.5 mb-4">
-                            <strong>Beneficio Directo:</strong> Permite disminuir hasta 1% anual la Prima de Riesgo IMSS en febrero y elimina Capitales Constitutivos.
-                        </div>
-                    </div>
-                    <span class="text-xs font-bold text-purple-400 font-mono-code flex items-center gap-1 group-hover:translate-x-1 transition pt-4 border-t border-white/10">
-                        Ver artículos, porcentajes y guía de cumplimiento →
-                    </span>
-                </a>
-
-                <!-- SABG / LFPDPPP -->
-                <a href="/normas/inai" class="quantum-card border border-cyan-900/40 hover:border-cyan-500/80 rounded-2xl p-6 transition group flex flex-col justify-between">
-                    <div>
-                        <div class="flex items-center justify-between mb-3">
-                            <span class="text-xs font-bold text-cyan-400 font-mono-code uppercase bg-cyan-950/80 px-2.5 py-1 rounded border border-cyan-800/50">SABG / LFPDPPP</span>
-                            <span class="text-[10px] bg-red-950/80 text-red-300 border border-red-800/60 px-2 py-0.5 rounded font-mono-code font-bold">84% Sin Firma Biométrica</span>
-                        </div>
-                        <h3 class="text-base font-bold text-white mb-2 group-hover:text-cyan-400 transition">Protección de Datos, ARCO & Biométricos</h3>
-                        <p class="text-xs text-slate-300 font-mono-code leading-relaxed mb-3">
-                            Cumplimiento de Arts. 8, 15 y 16 (Avisos Integral, Simplificado y Corto), Art. 9 (Firma en Biométricos y Salud), Art. 19 (Documento de Seguridad) y Derechos ARCO.
-                        </p>
-                        <div class="text-[10px] text-emerald-300 font-mono-code bg-emerald-950/30 border border-emerald-500/25 rounded-lg p-2.5 mb-4">
-                            <strong>Beneficio Directo:</strong> Protege su cartera de clientes y valida legalmente el uso de huellas dactilares de asistencia en juicios laborales.
-                        </div>
-                    </div>
-                    <span class="text-xs font-bold text-cyan-400 font-mono-code flex items-center gap-1 group-hover:translate-x-1 transition pt-4 border-t border-white/10">
-                        Ver artículos, porcentajes y guía de cumplimiento →
-                    </span>
-                </a>
-
-                <!-- PLD / 9 SECTORIALES -->
-                <a href="/normas/pld" class="quantum-card border border-amber-900/40 hover:border-amber-500/80 rounded-2xl p-6 transition group flex flex-col justify-between">
-                    <div>
-                        <div class="flex items-center justify-between mb-3">
-                            <span class="text-xs font-bold text-amber-400 font-mono-code uppercase bg-amber-950/80 px-2.5 py-1 rounded border border-amber-800/50">UIF / 9 SECTORIALES</span>
-                            <span class="text-[10px] bg-red-950/80 text-red-300 border border-red-800/60 px-2 py-0.5 rounded font-mono-code font-bold">66% Sin PIPC Vigente</span>
-                        </div>
-                        <h3 class="text-base font-bold text-white mb-2 group-hover:text-amber-400 transition">Antilavado (LFPIORPI) y 9 Módulos por SCIAN</h3>
-                        <p class="text-xs text-slate-300 font-mono-code leading-relaxed mb-3">
-                            Cobertura específica por giro SCIAN: Actividades Vulnerables UIF, COFEPRIS (NOM-251/051), Protección Civil (PIPC >100 m²), SEMARNAT, SICT, SSPC, SEP y SECTUR.
-                        </p>
-                        <div class="text-[10px] text-emerald-300 font-mono-code bg-emerald-950/30 border border-emerald-500/25 rounded-lg p-2.5 mb-4">
-                            <strong>Beneficio Directo:</strong> Evita sellos de clausura inmediata en locales o plantas y asegura la validez de pólizas de seguro empresarial.
-                        </div>
-                    </div>
-                    <span class="text-xs font-bold text-amber-400 font-mono-code flex items-center gap-1 group-hover:translate-x-1 transition pt-4 border-t border-white/10">
-                        Ver los 9 módulos, porcentajes y guía →
-                    </span>
-                </a>
-
-                <!-- PROFECO / SE -->
-                <a href="/normas/comercio" class="quantum-card border border-teal-900/40 hover:border-teal-500/80 rounded-2xl p-6 transition group flex flex-col justify-between">
-                    <div>
-                        <div class="flex items-center justify-between mb-3">
-                            <span class="text-xs font-bold text-teal-400 font-mono-code uppercase bg-teal-950/80 px-2.5 py-1 rounded border border-teal-800/50">PROFECO / SE</span>
-                            <span class="text-[10px] bg-red-950/80 text-red-300 border border-red-800/60 px-2 py-0.5 rounded font-mono-code font-bold">63% Garantías Inválidas</span>
-                        </div>
-                        <h3 class="text-base font-bold text-white mb-2 group-hover:text-teal-400 transition">Comercio Digital, RRPAC & NOM-151</h3>
-                        <p class="text-xs text-slate-300 font-mono-code leading-relaxed mb-3">
-                            Cumplimiento de Art. 76 BIS (Tiendas Virtuales y Precios Totales), Art. 77 (Garantía Mínima de 90 días), Arts. 85-90 (Contratos RRPAC), Publicidad Veraz y NOM-151.
-                        </p>
-                        <div class="text-[10px] text-emerald-300 font-mono-code bg-emerald-950/30 border border-emerald-500/25 rounded-lg p-2.5 mb-4">
-                            <strong>Beneficio Directo:</strong> Reduce contracargos bancarios, evita quejas en el Buró Comercial y blinda la exigibilidad de sus contratos.
-                        </div>
-                    </div>
-                    <span class="text-xs font-bold text-teal-400 font-mono-code flex items-center gap-1 group-hover:translate-x-1 transition pt-4 border-t border-white/10">
-                        Ver artículos, porcentajes y guía de cumplimiento →
-                    </span>
-                </a>
-            </div>
-
-            <!-- Nuevo Bloque de Valor: Motores de Cruce Masivo contra Padrones, Listas Negras y Litigios -->
-            <div class="quantum-card rounded-2xl p-6 sm:p-8 border border-white/15">
-                <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-5 mb-6 border-b border-white/10">
-                    <div>
-                        <span class="text-[10px] font-bold font-mono-code text-emerald-400 uppercase tracking-widest block">Verificación Pericial en Padrones Oficiales Federales</span>
-                        <h3 class="text-xl font-extrabold text-white mt-0.5">Bases de Datos Oficiales, Listas Negras y Riesgo de Demandas Incluidas en su Escaneo</h3>
-                    </div>
-                    <span class="text-[11px] font-mono-code text-slate-300 bg-slate-900/90 border border-white/10 px-3 py-1.5 rounded-lg shrink-0">
-                        +5.5 Millones de Unidades Indexadas (32 Estados)
-                    </span>
-                </div>
-                <div class="grid sm:grid-cols-2 lg:grid-cols-3 gap-4 font-mono-code text-xs">
-                    <div class="bg-slate-950/70 border border-red-500/25 rounded-xl p-4">
-                        <span class="text-[10px] font-bold text-red-400 uppercase block mb-1">1. SAT Lista Negra Art. 69-B (EFOS / EDOS)</span>
-                        <p class="text-[11px] text-slate-300 leading-snug">Cruce contra los 14,247 contribuyentes publicados en el DOF como presuntos o definitivos por operaciones simuladas, protegiendo sus deducciones.</p>
-                    </div>
-                    <div class="bg-slate-950/70 border border-amber-500/25 rounded-xl p-4">
-                        <span class="text-[10px] font-bold text-amber-400 uppercase block mb-1">2. SAT Art. 69 (No Localizados y Créditos Firmes)</span>
-                        <p class="text-[11px] text-slate-300 leading-snug">Detecta créditos fiscales exigibles, firmes, condonados o estatus de No Localizado que detonan el bloqueo inmediato de Sellos Digitales (CSD).</p>
-                    </div>
-                    <div class="bg-slate-950/70 border border-purple-500/25 rounded-xl p-4">
-                        <span class="text-[10px] font-bold text-purple-400 uppercase block mb-1">3. Padrón STPS REPSE & Responsabilidad Solidaria</span>
-                        <p class="text-[11px] text-slate-300 leading-snug">Verifica la vigencia del registro de servicios especializados y previene que las deudas de IMSS/INFONAVIT de un contratista se cobren a su empresa.</p>
-                    </div>
-                    <div class="bg-slate-950/70 border border-cyan-500/25 rounded-xl p-4">
-                        <span class="text-[10px] font-bold text-cyan-400 uppercase block mb-1">4. Directorio SABG / SFP (Inhabilitados Gobierno)</span>
-                        <p class="text-[11px] text-slate-300 leading-snug">Identifica proveedores y contratistas sancionados o impedidos para celebrar contratos con dependencias federales y estatales.</p>
-                    </div>
-                    <div class="bg-slate-950/70 border border-teal-500/25 rounded-xl p-4">
-                        <span class="text-[10px] font-bold text-teal-400 uppercase block mb-1">5. PROFECO Buró Comercial y Registro RRPAC</span>
-                        <p class="text-[11px] text-slate-300 leading-snug">Monitorea antecedentes de quejas de consumidores y verifica la obligatoriedad de inscribir su Contrato de Adhesión por giro SCIAN.</p>
-                    </div>
-                    <div class="bg-slate-950/70 border border-blue-500/25 rounded-xl p-4">
-                        <span class="text-[10px] font-bold text-blue-400 uppercase block mb-1">6. Blindaje ante Demandas Laborales (CFCRL / LFT)</span>
-                        <p class="text-[11px] text-slate-300 leading-snug">Evalúa la existencia de las actas, políticas firmadas y consentimientos biométricos indispensables para defender a la empresa en juicios laborales.</p>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </section>
-
-    <!-- Módulo de Validez Legal y Respaldo Pericial -->
-    <section id="validez-legal" class="py-20 border-b border-white/10 bg-transparent">
-        <div class="max-w-7xl mx-auto px-6">
-            <div class="text-center mb-16">
-                <span class="text-xs font-bold text-emerald-400 uppercase tracking-widest font-mono-code">Sustento Legal & Procesal</span>
-                <h2 class="text-3xl sm:text-4xl font-extrabold text-white mt-1 tracking-tight">Respaldo Pericial & Validez Probatoria</h2>
-                <p class="text-slate-400 text-xs sm:text-sm max-w-3xl mx-auto mt-2 font-mono-code leading-relaxed">
-                    Seleccione cualquiera de las garantías institucionales para revisar el marco normativo y eficacia procesal.
-                </p>
-            </div>
-
-            <div class="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
-                <a href="/validez/nom-151" class="bg-white/[0.04] shadow-[0_8px_32px_rgba(0,0,0,0.5)] border border-white/15 rounded-2xl p-6 hover:border-blue-500/50 transition group flex flex-col justify-between">
-                    <div>
-                        <div class="w-10 h-10 bg-blue-950 border border-blue-800/80 text-blue-400 rounded-xl flex items-center justify-center font-bold text-lg mb-4">⚖️</div>
-                        <h3 class="text-sm font-bold text-white mb-2">Fecha Cierta SCJN & NOM-151</h3>
-                        <p class="text-xs text-slate-400 font-mono-code leading-relaxed mb-4">
-                            Acreditación de inalterabilidad conforme al Código de Comercio, Jurisprudencia SCJN y Arbitrum L2.
-                        </p>
-                    </div>
-                    <span class="text-[10px] font-bold font-mono-code text-blue-400 group-hover:translate-x-1 transition">Ver marco procesal →</span>
-                </a>
-
-                <a href="/validez/dictamen-pericial" class="bg-white/[0.04] shadow-[0_8px_32px_rgba(0,0,0,0.5)] border border-white/15 rounded-2xl p-6 hover:border-emerald-500/50 transition group flex flex-col justify-between">
-                    <div>
-                        <div class="w-10 h-10 bg-emerald-950 border border-emerald-800/80 text-emerald-400 rounded-xl flex items-center justify-center font-bold text-lg mb-4">📜</div>
-                        <h3 class="text-sm font-bold text-white mb-2">Dictamen Pericial Certificado</h3>
-                        <p class="text-xs text-slate-400 font-mono-code leading-relaxed mb-4">
-                            Supervisado por Contador Público Certificado (C.P.C. Víctor Omar Malpica Guillén).
-                        </p>
-                    </div>
-                    <span class="text-[10px] font-bold font-mono-code text-emerald-400 group-hover:translate-x-1 transition">Ver acreditación C.P.C. →</span>
-                </a>
-
-                <a href="/validez/cifrado-sha256" class="bg-white/[0.04] shadow-[0_8px_32px_rgba(0,0,0,0.5)] border border-white/15 rounded-2xl p-6 hover:border-indigo-500/50 transition group flex flex-col justify-between">
-                    <div>
-                        <div class="w-10 h-10 bg-indigo-950 border border-indigo-800/80 text-indigo-400 rounded-xl flex items-center justify-center font-bold text-lg mb-4">🔐</div>
-                        <h3 class="text-sm font-bold text-white mb-2">Cifrado Merkle SHA-256</h3>
-                        <p class="text-xs text-slate-400 font-mono-code leading-relaxed mb-4">
-                            Verificación mediante estructuras Merkle Trees. Imposibilidad matemática de alteración.
-                        </p>
-                    </div>
-                    <span class="text-[10px] font-bold font-mono-code text-indigo-400 group-hover:translate-x-1 transition">Ver protocolo Merkle →</span>
-                </a>
-
-                <a href="/validez/lfpdppp-privacidad" class="bg-white/[0.04] shadow-[0_8px_32px_rgba(0,0,0,0.5)] border border-white/15 rounded-2xl p-6 hover:border-sky-500/50 transition group flex flex-col justify-between">
-                    <div>
-                        <div class="w-10 h-10 bg-sky-950 border border-sky-800/80 text-sky-400 rounded-xl flex items-center justify-center font-bold text-lg mb-4">🛡️</div>
-                        <h3 class="text-sm font-bold text-white mb-2">Sanitización PII & LFPDPPP</h3>
-                        <p class="text-xs text-slate-400 font-mono-code leading-relaxed mb-4">
-                            Procesamiento en memoria RAM con enmascaramiento Regex y validación e.firma en navegador (Wasm).
-                        </p>
-                    </div>
-                    <span class="text-[10px] font-bold font-mono-code text-sky-400 group-hover:translate-x-1 transition">Ver gobernanza de datos →</span>
-                </a>
-            </div>
-        </div>
-    </section>
-
-    <!-- Módulo Express Check + Cuestionario de Certeza Pericial -->
-    <section id="express-check" class="py-20 bg-transparent">
-        <div class="max-w-4xl mx-auto px-6">
-            <div class="bg-white/[0.05] shadow-[0_8px_32px_rgba(0,0,0,0.5)] border border-white/15 rounded-2xl p-8 sm:p-12 shadow-2xl relative overflow-hidden">
-                <div class="text-center mb-8">
-                    <span class="text-xs font-bold text-blue-400 uppercase tracking-widest font-mono-code">Motor de Diagnóstico OSINT & Calibración Pericial</span>
-                    <h2 class="text-2xl sm:text-3xl font-extrabold text-white mt-1 tracking-tight">Auditoría Exprés por RFC y Dominio</h2>
-                    <p class="text-slate-400 text-xs font-mono-code mt-2">
-                        Ingrese su RFC y sitio web para cruzar contra INEGI DENUE, SAT 69-B, REPSE y evaluar las 39 NOMs de la STPS.
-                    </p>
-                </div>
-
-                <form onsubmit="runLiveCalibrationScan(event)" class="space-y-4">
-                    <div class="grid sm:grid-cols-2 gap-3">
-                        <input type="text" id="folioInput" value="EST850628K51" placeholder="RFC o Folio (Ej. EST850628K51)" required class="bg-slate-950 border border-white/15 rounded-xl px-5 py-4 text-xs font-mono-code text-white placeholder-slate-600 focus:outline-none focus:border-blue-500">
-                        <input type="text" id="domainInput" value="steren.com.mx" placeholder="Dominio Web (Ej. steren.com.mx)" class="bg-slate-950 border border-white/15 rounded-xl px-5 py-4 text-xs font-mono-code text-white placeholder-slate-600 focus:outline-none focus:border-blue-500">
-                    </div>
-
-                    <!-- Acordeón del Cuestionario de Certeza Pericial (12 Vectores Internos) -->
-                    <details class="bg-white/[0.03] border border-white/15 rounded-xl p-4 text-xs font-mono-code text-slate-300">
-                        <summary class="cursor-pointer font-bold text-blue-400 hover:text-blue-300 select-none">
-                            Calibración Pericial de Variables Internas (Opcional — Confirmar Variables Internas STPS / LFPDPPP / SAT)
-                        </summary>
-                        <div class="grid sm:grid-cols-2 gap-3 mt-4 pt-4 border-t border-white/15 text-[11px]">
-                            <label class="flex items-center justify-between bg-white/[0.05] shadow-[0_8px_32px_rgba(0,0,0,0.5)] p-2.5 rounded-lg border border-white/15">
-                                <span>Plantilla exacta de empleados:</span>
-                                <input id="cal_emp" type="number" value="45" min="1" class="w-20 bg-slate-950 border border-slate-700 rounded px-2 py-1 text-right text-emerald-400 font-bold">
-                            </label>
-                            <label class="flex items-center gap-2 bg-white/[0.05] shadow-[0_8px_32px_rgba(0,0,0,0.5)] p-2.5 rounded-lg border border-white/15 cursor-pointer">
-                                <input id="cal_nom037" type="checkbox" checked class="accent-blue-500">
-                                <span>Personal en Home Office >40% (NOM-037)</span>
-                            </label>
-                            <label class="flex items-center gap-2 bg-white/[0.05] shadow-[0_8px_32px_rgba(0,0,0,0.5)] p-2.5 rounded-lg border border-white/15 cursor-pointer">
-                                <input id="cal_repse" type="checkbox" checked class="accent-blue-500">
-                                <span>Contrata limpieza/vigilancia/terceros (REPSE)</span>
-                            </label>
-                            <label class="flex items-center gap-2 bg-white/[0.05] shadow-[0_8px_32px_rgba(0,0,0,0.5)] p-2.5 rounded-lg border border-white/15 cursor-pointer">
-                                <input id="cal_bio" type="checkbox" checked class="accent-blue-500">
-                                <span>Usa reloj checador biométrico / datos salud</span>
-                            </label>
-                            <label class="flex items-center gap-2 bg-white/[0.05] shadow-[0_8px_32px_rgba(0,0,0,0.5)] p-2.5 rounded-lg border border-white/15 cursor-pointer">
-                                <input id="cal_69b" type="checkbox" checked class="accent-blue-500">
-                                <span>Paga servicios intangibles Corporativo (Art. 69-B)</span>
-                            </label>
-                            <label class="flex items-center gap-2 bg-white/[0.05] shadow-[0_8px_32px_rgba(0,0,0,0.5)] p-2.5 rounded-lg border border-white/15 cursor-pointer">
-                                <input id="cal_nom006" type="checkbox" checked class="accent-blue-500">
-                                <span>Manejo de cargas / almacén (NOM-006/036)</span>
-                            </label>
-                            <label class="flex items-center gap-2 bg-white/[0.05] shadow-[0_8px_32px_rgba(0,0,0,0.5)] p-2.5 rounded-lg border border-white/15 cursor-pointer">
-                                <input id="cal_nom020" type="checkbox" class="accent-blue-500">
-                                <span>Usa compresores o calderas (NOM-020)</span>
-                            </label>
-                            <label class="flex items-center gap-2 bg-white/[0.05] shadow-[0_8px_32px_rgba(0,0,0,0.5)] p-2.5 rounded-lg border border-white/15 cursor-pointer">
-                                <input id="cal_nom005" type="checkbox" class="accent-blue-500">
-                                <span>Sustancias químicas peligrosas (NOM-005/018)</span>
-                            </label>
-                            <label class="flex items-center gap-2 bg-white/[0.05] shadow-[0_8px_32px_rgba(0,0,0,0.5)] p-2.5 rounded-lg border border-white/15 cursor-pointer">
-                                <input id="cal_transfer" type="checkbox" checked class="accent-blue-500">
-                                <span>Comparte datos con despachos/nube (Art. 36)</span>
-                            </label>
-                            <label class="flex items-center gap-2 bg-white/[0.05] shadow-[0_8px_32px_rgba(0,0,0,0.5)] p-2.5 rounded-lg border border-white/15 cursor-pointer">
-                                <input id="cal_cartaporte" type="checkbox" class="accent-blue-500">
-                                <span>Transporte en tramos federales (Carta Porte)</span>
-                            </label>
-                            <label class="flex items-center gap-2 bg-white/[0.05] shadow-[0_8px_32px_rgba(0,0,0,0.5)] p-2.5 rounded-lg border border-white/15 cursor-pointer sm:col-span-2">
-                                <input id="cal_pld" type="checkbox" class="accent-blue-500">
-                                <span>Realiza Actividades Vulnerables Antilavado (Art. 17 LFPIORPI: mutuo, inmuebles, blindaje, activos)</span>
-                            </label>
-                        </div>
-                    </details>
-
-                                                            <!-- Desplegable con Pre-llenado Automático y Campos en Blanco para Uso Multi-Proveedor -->
-                    <details id="dossier-details-box" class="bg-white/[0.03] border border-emerald-900/60 rounded-xl p-4 text-xs font-mono-code text-slate-300">
-                        <summary class="cursor-pointer font-bold text-emerald-400 hover:text-emerald-300 select-none flex items-center justify-between">
-                            <span>Personalización de Instrumentos Jurídicos y Datos Pre-Cargados (Opcional)</span>
-                            <span class="text-[10px] bg-emerald-950 text-emerald-300 border border-emerald-800 px-2 py-0.5 rounded">Pre-llenado Automático</span>
-                        </summary>
-                        <p class="text-[11px] text-slate-400 mt-2 mb-3 leading-relaxed">
-                            Los datos públicos detectados por su RFC y sitio web se pre-cargan automáticamente abajo. <strong>Los campos que deje en blanco</strong> (como los datos de un proveedor específico para el Contrato Art. 69-B o los firmantes internos) se generarán con <strong>líneas jurídicas formales de llenado (<code>____________________</code>)</strong> para que pueda reutilizar sus contratos con múltiples proveedores:
-                        </p>
-                        <div class="grid sm:grid-cols-2 gap-3 pt-2 border-t border-white/15 text-[11px]">
-                            <div>
-                                <label class="text-[10px] text-slate-400 block mb-1">Denominación o Razón Social</label>
-                                <input id="dos_razon" type="text" placeholder="" class="w-full bg-white/[0.05] shadow-[0_8px_32px_rgba(0,0,0,0.5)] border border-white/15 rounded-lg px-3 py-2 text-white">
-                            </div>
-                            <div>
-                                <label class="text-[10px] text-slate-400 block mb-1">Giro o Actividad Económica (SCIAN)</label>
-                                <input id="dos_giro" type="text" placeholder="" class="w-full bg-white/[0.05] shadow-[0_8px_32px_rgba(0,0,0,0.5)] border border-white/15 rounded-lg px-3 py-2 text-white">
-                            </div>
-                            <div>
-                                <label class="text-[10px] text-slate-400 block mb-1">Domicilio del Centro de Trabajo</label>
-                                <input id="dos_domicilio" type="text" placeholder="" class="w-full bg-white/[0.05] shadow-[0_8px_32px_rgba(0,0,0,0.5)] border border-white/15 rounded-lg px-3 py-2 text-white">
-                            </div>
-                            <div class="grid grid-cols-2 gap-2">
-                                <div>
-                                    <label class="text-[10px] text-slate-400 block mb-1">Código Postal Fiscal</label>
-                                    <input id="dos_cp" type="text" maxlength="5" placeholder="" class="w-full bg-white/[0.05] shadow-[0_8px_32px_rgba(0,0,0,0.5)] border border-white/15 rounded-lg px-3 py-2 text-white">
-                                </div>
-                                <div>
-                                    <label class="text-[10px] text-slate-400 block mb-1">Entidad / Jurisdicción</label>
-                                    <input id="dos_estado" type="text" placeholder="" class="w-full bg-white/[0.05] shadow-[0_8px_32px_rgba(0,0,0,0.5)] border border-white/15 rounded-lg px-3 py-2 text-white">
-                                </div>
-                            </div>
-                            <div>
-                                <label class="text-[10px] text-slate-400 block mb-1">Correo de Atención a Derechos ARCO</label>
-                                <input id="dos_email" type="email" placeholder="" class="w-full bg-white/[0.05] shadow-[0_8px_32px_rgba(0,0,0,0.5)] border border-white/15 rounded-lg px-3 py-2 text-white">
-                            </div>
-                            <div>
-                                <label class="text-[10px] text-slate-400 block mb-1">Teléfono Corporativo</label>
-                                <input id="dos_tel" type="text" placeholder="" class="w-full bg-white/[0.05] shadow-[0_8px_32px_rgba(0,0,0,0.5)] border border-white/15 rounded-lg px-3 py-2 text-white">
-                            </div>
-                            <div>
-                                <label class="text-[10px] text-slate-400 block mb-1">Nombre del Representante Legal</label>
-                                <input id="dos_rep_nombre" type="text" placeholder="" class="w-full bg-white/[0.05] shadow-[0_8px_32px_rgba(0,0,0,0.5)] border border-white/15 rounded-lg px-3 py-2 text-white">
-                            </div>
-                            <div>
-                                <label class="text-[10px] text-slate-400 block mb-1">Cargo del Representante Legal</label>
-                                <input id="dos_rep_cargo" type="text" placeholder="" class="w-full bg-white/[0.05] shadow-[0_8px_32px_rgba(0,0,0,0.5)] border border-white/15 rounded-lg px-3 py-2 text-white">
-                            </div>
-                            <div>
-                                <label class="text-[10px] text-slate-400 block mb-1">Oficial de Privacidad (Art. 17 LFPDPPP)</label>
-                                <input id="dos_oficial_priv" type="text" placeholder="" class="w-full bg-white/[0.05] shadow-[0_8px_32px_rgba(0,0,0,0.5)] border border-white/15 rounded-lg px-3 py-2 text-white">
-                            </div>
-                            <div>
-                                <label class="text-[10px] text-slate-400 block mb-1">Registro Patronal IMSS</label>
-                                <input id="dos_reg_patronal" type="text" placeholder="" class="w-full bg-white/[0.05] shadow-[0_8px_32px_rgba(0,0,0,0.5)] border border-white/15 rounded-lg px-3 py-2 text-white">
-                            </div>
-                            <div>
-                                <label class="text-[10px] text-slate-400 block mb-1">Coordinador Comisión Mixta (NOM-019 / NOM-030)</label>
-                                <input id="dos_csh_coord" type="text" placeholder="" class="w-full bg-white/[0.05] shadow-[0_8px_32px_rgba(0,0,0,0.5)] border border-white/15 rounded-lg px-3 py-2 text-white">
-                            </div>
-                            <div>
-                                <label class="text-[10px] text-slate-400 block mb-1">Secretario Comisión Mixta (NOM-019)</label>
-                                <input id="dos_csh_sec" type="text" placeholder="" class="w-full bg-white/[0.05] shadow-[0_8px_32px_rgba(0,0,0,0.5)] border border-white/15 rounded-lg px-3 py-2 text-white">
-                            </div>
-                            <div>
-                                <label class="text-[10px] text-slate-400 block mb-1">Razón Social del Proveedor (Contrato Art. 69-B)</label>
-                                <input id="dos_prov_nombre" type="text" placeholder="" class="w-full bg-white/[0.05] shadow-[0_8px_32px_rgba(0,0,0,0.5)] border border-white/15 rounded-lg px-3 py-2 text-white">
-                            </div>
-                            <div>
-                                <label class="text-[10px] text-slate-400 block mb-1">RFC del Proveedor (Contrato Art. 69-B)</label>
-                                <input id="dos_prov_rfc" type="text" placeholder="" class="w-full bg-white/[0.05] shadow-[0_8px_32px_rgba(0,0,0,0.5)] border border-white/15 rounded-lg px-3 py-2 text-white">
-                            </div>
-                            <div class="sm:col-span-2">
-                                <label class="text-[10px] text-slate-400 block mb-1">Objeto / Servicio del Contrato de Materialidad (Art. 69-B CFF)</label>
-                                <input id="dos_prov_obj" type="text" placeholder="" class="w-full bg-white/[0.05] shadow-[0_8px_32px_rgba(0,0,0,0.5)] border border-white/15 rounded-lg px-3 py-2 text-white">
-                            </div>
-                        </div>
-                    </details>
-
-
-                    <div class="flex flex-col sm:flex-row gap-3">
-                        <button id="btnRunScan" type="submit" class="flex-1 bg-gradient-to-r from-blue-600 to-emerald-600 hover:from-blue-500 hover:to-emerald-500 text-white font-bold text-xs px-8 py-4 rounded-xl transition font-mono-code shadow-lg shadow-blue-600/20 uppercase tracking-wider">
-                            Ejecutar Diagnóstico Pericial 360°
-                        </button>
-                        <button type="button" onclick="const v=document.getElementById('folioInput').value.trim(); if(v) window.location.href='/verify/'+encodeURIComponent(v);" class="bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold text-xs px-6 py-4 rounded-xl transition font-mono-code">
-                            Ir Directo a Constancia
-                        </button>
-                    </div>
-                </form>
-
-                <!-- Resultado Instantáneo del Escaneo -->
-                <div id="live-scan-result" class="hidden mt-8 pt-8 border-t border-white/15 font-mono-code text-xs space-y-4">
-                    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center bg-slate-950 p-4 rounded-xl border border-red-500/40 gap-3">
-                        <div>
-                            <span class="text-[10px] text-red-400 uppercase font-bold block">Diagnóstico Concluido en Vivo</span>
-                            <h3 id="res-razon" class="text-base font-bold text-white"></h3>
-                            <span id="res-findings-count" class="text-[11px] text-slate-400"></span>
-                        </div>
-                        <div class="text-right">
-                            <span id="res-score" class="text-xs bg-red-950 text-red-400 border border-red-700 px-2.5 py-1 rounded font-bold block mb-1"></span>
-                            <span id="res-fine" class="text-lg font-extrabold text-red-400"></span>
-                        </div>
-                    </div>
-                    <div class="text-[11px] text-slate-400 bg-slate-950 p-3 rounded-lg border border-white/15 break-all">
-                        Sello SHA-256 Generado: <span id="res-hash" class="text-emerald-400 font-bold"></span>
-                    </div>
-                    <div class="grid sm:grid-cols-3 gap-3">
-                        <a id="btn-go-micro" href="#" class="text-center bg-slate-950 hover:bg-slate-800 text-amber-400 border border-amber-500/40 font-bold py-3 px-4 rounded-xl transition">
-                            Descargar Pre-Dictamen Preliminar PDF
-                        </a>
-                        <a id="btn-go-verify" href="#" class="text-center bg-slate-800 hover:bg-slate-700 text-white font-bold py-3 px-4 rounded-xl transition">
-                            Consultar Cédula Registral Pública
-                        </a>
-                        <a id="btn-go-checkout" href="#" class="text-center bg-red-600 hover:bg-red-500 text-white font-bold py-3 px-4 rounded-xl transition shadow-lg shadow-red-600/20">
-                            Activar Blindaje Integral y CFDI 4.0
-                        </a>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </section>
-
-        <!-- Modal 1: Rescate Anti-Abandono (Cristal Translúcido + Explosión Fotónica Roja a Verde) -->
-    <div id="exit-intent-modal" class="hidden fixed inset-0 photonic-modal-backdrop z-50 items-center justify-center p-4">
-        <div class="photonic-modal-card rounded-2xl max-w-lg w-full p-8 font-mono-code text-xs relative">
-            <button onclick="closeExitModal()" class="absolute top-4 right-4 text-slate-300 hover:text-white text-base">✕</button>
-            <span class="inline-block bg-red-500/20 text-red-300 border border-red-400/50 px-3 py-1 rounded-full text-[10px] font-bold uppercase mb-4">
-                Alerta Preventiva de Inspección STPS
-            </span>
-            <h3 class="text-2xl font-extrabold text-white font-sans mb-2 tracking-tight">
-                Espera: No te vayas a ciegas.
-            </h3>
-            <p class="text-slate-100 leading-relaxed mb-6">
-                Antes de cerrar esta ventana, descarga sin costo tu <strong>Pre-Dictamen Pericial en PDF</strong> para <span id="exit-rfc-label" class="text-emerald-300 font-bold">EST850628K51</span> y verifica tu exposición crítica ante la STPS (NOM-035, NOM-019 y NOM-030) con sello criptográfico SHA-256.
-            </p>
-            <div class="flex flex-col sm:flex-row gap-3">
-                <a id="exit-micro-pdf-link" href="/api/micro_scan/EST850628K51" onclick="closeExitModal()" class="flex-1 bg-gradient-to-r from-emerald-600 to-teal-500 hover:from-emerald-500 hover:to-teal-400 text-white text-center font-bold py-3.5 px-5 rounded-xl transition uppercase shadow-lg shadow-emerald-500/25">
-                    Descargar Pre-Dictamen Preliminar
-                </a>
-                <button onclick="closeExitModal()" class="bg-white/10 hover:bg-white/20 text-white border border-white/20 font-bold py-3.5 px-5 rounded-xl transition">
-                    Continuar en el Portal
-                </button>
-            </div>
-        </div>
+      </a>
+      <nav class="hidden md:flex items-center space-x-8 text-xs font-mono-code">
+        <a href="#cobertura-resumen" class="text-slate-400 hover:text-white transition">Cobertura Normativa</a>
+        <a href="#validez-legal" class="text-slate-400 hover:text-white transition">Validez Probatoria</a>
+        <a href="/dashboard.html" class="text-emerald-400 hover:text-emerald-300 transition">Panel para Despachos</a>
+        <a href="#express-check" class="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white font-bold px-5 py-2.5 rounded-xl shadow-lg shadow-blue-600/20 transition">
+          Verificar Folio
+        </a>
+      </nav>
     </div>
+  </header>
 
-    <!-- Modal 2: Consentimiento Criptográfico de Privacidad (LFPDPPP), Cookies Técnicas y Términos (Art. 89 C.Com) -->
-    <div id="legal-consent-modal" class="hidden fixed inset-0 photonic-modal-backdrop z-50 items-center justify-center p-4">
-        <div class="photonic-modal-card rounded-2xl max-w-xl w-full p-8 font-mono-code text-xs relative">
-            <div class="flex items-center justify-between mb-4">
-                <span class="inline-block bg-emerald-500/20 text-emerald-300 border border-emerald-400/50 px-3 py-1 rounded-full text-[10px] font-bold uppercase">
-                    Protocolo de Gobernanza, Privacidad & Fecha Cierta
-                </span>
-                <span class="text-[10px] text-slate-300">LFPDPPP • Art. 89 C.Com</span>
-            </div>
-            <h3 class="text-xl sm:text-2xl font-extrabold text-white font-sans mb-3 tracking-tight">
-                Consentimiento Informado de Privacidad, Términos y Cookies Técnicas
-            </h3>
-            <p class="text-slate-100 leading-relaxed mb-4">
-                Para garantizar la integridad pericial de su sesión, <strong>Firma Pericial Mallen (mallen.lat)</strong> opera bajo estricto apego a la legislación federal vigente:
-            </p>
-            <div class="space-y-2.5 mb-6 text-[11px] text-slate-200 bg-slate-950/35 border border-white/15 rounded-xl p-4">
-                <div>
-                    <strong class="text-emerald-300">Aviso de Privacidad Integral (LFPDPPP / SABG):</strong> Los datos registrales e indicadores ingresados se procesan exclusivamente para la emisión de su diagnóstico y sus instrumentos jurídicos personalizados.
-                </div>
-                <div>
-                    <strong class="text-blue-300">Cookies Técnicas de Integridad Criptográfica:</strong> Utilizamos únicamente almacenamiento técnico de sesión para sincronizar el cálculo de sus multas con sus PDFs y resguardar la huella SHA-256 de su expediente (cero cookies publicitarias de terceros).
-                </div>
-                <div>
-                    <strong class="text-purple-300">Términos de Servicio y Alcance OSINT (Art. 89 C.Com):</strong> Todo dictamen preventivo se emite con sello de tiempo conforme a la NOM-151-SCFI-2016 y Jurisprudencia SCJN de Fecha Cierta.
-                </div>
-            </div>
-            <div class="flex flex-col sm:flex-row items-center justify-between gap-3">
-                <div class="flex gap-4 text-[11px] text-emerald-300">
-                    <a href="/privacy" class="hover:underline">Leer Aviso de Privacidad</a>
-                    <a href="/terms" class="hover:underline">Leer Términos del Servicio</a>
-                </div>
-                <button onclick="acceptLegalConsentModal()" class="w-full sm:w-auto bg-gradient-to-r from-blue-600 to-emerald-600 hover:from-blue-500 hover:to-emerald-500 text-white font-bold py-3.5 px-7 rounded-xl transition uppercase shadow-lg shadow-emerald-600/25">
-                    Aceptar y Continuar al Portal
-                </button>
-            </div>
-        </div>
+  <!-- Hero de Alta Conversión Corporativo -->
+  <section class="py-20 border-b border-slate-900 relative overflow-hidden bg-gradient-to-b from-slate-950 via-slate-900/50 to-slate-950">
+    <div class="max-w-7xl mx-auto px-6 text-center relative z-10">
+      <span class="bg-blue-950/80 border border-blue-800/80 text-blue-300 text-[11px] font-mono-code px-4 py-1.5 rounded-full uppercase tracking-wider mb-6 inline-block shadow-inner">
+        Garantía Técnica & Prueba Pericial Preventiva
+      </span>
+      <h1 class="text-4xl sm:text-6xl font-extrabold text-white tracking-tight mb-6 max-w-4xl mx-auto leading-tight">
+        Acreditación Pericial Preventiva y Dictaminación Criptográfica
+      </h1>
+      <p class="text-slate-400 text-sm sm:text-base max-w-3xl mx-auto font-mono-code mb-10 leading-relaxed">
+        Evaluación técnica de riesgo sancionatorio ante la STPS (39 NOMs), SAT (Art. 69-B), IMSS (REPSE/32-D), SABG/INAI (LFPDPPP), UIF y PROFECO. Emisión de dictámenes con sellado de inalterabilidad Merkle Tree SHA-256 y Fecha Cierta SCJN.
+      </p>
+      <div class="flex flex-col sm:flex-row justify-center items-center gap-4">
+        <a href="#express-check" class="w-full sm:w-auto bg-gradient-to-r from-blue-600 to-emerald-600 hover:from-blue-500 hover:to-emerald-500 text-white font-bold text-xs sm:text-sm px-8 py-4 rounded-xl transition shadow-xl shadow-blue-600/20 uppercase tracking-wider font-mono-code">
+          Auditar RFC o Ingresar Folio
+        </a>
+        <a href="#cobertura-resumen" class="w-full sm:w-auto bg-white/[0.05] shadow-[0_8px_32px_rgba(0,0,0,0.5)] hover:bg-slate-800 text-slate-300 border border-white/15 font-bold text-xs sm:text-sm px-8 py-4 rounded-xl transition font-mono-code">
+          Ver Directorio Regulatorio
+        </a>
+      </div>
     </div>
+  </section>
 
-    <!-- Pie de Página Institucional con nuestro propio Sello Blindaje Mallen (Efecto Bumerán) -->
-    <footer class="border-t border-slate-900 bg-slate-950 py-10 text-center text-xs font-mono-code text-slate-500">
-        <div class="max-w-7xl mx-auto px-6 flex flex-col md:flex-row justify-between items-center gap-6">
+  <!-- Directorio de Cobertura Normativa -->
+  <section id="cobertura-resumen" class="py-20 border-b border-white/10 bg-transparent">
+    <div class="max-w-7xl mx-auto px-6">
+      <div class="text-center mb-14">
+        <span class="text-xs font-bold text-emerald-400 uppercase tracking-widest font-mono-code">Seguridad Laboral, Continuidad Operativa & Blindaje Patrimonial</span>
+        <h2 class="text-3xl sm:text-4xl font-extrabold text-white mt-1 tracking-tight">Directorio de Cobertura Normativa 360°</h2>
+        <p class="text-slate-400 text-xs sm:text-sm max-w-3xl mx-auto mt-2 font-mono-code leading-relaxed">
+          Estar al día con la ley no solo evita multas y clausuras: protege la salud de sus trabajadores, eleva la productividad de su equipo, reduce su Prima de Riesgo IMSS y califica a su empresa ante grandes clientes. Seleccione cualquier rama para ver la guía paso a paso por norma.
+        </p>
+      </div>
+
+      <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-6 mb-14">
+        <!-- STPS -->
+        <a href="/normas/stps" class="quantum-card border border-blue-900/40 hover:border-blue-500/80 rounded-2xl p-6 transition group flex flex-col justify-between">
+          <div>
+            <div class="flex items-center justify-between mb-3">
+              <span class="text-xs font-bold text-blue-400 font-mono-code uppercase bg-blue-950/80 px-2.5 py-1 rounded border border-blue-800/50">STPS • 39 NOMs</span>
+              <span class="text-[10px] bg-red-950/80 text-red-300 border border-red-800/60 px-2 py-0.5 rounded font-mono-code font-bold">71% Incumplimiento NOM-035</span>
+            </div>
+            <h3 class="text-base font-bold text-white mb-2 group-hover:text-blue-400 transition">Seguridad, Salud y Rendimiento en el Trabajo</h3>
+            <p class="text-xs text-slate-300 font-mono-code leading-relaxed mb-3">
+              Guía operativa de las 39 NOMs: NOM-035 (Clima laboral), NOM-037 (Teletrabajo), NOM-036-1 (Ergonomía), NOM-019/030 (Comisión Mixta), NOM-002 (Incendios) e Higiene Industrial.
+            </p>
+            <div class="text-[10px] text-emerald-300 font-mono-code bg-emerald-950/30 border border-emerald-500/25 rounded-lg p-2.5 mb-4">
+              <strong>Beneficio Directo:</strong>Reduce hasta 38% el ausentismo y la rotación de personal, previene accidentes y blinda contra demandas laborales.
+            </div>
+          </div>
+          <span class="text-xs font-bold text-blue-400 font-mono-code flex items-center gap-1 group-hover:translate-x-1 transition pt-4 border-t border-white/10">
+            Ver normas, porcentajes y guía de cumplimiento →
+          </span>
+        </a>
+
+        <!-- SAT / CFF -->
+        <a href="/normas/sat" class="quantum-card border border-emerald-900/40 hover:border-emerald-500/80 rounded-2xl p-6 transition group flex flex-col justify-between">
+          <div>
+            <div class="flex items-center justify-between mb-3">
+              <span class="text-xs font-bold text-emerald-400 font-mono-code uppercase bg-emerald-950/80 px-2.5 py-1 rounded border border-emerald-800/50">SAT / CFF</span>
+              <span class="text-[10px] bg-red-950/80 text-red-300 border border-red-800/60 px-2 py-0.5 rounded font-mono-code font-bold">81% Rechazo sin Fecha Cierta</span>
+            </div>
+            <h3 class="text-base font-bold text-white mb-2 group-hover:text-emerald-400 transition">Materialidad Fiscal, Fecha Cierta & Sellos CSD</h3>
+            <p class="text-xs text-slate-300 font-mono-code leading-relaxed mb-3">
+              Blindaje para Art. 69-B (EFOS/EDOS), Art. 5-A (Razón de Negocios), Art. 17-H Bis (Sellos Digitales CSD), Art. 28/32-B Ter (Contabilidad y Beneficiario Controlador) y Carta Porte 3.1.
+            </p>
+            <div class="text-[10px] text-emerald-300 font-mono-code bg-emerald-950/30 border border-emerald-500/25 rounded-lg p-2.5 mb-4">
+              <strong>Beneficio Directo:</strong>Asegura el 100% de la deducibilidad de ISR e IVA y garantiza facturación continua 24/7 sin bloqueo de sellos.
+            </div>
+          </div>
+          <span class="text-xs font-bold text-emerald-400 font-mono-code flex items-center gap-1 group-hover:translate-x-1 transition pt-4 border-t border-white/10">
+            Ver artículos, porcentajes y guía de cumplimiento →
+          </span>
+        </a>
+
+        <!-- IMSS / INFONAVIT -->
+        <a href="/normas/imss" class="quantum-card border border-purple-900/40 hover:border-purple-500/80 rounded-2xl p-6 transition group flex flex-col justify-between">
+          <div>
+            <div class="flex items-center justify-between mb-3">
+              <span class="text-xs font-bold text-purple-400 font-mono-code uppercase bg-purple-950/80 px-2.5 py-1 rounded border border-purple-800/50">IMSS / INFONAVIT</span>
+              <span class="text-[10px] bg-red-950/80 text-red-300 border border-red-800/60 px-2 py-0.5 rounded font-mono-code font-bold">57% Diferencias en SBC</span>
+            </div>
+            <h3 class="text-base font-bold text-white mb-2 group-hover:text-purple-400 transition">Seguridad Social, Prima de Riesgo & REPSE</h3>
+            <p class="text-xs text-slate-300 font-mono-code leading-relaxed mb-3">
+              Cubre Art. 15-A (REPSE, ICSOE y SISSUB), Art. 27 (Integración SBC vs. CFDI Nómina), Arts. 71-75 (Prima Anual de Riesgo), SIROC en obras y Opinión 32-D Positiva.
+            </p>
+            <div class="text-[10px] text-emerald-300 font-mono-code bg-emerald-950/30 border border-emerald-500/25 rounded-lg p-2.5 mb-4">
+              <strong>Beneficio Directo:</strong>Permite disminuir hasta 1% anual la Prima de Riesgo IMSS en febrero y elimina Capitales Constitutivos.
+            </div>
+          </div>
+          <span class="text-xs font-bold text-purple-400 font-mono-code flex items-center gap-1 group-hover:translate-x-1 transition pt-4 border-t border-white/10">
+            Ver artículos, porcentajes y guía de cumplimiento →
+          </span>
+        </a>
+
+        <!-- SABG / LFPDPPP -->
+        <a href="/normas/inai" class="quantum-card border border-cyan-900/40 hover:border-cyan-500/80 rounded-2xl p-6 transition group flex flex-col justify-between">
+          <div>
+            <div class="flex items-center justify-between mb-3">
+              <span class="text-xs font-bold text-cyan-400 font-mono-code uppercase bg-cyan-950/80 px-2.5 py-1 rounded border border-cyan-800/50">SABG / LFPDPPP</span>
+              <span class="text-[10px] bg-red-950/80 text-red-300 border border-red-800/60 px-2 py-0.5 rounded font-mono-code font-bold">84% Sin Firma Biométrica</span>
+            </div>
+            <h3 class="text-base font-bold text-white mb-2 group-hover:text-cyan-400 transition">Protección de Datos, ARCO & Biométricos</h3>
+            <p class="text-xs text-slate-300 font-mono-code leading-relaxed mb-3">
+              Cumplimiento de Arts. 8, 15 y 16 (Avisos Integral, Simplificado y Corto), Art. 9 (Firma en Biométricos y Salud), Art. 19 (Documento de Seguridad) y Derechos ARCO.
+            </p>
+            <div class="text-[10px] text-emerald-300 font-mono-code bg-emerald-950/30 border border-emerald-500/25 rounded-lg p-2.5 mb-4">
+              <strong>Beneficio Directo:</strong>Protege su cartera de clientes y valida legalmente el uso de huellas dactilares de asistencia en juicios laborales.
+            </div>
+          </div>
+          <span class="text-xs font-bold text-cyan-400 font-mono-code flex items-center gap-1 group-hover:translate-x-1 transition pt-4 border-t border-white/10">
+            Ver artículos, porcentajes y guía de cumplimiento →
+          </span>
+        </a>
+
+        <!-- PLD / 9 SECTORIALES -->
+        <a href="/normas/pld" class="quantum-card border border-amber-900/40 hover:border-amber-500/80 rounded-2xl p-6 transition group flex flex-col justify-between">
+          <div>
+            <div class="flex items-center justify-between mb-3">
+              <span class="text-xs font-bold text-amber-400 font-mono-code uppercase bg-amber-950/80 px-2.5 py-1 rounded border border-amber-800/50">UIF / 9 SECTORIALES</span>
+              <span class="text-[10px] bg-red-950/80 text-red-300 border border-red-800/60 px-2 py-0.5 rounded font-mono-code font-bold">66% Sin PIPC Vigente</span>
+            </div>
+            <h3 class="text-base font-bold text-white mb-2 group-hover:text-amber-400 transition">Antilavado (LFPIORPI) y 9 Módulos por SCIAN</h3>
+            <p class="text-xs text-slate-300 font-mono-code leading-relaxed mb-3">
+              Cobertura específica por giro SCIAN: Actividades Vulnerables UIF, COFEPRIS (NOM-251/051), Protección Civil (PIPC >100 m²), SEMARNAT, SICT, SSPC, SEP y SECTUR.
+            </p>
+            <div class="text-[10px] text-emerald-300 font-mono-code bg-emerald-950/30 border border-emerald-500/25 rounded-lg p-2.5 mb-4">
+              <strong>Beneficio Directo:</strong>Evita sellos de clausura inmediata en locales o plantas y asegura la validez de pólizas de seguro empresarial.
+            </div>
+          </div>
+          <span class="text-xs font-bold text-amber-400 font-mono-code flex items-center gap-1 group-hover:translate-x-1 transition pt-4 border-t border-white/10">
+            Ver los 9 módulos, porcentajes y guía →
+          </span>
+        </a>
+
+        <!-- PROFECO / SE -->
+        <a href="/normas/comercio" class="quantum-card border border-teal-900/40 hover:border-teal-500/80 rounded-2xl p-6 transition group flex flex-col justify-between">
+          <div>
+            <div class="flex items-center justify-between mb-3">
+              <span class="text-xs font-bold text-teal-400 font-mono-code uppercase bg-teal-950/80 px-2.5 py-1 rounded border border-teal-800/50">PROFECO / SE</span>
+              <span class="text-[10px] bg-red-950/80 text-red-300 border border-red-800/60 px-2 py-0.5 rounded font-mono-code font-bold">63% Garantías Inválidas</span>
+            </div>
+            <h3 class="text-base font-bold text-white mb-2 group-hover:text-teal-400 transition">Comercio Digital, RRPAC & NOM-151</h3>
+            <p class="text-xs text-slate-300 font-mono-code leading-relaxed mb-3">
+              Cumplimiento de Art. 76 BIS (Tiendas Virtuales y Precios Totales), Art. 77 (Garantía Mínima de 90 días), Arts. 85-90 (Contratos RRPAC), Publicidad Veraz y NOM-151.
+            </p>
+            <div class="text-[10px] text-emerald-300 font-mono-code bg-emerald-950/30 border border-emerald-500/25 rounded-lg p-2.5 mb-4">
+              <strong>Beneficio Directo:</strong>Reduce contracargos bancarios, evita quejas en el Buró Comercial y blinda la exigibilidad de sus contratos.
+            </div>
+          </div>
+          <span class="text-xs font-bold text-teal-400 font-mono-code flex items-center gap-1 group-hover:translate-x-1 transition pt-4 border-t border-white/10">
+            Ver artículos, porcentajes y guía de cumplimiento →
+          </span>
+        </a>
+      </div>
+
+      <!-- Nuevo Bloque de Valor: Motores de Cruce Masivo contra Padrones, Listas Negras y Litigios -->
+      <div class="quantum-card rounded-2xl p-6 sm:p-8 border border-white/15">
+        <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-5 mb-6 border-b border-white/10">
+          <div>
+            <span class="text-[10px] font-bold font-mono-code text-emerald-400 uppercase tracking-widest block">Verificación Pericial en Padrones Oficiales Federales</span>
+            <h3 class="text-xl font-extrabold text-white mt-0.5">Bases de Datos Oficiales, Listas Negras y Riesgo de Demandas Incluidas en su Escaneo</h3>
+          </div>
+          <span class="text-[11px] font-mono-code text-slate-300 bg-slate-900/90 border border-white/10 px-3 py-1.5 rounded-lg shrink-0">
+            +5.5 Millones de Unidades Indexadas (32 Estados)
+          </span>
+        </div>
+        <div class="grid sm:grid-cols-2 lg:grid-cols-3 gap-4 font-mono-code text-xs">
+          <div class="bg-slate-950/70 border border-red-500/25 rounded-xl p-4">
+            <span class="text-[10px] font-bold text-red-400 uppercase block mb-1">1. SAT Lista Negra Art. 69-B (EFOS / EDOS)</span>
+            <p class="text-[11px] text-slate-300 leading-snug">Cruce contra los 14,247 contribuyentes publicados en el DOF como presuntos o definitivos por operaciones simuladas, protegiendo sus deducciones.</p>
+          </div>
+          <div class="bg-slate-950/70 border border-amber-500/25 rounded-xl p-4">
+            <span class="text-[10px] font-bold text-amber-400 uppercase block mb-1">2. SAT Art. 69 (No Localizados y Créditos Firmes)</span>
+            <p class="text-[11px] text-slate-300 leading-snug">Detecta créditos fiscales exigibles, firmes, condonados o estatus de No Localizado que detonan el bloqueo inmediato de Sellos Digitales (CSD).</p>
+          </div>
+          <div class="bg-slate-950/70 border border-purple-500/25 rounded-xl p-4">
+            <span class="text-[10px] font-bold text-purple-400 uppercase block mb-1">3. Padrón STPS REPSE & Responsabilidad Solidaria</span>
+            <p class="text-[11px] text-slate-300 leading-snug">Verifica la vigencia del registro de servicios especializados y previene que las deudas de IMSS/INFONAVIT de un contratista se cobren a su empresa.</p>
+          </div>
+          <div class="bg-slate-950/70 border border-cyan-500/25 rounded-xl p-4">
+            <span class="text-[10px] font-bold text-cyan-400 uppercase block mb-1">4. Directorio SABG / SFP (Inhabilitados Gobierno)</span>
+            <p class="text-[11px] text-slate-300 leading-snug">Identifica proveedores y contratistas sancionados o impedidos para celebrar contratos con dependencias federales y estatales.</p>
+          </div>
+          <div class="bg-slate-950/70 border border-teal-500/25 rounded-xl p-4">
+            <span class="text-[10px] font-bold text-teal-400 uppercase block mb-1">5. PROFECO Buró Comercial y Registro RRPAC</span>
+            <p class="text-[11px] text-slate-300 leading-snug">Monitorea antecedentes de quejas de consumidores y verifica la obligatoriedad de inscribir su Contrato de Adhesión por giro SCIAN.</p>
+          </div>
+          <div class="bg-slate-950/70 border border-blue-500/25 rounded-xl p-4">
+            <span class="text-[10px] font-bold text-blue-400 uppercase block mb-1">6. Blindaje ante Demandas Laborales (CFCRL / LFT)</span>
+            <p class="text-[11px] text-slate-300 leading-snug">Evalúa la existencia de las actas, políticas firmadas y consentimientos biométricos indispensables para defender a la empresa en juicios laborales.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Módulo de Validez Legal y Respaldo Pericial -->
+  <section id="validez-legal" class="py-20 border-b border-white/10 bg-transparent">
+    <div class="max-w-7xl mx-auto px-6">
+      <div class="text-center mb-16">
+        <span class="text-xs font-bold text-emerald-400 uppercase tracking-widest font-mono-code">Sustento Legal & Procesal</span>
+        <h2 class="text-3xl sm:text-4xl font-extrabold text-white mt-1 tracking-tight">Respaldo Pericial & Validez Probatoria</h2>
+        <p class="text-slate-400 text-xs sm:text-sm max-w-3xl mx-auto mt-2 font-mono-code leading-relaxed">
+          Seleccione cualquiera de las garantías institucionales para revisar el marco normativo y eficacia procesal.
+        </p>
+      </div>
+
+      <div class="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
+        <a href="/validez/nom-151" class="bg-white/[0.04] shadow-[0_8px_32px_rgba(0,0,0,0.5)] border border-white/15 rounded-2xl p-6 hover:border-blue-500/50 transition group flex flex-col justify-between">
+          <div>
+            <div class="w-10 h-10 bg-blue-950 border border-blue-800/80 text-blue-400 rounded-xl flex items-center justify-center font-bold text-lg mb-4">️</div>
+            <h3 class="text-sm font-bold text-white mb-2">Fecha Cierta SCJN & NOM-151</h3>
+            <p class="text-xs text-slate-400 font-mono-code leading-relaxed mb-4">
+              Acreditación de inalterabilidad conforme al Código de Comercio, Jurisprudencia SCJN y Arbitrum L2.
+            </p>
+          </div>
+          <span class="text-[10px] font-bold font-mono-code text-blue-400 group-hover:translate-x-1 transition">Ver marco procesal →</span>
+        </a>
+
+        <a href="/validez/dictamen-pericial" class="bg-white/[0.04] shadow-[0_8px_32px_rgba(0,0,0,0.5)] border border-white/15 rounded-2xl p-6 hover:border-emerald-500/50 transition group flex flex-col justify-between">
+          <div>
+            <div class="w-10 h-10 bg-emerald-950 border border-emerald-800/80 text-emerald-400 rounded-xl flex items-center justify-center font-bold text-lg mb-4"></div>
+            <h3 class="text-sm font-bold text-white mb-2">Dictamen Pericial Certificado</h3>
+            <p class="text-xs text-slate-400 font-mono-code leading-relaxed mb-4">
+              Supervisado por Contador Público Certificado (C.P.C. Víctor Omar Malpica Guillén).
+            </p>
+          </div>
+          <span class="text-[10px] font-bold font-mono-code text-emerald-400 group-hover:translate-x-1 transition">Ver acreditación C.P.C. →</span>
+        </a>
+
+        <a href="/validez/cifrado-sha256" class="bg-white/[0.04] shadow-[0_8px_32px_rgba(0,0,0,0.5)] border border-white/15 rounded-2xl p-6 hover:border-indigo-500/50 transition group flex flex-col justify-between">
+          <div>
+            <div class="w-10 h-10 bg-indigo-950 border border-indigo-800/80 text-indigo-400 rounded-xl flex items-center justify-center font-bold text-lg mb-4"></div>
+            <h3 class="text-sm font-bold text-white mb-2">Cifrado Merkle SHA-256</h3>
+            <p class="text-xs text-slate-400 font-mono-code leading-relaxed mb-4">
+              Verificación mediante estructuras Merkle Trees. Imposibilidad matemática de alteración.
+            </p>
+          </div>
+          <span class="text-[10px] font-bold font-mono-code text-indigo-400 group-hover:translate-x-1 transition">Ver protocolo Merkle →</span>
+        </a>
+
+        <a href="/validez/lfpdppp-privacidad" class="bg-white/[0.04] shadow-[0_8px_32px_rgba(0,0,0,0.5)] border border-white/15 rounded-2xl p-6 hover:border-sky-500/50 transition group flex flex-col justify-between">
+          <div>
+            <div class="w-10 h-10 bg-sky-950 border border-sky-800/80 text-sky-400 rounded-xl flex items-center justify-center font-bold text-lg mb-4">️</div>
+            <h3 class="text-sm font-bold text-white mb-2">Sanitización PII & LFPDPPP</h3>
+            <p class="text-xs text-slate-400 font-mono-code leading-relaxed mb-4">
+              Procesamiento en memoria RAM con enmascaramiento Regex y validación e.firma en navegador (Wasm).
+            </p>
+          </div>
+          <span class="text-[10px] font-bold font-mono-code text-sky-400 group-hover:translate-x-1 transition">Ver gobernanza de datos →</span>
+        </a>
+      </div>
+    </div>
+  </section>
+
+  <!-- Módulo Express Check + Cuestionario de Certeza Pericial -->
+  <section id="express-check" class="py-20 bg-transparent">
+    <div class="max-w-4xl mx-auto px-6">
+      <div class="bg-white/[0.05] shadow-[0_8px_32px_rgba(0,0,0,0.5)] border border-white/15 rounded-2xl p-8 sm:p-12 shadow-2xl relative overflow-hidden">
+        <div class="text-center mb-8">
+          <span class="text-xs font-bold text-blue-400 uppercase tracking-widest font-mono-code">Motor de Diagnóstico OSINT & Calibración Pericial</span>
+          <h2 class="text-2xl sm:text-3xl font-extrabold text-white mt-1 tracking-tight">Auditoría Exprés por RFC y Dominio</h2>
+          <p class="text-slate-400 text-xs font-mono-code mt-2">
+            Ingrese su RFC y sitio web para cruzar contra INEGI DENUE, SAT 69-B, REPSE y evaluar las 39 NOMs de la STPS.
+          </p>
+        </div>
+
+        <form onsubmit="runLiveCalibrationScan(event)" class="space-y-4">
+          <div class="grid sm:grid-cols-2 gap-3">
+            <input type="text" id="folioInput" value="" placeholder="RFC o Folio (Ej. EST850628K51)" required class="bg-slate-950 border border-white/15 rounded-xl px-5 py-4 text-xs font-mono-code text-white placeholder-slate-600 focus:outline-none focus:border-blue-500">
+            <input type="text" id="domainInput" value="" placeholder="Dominio Web (Ej. steren.com.mx)" class="bg-slate-950 border border-white/15 rounded-xl px-5 py-4 text-xs font-mono-code text-white placeholder-slate-600 focus:outline-none focus:border-blue-500">
+          </div>
+
+          <!-- Acordeón del Cuestionario de Certeza Pericial (12 Vectores Internos) -->
+          <details class="bg-white/[0.03] border border-white/15 rounded-xl p-4 text-xs font-mono-code text-slate-300">
+            <summary class="cursor-pointer font-bold text-blue-400 hover:text-blue-300 select-none">
+              Calibración Pericial de Variables Internas (Opcional — Confirmar Variables Internas STPS / LFPDPPP / SAT)
+            </summary>
+            <div class="grid sm:grid-cols-2 gap-3 mt-4 pt-4 border-t border-white/15 text-[11px]">
+              <label class="flex items-center justify-between bg-white/[0.05] shadow-[0_8px_32px_rgba(0,0,0,0.5)] p-2.5 rounded-lg border border-white/15">
+                <span>Plantilla exacta de empleados:</span>
+                <input id="cal_emp" type="number" value="45" min="1" class="w-20 bg-slate-950 border border-slate-700 rounded px-2 py-1 text-right text-emerald-400 font-bold">
+              </label>
+              <label class="flex items-center gap-2 bg-white/[0.05] shadow-[0_8px_32px_rgba(0,0,0,0.5)] p-2.5 rounded-lg border border-white/15 cursor-pointer">
+                <input id="cal_nom037" type="checkbox" checked class="accent-blue-500">
+                <span>Personal en Home Office >40% (NOM-037)</span>
+              </label>
+              <label class="flex items-center gap-2 bg-white/[0.05] shadow-[0_8px_32px_rgba(0,0,0,0.5)] p-2.5 rounded-lg border border-white/15 cursor-pointer">
+                <input id="cal_repse" type="checkbox" checked class="accent-blue-500">
+                <span>Contrata limpieza/vigilancia/terceros (REPSE)</span>
+              </label>
+              <label class="flex items-center gap-2 bg-white/[0.05] shadow-[0_8px_32px_rgba(0,0,0,0.5)] p-2.5 rounded-lg border border-white/15 cursor-pointer">
+                <input id="cal_bio" type="checkbox" checked class="accent-blue-500">
+                <span>Usa reloj checador biométrico / datos salud</span>
+              </label>
+              <label class="flex items-center gap-2 bg-white/[0.05] shadow-[0_8px_32px_rgba(0,0,0,0.5)] p-2.5 rounded-lg border border-white/15 cursor-pointer">
+                <input id="cal_69b" type="checkbox" checked class="accent-blue-500">
+                <span>Paga servicios intangibles Corporativo (Art. 69-B)</span>
+              </label>
+              <label class="flex items-center gap-2 bg-white/[0.05] shadow-[0_8px_32px_rgba(0,0,0,0.5)] p-2.5 rounded-lg border border-white/15 cursor-pointer">
+                <input id="cal_nom006" type="checkbox" checked class="accent-blue-500">
+                <span>Manejo de cargas / almacén (NOM-006/036)</span>
+              </label>
+              <label class="flex items-center gap-2 bg-white/[0.05] shadow-[0_8px_32px_rgba(0,0,0,0.5)] p-2.5 rounded-lg border border-white/15 cursor-pointer">
+                <input id="cal_nom020" type="checkbox" class="accent-blue-500">
+                <span>Usa compresores o calderas (NOM-020)</span>
+              </label>
+              <label class="flex items-center gap-2 bg-white/[0.05] shadow-[0_8px_32px_rgba(0,0,0,0.5)] p-2.5 rounded-lg border border-white/15 cursor-pointer">
+                <input id="cal_nom005" type="checkbox" class="accent-blue-500">
+                <span>Sustancias químicas peligrosas (NOM-005/018)</span>
+              </label>
+              <label class="flex items-center gap-2 bg-white/[0.05] shadow-[0_8px_32px_rgba(0,0,0,0.5)] p-2.5 rounded-lg border border-white/15 cursor-pointer">
+                <input id="cal_transfer" type="checkbox" checked class="accent-blue-500">
+                <span>Comparte datos con despachos/nube (Art. 36)</span>
+              </label>
+              <label class="flex items-center gap-2 bg-white/[0.05] shadow-[0_8px_32px_rgba(0,0,0,0.5)] p-2.5 rounded-lg border border-white/15 cursor-pointer">
+                <input id="cal_cartaporte" type="checkbox" class="accent-blue-500">
+                <span>Transporte en tramos federales (Carta Porte)</span>
+              </label>
+              <label class="flex items-center gap-2 bg-white/[0.05] shadow-[0_8px_32px_rgba(0,0,0,0.5)] p-2.5 rounded-lg border border-white/15 cursor-pointer sm:col-span-2">
+                <input id="cal_pld" type="checkbox" class="accent-blue-500">
+                <span>Realiza Actividades Vulnerables Antilavado (Art. 17 LFPIORPI: mutuo, inmuebles, blindaje, activos)</span>
+              </label>
+            </div>
+          </details>
+
+                              <!-- Desplegable con Pre-llenado Automático y Campos en Blanco para Uso Multi-Proveedor -->
+          <details id="dossier-details-box" class="bg-white/[0.03] border border-emerald-900/60 rounded-xl p-4 text-xs font-mono-code text-slate-300">
+            <summary class="cursor-pointer font-bold text-emerald-400 hover:text-emerald-300 select-none flex items-center justify-between">
+              <span>Personalización de Instrumentos Jurídicos y Datos Pre-Cargados (Opcional)</span>
+              <span class="text-[10px] bg-emerald-950 text-emerald-300 border border-emerald-800 px-2 py-0.5 rounded">Pre-llenado Automático</span>
+            </summary>
+            <p class="text-[11px] text-slate-400 mt-2 mb-3 leading-relaxed">
+              Los datos públicos detectados por su RFC y sitio web se pre-cargan automáticamente abajo. <strong>Los campos que deje en blanco</strong>(como los datos de un proveedor específico para el Contrato Art. 69-B o los firmantes internos) se generarán con <strong>líneas jurídicas formales de llenado (<code>____________________</code>)</strong>para que pueda reutilizar sus contratos con múltiples proveedores:
+            </p>
+            <div class="grid sm:grid-cols-2 gap-3 pt-2 border-t border-white/15 text-[11px]">
+              <div>
+                <label class="text-[10px] text-slate-400 block mb-1">Denominación o Razón Social</label>
+                <input id="dos_razon" type="text" placeholder="" class="w-full bg-white/[0.05] shadow-[0_8px_32px_rgba(0,0,0,0.5)] border border-white/15 rounded-lg px-3 py-2 text-white">
+              </div>
+              <div>
+                <label class="text-[10px] text-slate-400 block mb-1">Giro o Actividad Económica (SCIAN)</label>
+                <input id="dos_giro" type="text" placeholder="" class="w-full bg-white/[0.05] shadow-[0_8px_32px_rgba(0,0,0,0.5)] border border-white/15 rounded-lg px-3 py-2 text-white">
+              </div>
+              <div>
+                <label class="text-[10px] text-slate-400 block mb-1">Domicilio del Centro de Trabajo</label>
+                <input id="dos_domicilio" type="text" placeholder="" class="w-full bg-white/[0.05] shadow-[0_8px_32px_rgba(0,0,0,0.5)] border border-white/15 rounded-lg px-3 py-2 text-white">
+              </div>
+              <div class="grid grid-cols-2 gap-2">
+                <div>
+                  <label class="text-[10px] text-slate-400 block mb-1">Código Postal Fiscal</label>
+                  <input id="dos_cp" type="text" maxlength="5" placeholder="" class="w-full bg-white/[0.05] shadow-[0_8px_32px_rgba(0,0,0,0.5)] border border-white/15 rounded-lg px-3 py-2 text-white">
+                </div>
+                <div>
+                  <label class="text-[10px] text-slate-400 block mb-1">Entidad / Jurisdicción</label>
+                  <input id="dos_estado" type="text" placeholder="" class="w-full bg-white/[0.05] shadow-[0_8px_32px_rgba(0,0,0,0.5)] border border-white/15 rounded-lg px-3 py-2 text-white">
+                </div>
+              </div>
+              <div>
+                <label class="text-[10px] text-slate-400 block mb-1">Correo de Atención a Derechos ARCO</label>
+                <input id="dos_email" type="email" placeholder="" class="w-full bg-white/[0.05] shadow-[0_8px_32px_rgba(0,0,0,0.5)] border border-white/15 rounded-lg px-3 py-2 text-white">
+              </div>
+              <div>
+                <label class="text-[10px] text-slate-400 block mb-1">Teléfono Corporativo</label>
+                <input id="dos_tel" type="text" placeholder="" class="w-full bg-white/[0.05] shadow-[0_8px_32px_rgba(0,0,0,0.5)] border border-white/15 rounded-lg px-3 py-2 text-white">
+              </div>
+              <div>
+                <label class="text-[10px] text-slate-400 block mb-1">Nombre del Representante Legal</label>
+                <input id="dos_rep_nombre" type="text" placeholder="" class="w-full bg-white/[0.05] shadow-[0_8px_32px_rgba(0,0,0,0.5)] border border-white/15 rounded-lg px-3 py-2 text-white">
+              </div>
+              <div>
+                <label class="text-[10px] text-slate-400 block mb-1">Cargo del Representante Legal</label>
+                <input id="dos_rep_cargo" type="text" placeholder="" class="w-full bg-white/[0.05] shadow-[0_8px_32px_rgba(0,0,0,0.5)] border border-white/15 rounded-lg px-3 py-2 text-white">
+              </div>
+              <div>
+                <label class="text-[10px] text-slate-400 block mb-1">Oficial de Privacidad (Art. 17 LFPDPPP)</label>
+                <input id="dos_oficial_priv" type="text" placeholder="" class="w-full bg-white/[0.05] shadow-[0_8px_32px_rgba(0,0,0,0.5)] border border-white/15 rounded-lg px-3 py-2 text-white">
+              </div>
+              <div>
+                <label class="text-[10px] text-slate-400 block mb-1">Registro Patronal IMSS</label>
+                <input id="dos_reg_patronal" type="text" placeholder="" class="w-full bg-white/[0.05] shadow-[0_8px_32px_rgba(0,0,0,0.5)] border border-white/15 rounded-lg px-3 py-2 text-white">
+              </div>
+              <div>
+                <label class="text-[10px] text-slate-400 block mb-1">Coordinador Comisión Mixta (NOM-019 / NOM-030)</label>
+                <input id="dos_csh_coord" type="text" placeholder="" class="w-full bg-white/[0.05] shadow-[0_8px_32px_rgba(0,0,0,0.5)] border border-white/15 rounded-lg px-3 py-2 text-white">
+              </div>
+              <div>
+                <label class="text-[10px] text-slate-400 block mb-1">Secretario Comisión Mixta (NOM-019)</label>
+                <input id="dos_csh_sec" type="text" placeholder="" class="w-full bg-white/[0.05] shadow-[0_8px_32px_rgba(0,0,0,0.5)] border border-white/15 rounded-lg px-3 py-2 text-white">
+              </div>
+              <div>
+                <label class="text-[10px] text-slate-400 block mb-1">Razón Social del Proveedor (Contrato Art. 69-B)</label>
+                <input id="dos_prov_nombre" type="text" placeholder="" class="w-full bg-white/[0.05] shadow-[0_8px_32px_rgba(0,0,0,0.5)] border border-white/15 rounded-lg px-3 py-2 text-white">
+              </div>
+              <div>
+                <label class="text-[10px] text-slate-400 block mb-1">RFC del Proveedor (Contrato Art. 69-B)</label>
+                <input id="dos_prov_rfc" type="text" placeholder="" class="w-full bg-white/[0.05] shadow-[0_8px_32px_rgba(0,0,0,0.5)] border border-white/15 rounded-lg px-3 py-2 text-white">
+              </div>
+              <div class="sm:col-span-2">
+                <label class="text-[10px] text-slate-400 block mb-1">Objeto / Servicio del Contrato de Materialidad (Art. 69-B CFF)</label>
+                <input id="dos_prov_obj" type="text" placeholder="" class="w-full bg-white/[0.05] shadow-[0_8px_32px_rgba(0,0,0,0.5)] border border-white/15 rounded-lg px-3 py-2 text-white">
+              </div>
+            </div>
+          </details>
+
+
+          <div class="flex flex-col sm:flex-row gap-3">
+            <button id="btnRunScan" type="submit" class="flex-1 bg-gradient-to-r from-blue-600 to-emerald-600 hover:from-blue-500 hover:to-emerald-500 text-white font-bold text-xs px-8 py-4 rounded-xl transition font-mono-code shadow-lg shadow-blue-600/20 uppercase tracking-wider">
+              Ejecutar Diagnóstico Pericial 360°
+            </button>
+            <button type="button" onclick="const v=document.getElementById('folioInput').value.trim(); if(v) window.location.href='/verify/'+encodeURIComponent(v);" class="bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold text-xs px-6 py-4 rounded-xl transition font-mono-code">
+              Ir Directo a Constancia
+            </button>
+          </div>
+        </form>
+
+        <!-- Resultado Instantáneo del Escaneo -->
+        <div id="live-scan-result" class="hidden mt-8 pt-8 border-t border-white/15 font-mono-code text-xs space-y-4">
+          <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center bg-slate-950 p-4 rounded-xl border border-red-500/40 gap-3">
             <div>
-                © 2026 Firma Pericial Mallen — Gobernanza & Auditoría W16 (mallen.lat).
+              <span class="text-[10px] text-red-400 uppercase font-bold block">Diagnóstico Concluido en Vivo</span>
+              <h3 id="res-razon" class="text-base font-bold text-white"></h3>
+              <span id="res-findings-count" class="text-[11px] text-slate-400"></span>
             </div>
-            <div id="mallen-trust-badge" data-rfc="MALLEN-W16-2026"></div>
-            <div class="flex space-x-6">
-                <a href="/privacy" class="hover:text-slate-300 transition">Aviso de Privacidad Integral</a>
-                <a href="/terms" class="hover:text-slate-300 transition">Términos del Servicio</a>
-                <a href="/privacidad" class="px-3 py-1 rounded-lg bg-slate-900/90 border border-emerald-500/35 text-emerald-300 hover:bg-emerald-950/80 transition">Aviso de Privacidad</a>
-                    <a href="/terminos" class="px-3 py-1 rounded-lg bg-slate-900/90 border border-blue-500/35 text-blue-300 hover:bg-blue-950/80 transition">Términos y Alcance</a>
-                    <a href="/derechos-arco" class="px-3 py-1 rounded-lg bg-slate-900/90 border border-cyan-500/35 text-cyan-300 hover:bg-cyan-950/80 transition">Derechos ARCO / Baja</a>
-                <a href="/dashboard.html" class="text-blue-400 hover:text-blue-300 transition">Modo Contador Corporativo</a>
+            <div class="text-right">
+              <span id="res-score" class="text-xs bg-red-950 text-red-400 border border-red-700 px-2.5 py-1 rounded font-bold block mb-1"></span>
+              <span id="res-fine" class="text-lg font-extrabold text-red-400"></span>
             </div>
+          </div>
+          <div class="text-[11px] text-slate-400 bg-slate-950 p-3 rounded-lg border border-white/15 break-all">
+            Sello SHA-256 Generado: <span id="res-hash" class="text-emerald-400 font-bold"></span>
+          </div>
+          <div class="grid sm:grid-cols-3 gap-3">
+            <a id="btn-go-micro" href="#" class="text-center bg-slate-950 hover:bg-slate-800 text-amber-400 border border-amber-500/40 font-bold py-3 px-4 rounded-xl transition">
+              Descargar Pre-Dictamen Preliminar PDF
+            </a>
+            <a id="btn-go-verify" href="#" class="text-center bg-slate-800 hover:bg-slate-700 text-white font-bold py-3 px-4 rounded-xl transition">
+              Consultar Cédula Registral Pública
+            </a>
+            <a id="btn-go-checkout" href="#" class="text-center bg-red-600 hover:bg-red-500 text-white font-bold py-3 px-4 rounded-xl transition shadow-lg shadow-red-600/20">
+              Activar Blindaje Integral y CFDI 4.0
+            </a>
+          </div>
         </div>
-    
-    <!-- Switch de Modo Oscuro / Modo Claro en la parte inferior -->
-    <div class="w-full py-4 border-t border-white/10 flex justify-center items-center gap-3 text-xs font-mono-code">
-        <span class="text-slate-400">Apariencia Visual del Portal:</span>
-        <button type="button" id="theme-switch-btn" onclick="toggleMallenTheme()"
-            class="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-slate-900 border border-emerald-500/40 text-emerald-300 hover:border-emerald-400 transition cursor-pointer shadow">
-            <span id="theme-switch-icon">☀️</span>
-            <span id="theme-switch-label" class="font-bold">Cambiar a Modo Claro</span>
-        </button>
+      </div>
     </div>
-    <script>
-        (function initMallenTheme() {
-            const saved = localStorage.getItem("mallen_theme");
-            if (saved === "light") {
-                document.documentElement.classList.add("light-mode");
-            }
-            window.updateThemeButtonUI = function () {
-                const isLight = document.documentElement.classList.contains("light-mode");
-                const icon = document.getElementById("theme-switch-icon");
-                const lbl = document.getElementById("theme-switch-label");
-                if (icon) icon.textContent = isLight ? "🌙" : "☀️";
-                if (lbl) lbl.textContent = isLight ? "Volver a Modo Oscuro" : "Cambiar a Modo Claro";
-            };
-            window.toggleMallenTheme = function () {
-                document.documentElement.classList.toggle("light-mode");
-                const isLight = document.documentElement.classList.contains("light-mode");
-                localStorage.setItem("mallen_theme", isLight ? "light" : "dark");
-                window.updateThemeButtonUI();
-            };
-            document.addEventListener("DOMContentLoaded", window.updateThemeButtonUI);
-            window.updateThemeButtonUI();
-        })();
-    </script>
+  </section>
+
+    <!-- Modal 1: Rescate Anti-Abandono (Cristal Translúcido + Explosión Fotónica Roja a Verde) -->
+  <div id="exit-intent-modal" class="hidden fixed inset-0 photonic-modal-backdrop z-50 items-center justify-center p-4">
+    <div class="photonic-modal-card rounded-2xl max-w-lg w-full p-8 font-mono-code text-xs relative">
+      <button onclick="closeExitModal()" class="absolute top-4 right-4 text-slate-300 hover:text-white text-base"></button>
+      <span class="inline-block bg-red-500/20 text-red-300 border border-red-400/50 px-3 py-1 rounded-full text-[10px] font-bold uppercase mb-4">
+        Alerta Preventiva de Inspección STPS
+      </span>
+      <h3 class="text-2xl font-extrabold text-white font-sans mb-2 tracking-tight">
+        Espera: No te vayas a ciegas.
+      </h3>
+      <p class="text-slate-100 leading-relaxed mb-6">
+        Antes de cerrar esta ventana, descarga sin costo tu <strong>Pre-Dictamen Pericial en PDF</strong>para <span id="exit-rfc-label" class="text-emerald-300 font-bold">EST850628K51</span>y verifica tu exposición crítica ante la STPS (NOM-035, NOM-019 y NOM-030) con sello criptográfico SHA-256.
+      </p>
+      <div class="flex flex-col sm:flex-row gap-3">
+        <a id="exit-micro-pdf-link" href="/api/micro_scan/EST850628K51" onclick="closeExitModal()" class="flex-1 bg-gradient-to-r from-emerald-600 to-teal-500 hover:from-emerald-500 hover:to-teal-400 text-white text-center font-bold py-3.5 px-5 rounded-xl transition uppercase shadow-lg shadow-emerald-500/25">
+          Descargar Pre-Dictamen Preliminar
+        </a>
+        <button onclick="closeExitModal()" class="bg-white/10 hover:bg-white/20 text-white border border-white/20 font-bold py-3.5 px-5 rounded-xl transition">
+          Continuar en el Portal
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal 2: Consentimiento Criptográfico de Privacidad (LFPDPPP), Cookies Técnicas y Términos (Art. 89 C.Com) -->
+  <div id="legal-consent-modal" class="hidden fixed inset-0 photonic-modal-backdrop z-50 items-center justify-center p-4">
+    <div class="photonic-modal-card rounded-2xl max-w-xl w-full p-8 font-mono-code text-xs relative">
+      <div class="flex items-center justify-between mb-4">
+        <span class="inline-block bg-emerald-500/20 text-emerald-300 border border-emerald-400/50 px-3 py-1 rounded-full text-[10px] font-bold uppercase">
+          Protocolo de Gobernanza, Privacidad & Fecha Cierta
+        </span>
+        <span class="text-[10px] text-slate-300">LFPDPPP • Art. 89 C.Com</span>
+      </div>
+      <h3 class="text-xl sm:text-2xl font-extrabold text-white font-sans mb-3 tracking-tight">
+        Consentimiento Informado de Privacidad, Términos y Cookies Técnicas
+      </h3>
+      <p class="text-slate-100 leading-relaxed mb-4">
+        Para garantizar la integridad pericial de su sesión, <strong>Firma Pericial Mallen (mallen.lat)</strong>opera bajo estricto apego a la legislación federal vigente:
+      </p>
+      <div class="space-y-2.5 mb-6 text-[11px] text-slate-200 bg-slate-950/35 border border-white/15 rounded-xl p-4">
+        <div>
+          <strong class="text-emerald-300">Aviso de Privacidad Integral (LFPDPPP / SABG):</strong>Los datos registrales e indicadores ingresados se procesan exclusivamente para la emisión de su diagnóstico y sus instrumentos jurídicos personalizados.
+        </div>
+        <div>
+          <strong class="text-blue-300">Cookies Técnicas de Integridad Criptográfica:</strong>Utilizamos únicamente almacenamiento técnico de sesión para sincronizar el cálculo de sus multas con sus PDFs y resguardar la huella SHA-256 de su expediente (cero cookies publicitarias de terceros).
+        </div>
+        <div>
+          <strong class="text-purple-300">Términos de Servicio y Alcance OSINT (Art. 89 C.Com):</strong>Todo dictamen preventivo se emite con sello de tiempo conforme a la NOM-151-SCFI-2016 y Jurisprudencia SCJN de Fecha Cierta.
+        </div>
+      </div>
+      <div class="flex flex-col sm:flex-row items-center justify-between gap-3">
+        <div class="flex gap-4 text-[11px] text-emerald-300">
+          <a href="/privacy" class="hover:underline">Leer Aviso de Privacidad</a>
+          <a href="/terms" class="hover:underline">Leer Términos del Servicio</a>
+        </div>
+        <button onclick="acceptLegalConsentModal()" class="w-full sm:w-auto bg-gradient-to-r from-blue-600 to-emerald-600 hover:from-blue-500 hover:to-emerald-500 text-white font-bold py-3.5 px-7 rounded-xl transition uppercase shadow-lg shadow-emerald-600/25">
+          Aceptar y Continuar al Portal
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Pie de Página Institucional con nuestro propio Sello Blindaje Mallen (Efecto Bumerán) -->
+  <footer class="border-t border-slate-900 bg-slate-950 py-10 text-center text-xs font-mono-code text-slate-500">
+    <div class="max-w-7xl mx-auto px-6 flex flex-col md:flex-row justify-between items-center gap-6">
+      <div>
+        © 2026 Firma Pericial Mallen — Gobernanza & Auditoría W16 (mallen.lat).
+      </div>
+      <div id="mallen-trust-badge" data-rfc="MALLEN-W16-2026"></div>
+      <div class="flex space-x-6">
+        <a href="/privacy" class="hover:text-slate-300 transition">Aviso de Privacidad Integral</a>
+        <a href="/terms" class="hover:text-slate-300 transition">Términos del Servicio</a>
+        <a href="/privacidad" class="px-3 py-1 rounded-lg bg-slate-900/90 border border-emerald-500/35 text-emerald-300 hover:bg-emerald-950/80 transition">Aviso de Privacidad</a>
+          <a href="/terminos" class="px-3 py-1 rounded-lg bg-slate-900/90 border border-blue-500/35 text-blue-300 hover:bg-blue-950/80 transition">Términos y Alcance</a>
+          <a href="/derechos-arco" class="px-3 py-1 rounded-lg bg-slate-900/90 border border-cyan-500/35 text-cyan-300 hover:bg-cyan-950/80 transition">Derechos ARCO / Baja</a>
+        <a href="/dashboard.html" class="text-blue-400 hover:text-blue-300 transition">Modo Contador Corporativo</a>
+      </div>
+    </div>
+  
+  <!-- Switch de Modo Oscuro / Modo Claro en la parte inferior -->
+  <div class="w-full py-4 border-t border-white/10 flex justify-center items-center gap-3 text-xs font-mono-code">
+    <span class="text-slate-400">Apariencia Visual del Portal:</span>
+    <button type="button" id="theme-switch-btn" onclick="toggleMallenTheme()"
+      class="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-slate-900 border border-emerald-500/40 text-emerald-300 hover:border-emerald-400 transition cursor-pointer shadow">
+      <span id="theme-switch-icon">️</span>
+      <span id="theme-switch-label" class="font-bold">Cambiar a Modo Claro</span>
+    </button>
+  </div>
+  <script>
+    (function initMallenTheme() {
+      const saved = localStorage.getItem("mallen_theme");
+      if (saved === "light") {
+        document.documentElement.classList.add("light-mode");
+      }
+      window.updateThemeButtonUI = function () {
+        const isLight = document.documentElement.classList.contains("light-mode");
+        const icon = document.getElementById("theme-switch-icon");
+        const lbl = document.getElementById("theme-switch-label");
+        if (icon) icon.textContent = isLight ? "" : "️";
+        if (lbl) lbl.textContent = isLight ? "Volver a Modo Oscuro" : "Cambiar a Modo Claro";
+      };
+      window.toggleMallenTheme = function () {
+        document.documentElement.classList.toggle("light-mode");
+        const isLight = document.documentElement.classList.contains("light-mode");
+        localStorage.setItem("mallen_theme", isLight ? "light" : "dark");
+        window.updateThemeButtonUI();
+      };
+      document.addEventListener("DOMContentLoaded", window.updateThemeButtonUI);
+      window.updateThemeButtonUI();
+    })();
+  </script>
 
 </footer>
 
-    <script src="/js/app.js?v=2026.25" defer></script>
-    <script src="/js/badge.js?v=2026.25" defer></script>
+  <script src="/js/app.js?v=2026.25" defer></script>
+  <script src="/js/badge.js?v=2026.25" defer></script>
 
-    <!-- Ventana Emergente Flotante (Popover Quantum Glass) de los 37 Vectores Evaluados (Se cierra sola cuando el puntero sale del recuadro) -->
-    <div id="vectors-37-popover"
-         onmouseleave="closeVectorsPopover()"
-         class="hidden fixed z-50 inset-x-4 sm:inset-x-auto sm:left-1/2 sm:-translate-x-1/2 top-20 sm:w-[88vw] max-w-2xl max-h-[56vh] flex-col rounded-xl quantum-laser-console border border-emerald-500/50 shadow-2xl p-3.5 sm:p-4 backdrop-blur-xl font-mono-code text-xs overflow-hidden">
-        <div class="flex items-center justify-between pb-3 mb-3 border-b border-white/15 shrink-0">
-            <div>
-                <span class="text-[10px] font-bold text-emerald-400 uppercase tracking-widest block">
-                    MATRIZ PERICIAL 360° • DESGLOSE ÍNTEGRO EN TIEMPO REAL
-                </span>
-                <h3 id="popover-company-title" class="text-sm sm:text-base font-extrabold text-white">
-                    Los 37 Vectores Normativos Evaluados (STPS, SAT, IMSS, LFPDPPP, 9 Sectoriales y PROFECO)
-                </h3>
-            </div>
-            <div class="flex items-center gap-3">
-                <span class="text-[10px] text-slate-400 hidden sm:inline">Retire el puntero del recuadro para cerrar automáticamente</span>
-                <button type="button" onclick="closeVectorsPopover()" class="px-2.5 py-1 rounded-lg bg-slate-900 hover:bg-slate-800 text-slate-300 border border-white/15 font-bold">✕</button>
-            </div>
-        </div>
-        <div id="vectors-37-list" class="overflow-y-auto pr-1 space-y-2 max-h-[42vh]"></div>
+  <!-- Ventana Emergente Flotante (Popover Quantum Glass) de los 37 Vectores Evaluados (Se cierra sola cuando el puntero sale del recuadro) -->
+  <div id="vectors-37-popover"
+     onmouseleave="closeVectorsPopover()"
+     class="hidden fixed z-50 inset-x-4 sm:inset-x-auto sm:left-1/2 sm:-translate-x-1/2 top-20 sm:w-[88vw] max-w-2xl max-h-[56vh] flex-col rounded-xl quantum-laser-console border border-emerald-500/50 shadow-2xl p-3.5 sm:p-4 backdrop-blur-xl font-mono-code text-xs overflow-hidden">
+    <div class="flex items-center justify-between pb-3 mb-3 border-b border-white/15 shrink-0">
+      <div>
+        <span class="text-[10px] font-bold text-emerald-400 uppercase tracking-widest block">
+          MATRIZ PERICIAL 360° • DESGLOSE ÍNTEGRO EN TIEMPO REAL
+        </span>
+        <h3 id="popover-company-title" class="text-sm sm:text-base font-extrabold text-white">
+          Los 37 Vectores Normativos Evaluados (STPS, SAT, IMSS, LFPDPPP, 9 Sectoriales y PROFECO)
+        </h3>
+      </div>
+      <div class="flex items-center gap-3">
+        <span class="text-[10px] text-slate-400 hidden sm:inline">Retire el puntero del recuadro para cerrar automáticamente</span>
+        <button type="button" onclick="closeVectorsPopover()" class="px-2.5 py-1 rounded-lg bg-slate-900 hover:bg-slate-800 text-slate-300 border border-white/15 font-bold"></button>
+      </div>
     </div>
+    <div id="vectors-37-list" class="overflow-y-auto pr-1 space-y-2 max-h-[42vh]"></div>
+  </div>
 
 </body>
 </html>

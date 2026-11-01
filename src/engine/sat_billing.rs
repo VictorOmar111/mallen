@@ -125,7 +125,7 @@ r#"<?xml version="1.0" encoding="UTF-8"?>
         );
 
         println!(
-            "🧾 CFDI 4.0 Timbrado [UUID: {}] -> {} ({}) Total: ${:.2} MXN",
+            " CFDI 4.0 Timbrado [UUID: {}] -> {} ({}) Total: ${:.2} MXN",
             uuid_fiscal, nombre_anexo20, rfc_final, total
         );
 

@@ -3,7 +3,7 @@ use std::fs::File;
 use std::io::{BufRead, BufReader, Write};
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
-    println!("🔍 Generando Lote Piloto de 1,000 empresas objetivo para prospección...");
+    println!(" Generando Lote Piloto de 1,000 empresas objetivo para prospección...");
 
     let output_path = "lote_piloto_1000.jsonl";
     let mut output_file = File::create(output_path)?;
@@ -57,6 +57,6 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         seleccionados = 1000;
     }
 
-    println!("✅ ¡Lote Piloto completado con éxito! Se exportaron {} empresas a '{}'", seleccionados, output_path);
+    println!(" ¡Lote Piloto completado con éxito! Se exportaron {} empresas a '{}'", seleccionados, output_path);
     Ok(())
 }

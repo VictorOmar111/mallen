@@ -21,7 +21,7 @@ use tokio::task::JoinSet;
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let start_time = Instant::now();
-    println!("🚀 Iniciando Motor Firma Pericial Mallen + SQLite + OSINT Dual-TLS + Merkle L2 (mallen.lat)...");
+    println!(" Iniciando Motor Firma Pericial Mallen + SQLite + OSINT Dual-TLS + Merkle L2 (mallen.lat)...");
 
     let db = Arc::new(LocalDatabase::init("b2b_audits.db")?);
     let shared_client = NetworkClientManager::build_client(None)?;
@@ -30,7 +30,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let dof_alerts = fetch_dof_regulatory_triggers(&shared_client).await;
     if !dof_alerts.is_empty() {
         println!(
-            "📰 [DOF HONEY POT] {} alertas regulatorias detectadas hoy en el Diario Oficial.",
+            " [DOF HONEY POT] {} alertas regulatorias detectadas hoy en el Diario Oficial.",
             dof_alerts.len()
         );
     }
@@ -52,13 +52,13 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let mut lines: Vec<String> = reader.lines().map_while(Result::ok).collect();
 
     if lines.is_empty() {
-        println!("⚠️ Archivo CSV 'denue_prueba.csv' vacío.");
+        println!("️ Archivo CSV 'denue_prueba.csv' vacío.");
         return Ok(());
     }
 
     let _header = lines.remove(0);
     println!(
-        "📥 {} empresas cargadas para auditoría 360° y prospección controlada...",
+        " {} empresas cargadas para auditoría 360° y prospección controlada...",
         lines.len()
     );
 
@@ -164,7 +164,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     while let Some(res) = tasks.join_next().await {
         if let Ok((e, zip_res, status_pros)) = res {
             println!(
-                "💾 [DB PERSISTED | {}] {} -> Contingencia: ${:.2} MXN | Zip: {:?}",
+                " [DB PERSISTED | {}] {} -> Contingencia: ${:.2} MXN | Zip: {:?}",
                 status_pros,
                 e.nombre,
                 e.estimated_fine_mxn,
@@ -179,8 +179,8 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .map(|e| MerkleTree::hash_leaf(&e.audit_hash))
         .collect();
     let global_merkle_root = format!("0x{}", MerkleTree::compute_root(&hashes));
-    println!("🌳 Merkle Root Global 256-bit del Lote: {}", global_merkle_root);
-    println!("⏱️ Proceso completado en: {:.2?}", start_time.elapsed());
+    println!(" Merkle Root Global 256-bit del Lote: {}", global_merkle_root);
+    println!("️ Proceso completado en: {:.2?}", start_time.elapsed());
 
     Ok(())
 }

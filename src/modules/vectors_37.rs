@@ -142,7 +142,7 @@ pub fn format_mxn(val: f64) -> String {
 }
 
 /// Genera el código Typst de la Tabla Forense con los 37 Vectores Evaluados para la Página 2 del Dictamen PDF
-pub fn render_vectors_37_typst_table(vectors: &[EvaluatedVector]) -> String {
+pub fn render_vectors_37_typst_table(vectors: &[EvaluatedVector], censored_cloud: bool) -> String {
     let mut out = String::from(
         r##"#table(
   columns: (4.5%, 14.5%, 28%, 37%, 16%),
@@ -166,20 +166,40 @@ pub fn render_vectors_37_typst_table(vectors: &[EvaluatedVector]) -> String {
             format!(r"{} (\$0.00)", escape_typst(&v.estatus))
         };
 
+        let show_cloud = censored_cloud && is_active && v.num != 1 && v.num != 9 && v.num != 15;
+        let precepto_cell = if show_cloud {
+            format!(
+                r##"#box(width: 100%, fill: rgb("#e2e8f0"), stroke: 0.4pt + rgb("#94a3b8"), radius: 2pt, inset: (x: 3pt, y: 1.5pt))[#text(size: 4.8pt, weight: "bold", fill: rgb("#475569"))[NUBE DE RESERVA • VECTOR {:02} ({})]]"##,
+                v.num,
+                escape_typst(&v.organo)
+            )
+        } else {
+            format!(
+                r##"#text(weight: "bold", size: 5.1pt)[{} — {}]"##,
+                escape_typst(&v.codigo),
+                escape_typst(&v.titulo)
+            )
+        };
+
+        let hallazgo_cell = if show_cloud {
+            r##"#box(width: 100%, fill: rgb("#f1f5f9"), stroke: 0.4pt + rgb("#cbd5e1"), radius: 2pt, inset: (x: 4pt, y: 1.5pt))[#text(size: 4.8pt, weight: "bold", fill: rgb("#64748b"))[INFORMACIÓN CENSURADA EN PRE-DICTAMEN: Precepto legal y guía de remediación exclusivos del Dictamen Integral]]"##.to_string()
+        } else {
+            format!(r##"#text(size: 5pt)[{}]"##, escape_typst(&v.hallazgo_especifico))
+        };
+
         out.push_str(&format!(
             r##"  [#text(weight: "bold", size: 5.1pt)[{:02}]],
   [#text(weight: "bold", size: 5pt, fill: rgb("{}"))[{} • {}]],
-  [#text(weight: "bold", size: 5.1pt)[{} — {}]],
-  [#text(size: 5pt)[{}]],
+  [{}],
+  [{}],
   [#text(weight: "bold", size: 5.1pt, fill: rgb("{}"))[{} ({})]],
 "##,
             v.num,
             color_hex,
             escape_typst(&v.organo),
             escape_typst(&v.severidad),
-            escape_typst(&v.codigo),
-            escape_typst(&v.titulo),
-            escape_typst(&v.hallazgo_especifico),
+            precepto_cell,
+            hallazgo_cell,
             color_hex,
             fine_label,
             escape_typst(&v.uma_rango)

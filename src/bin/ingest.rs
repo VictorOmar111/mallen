@@ -44,7 +44,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         let csv_path = &args[2];
         let count = ingest_denue_csv_file(&pool, csv_path).await?;
         println!(
-            "   ✅ Ingestadas {} unidades económicas desde {} en {:.2?}",
+            "    Ingestadas {} unidades económicas desde {} en {:.2?}",
             count,
             csv_path,
             start.elapsed()
@@ -54,23 +54,23 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     // Modo 2: Reconstrucción del índice FTS5 al finalizar los 32 estados (--rebuild-fts)
     if args.len() >= 2 && args[1] == "--rebuild-fts" {
-        println!("🔍 Reconstruyendo índice de texto completo FTS5 (denue_fts)...");
+        println!(" Reconstruyendo índice de texto completo FTS5 (denue_fts)...");
         sqlx::query("DELETE FROM denue_fts;").execute(&pool).await?;
         sqlx::query(
             "INSERT INTO denue_fts (id_denue, nombre_norm, www) SELECT id_denue, nombre_norm, www FROM denue_units;",
         )
         .execute(&pool)
         .await?;
-        println!("✅ Índice FTS5 nacional reconstruido en {:.2?}", start.elapsed());
+        println!(" Índice FTS5 nacional reconstruido en {:.2?}", start.elapsed());
         return Ok(());
     }
 
-    println!("🚀 Iniciando motor de ingesta e indexación SQLite WAL en data/mallen_prod.db");
+    println!(" Iniciando motor de ingesta e indexación SQLite WAL en data/mallen_prod.db");
 
     // 1. Ingesta SAT Art. 69-B (EFOS)
     if Path::new("data/sat_efos.csv").exists() {
         let n = ingest_sat_69b(&pool, "data/sat_efos.csv").await?;
-        println!("   ✅ SAT 69-B (EFOS) indexado: {} contribuyentes.", n);
+        println!("    SAT 69-B (EFOS) indexado: {} contribuyentes.", n);
     } else {
         seed_sat_69b(&pool).await?;
     }
@@ -78,20 +78,20 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     // 2. Ingesta SAT Art. 69 (No Localizados / Exigibles / Firmes)
     if Path::new("data/sat_69_incumplidos.csv").exists() {
         let n = ingest_sat_69(&pool, "data/sat_69_incumplidos.csv").await?;
-        println!("   ✅ SAT Art. 69 indexado: {} registros.", n);
+        println!("    SAT Art. 69 indexado: {} registros.", n);
     }
 
     // 3. Ingesta SFP Sancionados
     if Path::new("data/sfp_sancionados.csv").exists() {
         let n = ingest_sfp(&pool, "data/sfp_sancionados.csv").await?;
-        println!("   ✅ SFP Sancionados indexado: {} proveedores.", n);
+        println!("    SFP Sancionados indexado: {} proveedores.", n);
     }
 
     // 4. Semillas garantizadas de control + CSV DENUE si existe
     seed_denue_control_units(&pool).await?;
     if Path::new("data/denue_actividades.csv").exists() {
         let n = ingest_denue_csv_file(&pool, "data/denue_actividades.csv").await?;
-        println!("   ✅ INEGI DENUE indexado: {} establecimientos.", n);
+        println!("    INEGI DENUE indexado: {} establecimientos.", n);
     }
 
     // Actualizar FTS5
@@ -102,7 +102,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     .execute(&pool)
     .await?;
 
-    println!("✅ Ingesta e indexación completada en {:.2?}.", start.elapsed());
+    println!(" Ingesta e indexación completada en {:.2?}.", start.elapsed());
     Ok(())
 }
 
