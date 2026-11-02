@@ -6,7 +6,7 @@
     if counter(page).get().first() > 1 [
       #grid(
         columns: (1fr, auto),
-        align(left)[#text(size: 6.3pt, weight: "bold", fill: rgb("#0f172a"))[FIRMA PERICIAL MALLEN • EXPEDIENTE FORENSE DE CUMPLIMIENTO 360° • {{EMPRESA_TAX_ID}}]],
+        align(left)[#text(size: 6.3pt, weight: "bold", fill: rgb("#0f172a"))[FIRMA PERICIAL MALLEN • EXPEDIENTE CORPORATIVO DE CUMPLIMIENTO INTEGRAL • {{EMPRESA_TAX_ID}}]],
         align(right)[#text(size: 6.3pt, fill: rgb("#475569"))[SELLO CRIPTOGRÁFICO SHA-256: {{AUDIT_HASH}}]]
       )
       #v(-0.15cm)
@@ -84,7 +84,7 @@
 
 #v(0.16em)
 
-// FICHA FORENSE DEL ENTE AUDITADO
+// FICHA TÉCNICO DEL ENTE AUDITADO
 #table(
   columns: (17%, 33%, 17%, 33%),
   inset: (x: 5.5pt, y: 3.6pt),
@@ -110,11 +110,11 @@
 
 #text(size: 7.8pt, weight: "bold", fill: rgb("#0f172a"))[1. METODOLOGÍA DE PARAMETRIZACIÓN POR GIRO SCIAN, CAPACIDAD ECONÓMICA Y PRIMA IMSS]
 #v(0.05em)
-Dictamen pericial compilado específicamente para *"{{EMPRESA_NOMBRE}}"* (`{{EMPRESA_TAX_ID}}`), evaluando su actividad económica registrada (*{{EMPRESA_ACTIVIDAD}}*) en la jurisdicción de *{{EMPRESA_JURISDICCION}}*. Los cálculos sancionatorios en Unidades de Medida y Actualización (UMA 2026: \$113.14 MXN) ponderan la capacidad económica y plantilla conforme al Art. 992 de la LFT y Art. 75 del CFF, manteniendo sincronización matemática 1:1 entre esta Matriz Consolidada, el portal de verificación web y el Anexo Forense de los 37 Vectores (Página 2).
+Dictamen pericial compilado específicamente para *"{{EMPRESA_NOMBRE}}"* (`{{EMPRESA_TAX_ID}}`), evaluando su actividad económica registrada (*{{EMPRESA_ACTIVIDAD}}*) en la jurisdicción de *{{EMPRESA_JURISDICCION}}*. Los cálculos sancionatorios en Unidades de Medida y Actualización (UMA 2026: \$113.14 MXN) ponderan la capacidad económica y plantilla conforme al Art. 992 de la LFT y Art. 75 del CFF, manteniendo sincronización matemática 1:1 entre esta Matriz Consolidada, el portal de verificación web y el Anexo Técnico de los 37 Vectores (Página 2).
 
 #v(0.14em)
 
-#text(size: 7.8pt, weight: "bold", fill: rgb("#0f172a"))[2. COMPULSA FORENSE EN BASES DE DATOS OFICIALES, LISTAS NEGRAS Y TELEMETRÍA WEB]
+#text(size: 7.8pt, weight: "bold", fill: rgb("#0f172a"))[2. COMPULSA PERICIAL EN BASES DE DATOS OFICIALES, LISTAS NEGRAS Y TELEMETRÍA WEB]
 #v(0.05em)
 #table(
   columns: (21%, 29%, 21%, 29%),
@@ -149,7 +149,7 @@ Dictamen pericial compilado específicamente para *"{{EMPRESA_NOMBRE}}"* (`{{EMP
   align: (left + horizon, right + horizon, left + horizon),
   [#text(fill: white, weight: "bold", size: 6.5pt)[ÓRGANO REGULADOR / VECTORES]],
   [#align(left)[#text(fill: white, weight: "bold", size: 6.5pt)[SUBTOTAL EXPOSICIÓN]]],
-  [#text(fill: white, weight: "bold", size: 6.5pt)[DICTAMINACIÓN FORENSE ESPECÍFICA AL GIRO AUDITADO]],
+  [#text(fill: white, weight: "bold", size: 6.5pt)[DICTAMINACIÓN TÉCNICA ESPECÍFICA AL GIRO AUDITADO]],
 
   [#text(weight: "bold", size: 6.5pt)[1. STPS (Vectores 01 al 08)]],
   [#text(weight: "bold", size: 6.8pt, fill: rgb("#b91c1c"))[\$ {{MULTA_STPS}} MXN]],
@@ -217,7 +217,7 @@ Dictamen pericial compilado específicamente para *"{{EMPRESA_NOMBRE}}"* (`{{EMP
   #grid(
     columns: (1fr, auto),
     [
-      #text(size: 8.6pt, weight: "bold", fill: rgb("#ffffff"))[ANEXO FORENSE I: CÉDULA DE EVALUACIÓN DE LOS 37 VECTORES NORMATIVOS]
+      #text(size: 8.6pt, weight: "bold", fill: rgb("#ffffff"))[ANEXO TÉCNICO I: CÉDULA DE EVALUACIÓN DE LOS 37 VECTORES NORMATIVOS]
       #linebreak()
       #text(size: 6.2pt, fill: rgb("#93c5fd"))[Ente Auditado: {{EMPRESA_NOMBRE}} ({{EMPRESA_TAX_ID}}) • Giro SCIAN: {{EMPRESA_ACTIVIDAD}}]
     ],
@@ -241,7 +241,7 @@ Dictamen pericial compilado específicamente para *"{{EMPRESA_NOMBRE}}"* (`{{EMP
   inset: (x: 10pt, y: 6.5pt),
   stroke: 0.8pt + rgb("#10b981")
 )[
-  #text(size: 8.8pt, weight: "bold", fill: rgb("#ffffff"))[ANEXO FORENSE II: HOJA DE RUTA DE REMEDIACIÓN 30-60-90 DÍAS, INGENIERÍA ROI E INVENTARIO DEL KIT 360°]
+  #text(size: 8.8pt, weight: "bold", fill: rgb("#ffffff"))[ANEXO TÉCNICO II: HOJA DE RUTA DE REMEDIACIÓN 30-60-90 DÍAS, INGENIERÍA ROI E INVENTARIO DEL KIT 360°]
   #linebreak()
   #text(size: 6.3pt, fill: rgb("#6ee7b7"))[Plan de Ejecución Preventiva para {{EMPRESA_NOMBRE}} ({{EMPRESA_TAX_ID}}) • Sello Criptográfico: {{AUDIT_HASH}}]
 ]
@@ -252,7 +252,7 @@ Dictamen pericial compilado específicamente para *"{{EMPRESA_NOMBRE}}"* (`{{EMP
 #v(0.06em)
 #table(
   columns: (18%, 26%, 38%, 18%),
-  inset: (x: 6pt, y: 4.5pt),
+  inset: (x: 4pt, y: 2.8pt),
   stroke: 0.5pt + rgb("#cbd5e1"),
   fill: (x, y) => if y == 0 { rgb("#0f172a") } else if calc.odd(y) { rgb("#f8fafc") } else { rgb("#ffffff") },
   [#text(fill: white, weight: "bold", size: 6.5pt)[FASE / HORIZONTE]],
@@ -271,9 +271,7 @@ Dictamen pericial compilado específicamente para *"{{EMPRESA_NOMBRE}}"* (`{{EMP
     #text(size: 6pt, fill: rgb("#475569"))[(Vectores 09, 10, 21, 22, 23, 33 y 35)]
   ],
   [
-    #text(size: 6.3pt)[1. Publicar en el portal web el *Aviso de Privacidad Integral* y los *Términos E-Commerce Art. 76 BIS LFPC* incluidos en el Kit.]
-    #linebreak()
-    #text(size: 6.3pt)[2. Suscribir el *Contrato Marco de Materialidad B2B con Fecha Cierta* y recabar el *Consentimiento Biométrico/Nómina* del personal.]
+    {{ROADMAP_PHASE_1}}
   ],
   [#text(weight: "bold", size: 6.3pt, fill: rgb("#047857"))[Evita multas directas de oscuridad web y rechazo fiscal de deducciones]],
 
@@ -288,9 +286,7 @@ Dictamen pericial compilado específicamente para *"{{EMPRESA_NOMBRE}}"* (`{{EMP
     #text(size: 6pt, fill: rgb("#475569"))[(Vectores 01, 02, 04, 15, 16 y 17)]
   ],
   [
-    #text(size: 6.3pt)[1. Firmar el *Acta Constitutiva de la Comisión Mixta (NOM-019)* y el *Diagnóstico Preventivo NOM-030*.]
-    #linebreak()
-    #text(size: 6.3pt)[2. Aplicar los cuestionarios de la *Política NOM-035*, el *Adendum de Teletrabajo NOM-037* y ejecutar la confronta SUA vs. CFDI de Nómina.]
+    {{ROADMAP_PHASE_2}}
   ],
   [#text(weight: "bold", size: 6.3pt, fill: rgb("#047857"))[Desactiva multas por empleado en inspecciones extraordinarias STPS]],
 
@@ -305,9 +301,7 @@ Dictamen pericial compilado específicamente para *"{{EMPRESA_NOMBRE}}"* (`{{EMP
     #text(size: 6pt, fill: rgb("#475569"))[(Vectores 03, 05, 06, 07, 13 y 29 al 31)]
   ],
   [
-    #text(size: 6.3pt)[1. Integrar la carpeta del *Programa Interno de Protección Civil (PIPC)* con el Acta de 4 Brigadas.]
-    #linebreak()
-    #text(size: 6.3pt)[2. Archivar el *Expediente de Beneficiario Controlador (Art. 32-B Ter CFF)* y las bitácoras sectoriales propias del giro *{{EMPRESA_ACTIVIDAD}}*.]
+    {{ROADMAP_PHASE_3}}
   ],
   [#text(weight: "bold", size: 6.3pt, fill: rgb("#047857"))[Previene clausura total o parcial del establecimiento mercantil]]
 )
@@ -316,36 +310,12 @@ Dictamen pericial compilado específicamente para *"{{EMPRESA_NOMBRE}}"* (`{{EMP
 
 #text(size: 7.8pt, weight: "bold", fill: rgb("#0f172a"))[6. CALENDARIO ANUAL DE OBLIGACIONES PERIÓDICAS DE CUMPLIMIENTO (AGENDA DEL CONTADOR Y APODERADO)]
 #v(0.06em)
-#table(
-  columns: (20%, 26%, 54%),
-  inset: (x: 6pt, y: 4pt),
-  stroke: 0.5pt + rgb("#cbd5e1"),
-  fill: (x, y) => if y == 0 { rgb("#1e293b") } else if calc.odd(y) { rgb("#f8fafc") } else { rgb("#ffffff") },
-  [#text(fill: white, weight: "bold", size: 6.4pt)[PERIODICIDAD / MES]],
-  [#text(fill: white, weight: "bold", size: 6.4pt)[OBLIGACIÓN Y FUNDAMENTO]],
-  [#text(fill: white, weight: "bold", size: 6.4pt)[CONTROL DOCUMENTAL EXIGIBLE EN AUDITORÍA]],
+{{CALENDAR_SECTION_TYPST}}
 
-  [#text(weight: "bold", size: 6.3pt)[Mensual (Días 5 y 17)]],
-  [#text(size: 6.3pt)[REP CFDI 4.0, SUA IMSS y Opinión 32-D]],
-  [#text(size: 6.3pt)[Emisión de Complementos de Pago antes del día 5, confronta EMA/EBA vs. SUA el día 17 y descarga de Opinión 32-D positiva (SAT, IMSS e INFONAVIT).]],
-
-  [#text(weight: "bold", size: 6.3pt)[Febrero (Anual)]],
-  [#text(size: 6.3pt)[Prima de Riesgo de Trabajo IMSS (Art. 74 LSS)]],
-  [#text(size: 6.3pt)[Presentación de la Determinación Anual de la Prima en el Seguro de Riesgos de Trabajo conforme a la siniestralidad del ejercicio previo.]],
-
-  [#text(weight: "bold", size: 6.3pt)[Enero / Mayo / Septiembre]],
-  [#text(size: 6.3pt)[Informativas ICSOE (IMSS) y SISSUB (INFONAVIT)]],
-  [#text(size: 6.3pt)[Presentación cuatrimestral a más tardar el día 17 de los contratos de servicios especializados u obras ejecutadas (Art. 15-A LSS).]],
-
-  [#text(weight: "bold", size: 6.3pt)[Trimestral / Anual]],
-  [#text(size: 6.3pt)[Recorridos NOM-019, NOM-035 y Revalidación PIPC]],
-  [#text(size: 6.3pt)[Actas trimestrales de verificación de la Comisión Mixta SST, simulacros semestrales de evacuación PIPC y actualización del Documento de Seguridad LFPDPPP.]]
-)
-
-#v(0.16em)
+#v(0.18em)
 
 #grid(
-  columns: (1fr, 1fr),
+  columns: (48%, 52%),
   gutter: 8pt,
   [
     #text(size: 7.6pt, weight: "bold", fill: rgb("#0f172a"))[7. ANÁLISIS FINANCIERO Y RETORNO DE INVERSIÓN (ROI)]

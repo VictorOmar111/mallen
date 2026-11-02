@@ -139,58 +139,64 @@ pub fn format_mxn(val: f64) -> String {
     format!("{}.{:02}", formatted_whole, cents)
 }
 
-/// Genera el código Typst de la Tabla Forense con los 37 Vectores Evaluados para la Página 2 del Dictamen PDF
+/// Genera el código Typst de la Tabla Pericial con los 37 Vectores Evaluados para la Página 2 del Dictamen PDF
 pub fn render_vectors_37_typst_table(vectors: &[EvaluatedVector], censored_blur: bool) -> String {
     let mut out = String::from(
         r##"#table(
-  columns: (4.5%, 14.5%, 28%, 37%, 16%),
-  inset: (x: 3.5pt, y: 1.8pt),
+  columns: (4.5%, 15%, 27.5%, 37%, 16%),
+  inset: (x: 3.5pt, y: 2.35pt),
   stroke: 0.3pt + rgb("#cbd5e1"),
   fill: (x, y) => if y == 0 { rgb("#0f172a") } else if calc.odd(y) { rgb("#f8fafc") } else { rgb("#ffffff") },
   align: (center + horizon, left + horizon, left + horizon, left + horizon, right + horizon),
-  [#text(fill: white, weight: "bold", size: 5.2pt)[\#]],
-  [#text(fill: white, weight: "bold", size: 5.2pt)[ÓRGANO / NIVEL]],
-  [#text(fill: white, weight: "bold", size: 5.2pt)[PRECEPTO Y VECTOR NORMATIVO]],
-  [#text(fill: white, weight: "bold", size: 5.2pt)[DICTAMINACIÓN ESPECÍFICA AL GIRO AUDITADO]],
-  [#align(left)[#text(fill: white, weight: "bold", size: 5.2pt)[EXPOSICIÓN (UMA)]]],
+  [#text(fill: white, weight: "bold", size: 5.6pt)[\#]],
+  [#text(fill: white, weight: "bold", size: 5.6pt)[ÓRGANO / NIVEL]],
+  [#text(fill: white, weight: "bold", size: 5.6pt)[PRECEPTO Y VECTOR NORMATIVO]],
+  [#text(fill: white, weight: "bold", size: 5.6pt)[DICTAMINACIÓN TÉCNICA ESPECÍFICA]],
+  [#align(left)[#text(fill: white, weight: "bold", size: 5.6pt)[EXPOSICIÓN (UMA)]]],
 "##,
     );
 
     for v in vectors {
         let is_active = v.multa_estimada_mxn > 0.0;
         let color_hex = if is_active { "#b91c1c" } else { "#047857" };
-        let fine_label = if is_active {
+
+        let fine_label = if censored_blur && is_active {
+            r##"#text(size: 5.4pt, weight: "bold", fill: rgb("#64748b"))[RESERVADO]"##.to_string()
+        } else if is_active {
             format!(r"\$ {} MXN", format_mxn(v.multa_estimada_mxn))
         } else {
             format!(r"{} (\$0.00)", escape_typst(&v.estatus))
         };
 
-        let show_blur = censored_blur && is_active && v.num != 1 && v.num != 9 && v.num != 15;
-        let precepto_cell = if show_blur {
+        let precepto_cell = if censored_blur {
             format!(
-                r##"#box(width: 100%, fill: rgb("#f1f5f9"), radius: 2pt, inset: (x: 4pt, y: 2pt))[#box(width: 78%, height: 3pt, fill: rgb("#cbd5e1"), radius: 1.5pt) #h(3pt) #text(size: 4.5pt, weight: "bold", fill: rgb("#64748b"))[VEC-{:02}]]"##,
+                r##"#text(size: 5.4pt, weight: "bold", fill: rgb("#475569"))[VEC-{:02} • PRECEPTO NORMATIVO RESERVADO]"##,
                 v.num
             )
         } else {
             format!(
-                r##"#text(weight: "bold", size: 5pt)[{} — {}]"##,
+                r##"#text(weight: "bold", size: 5.4pt)[{} — {}]"##,
                 escape_typst(&v.codigo),
                 escape_typst(&v.titulo)
             )
         };
 
-        let hallazgo_cell = if show_blur {
-            r##"#frosted-blur("EXPEDIENTE PROTEGIDO • DESBLOQUEAR")"##.to_string()
+        let hallazgo_cell = if censored_blur {
+            if is_active {
+                r##"#text(size: 5.4pt, fill: rgb("#64748b"))[DICTAMINACIÓN TÉCNICA PROTEGIDA • DESBLOQUEAR EXPEDIENTE]"##.to_string()
+            } else {
+                r##"#text(size: 5.4pt, fill: rgb("#059669"))[CONTROL PREVENTIVO VERIFICADO ($0.00 MXN)]"##.to_string()
+            }
         } else {
-            format!(r##"#text(size: 4.9pt)[{}]"##, escape_typst(&v.hallazgo_especifico))
+            format!(r##"#text(size: 5.4pt)[{}]"##, escape_typst(&v.hallazgo_especifico))
         };
 
         out.push_str(&format!(
-            r##"  [#text(weight: "bold", size: 5pt)[{:02}]],
-  [#text(weight: "bold", size: 4.9pt, fill: rgb("{}"))[{} • {}]],
+            r##"  [#text(weight: "bold", size: 5.4pt)[{:02}]],
+  [#text(weight: "bold", size: 5.4pt, fill: rgb("{}"))[{} • {}]],
   [{}],
   [{}],
-  [#text(weight: "bold", size: 5pt, fill: rgb("{}"))[{} ({})]],
+  [#text(weight: "bold", size: 5.4pt, fill: rgb("{}"))[{} ({})]],
 "##,
             v.num,
             color_hex,
@@ -208,7 +214,6 @@ pub fn render_vectors_37_typst_table(vectors: &[EvaluatedVector], censored_blur:
     out
 }
 
-/// Genera la Gráfica Horizontal de Barras Vectoriales Sólidas en Typst para la Página 1
 pub fn render_visual_risk_chart_typst(
     m_stps: f64,
     m_sat: f64,
@@ -216,9 +221,12 @@ pub fn render_visual_risk_chart_typst(
     m_inai: f64,
     m_pc: f64,
     m_profeco: f64,
+    risk_score: f64,
 ) -> String {
     let total = (m_stps + m_sat + m_imss + m_inai + m_pc + m_profeco).max(1.0);
-    let items = [
+    let target_score = risk_score.round().clamp(0.0, 99.0) as i64;
+
+    let raw_items = [
         ("STPS (Seguridad, Salud y NOMs)", m_stps, "#dc2626"),
         ("SAT (Materialidad 69-B y CFDI 4.0)", m_sat, "#ea580c"),
         ("IMSS / INFONAVIT (SUA y REPSE)", m_imss, "#d97706"),
@@ -227,10 +235,46 @@ pub fn render_visual_risk_chart_typst(
         ("PROFECO y Economía (LFPC Digital)", m_profeco, "#0891b2"),
     ];
 
+    let mut exact_pcts: Vec<i64> = raw_items
+        .iter()
+        .map(|(_, val, _)| {
+            if *val <= 0.0 || target_score == 0 {
+                0
+            } else {
+                ((*val / total) * (target_score as f64)).floor() as i64
+            }
+        })
+        .collect();
+
+    let current_sum: i64 = exact_pcts.iter().sum();
+    let mut remainder = target_score - current_sum;
+
+    if remainder > 0 && total > 1.0 {
+        let mut frac_indices: Vec<(usize, f64)> = raw_items
+            .iter()
+            .enumerate()
+            .map(|(i, (_, val, _))| {
+                let exact = (*val / total) * (target_score as f64);
+                (i, exact - exact.floor())
+            })
+            .collect();
+        frac_indices.sort_by(|a, b| b.1.partial_cmp(&a.1).unwrap_or(std::cmp::Ordering::Equal));
+        for (idx, _) in frac_indices {
+            if remainder <= 0 {
+                break;
+            }
+            if raw_items[idx].1 > 0.0 {
+                exact_pcts[idx] += 1;
+                remainder -= 1;
+            }
+        }
+    }
+
     let mut rows = String::new();
-    for (label, val, hex) in items {
-        let pct = ((val / total) * 100.0).round().clamp(0.0, 100.0);
-        let bar_w = if val > 0.0 { pct.max(4.0) } else { 1.0 };
+    for (i, (label, val, hex)) in raw_items.iter().enumerate() {
+        let pct = exact_pcts[i];
+        let bar_w = if *val > 0.0 { (pct as f64).max(3.0) } else { 1.0 };
+
         rows.push_str(&format!(
             r##"  [#text(size: 6pt, weight: "bold", fill: rgb("#1e293b"))[{}]],
   [
@@ -238,21 +282,21 @@ pub fn render_visual_risk_chart_typst(
       #box(width: {}%, height: 7pt, fill: rgb("{}"), radius: 2pt)
     ]
   ],
-  [#align(right)[#text(size: 6pt, weight: "bold", fill: rgb("{}"))[{:.0}% (\$ {} MXN)]]],
+  [#align(right)[#text(size: 6pt, weight: "bold", fill: rgb("{}"))[{}% (\$ {} MXN)]]],
 "##,
             label,
             bar_w,
             hex,
             hex,
             pct,
-            format_mxn(val)
+            format_mxn(*val)
         ));
     }
 
     format!(
         r##"#box(width: 100%, fill: rgb("#f8fafc"), stroke: 0.5pt + rgb("#cbd5e1"), radius: 4pt, inset: 6pt)[
   #grid(
-    columns: (30%, 44%, 26%),
+    columns: (32%, 42%, 26%),
     row-gutter: 4.2pt,
     column-gutter: 6pt,
     align: horizon,
@@ -263,7 +307,6 @@ pub fn render_visual_risk_chart_typst(
     )
 }
 
-/// Evalúa los 37 Vectores Oficiales del Directorio Normativo 360° personalizando multas según plantilla real, SCIAN y telemetría
 pub fn evaluate_all_37_vectors(
     razon_social: &str,
     scian: &str,
@@ -847,4 +890,62 @@ pub fn evaluate_all_37_vectors(
     );
 
     v
+}
+
+pub fn render_roadmap_actions_typst(actividad_clean: &str, censored_blur: bool) -> (String, String, String, String) {
+    if censored_blur {
+        (
+            r##"#frosted-blur("FASE 1 PROTEGIDA • DESBLOQUEAR PROTOCOLO WEB Y FISCAL")"##.to_string(),
+            r##"#frosted-blur("FASE 2 PROTEGIDA • DESBLOQUEAR ACTAS STPS Y CONFRONTA SUA")"##.to_string(),
+            r##"#frosted-blur("FASE 3 PROTEGIDA • DESBLOQUEAR CARPETA PIPC Y SECTORIALES")"##.to_string(),
+            r##"#frosted-blur("AGENDA ANUAL PROTEGIDA")"##.to_string(),
+        )
+    } else {
+        let p1 = r##"#text(size: 6.3pt)[1. Publicar en el portal web el *Aviso de Privacidad Integral* y los *Términos E-Commerce Art. 76 BIS LFPC* incluidos en el Kit.]
+#linebreak()
+#text(size: 6.3pt)[2. Suscribir el *Contrato Marco de Materialidad B2B con Fecha Cierta* y recabar el *Consentimiento Biométrico/Nómina* del personal.]"##.to_string();
+
+        let p2 = r##"#text(size: 6.3pt)[1. Firmar el *Acta Constitutiva de la Comisión Mixta (NOM-019)* y el *Diagnóstico Preventivo NOM-030*.]
+#linebreak()
+#text(size: 6.3pt)[2. Aplicar los cuestionarios de la *Política NOM-035*, el *Adendum de Teletrabajo NOM-037* y ejecutar la confronta *SUA vs. CFDI de Nómina*.]"##.to_string();
+
+        let p3 = format!(
+            r##"#text(size: 6.3pt)[1. Integrar la carpeta del *Programa Interno de Protección Civil (PIPC)* con el Acta de 4 Brigadas.]
+#linebreak()
+#text(size: 6.3pt)[2. Archivar el *Expediente de Beneficiario Controlador (Art. 32-B Ter CFF)* y las bitácoras sectoriales propias del giro *{}*.]"##,
+            actividad_clean
+        );
+
+        let c1 = r##"#text(size: 6pt)[Emisión de Complementos de Pago antes del día 5, confronta EMA/EBA vs. SUA el día 17 y descarga de Opinión 32-D positiva (SAT, IMSS e INFONAVIT).]"##.to_string();
+
+        (p1, p2, p3, c1)
+    }
+}
+
+pub fn render_calendar_table(censored_blur: bool) -> String {
+    if censored_blur {
+        r##"#box(width: 100%, fill: rgb("#f8fafc"), stroke: 0.5pt + rgb("#cbd5e1"), radius: 3pt, inset: 6pt)[#align(center)[#text(size: 6.3pt, weight: "bold", fill: rgb("#64748b"))[AGENDA ANUAL DE CUMPLIMIENTO PROTEGIDA • EXCLUSIVA DEL DICTAMEN INTEGRAL]]]"##.to_string()
+    } else {
+        r##"#table(
+  columns: (22%, 33%, 45%),
+  inset: (x: 4pt, y: 2.8pt),
+  stroke: 0.5pt + rgb("#cbd5e1"),
+  fill: (x, y) => if y == 0 { rgb("#0f172a") } else if calc.odd(y) { rgb("#f8fafc") } else { rgb("#ffffff") },
+  [#text(fill: white, weight: "bold", size: 6.3pt)[PERIODICIDAD / MES]],
+  [#text(fill: white, weight: "bold", size: 6.3pt)[OBLIGACIÓN Y FUNDAMENTO]],
+  [#text(fill: white, weight: "bold", size: 6.3pt)[CONTROL DOCUMENTAL EXIGIBLE EN AUDITORÍA]],
+  [#text(weight: "bold", size: 6.1pt)[Mensual (Días 5 y 17)]],
+  [#text(weight: "bold", size: 6.1pt)[REP CFDI 4.0, SUA IMSS y Opinión 32-D]],
+  [#text(size: 6pt)[Emisión de Complementos de Pago antes del día 5, confronta EMA/EBA vs. SUA el día 17 y descarga de Opinión 32-D positiva (SAT, IMSS e INFONAVIT).]],
+  [#text(weight: "bold", size: 6.1pt)[Febrero (Anual)]],
+  [#text(weight: "bold", size: 6.1pt)[Prima de Riesgo de Trabajo IMSS (Art. 74 LSS)]],
+  [#text(size: 6pt)[Presentación de la Determinación Anual de la Prima en el Seguro de Riesgos de Trabajo conforme a la siniestralidad del ejercicio previo.]],
+  [#text(weight: "bold", size: 6.1pt)[Enero / Mayo / Septiembre]],
+  [#text(weight: "bold", size: 6.1pt)[Informativas ICSOE (IMSS) y SISSUB (INFONAVIT)]],
+  [#text(size: 6pt)[Presentación cuatrimestral a más tardar el día 17 de los contratos de servicios especializados u obras ejecutadas (Art. 15-A LSS).]],
+  [#text(weight: "bold", size: 6.1pt)[Trimestral / Anual]],
+  [#text(weight: "bold", size: 6.1pt)[Recorridos NOM-019, NOM-035 y Revalidación PIPC]],
+  [#text(size: 6pt)[Actas trimestrales de verificación de la Comisión Mixta SST, simulacros semestrales de evacuación PIPC y actualización del Documento de Seguridad LFPDPPP.]]
+)"##.to_string()
+    }
 }

@@ -220,13 +220,15 @@ fn build_report_typst_markup_full(
         }
     }
 
-    let total_exact = ((m_stps + m_sat + m_inai + m_imss + m_pc + m_profeco) * 100.0).round() / 100.0;
+    // Variable total_exact removida tras calibración de Score ponderado en la gráfica.
     let score = if is_immune {
         0
+    } else if let Some(m) = master_opt {
+        m.risk_score
     } else {
-        master_opt
-            .map(|m| m.risk_score)
-            .unwrap_or(empresa.risk_score.max(72))
+        let ac = evaluated_37.iter().filter(|v| v.multa_estimada_mxn > 0.0).count();
+        let raw_s = 40.0_f64 + (ac as f64 / 37.0_f64) * 45.0_f64 + (total_exact / 5_000_000.0_f64).min(1.0_f64) * 14.0_f64;
+        (raw_s.round() as u32).clamp(45, 99)
     };
 
     let (status_hex, banner_bg, banner_border, estatus_texto, badge_accion) = if is_immune {
@@ -317,36 +319,42 @@ fn build_report_typst_markup_full(
         })
         .unwrap_or("SIN INHABILITACIÓN EN COMPRANET / SFP");
 
-    let cal_opt = master_opt.map(|m| &m.calibration_applied);
+    let (
+        scian_str, emp_count,
+        osint_ssl, osint_privacy, osint_arco,
+        cal_telework, cal_repse, cal_boilers, cal_forklifts, cal_chemicals, cal_biometrics, cal_b2b, cal_transport, cal_pld,
+        is_unindexed_orphan
+    ) = if let Some(m) = master_opt {
+        let scian = m.codigo_scian.as_str();
+        let c = &m.calibration_applied;
+        (
+            scian, m.estimated_employees, m.web_telemetry.ssl_valid, m.web_telemetry.has_privacy_notice,
+            m.web_telemetry.mentions_arco_rights || m.web_telemetry.has_privacy_notice,
+            c.has_telework_over_40_percent.unwrap_or(true), c.uses_subcontracted_services_repse.unwrap_or(true),
+            c.has_pressure_vessels_boilers.unwrap_or(scian.starts_with("31") || scian.starts_with("32") || scian.starts_with("33") || scian.starts_with("722")),
+            c.has_forklifts_or_manual_loads.unwrap_or(true),
+            c.handles_hazardous_chemicals.unwrap_or(scian.starts_with("811") || scian.starts_with("31") || scian.starts_with("32") || scian.starts_with("62")),
+            c.uses_biometrics_or_health_data.unwrap_or(true), c.pays_intangible_b2b_services.unwrap_or(true),
+            c.transports_goods_federal_highways.unwrap_or(scian.starts_with("48") || scian.starts_with("49") || scian.starts_with("43")),
+            c.performs_vulnerable_activities_pld.unwrap_or(scian.starts_with("52") || scian.starts_with("53") || scian.starts_with("23")),
+            (m.razon_social.starts_with("REGISTRO NO INDEXADO") || m.domicilio_fiscal_o_denue.contains("Territorio Nacional")) && m.web_telemetry.target_url.is_empty()
+        )
+    } else {
+        let scian = scian_str;
+        (
+            scian, emp_count, osint.has_ssl, osint.has_privacy_policy, osint.has_privacy_policy,
+            true, true, scian.starts_with("31") || scian.starts_with("32") || scian.starts_with("33") || scian.starts_with("722"),
+            true, scian.starts_with("811") || scian.starts_with("31") || scian.starts_with("32") || scian.starts_with("62"),
+            true, true, scian.starts_with("48") || scian.starts_with("49") || scian.starts_with("43"),
+            scian.starts_with("52") || scian.starts_with("53") || scian.starts_with("23"), false
+        )
+    };
+
     let evaluated_37 = crate::modules::vectors_37::evaluate_all_37_vectors(
-        &empresa.nombre,
-        scian_str,
-        emp_count,
-        sat_69b_lbl,
-        sat_69_lbl,
-        repse_lbl.contains("VIGENTE") || repse_lbl.contains("ACTIVO"),
-        sfp_lbl.contains("ALERTA") || sfp_lbl.contains("SANCIONADO"),
-        osint.has_ssl || is_immune,
-        osint.has_privacy_policy || is_immune,
-        osint.has_privacy_policy || is_immune,
-        is_immune,
-        cal_opt.and_then(|c| c.has_telework_over_40_percent).unwrap_or(true),
-        cal_opt.and_then(|c| c.uses_subcontracted_services_repse).unwrap_or(true),
-        cal_opt.and_then(|c| c.has_pressure_vessels_boilers).unwrap_or(
-            scian_str.starts_with("31") || scian_str.starts_with("32") || scian_str.starts_with("33") || scian_str.starts_with("722")
-        ),
-        cal_opt.and_then(|c| c.has_forklifts_or_manual_loads).unwrap_or(true),
-        cal_opt.and_then(|c| c.handles_hazardous_chemicals).unwrap_or(
-            scian_str.starts_with("811") || scian_str.starts_with("31") || scian_str.starts_with("32") || scian_str.starts_with("62")
-        ),
-        cal_opt.and_then(|c| c.uses_biometrics_or_health_data).unwrap_or(true),
-        cal_opt.and_then(|c| c.pays_intangible_b2b_services).unwrap_or(true),
-        cal_opt.and_then(|c| c.transports_goods_federal_highways).unwrap_or(
-            scian_str.starts_with("48") || scian_str.starts_with("49") || scian_str.starts_with("43")
-        ),
-        cal_opt.and_then(|c| c.performs_vulnerable_activities_pld).unwrap_or(
-            scian_str.starts_with("52") || scian_str.starts_with("53") || scian_str.starts_with("23")
-        ),
+        &empresa.nombre, scian_str, emp_count, sat_69b_lbl, sat_69_lbl,
+        repse_lbl.contains("VIGENTE") || repse_lbl.contains("ACTIVO"), sfp_lbl.contains("ALERTA") || sfp_lbl.contains("SANCIONADO"),
+        osint_ssl || is_immune, osint_privacy || is_immune, osint_arco || is_immune, is_immune || is_unindexed_orphan,
+        cal_telework, cal_repse, cal_boilers, cal_forklifts, cal_chemicals, cal_biometrics, cal_b2b, cal_transport, cal_pld,
     );
 
     // SINCRONIZACIÓN MATEMÁTICA 1:1 ABSOLUTA:
@@ -370,8 +378,18 @@ fn build_report_typst_markup_full(
         }
     }
     let total_exact = ((m_stps + m_sat + m_inai + m_imss + m_pc + m_profeco) * 100.0).round() / 100.0;
+    let score: u32 = if is_immune || total_exact == 0.0 {
+        0
+    } else if let Some(m) = master_opt {
+        m.risk_score
+    } else {
+        let ac = evaluated_37.iter().filter(|v| v.multa_estimada_mxn > 0.0).count();
+        let raw_score = 40.0_f64 + (ac as f64 / 37.0_f64) * 45.0_f64 + (total_exact / 5_000_000.0_f64).min(1.0_f64) * 14.0_f64;
+        (raw_score.round() as u32).clamp(45, 99)
+    };
+    let risk_score_val = score as f64;
     let visual_chart_typst = crate::modules::vectors_37::render_visual_risk_chart_typst(
-        m_stps, m_sat, m_imss, m_inai, m_pc, m_profeco,
+        m_stps, m_sat, m_imss, m_inai, m_pc, m_profeco, risk_score_val
     );
 
     let hallazgo_stps_str = if is_immune {
@@ -531,6 +549,19 @@ fn build_report_typst_markup_full(
         .replace("{{SCORE_PROFECO}}", &(s_f * 0.10).round().to_string())
         .replace("{{REF_TAX}}", &tax_clean)
         .replace("{{VECTORS_37_TABLE_TYPST}}", &vectors_37_typst)
+        .replace("{{ROADMAP_PHASE_1}}", &{
+            let (p1, _, _, _) = crate::modules::vectors_37::render_roadmap_actions_typst(&actividad_clean, is_censored_micro_report && !is_immune);
+            p1
+        })
+        .replace("{{ROADMAP_PHASE_2}}", &{
+            let (_, p2, _, _) = crate::modules::vectors_37::render_roadmap_actions_typst(&actividad_clean, is_censored_micro_report && !is_immune);
+            p2
+        })
+        .replace("{{ROADMAP_PHASE_3}}", &{
+            let (_, _, p3, _) = crate::modules::vectors_37::render_roadmap_actions_typst(&actividad_clean, is_censored_micro_report && !is_immune);
+            p3
+        })
+        .replace("{{CALENDAR_SECTION_TYPST}}", &crate::modules::vectors_37::render_calendar_table(is_censored_micro_report && !is_immune))
         .replace("{{VISUAL_RISK_CHART_TYPST}}", &visual_chart_typst)
 }
 
@@ -590,7 +621,11 @@ pub fn generate_pdf_report_with_session(
     let _ = fs::remove_file(&typst_source_path);
 
     let nombre_clean = sanitize_for_typst(&empresa.nombre);
-    let actividad_clean = sanitize_for_typst(&empresa.actividad);
+    let actividad_clean = if let Some(m) = master_opt {
+        sanitize_for_typst(&format!("{} - {}", m.codigo_scian, m.actividad_scian_desc))
+    } else {
+        sanitize_for_typst(&empresa.actividad)
+    };
     let direccion_clean = sanitize_for_typst(&empresa.direccion);
     let tax_clean = sanitize_for_typst(tax_id);
 

@@ -243,7 +243,14 @@ async fn handle_live_scan(
                         None
                     }
                 })
-                .unwrap_or_else(|| format!("REGISTRO NO INDEXADO EN PADRONES PÚBLICOS ({})", canonical_rfc));
+                .unwrap_or_else(|| {
+                let is_valid = canonical_rfc.chars().all(|c| c.is_ascii_alphanumeric()) && (canonical_rfc.len() == 12 || canonical_rfc.len() == 13) && !canonical_rfc.contains(' ');
+                if is_valid {
+                    format!("REGISTRO NO INDEXADO EN PADRONES PÚBLICOS ({})", canonical_rfc)
+                } else {
+                    format!("BÚSQUEDA RECHAZADA: SE REQUIERE RFC VÁLIDO PARA EVALUACIÓN")
+                }
+            });
             let dom = d_in
                 .domicilio_fiscal_completo
                 .clone()
@@ -253,7 +260,7 @@ async fn handle_live_scan(
                 .giro_scian_descripcion
                 .clone()
                 .filter(|s| !s.trim().is_empty())
-                .unwrap_or_else(|| "541610 - Servicios de consultoría y operación corporativa Corporativo".to_string());
+                .unwrap_or_else(|| "Servicios de consultoría científica, técnica y operación corporativa".to_string());
             (
                 rz.clone(),
                 rz,
@@ -285,27 +292,107 @@ async fn handle_live_scan(
         WebOsintTelemetry::default()
     };
 
-    let emp_count = parse_employee_count(&estrato, req.calibration.exact_employee_count);
-    let findings = if is_mallen_self {
-        Vec::new()
-    } else {
-        build_full_regulatory_findings(
-            &codigo_scian,
-            &razon_social,
-            emp_count,
-            &sat_69b,
-            &sat_69,
-            repse_reg,
-            sfp_sanc,
-            &web_telemetry,
-            &req.calibration,
-        )
-    };
+    let emp_count = req.calibration.exact_employee_count.unwrap_or(45).max(1);
+    let is_unindexed_orphan = (razon_social.starts_with("REGISTRO NO INDEXADO") || razon_social.starts_with("BÚSQUEDA RECHAZADA")
+        || domicilio.contains("Territorio Nacional"))
+        && web_telemetry.target_url.is_empty()
+        && sat_69b.contains("LIMPIO")
+        && sat_69.contains("LIMPIO")
+        && !sfp_sanc;
 
-    let (risk_score, min_fine, est_fine, max_fine) = if is_mallen_self {
+    let evaluated_37 = worker_inegi_engine::modules::vectors_37::evaluate_all_37_vectors(
+        &razon_social,
+        &codigo_scian,
+        emp_count,
+        &sat_69b,
+        &sat_69,
+        repse_reg,
+        sfp_sanc,
+        web_telemetry.ssl_valid || is_mallen_self,
+        web_telemetry.has_privacy_notice || is_mallen_self,
+        web_telemetry.mentions_arco_rights || web_telemetry.has_privacy_notice || is_mallen_self,
+        is_mallen_self || is_unindexed_orphan,
+        req.calibration.has_telework_over_40_percent.unwrap_or(true),
+        req.calibration.uses_subcontracted_services_repse.unwrap_or(true),
+        req.calibration.has_pressure_vessels_boilers.unwrap_or(
+            codigo_scian.starts_with("31") || codigo_scian.starts_with("32") || codigo_scian.starts_with("33") || codigo_scian.starts_with("722")
+        ),
+        req.calibration.has_forklifts_or_manual_loads.unwrap_or(true),
+        req.calibration.handles_hazardous_chemicals.unwrap_or(
+            codigo_scian.starts_with("811") || codigo_scian.starts_with("31") || codigo_scian.starts_with("32") || codigo_scian.starts_with("62")
+        ),
+        req.calibration.uses_biometrics_or_health_data.unwrap_or(true),
+        req.calibration.pays_intangible_b2b_services.unwrap_or(true),
+        req.calibration.transports_goods_federal_highways.unwrap_or(
+            codigo_scian.starts_with("48") || codigo_scian.starts_with("49") || codigo_scian.starts_with("43")
+        ),
+        req.calibration.performs_vulnerable_activities_pld.unwrap_or(
+            codigo_scian.starts_with("52") || codigo_scian.starts_with("53") || codigo_scian.starts_with("23")
+        ),
+    );
+
+    let mut findings = Vec::with_capacity(37);
+    let mut est_fine_acc = 0.0;
+    let mut min_fine_acc = 0.0;
+    let mut max_fine_acc = 0.0;
+    let mut active_vectors_count = 0u32;
+
+    if !is_mallen_self && !is_unindexed_orphan {
+        for v in &evaluated_37 {
+            let agency = match v.organo.as_str() {
+                "STPS" => worker_inegi_engine::engine::models::RegulatoryAgency::STPS,
+                "SAT" => worker_inegi_engine::engine::models::RegulatoryAgency::SAT,
+                "LFPDPPP" => worker_inegi_engine::engine::models::RegulatoryAgency::SabgInai,
+                "IMSS" => worker_inegi_engine::engine::models::RegulatoryAgency::IMSSInfonavit,
+                "PROFECO" | "ECONOMÍA" => worker_inegi_engine::engine::models::RegulatoryAgency::PROFECO,
+                _ => worker_inegi_engine::engine::models::RegulatoryAgency::SectorialProteccionCivil,
+            };
+            let severity = match v.severidad.as_str() {
+                "CRÍTICA" => worker_inegi_engine::engine::models::RiskSeverity::CriticalClosure,
+                "ALTA" => worker_inegi_engine::engine::models::RiskSeverity::High,
+                "MEDIA" => worker_inegi_engine::engine::models::RiskSeverity::Medium,
+                _ => worker_inegi_engine::engine::models::RiskSeverity::Low,
+            };
+            if v.multa_estimada_mxn > 0.0 {
+                active_vectors_count += 1;
+                est_fine_acc += v.multa_estimada_mxn;
+                min_fine_acc += (v.multa_estimada_mxn * 0.35 * 100.0).round() / 100.0;
+                max_fine_acc += (v.multa_estimada_mxn * 2.25 * 100.0).round() / 100.0;
+            }
+            findings.push(worker_inegi_engine::engine::models::RegulatoryFinding {
+                code: format!("VEC-{:02} • {}", v.num, v.codigo),
+                agency,
+                title: v.titulo.clone(),
+                legal_basis: format!("{} ({})", v.codigo, v.uma_rango),
+                severity,
+                description: v.hallazgo_especifico.clone(),
+                remediation_action: if v.multa_estimada_mxn > 0.0 {
+                    "Instrumentar documental y técnicamente mediante el Kit de Blindaje Pericial 360°.".to_string()
+                } else {
+                    "Control verificado / Supuesto sectorial exento ($0.00 MXN).".to_string()
+                },
+                min_uma: 250,
+                max_uma: 5000,
+                min_fine_mxn: if v.multa_estimada_mxn > 0.0 { (v.multa_estimada_mxn * 0.35 * 100.0).round() / 100.0 } else { 0.0 },
+                estimated_fine_mxn: v.multa_estimada_mxn,
+                max_fine_mxn: if v.multa_estimada_mxn > 0.0 { (v.multa_estimada_mxn * 2.25 * 100.0).round() / 100.0 } else { 0.0 },
+                verified_by_osint: true,
+            });
+        }
+    }
+
+    let (risk_score, min_fine, est_fine, max_fine) = if is_mallen_self || is_unindexed_orphan {
         (0, 0.0, 0.0, 0.0)
     } else {
-        summarize_findings_financials(&findings)
+        // Algoritmo ultra-preciso: Pondera cantidad de vectores (45 pts) + Daño financiero (14 pts) sobre una base de 40.
+        let calc_score_raw = 40.0 + (active_vectors_count as f64 / 37.0) * 45.0 + ((est_fine_acc / 5_000_000.0).min(1.0)) * 14.0;
+        let calc_score = (calc_score_raw.round() as u32).clamp(45, 99);
+        (
+            calc_score,
+            (min_fine_acc * 100.0).round() / 100.0,
+            (est_fine_acc * 100.0).round() / 100.0,
+            (max_fine_acc * 100.0).round() / 100.0,
+        )
     };
 
     let now_utc = Utc::now().to_rfc3339();
@@ -333,6 +420,12 @@ async fn handle_live_scan(
     if cal_enriched.dossier.entidad_jurisdiccion.is_none() && !denue_entidad.is_empty() {
         cal_enriched.dossier.entidad_jurisdiccion = Some(denue_entidad);
     }
+    let actividad_desc = actividad_desc
+        .trim()
+        .trim_start_matches(&codigo_scian)
+        .trim_start_matches(" - ")
+        .trim()
+        .to_string();
     if cal_enriched.dossier.giro_scian_descripcion.is_none() {
         cal_enriched.dossier.giro_scian_descripcion = Some(format!("{} - {}", codigo_scian, actividad_desc));
     }
@@ -377,6 +470,20 @@ async fn handle_live_scan(
         partner_whitelabel_name: req.partner_id,
         partner_logo_base64: None,
     };
+
+    // BLINDAJE SUIZO v2 (PRECISIÓN DE CIRUJANO): 
+    // Solo borramos la multa si es un fallback puro Y NO hay dominio para auditar.
+    let mut master_report = master_report;
+    let is_fallback = master_report.razon_social.starts_with("REGISTRO NO INDEXADO") 
+        || master_report.domicilio_fiscal_o_denue.contains("Territorio Nacional");
+        
+    if is_fallback && master_report.web_telemetry.target_url.is_empty() {
+        master_report.findings.clear();
+        master_report.risk_score = 0;
+        master_report.total_estimated_fine_mxn = 0.0;
+        master_report.total_min_fine_mxn = 0.0;
+        master_report.total_max_fine_mxn = 0.0;
+    }
 
     // Persistir la sesión exacta en SQLite WAL para que el PDF y el ZIP usen exactamente estos montos y datos
     let _ = state
@@ -560,7 +667,7 @@ async fn download_zip_handler(
             }
         }
         Err(e) => {
-            eprintln!("️ Error generando bundle para {}: {}", clean_tax, e);
+            eprintln!(" Error generando bundle para {}: {}", clean_tax, e);
         }
     }
 
@@ -701,7 +808,7 @@ async fn build_empresa_and_session(
         EmpresaB2B {
             id: clean_tax.to_string(),
             nombre: format!("EMPRESA O RFC NO LOCALIZADO EN PADRONES PÚBLICOS ({})", clean_tax),
-            actividad: "541610 - Servicios de consultoría y operación corporativa Corporativo".to_string(),
+            actividad: "Servicios de consultoría científica, técnica y operación corporativa".to_string(),
             telefono: "55-5000-0000".to_string(),
             email: "".to_string(),
             direccion: "11 a 30 personas — Domicilio Fiscal en México".to_string(),
@@ -847,7 +954,7 @@ async fn build_empresa_from_db_or_default(state: &AppState, clean_tax: &str) -> 
         EmpresaB2B {
             id: clean_tax.to_string(),
             nombre: format!("EMPRESA O RFC NO LOCALIZADO EN PADRONES PÚBLICOS ({})", clean_tax),
-            actividad: "541610 - Servicios de consultoría y operación corporativa Corporativo".to_string(),
+            actividad: "Servicios de consultoría científica, técnica y operación corporativa".to_string(),
             telefono: String::new(),
             email: String::new(),
             direccion: "Domicilio Fiscal Registrado en Territorio Nacional (México)".to_string(),
@@ -1521,7 +1628,7 @@ fn render_validez_detail(slug: &str) -> Html<String> {
             "Validez Probatoria de Dictamen Técnico y Papeles de Trabajo",
             "Instrumentación respaldada por Contador Público Certificado y Agente Capacitador Externo STPS.",
             "Artículo 52 del Código Fiscal de la Federación • Artículos 153-A a 153-X de la LFT",
-            "Todos los certificados normativos, matrices de exposición en UMAs y papeles de trabajo (PT-STPS, PT-SAT, PT-IMSS, PT-SABG y PT-PROFECO) se encuentran estructurados bajo estándares de auditoría forense y suscritos por el C.P.C. Víctor Omar Malpica Guillén (Cédula CED-2026-MALLEN | Reg. STPS DC-5: MAVG-850101-STPS-0019).",
+            "Todos los certificados normativos, matrices de exposición en UMAs y papeles de trabajo (PT-STPS, PT-SAT, PT-IMSS, PT-SABG y PT-PROFECO) se encuentran estructurados bajo estándares de auditoría técnico y suscritos por el C.P.C. Víctor Omar Malpica Guillén (Cédula CED-2026-MALLEN | Reg. STPS DC-5: MAVG-850101-STPS-0019).",
             "El expediente bifurcado entrega por separado la Cédula Ejecutiva Financiera para el Consejo de Administración y el Anexo Técnico Pericial con la evidencia OSINT y los 7 Instrumentos Jurídicos listos para firma autógrafa."
         ),
         "secreto" => (
