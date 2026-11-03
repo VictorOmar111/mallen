@@ -3,7 +3,7 @@
 
 use crate::engine::accountant::AccountantProfile;
 use crate::engine::models::{
-    AuditMasterJson, EmpresaB2B, LegalDossierInput, RegulatoryAgency,
+    AuditMasterJson, EmpresaB2B, LegalDossierInput,
 };
 use crate::engine::osint_scanner::OsintResult;
 use chrono::Utc;
@@ -190,8 +190,7 @@ fn build_report_typst_markup_full(
     };
 
     // Calcular subtotales exactos por dependencia para sincronía matemática 1:1 con la Web
-    let (mut m_stps, mut m_sat, mut m_inai, mut m_imss, mut m_pc, mut m_profeco) =
-        (0.0, 0.0, 0.0, 0.0, 0.0, 0.0);
+    
 
     
 

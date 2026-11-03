@@ -129,10 +129,11 @@ pub fn build_all_compliance_documents_with_session(
 
     let prov_nombre = pick_known_or_blank(&dossier.proveedor_principal_razon_social, "", BLANK_LINE);
     let prov_rfc = pick_known_or_blank(&dossier.proveedor_principal_rfc, "", BLANK_SHORT);
+    let def_prov_obj = format!("Suministro de insumos, logística y servicios especializados vinculados al giro {}", giro_scian);
     let prov_objeto = pick_known_or_blank(
         &dossier.proveedor_principal_servicio_objeto,
         "",
-        &format!("Suministro de insumos, logística y servicios especializados vinculados al giro {}", giro_scian),
+        &def_prov_obj,
     );
     let testigo_auditor = pick_known_or_blank(&dossier.testigo_auditor_interno, "", BLANK_LINE);
 

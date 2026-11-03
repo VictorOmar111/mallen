@@ -177,39 +177,49 @@ pub fn build_zip_buffer_from_dir(
     base_dir: &str,
     dictamen_pdf_path: &str,
 ) -> Result<Vec<u8>, Box<dyn std::error::Error + Send + Sync>> {
-    let tax_id = empresa.tax_id.as_deref().unwrap_or("GENERIC");
-    let buffer = Cursor::new(Vec::with_capacity(1024 * 1024));
-    let mut zip = ZipWriter::new(buffer);
+    build_zip_buffer_from_dir_with_session(empresa, dossier, None, base_dir, dictamen_pdf_path)
+}
 
-    let options = FileOptions::default()
+pub fn build_zip_buffer_from_dir_with_session(
+    empresa: &EmpresaB2B,
+    dossier: &LegalDossierInput,
+    master_opt: Option<&AuditMasterJson>,
+    base_dir: &str,
+    dictamen_pdf_path: &str,
+) -> Result<Vec<u8>, Box<dyn std::error::Error + Send + Sync>> {
+    let tax_id = empresa.tax_id.as_deref().unwrap_or("GENERIC");
+    let buffer = std::io::Cursor::new(Vec::with_capacity(1024 * 1024));
+    let mut zip = zip::ZipWriter::new(buffer);
+
+    let options = zip::write::FileOptions::default()
         .compression_method(zip::CompressionMethod::Deflated)
         .unix_permissions(0o644);
 
-    if Path::new(dictamen_pdf_path).exists() {
-        let mut pdf_file = File::open(dictamen_pdf_path)?;
+    if std::path::Path::new(dictamen_pdf_path).exists() {
+        let mut pdf_file = std::fs::File::open(dictamen_pdf_path)?;
         let mut pdf_bytes = Vec::new();
-        pdf_file.read_to_end(&mut pdf_bytes)?;
+        std::io::Read::read_to_end(&mut pdf_file, &mut pdf_bytes)?;
         zip.start_file(
             format!("00_DICTAMEN_PERICIAL_EJECUTIVO_{}.pdf", tax_id),
             options,
         )?;
-        zip.write_all(&pdf_bytes)?;
+        std::io::Write::write_all(&mut zip, &pdf_bytes)?;
     }
 
-    for cert in get_catalogo_certificados() {
+    for cert in crate::engine::pdf_generator::get_catalogo_certificados() {
         let cert_disk_path = format!("{}/{}", base_dir, cert.filename);
-        if Path::new(&cert_disk_path).exists() {
-            if let Ok(cert_bytes) = fs::read(&cert_disk_path) {
+        if std::path::Path::new(&cert_disk_path).exists() {
+            if let Ok(cert_bytes) = std::fs::read(&cert_disk_path) {
                 zip.start_file(
                     format!("00_CERTIFICADOS_ACREDITACION_PDF/{}", cert.filename),
                     options,
                 )?;
-                zip.write_all(&cert_bytes)?;
+                std::io::Write::write_all(&mut zip, &cert_bytes)?;
             }
         }
     }
 
-    let compliance_docs = build_all_compliance_documents_with_session(empresa, dossier, master_opt);
+    let compliance_docs = crate::engine::kit_generator::build_all_compliance_documents_with_session(empresa, dossier, master_opt);
     for doc in compliance_docs {
         let pdf_rel_path = doc.zip_relative_path.replace(".md", ".pdf");
         let html_rel_path = doc.zip_relative_path.replace(".md", "_Editable_Word.html");
@@ -219,36 +229,31 @@ pub fn build_zip_buffer_from_dir(
             compile_kit_document_to_pdf(&doc.disk_filename, &doc.content, empresa, &temp_pdf_disk)
         {
             zip.start_file(&pdf_rel_path, options)?;
-            zip.write_all(&kit_pdf_bytes)?;
+            std::io::Write::write_all(&mut zip, &kit_pdf_bytes)?;
         }
 
         let html_str = render_kit_as_printable_html(&doc.disk_filename, &doc.content, empresa);
         zip.start_file(&html_rel_path, options)?;
-        zip.write_all(html_str.as_bytes())?;
+        std::io::Write::write_all(&mut zip, html_str.as_bytes())?;
     }
 
-    if let Ok(entries) = fs::read_dir(base_dir) {
+    if let Ok(entries) = std::fs::read_dir(base_dir) {
         for entry in entries.flatten() {
             let fname = entry.file_name().to_string_lossy().to_string();
             if fname.starts_with("CFDI40_Factura_") && fname.ends_with(".xml") {
-                if let Ok(xml_bytes) = fs::read(entry.path()) {
+                if let Ok(xml_bytes) = std::fs::read(entry.path()) {
                     zip.start_file(format!("06_FACTURA_FISCAL_CFDI40/{}", fname), options)?;
-                    zip.write_all(&xml_bytes)?;
+                    std::io::Write::write_all(&mut zip, &xml_bytes)?;
                 }
             }
         }
     }
 
     let manifiesto_content = format!(
-        "FIRMA PERICIAL MALLEN (MALLEN.LAT) — CERTIFICADO CRIPTOGRAFICO Y ALCANCE LEGAL\r\n\
-ENTIDAD AUDITADA: {}\r\n\
-RFC / TAX ID: {}\r\n\
-FECHA Y HORA UTC: {}\r\n\
-HASH SHA-256 EXPEDIENTE: {}\r\n\
-URL DE VERIFICACION: https://mallen.lat/verify/{}\r\n",
+        "FIRMA PERICIAL MALLEN (MALLEN.LAT) — CERTIFICADO CRIPTOGRAFICO Y ALCANCE LEGAL\r\nENTIDAD AUDITADA: {}\r\nRFC / TAX ID: {}\r\nFECHA Y HORA UTC: {}\r\nHASH SHA-256 EXPEDIENTE: {}\r\nURL DE VERIFICACION: https://mallen.lat/verify/{}\r\n",
         empresa.nombre,
         tax_id,
-        Utc::now().to_rfc3339(),
+        chrono::Utc::now().to_rfc3339(),
         empresa.audit_hash,
         tax_id
     );
@@ -257,11 +262,11 @@ URL DE VERIFICACION: https://mallen.lat/verify/{}\r\n",
         "00_MANIFIESTO_FECHA_CIERTA_Y_ALCANCE_PERICIAL.txt",
         options,
     )?;
-    zip.write_all(manifiesto_content.as_bytes())?;
+    std::io::Write::write_all(&mut zip, manifiesto_content.as_bytes())?;
 
     let finished_cursor = zip.finish()?;
     let final_bytes = finished_cursor.into_inner();
-    let _zip_sha256 = CryptoSigner::compute_bytes_hash(&final_bytes);
+    let _zip_sha256 = crate::engine::crypto_signer::CryptoSigner::compute_bytes_hash(&final_bytes);
 
     Ok(final_bytes)
 }
