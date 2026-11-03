@@ -165,7 +165,7 @@ pub fn render_vectors_37_typst_table(vectors: &[EvaluatedVector], censored_blur:
         } else if is_active {
             format!(r"\$ {} MXN", format_mxn(v.multa_estimada_mxn))
         } else {
-            format!(r"{} (\$0.00)", escape_typst(&v.estatus))
+            format!(r"{} (\\$0.00)", escape_typst(&v.estatus))
         };
 
         let precepto_cell = if censored_blur {
@@ -366,7 +366,7 @@ pub fn evaluate_all_37_vectors(
                 "EXENTO SCIAN".to_string(),
                 "EXENTO".to_string(),
                 0.0,
-                format!("No exigible para la actividad económica SCIAN {} — Supuesto sectorial no actualizado (\\$0.00 MXN).", scian),
+                format!(r"No exigible para la actividad económica SCIAN {} — Supuesto sectorial no actualizado (\\$0.00 MXN).", scian),
             )
         } else if active_breach {
             let m = (base_umas_calc * UMA_2026 * emp_factor).round();
