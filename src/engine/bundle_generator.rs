@@ -2,7 +2,7 @@
 
 use crate::engine::crypto_signer::CryptoSigner;
 use crate::engine::kit_generator::{
-    build_all_compliance_documents_with_dossier, generate_compliance_kit_with_dossier,
+    build_all_compliance_documents_with_session, generate_compliance_kit_with_session,
 };
 use crate::engine::models::{AuditMasterJson, EmpresaB2B, LegalDossierInput};
 use crate::engine::osint_scanner::OsintResult;
@@ -158,13 +158,13 @@ pub fn generate_custom_bundle_with_session(
         .map(|m| &m.calibration_applied.dossier)
         .unwrap_or(&empty_dossier);
 
-    let _ = generate_compliance_kit_with_dossier(empresa, dossier);
+    let _ = generate_compliance_kit_with_session(empresa, dossier, master_opt);
 
     let pdf_filename = format!("{}/Dictamen_Ejecutivo_{}.pdf", base_dir, tax_id);
     // Aseguramos la inyección limpia del master_opt para preservar el SCIAN y la parametrización exacta
     generate_pdf_report_with_session(empresa, osint, master_opt, is_accredited, &pdf_filename)?;
 
-    let zip_bytes = build_zip_buffer_from_dir(empresa, dossier, &base_dir, &pdf_filename)?;
+    let zip_bytes = build_zip_buffer_from_dir_with_session(empresa, dossier, master_opt, &base_dir, &pdf_filename)?;
     let zip_filename = format!("{}/Paquete_Blindaje_Integral_{}.zip", base_dir, tax_id);
     fs::write(&zip_filename, &zip_bytes)?;
 
@@ -209,7 +209,7 @@ pub fn build_zip_buffer_from_dir(
         }
     }
 
-    let compliance_docs = build_all_compliance_documents_with_dossier(empresa, dossier);
+    let compliance_docs = build_all_compliance_documents_with_session(empresa, dossier, master_opt);
     for doc in compliance_docs {
         let pdf_rel_path = doc.zip_relative_path.replace(".md", ".pdf");
         let html_rel_path = doc.zip_relative_path.replace(".md", "_Editable_Word.html");

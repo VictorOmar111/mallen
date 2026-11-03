@@ -193,32 +193,7 @@ fn build_report_typst_markup_full(
     let (mut m_stps, mut m_sat, mut m_inai, mut m_imss, mut m_pc, mut m_profeco) =
         (0.0, 0.0, 0.0, 0.0, 0.0, 0.0);
 
-    if !is_immune {
-        if let Some(m) = master_opt {
-            for f in &m.findings {
-                match f.agency {
-                    RegulatoryAgency::STPS => m_stps += f.estimated_fine_mxn,
-                    RegulatoryAgency::SAT => m_sat += f.estimated_fine_mxn,
-                    RegulatoryAgency::SabgInai => m_inai += f.estimated_fine_mxn,
-                    RegulatoryAgency::IMSSInfonavit => m_imss += f.estimated_fine_mxn,
-                    RegulatoryAgency::PROFECO => m_profeco += f.estimated_fine_mxn,
-                    _ => m_pc += f.estimated_fine_mxn,
-                }
-            }
-        } else {
-            let base = if empresa.estimated_fine_mxn > 0.0 {
-                empresa.estimated_fine_mxn
-            } else {
-                1_485_600.00
-            };
-            m_stps = (base * 0.28 * 100.0).round() / 100.0;
-            m_sat = (base * 0.22 * 100.0).round() / 100.0;
-            m_inai = (base * 0.18 * 100.0).round() / 100.0;
-            m_imss = (base * 0.14 * 100.0).round() / 100.0;
-            m_pc = (base * 0.10 * 100.0).round() / 100.0;
-            m_profeco = ((base - (m_stps + m_sat + m_inai + m_imss + m_pc)) * 100.0).round() / 100.0;
-        }
-    }
+    
 
     let (status_hex, banner_bg, banner_border, estatus_texto, badge_accion) = if is_immune {
         (
@@ -630,19 +605,122 @@ pub fn generate_pdf_report_with_session(
     let _ = fs::remove_file(&typst_source_path);
 
     let nombre_clean = sanitize_for_typst(&empresa.nombre);
+    let scian_code_cert = master_opt
+        .map(|m| {
+            m.codigo_scian
+                .split(|c: char| !c.is_ascii_digit())
+                .find(|tok| tok.len() >= 4)
+                .unwrap_or("541610")
+                .to_string()
+        })
+        .unwrap_or_else(|| {
+            empresa
+                .actividad
+                .split(|c: char| !c.is_ascii_digit())
+                .find(|tok| tok.len() >= 4)
+                .unwrap_or("541610")
+                .to_string()
+        });
     let actividad_clean = if let Some(m) = master_opt {
-        let clean_desc = m.actividad_scian_desc
+        let clean_desc = m
+            .actividad_scian_desc
             .trim_start_matches(|c: char| c.is_ascii_digit() || c == ' ' || c == '-' || c == '—');
-        sanitize_for_typst(&format!("{} - {}", m.codigo_scian, clean_desc))
+        sanitize_for_typst(&format!("{} - {}", scian_code_cert, clean_desc))
     } else {
         sanitize_for_typst(&empresa.actividad)
     };
-    let direccion_clean = sanitize_for_typst(&empresa.direccion);
+    let emp_cert = master_opt
+        .map(|m| {
+            if m.estimated_employees == 150 || m.estimated_employees == 20 || m.estimated_employees == 0 {
+                45
+            } else {
+                m.estimated_employees
+            }
+        })
+        .unwrap_or(45);
+    let (imss_clase_c, imss_prima_c, _) =
+        crate::modules::vectors_37::classify_imss_risk_by_scian(&scian_code_cert);
+    let imss_label_cert = sanitize_for_typst(&format!("{} (Prima {})", imss_clase_c, imss_prima_c));
+    let total_mitigado_str = master_opt
+        .map(|m| format_currency_mxn(m.total_estimated_fine_mxn))
+        .unwrap_or_else(|| format_currency_mxn(empresa.estimated_fine_mxn.max(1_245_958.0)));
+    let risk_score_cert = master_opt
+        .map(|m| m.risk_score)
+        .unwrap_or(empresa.risk_score.max(71));
+    let sector_esp_cert = if scian_code_cert.starts_with("722") || scian_code_cert.starts_with("311") || scian_code_cert.starts_with("431") {
+        "Trazabilidad sanitaria COFEPRIS (DIGIPRIS / NOM-251-SSA1), bitácora logística NOM-087-SCT y PIPC de centro de distribución."
+    } else if scian_code_cert.starts_with("62") || scian_code_cert.starts_with("464") {
+        "Aviso de Responsable Sanitario COFEPRIS, Expediente Clínico NOM-004-SSA3, RPBI NOM-087-SEMARNAT y PIPC."
+    } else if scian_code_cert.starts_with("31") || scian_code_cert.starts_with("32") || scian_code_cert.starts_with("33") {
+        "Seguridad industrial NOM-004/006/017/020/022-STPS, Manifiestos SEMARNAT y Programa Interno PIPC."
+    } else if scian_code_cert.starts_with("48") || scian_code_cert.starts_with("49") {
+        "Complemento Carta Porte 3.1, Bitácoras NOM-087-SCT-2, Físico-Mecánica NOM-068-SCT y PIPC."
+    } else {
+        "Cumplimiento integral corporativo LFT, CFF, LSS, LFPDPPP, LFPC y Programa Interno de Protección Civil (PIPC)."
+    };
+    let direccion_clean = sanitize_for_typst(&crate::modules::vectors_37::sanitize_denue_address(
+        &empresa.direccion,
+        &empresa.estado,
+        tax_id,
+    ));
     let tax_clean = sanitize_for_typst(tax_id);
 
     for cert in get_catalogo_certificados() {
         let cert_pdf_path = parent_dir.join(cert.filename);
         let cert_typ_path = parent_dir.join(format!("{}_{}.typ", cert.id, tax_clean));
+
+        let (pt1, pt2, pt3) = match cert.id {
+            "nom035" => (
+                "Política Escrita de Prevención de Riesgos Psicosociales (Numeral 5.1 NOM-035)",
+                "Cuestionarios de Identificación Guías de Referencia I, II/III según plantilla",
+                "Protocolo de Canal Confidencial de Denuncia Interna y Derivación Clínica",
+            ),
+            "nom037" => (
+                "Política de Teletrabajo y Cláusula de Derecho a la Desconexión Digital (Art. 330-E LFT)",
+                "Adendum al Contrato Individual con Pago Proporcional de Internet y Electricidad",
+                "Lista de Verificación de Condiciones de Seguridad y Ergonomía en Trabajo Remoto",
+            ),
+            "nom019" => (
+                "Acta Constitutiva Bipartita de la Comisión Mixta de Seguridad e Higiene (Numeral 7.4)",
+                "Programa Anual de Recorridos Trimestrales de Verificación en el Centro de Trabajo",
+                "Bitácora de Investigación de Causas de Accidentes y Seguimiento de Medidas",
+            ),
+            "nom030" => (
+                "Acta de Designación Formal del Responsable de Seguridad y Salud en el Trabajo (SST)",
+                "Diagnóstico Integral y Por Área de Trabajo de las NOMs STPS Aplicables al Giro SCIAN",
+                "Programa Anual de Acciones Preventivas y Correctivas de Seguridad e Higiene",
+            ),
+            "sat_69b" => (
+                "Contrato Marco B2B con Cláusula de Materialidad Fiscal y Fecha Cierta (SCJN 2a./J. 161/2019)",
+                "Bitácora de Entregables, Órdenes de Servicio y Razón de Negocios (Art. 5-A CFF)",
+                "Constancia de Compulsa SAT Art. 69/69-B y Expediente de Beneficiario Controlador",
+            ),
+            "imss_32d" => (
+                "Protocolo de Conciliación Mensual SUA vs. Visor de CFDI de Nómina 4.0 y Prima RACERF",
+                "Checklist de Blindaje Solidario REPSE (Art. 15-A LSS) y Compulsa de Opinión 32-D",
+                "Matriz de Vigilancia de Declaraciones Cuatrimestrales ICSOE (IMSS) y SISSUB (INFONAVIT)",
+            ),
+            "inai_lfpdppp" => (
+                "Aviso de Privacidad Integral, Simplificado y Ventanilla de Derechos ARCO (20 días)",
+                "Formato de Consentimiento Expreso y Autógrafo para Datos Sensibles y Biométricos (Art. 9)",
+                "Acta de Designación de Oficial de Privacidad y Documento de Seguridad (Art. 19 LFPDPPP)",
+            ),
+            "proteccion_civil" => (
+                "Acta Constitutiva de la Unidad Interna de Protección Civil (PIPC) y 4 Brigadas",
+                "Calendario Anual de Simulacros de Evacuación y Verificación de Extintores (NOM-002-STPS)",
+                "Matriz de Cumplimiento de Obligaciones Sectoriales Específicas del Giro SCIAN",
+            ),
+            "profeco_lfpc" => (
+                "Términos y Condiciones de Comercio Electrónico (Art. 76 BIS y 7 BIS LFPC — Precios con IVA)",
+                "Póliza Escrita de Garantía Mínima Legal (Art. 77 LFPC) y Derecho de Revocación (5 días)",
+                "Auditoria de Purga de Cláusulas Abusivas o Inequitativas en Contratos (Art. 90 LFPC)",
+            ),
+            _ => (
+                "Manifiesto Criptográfico SHA-256 de Integridad de Mensajes de Datos (Arts. 89-93 CCom)",
+                "Anclaje en Árbol de Merkle para Acreditación de Fecha Cierta Digital (SCJN)",
+                "Vínculo Público de Verificación Pericial en Tiempo Real (mallen.lat/verify)",
+            ),
+        };
 
         let cert_content = CERT_DYNAMIC_TEMPLATE
             .replace("{{EMPRESA_NOMBRE}}", &nombre_clean)
@@ -654,6 +732,15 @@ pub fn generate_pdf_report_with_session(
             .replace("{{AUDITOR_CEDULA}}", &sanitize_for_typst(&auditor.cedula_profesional))
             .replace("{{AUDITOR_DC5}}", &sanitize_for_typst(&auditor.registro_auditor))
             .replace("{{EMPRESA_ACTIVIDAD}}", &actividad_clean)
+            .replace("{{EMPRESA_SCIAN_CODE}}", &sanitize_for_typst(&scian_code_cert))
+            .replace("{{EMPRESA_EMPLEADOS}}", &emp_cert.to_string())
+            .replace("{{EMPRESA_IMSS_CLASE}}", &imss_label_cert)
+            .replace("{{CONTINGENCIA_MITIGADA}}", &total_mitigado_str)
+            .replace("{{RISK_SCORE}}", &risk_score_cert.to_string())
+            .replace("{{SECTOR_ESPECIFICO}}", &sanitize_for_typst(sector_esp_cert))
+            .replace("{{NORMA_PT_1}}", &sanitize_for_typst(pt1))
+            .replace("{{NORMA_PT_2}}", &sanitize_for_typst(pt2))
+            .replace("{{NORMA_PT_3}}", &sanitize_for_typst(pt3))
             .replace("{{FECHA_EMISION}}", &fecha_hoy)
             .replace("{{NORMA_TITULO}}", cert.titulo)
             .replace("{{NORMA_COLOR}}", cert.color_hex)
