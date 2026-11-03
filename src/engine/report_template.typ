@@ -6,7 +6,7 @@
     if counter(page).get().first() > 1 [
       #grid(
         columns: (1fr, auto),
-        align(left)[#text(size: 6.3pt, weight: "bold", fill: rgb("#0f172a"))[FIRMA PERICIAL MALLEN • EXPEDIENTE CORPORATIVO DE CUMPLIMIENTO INTEGRAL • {{EMPRESA_TAX_ID}}]],
+        align(left)[#text(size: 6.3pt, weight: "bold", fill: rgb("#0f172a"))[FIRMA PERICIAL MALLEN® • EXPEDIENTE CORPORATIVO DE CUMPLIMIENTO INTEGRAL • {{EMPRESA_TAX_ID}}]],
         align(right)[#text(size: 6.3pt, fill: rgb("#475569"))[SELLO CRIPTOGRÁFICO SHA-256: {{AUDIT_HASH}}]]
       )
       #v(-0.15cm)
@@ -110,7 +110,7 @@
 
 #text(size: 7.8pt, weight: "bold", fill: rgb("#0f172a"))[1. METODOLOGÍA DE PARAMETRIZACIÓN POR GIRO SCIAN, CAPACIDAD ECONÓMICA Y PRIMA IMSS]
 #v(0.05em)
-Dictamen pericial compilado específicamente para *"{{EMPRESA_NOMBRE}}"* (`{{EMPRESA_TAX_ID}}`), evaluando su actividad económica registrada (*{{EMPRESA_ACTIVIDAD}}*) en la jurisdicción de *{{EMPRESA_JURISDICCION}}*. Los cálculos sancionatorios en Unidades de Medida y Actualización (UMA 2026: \$113.14 MXN) ponderan la capacidad económica y plantilla conforme al Art. 992 de la LFT y Art. 75 del CFF, manteniendo sincronización matemática 1:1 entre esta Matriz Consolidada, el portal de verificación web y el Anexo Técnico de los 37 Vectores (Página 2).
+Dictamen pericial compilado específicamente para *"{{EMPRESA_NOMBRE}}"* (`{{EMPRESA_TAX_ID}}`), evaluando su actividad económica registrada (*{{EMPRESA_ACTIVIDAD}}*) en la jurisdicción de *{{EMPRESA_JURISDICCION}}*. Los cálculos sancionatorios en Unidades de Medida y Actualización (UMA 2026: \$113.14 MXN) ponderan la capacidad económica y plantilla conforme al Art. 992 de la LFT y Art. 75 del CFF, manteniendo correspondencia determinística exacta entre esta Matriz Consolidada y el Anexo Técnico de los 37 Vectores Normativos (Página 2).
 
 #v(0.14em)
 
@@ -139,7 +139,7 @@ Dictamen pericial compilado específicamente para *"{{EMPRESA_NOMBRE}}"* (`{{EMP
 
 #v(0.14em)
 
-#text(size: 7.8pt, weight: "bold", fill: rgb("#0f172a"))[3. MATRIZ CONSOLIDADA DE CONTINGENCIA PATRIMONIAL POR ÓRGANO REGULADOR (SINCRONIZADA 1:1)]
+#text(size: 7.8pt, weight: "bold", fill: rgb("#0f172a"))[3. MATRIZ CONSOLIDADA DE CONTINGENCIA PATRIMONIAL POR ÓRGANO REGULADOR (DETERMINACIÓN TÉCNICA POR ÓRGANO REGULADOR)]
 #v(0.05em)
 #table(
   columns: (25%, 19%, 56%),
@@ -194,7 +194,7 @@ Dictamen pericial compilado específicamente para *"{{EMPRESA_NOMBRE}}"* (`{{EMP
   #grid(
     columns: (1fr, auto),
     [
-      #text(size: 6.4pt, weight: "bold", fill: rgb("#0f172a"))[PERITO DICTAMINADOR: {{AUDITOR_NOMBRE}} • Cédula: {{AUDITOR_CEDULA}} • Reg. STPS: {{AUDITOR_DC5}}]
+      #text(size: 6.4pt, weight: "bold", fill: rgb("#0f172a"))[ ÓRGANO DICTAMINADOR: {{AUDITOR_NOMBRE}} • Cédula: {{AUDITOR_CEDULA}} • Reg. STPS: {{AUDITOR_DC5}}]
       #linebreak()
       #text(size: 5.9pt, fill: rgb("#475569"))[Jurisdicción: {{EMPRESA_JURISDICCION}} • Oficial Privacidad: {{OFICIAL_PRIVACIDAD}} • Coordinador NOM-019: {{COORDINADOR_CSH}} • HTTP: {{HTTP_STATUS}}]
     ],

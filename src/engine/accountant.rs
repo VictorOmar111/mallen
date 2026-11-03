@@ -1,5 +1,5 @@
-//! Gestión de Firma Pericial Colegiada (C.P.C. + Registro STPS DC-5 configurable por `.env`),
-//! Modo Contador B2B2B (White-Label con sanitización de logos en RAM) y Agente RAG Determinístico (`temperature: 0.0`).
+//! Gestión de Firma Corporativa Institucional (FIRMA PERICIAL MALLEN®),
+//! Modo Despacho Aliado B2B2B (White-Label con sanitización de logos en RAM) y Agente RAG Determinístico (`temperature: 0.0`).
 
 use image::GenericImageView;
 use serde::{Deserialize, Serialize};
@@ -19,13 +19,13 @@ impl Default for AccountantProfile {
     fn default() -> Self {
         Self {
             nombre: std::env::var("MALLEN_AUDITOR_NAME")
-                .unwrap_or_else(|_| "C.P.C. Víctor Omar Malpica Guillén".to_string()),
+                .unwrap_or_else(|_| "FIRMA PERICIAL MALLEN® — Dirección Jurídica y Normativa".to_string()),
             cedula_profesional: std::env::var("MALLEN_AUDITOR_CEDULA")
-                .unwrap_or_else(|_| "CED-2026-MALLEN".to_string()),
+                .unwrap_or_else(|_| "FPM-CORP-2026".to_string()),
             colegio_contador: std::env::var("MALLEN_AUDITOR_COLEGIO")
-                .unwrap_or_else(|_| "Colegio de Contadores Públicos de México".to_string()),
+                .unwrap_or_else(|_| "Consejo Técnico de Auditoría y Cumplimiento Normativo".to_string()),
             registro_auditor: std::env::var("MALLEN_AUDITOR_DC5_REG")
-                .unwrap_or_else(|_| "STPS-DC5-MALLEN-001".to_string()),
+                .unwrap_or_else(|_| "REG-PERICIAL-MALLEN-360".to_string()),
             hash_firma_digital: std::env::var("MALLEN_AUDITOR_FIRMA_HASH")
                 .unwrap_or_else(|_| "0x8f9a2b4c6e1d3f5a7b9c8d0e2f4a6b8c".to_string()),
         }
@@ -38,7 +38,7 @@ pub fn apply_accountant_signature(profile: &AccountantProfile, tax_id: &str) -> 
     let stamp = format!("{:x}", hasher.finalize());
 
     format!(
-        "DICTAMINADO_POR: {} | CÉDULA: {} | REG_DC5_STPS: {} | SHA256_STAMP: {}",
+        "DICTAMINADO_POR: {} | FOLIO_INSTITUCIONAL: {} | REGISTRO: {} | SHA256_STAMP: {}",
         profile.nombre,
         profile.cedula_profesional,
         profile.registro_auditor,
@@ -46,8 +46,6 @@ pub fn apply_accountant_signature(profile: &AccountantProfile, tax_id: &str) -> 
     )
 }
 
-/// Valida y redimensiona en memoria RAM el logotipo PNG/JPEG subido por un Despacho Contable (White-Label),
-/// eliminando metadatos EXIF y protegiendo a Typst contra imágenes corruptas o gigantes.
 pub fn sanitize_partner_logo_in_ram(raw_image_bytes: &[u8]) -> Result<Vec<u8>, String> {
     if raw_image_bytes.len() > 5 * 1024 * 1024 {
         return Err("El logotipo excede el límite máximo de 5 MB".to_string());
@@ -85,17 +83,18 @@ impl DeterministicRagAgent {
         } else if q.contains("69-b") || q.contains("69b") || q.contains("materialidad") || q.contains("fecha cierta") {
             "FUNDAMENTO DOF (Art. 69-B CFF y Jurisprudencia SCJN 2a./J. 161/2019): Para acreditar la materialidad de servicios intangibles no basta el CFDI ni la transferencia; se exige contrato con Fecha Cierta y bitácora de entregables. Utilice el `05_Contrato_Materialidad_SAT_69B.pdf` de su paquete."
         } else if q.contains("aviso") || q.contains("privacidad") || q.contains("inai") || q.contains("arco") || q.contains("biometrico") {
-            "FUNDAMENTO DOF (Arts. 8, 9, 15, 16, 17 y 22-35 LFPDPPP vigente ante SABG / Transparencia para el Pueblo): Todo tratamiento de datos sensibles o biométricos requiere consentimiento expreso y firma autógrafa. Utilice el instrumento `01_Aviso_de_Privacidad_Integral.pdf` incluido en su carpeta."
+            "FUNDAMENTO DOF (Arts. 8, 9, 15, 16, 17 y 22-35 LFPDPPP vigente ante SABG): Todo tratamiento de datos sensibles o biométricos requiere consentimiento expreso y firma autógrafa. Utilice el instrumento `01_Aviso_de_Privacidad_Integral.pdf` incluido en su carpeta."
         } else if q.contains("repse") || q.contains("imss") || q.contains("icsoe") || q.contains("sissub") || q.contains("32-d") {
             "FUNDAMENTO DOF (Arts. 15 y 15-A LSS, Art. 29 Bis LINFONAVIT y Art. 27 Fracc. V LISR): Las informativas ICSOE y SISSUB se presentan cuatrimestralmente a más tardar el día 17 de enero, mayo y septiembre. Consulte el checklist en `06_Protocolo_IMSS_REPSE_32D.pdf`."
         } else if q.contains("profeco") || q.contains("76 bis") || q.contains("garantia") || q.contains("ecommerce") {
             "FUNDAMENTO DOF (Arts. 56, 76 BIS, 77 y 85 LFPC): Todo portal digital debe exhibir domicilio físico en México, precios totales con IVA, derecho de revocación de 5 días hábiles y garantía mínima de 90 días. Consulte `07_Terminos_Ecommerce_PROFECO_76BIS.pdf`."
         } else {
-            "RESPUESTA DETERMINÍSTICA CONTROLADA: Su consulta requiere verificación directa sobre los 7 instrumentos normativos personalizados para su RFC dentro del paquete ZIP descargado. Por blindaje pericial, este asistente solo cita preceptos literales del Diario Oficial de la Federación (DOF)."
+            "RESPUESTA DETERMINÍSTICA CONTROLADA: Su consulta requiere verificación directa sobre los 7 instrumentos normativos personalizados para su RFC dentro del paquete ZIP descargado. Por blindaje institucional, este asistente solo cita preceptos literales del Diario Oficial de la Federación (DOF)."
         };
 
         format!(
-            "[ASISTENTE PERICIAL ENJAULADO | RFC: {} | TEMP: 0.0]\n{}",
+            "[CONSEJO TÉCNICO FIRMA PERICIAL MALLEN® | RFC: {}]
+{}",
             tax_id, body
         )
     }

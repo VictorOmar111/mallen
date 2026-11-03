@@ -6,7 +6,7 @@ pub fn render_mallen_privacy_notice() -> Html<String> {
 <html lang="es">
 <head>
     <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Aviso de Privacidad Integral — Firma Pericial Mallen (mallen.lat)</title>
+    <title>Aviso de Privacidad Integral — FIRMA PERICIAL MALLEN® (mallen.lat)</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
     <style>body { font-family: 'Inter', sans-serif; } .font-mono-code { font-family: 'JetBrains Mono', monospace; }</style>
@@ -25,7 +25,7 @@ pub fn render_mallen_privacy_notice() -> Html<String> {
         <div class="quantum-laser-console rounded-2xl p-6 sm:p-8 space-y-5 text-xs sm:text-sm text-slate-300 leading-relaxed font-mono-code">
             <div>
                 <h2 class="text-sm font-bold text-emerald-400 uppercase mb-1">I. Identidad y Domicilio del Responsable (Art. 16 Fracc. I LFPDPPP)</h2>
-                <p><strong>Firma Pericial Mallen — Sistemas de Inteligencia Regulatoria y Auditoría Preventiva 360°</strong> (en lo sucesivo, "EL RESPONSABLE"), con portal oficial en <strong>https://mallen.lat</strong>, domicilio para oír y recibir notificaciones de privacidad en Ciudad de México, Estados Unidos Mexicanos, y Oficialía de Datos Personales en <strong>privacidad@mallen.lat</strong>, es responsable del uso, tratamiento y protección de los datos que se recaben a través de esta plataforma, en estricto apego a la Ley Federal de Protección de Datos Personales en Posesión de los Particulares (LFPDPPP), su Reglamento y los Lineamientos del Aviso de Privacidad publicados en el Diario Oficial de la Federación.</p>
+                <p><strong>FIRMA PERICIAL MALLEN® — Sistemas de Inteligencia Regulatoria y Auditoría Preventiva 360°</strong> (en lo sucesivo, "EL RESPONSABLE"), con portal oficial en <strong>https://mallen.lat</strong>, domicilio para oír y recibir notificaciones de privacidad en Ciudad de México, Estados Unidos Mexicanos, y Oficialía de Datos Personales en <strong>privacidad@mallen.lat</strong>, es responsable del uso, tratamiento y protección de los datos que se recaben a través de esta plataforma, en estricto apego a la Ley Federal de Protección de Datos Personales en Posesión de los Particulares (LFPDPPP), su Reglamento y los Lineamientos del Aviso de Privacidad publicados en el Diario Oficial de la Federación.</p>
             </div>
 
             <div>
@@ -61,7 +61,7 @@ pub fn render_mallen_terms() -> Html<String> {
 <html lang="es">
 <head>
     <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Términos y Condiciones de Uso y Alcance Pericial — Firma Pericial Mallen</title>
+    <title>Términos y Condiciones de Uso y Alcance Pericial — FIRMA PERICIAL MALLEN®</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
     <style>body { font-family: 'Inter', sans-serif; } .font-mono-code { font-family: 'JetBrains Mono', monospace; }</style>
@@ -80,8 +80,8 @@ pub fn render_mallen_terms() -> Html<String> {
         <div class="quantum-laser-console rounded-2xl p-6 sm:p-8 space-y-5 text-xs sm:text-sm text-slate-300 leading-relaxed font-mono-code">
             <div>
                 <h2 class="text-sm font-bold text-blue-400 uppercase mb-1">1. Naturaleza Preventiva del Diagnóstico y Deslinde de Responsabilidad Oficial</h2>
-                <p>Los diagnósticos, matrices de multas en UMAs, dictámenes ejecutivos, certificados privados de auditoría y modelos contractuales generados por <strong>Firma Pericial Mallen (mallen.lat)</strong> constituyen una <strong>herramienta tecnológica de autodiagnóstico preventivo y de apoyo al cumplimiento corporativo (Compliance GRC)</strong> basada en la telemetría pública del dominio evaluado, los padrones públicos de datos abiertos y las declaraciones proporcionadas bajo protesta de decir verdad por el propio usuario en la Cédula de Calibración.</p>
-                <p class="mt-2"><strong>Firma Pericial Mallen es un ente privado independiente y NO actúa como unidad de verificación gubernamental ni autoridad administrativa.</strong> La implementación física en sitio, la recabación de firmas autógrafas de trabajadores y comisiones mixtas, y la presentación de avisos en portales gubernamentales (IDSE, SUA, Buzón Tributario, REPSE, DIGIPRIS, RRPAC) son responsabilidad exclusiva del patrón o contribuyente.</p>
+                <p>Los diagnósticos, matrices de multas en UMAs, dictámenes ejecutivos, certificados privados de auditoría y modelos contractuales generados por <strong>FIRMA PERICIAL MALLEN® (mallen.lat)</strong> constituyen una <strong>herramienta tecnológica de autodiagnóstico preventivo y de apoyo al cumplimiento corporativo (Compliance GRC)</strong> basada en la telemetría pública del dominio evaluado, los padrones públicos de datos abiertos y las declaraciones proporcionadas bajo protesta de decir verdad por el propio usuario en la Cédula de Calibración.</p>
+                <p class="mt-2"><strong>FIRMA PERICIAL MALLEN® es un ente privado independiente y NO actúa como unidad de verificación gubernamental ni autoridad administrativa.</strong> La implementación física en sitio, la recabación de firmas autógrafas de trabajadores y comisiones mixtas, y la presentación de avisos en portales gubernamentales (IDSE, SUA, Buzón Tributario, REPSE, DIGIPRIS, RRPAC) son responsabilidad exclusiva del patrón o contribuyente.</p>
             </div>
 
             <div>
@@ -96,7 +96,7 @@ pub fn render_mallen_terms() -> Html<String> {
 
             <div>
                 <h2 class="text-sm font-bold text-blue-400 uppercase mb-1">4. Atribución de Datos Abiertos Gubernamentales (INEGI / SAT / DOF)</h2>
-                <p>En cumplimiento a los Términos de Libre Uso de la Información Estadística y Geográfica del INEGI y de Datos Abiertos del Gobierno de México: los datos de unidades económicas, claves SCIAN y listados de los Artículos 69 y 69-B del CFF provienen de fuentes públicas oficiales. Su procesamiento estadístico y cruce normativo es realizado de manera independiente por Firma Pericial Mallen y no compromete ni representa la opinión oficial del INEGI, SAT, STPS, IMSS, SABG ni PROFECO.</p>
+                <p>En cumplimiento a los Términos de Libre Uso de la Información Estadística y Geográfica del INEGI y de Datos Abiertos del Gobierno de México: los datos de unidades económicas, claves SCIAN y listados de los Artículos 69 y 69-B del CFF provienen de fuentes públicas oficiales. Su procesamiento estadístico y cruce normativo es realizado de manera independiente por FIRMA PERICIAL MALLEN® y no compromete ni representa la opinión oficial del INEGI, SAT, STPS, IMSS, SABG ni PROFECO.</p>
             </div>
         </div>
     </div>
@@ -110,7 +110,7 @@ pub fn render_mallen_arco_portal() -> Html<String> {
 <html lang="es">
 <head>
     <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Ventanilla Digital de Derechos ARCO y Purga de Caché — Firma Pericial Mallen</title>
+    <title>Ventanilla Digital de Derechos ARCO y Purga de Caché — FIRMA PERICIAL MALLEN®</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
     <style>body { font-family: 'Inter', sans-serif; } .font-mono-code { font-family: 'JetBrains Mono', monospace; }</style>

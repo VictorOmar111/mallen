@@ -6,7 +6,7 @@
 #set text(font: "Linux Libertine", size: 8pt, fill: rgb("#0f172a"))
 
 #let tax_id = sys.inputs.at("tax_id", default: "MAGV990623HDFLLC00")
-#let empresa = sys.inputs.at("empresa", default: "VÍCTOR OMAR MALPICA GUILLEN")
+#let empresa = sys.inputs.at("empresa", default: "FIRMA PERICIAL MALLEN®")
 #let fecha = sys.inputs.at("fecha", default: "17 de Octubre, 2026")
 
 #grid(
@@ -69,8 +69,8 @@
     columns: (1fr, 1fr),
     [
       #text(size: 7.5pt)[
-        *EMISOR RESPONSABLE:* Firma Pericial Mallen \
-        *AUDITOR DESIGNADO:* C.P.C. Víctor Omar Malpica Guillen \
+        *EMISOR RESPONSABLE:* FIRMA PERICIAL MALLEN® \
+        *AUDITOR DESIGNADO:* FIRMA PERICIAL MALLEN® \
         *FOLIO REGISTRAL:* W16-2026-CERTIFIED
       ]
     ],

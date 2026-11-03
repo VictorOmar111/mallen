@@ -31,6 +31,8 @@ fn pick_known_or_blank<'a>(primary: &'a Option<String>, secondary: &'a str, blan
         && !s.contains("empresa.com.mx")
         && !s.contains("5500000000")
         && !s.contains("55-0000-0000")
+        && !s.contains("55-5000-0000")
+        && !s.contains("mallen.lat")
         && !s.contains("Cédula")
     {
         return s;
@@ -58,22 +60,15 @@ pub fn build_all_compliance_documents_with_session(
     let fecha = Utc::now().format("%d/%m/%Y").to_string();
 
     // Extracción determinística de SCIAN y Plantilla desde AuditMasterJson
-    let scian_code: String = master_opt
-        .map(|m| {
-            m.codigo_scian
-                .split(|c: char| !c.is_ascii_digit())
-                .find(|tok| tok.len() >= 4)
-                .unwrap_or("541610")
-                .to_string()
-        })
-        .unwrap_or_else(|| {
-            empresa
-                .actividad
-                .split(|c: char| !c.is_ascii_digit())
-                .find(|tok| tok.len() >= 4)
-                .unwrap_or("541610")
-                .to_string()
-        });
+    let scian_code: String = {
+        let src = if let Some(m) = master_opt {
+            format!("{} {} {}", m.codigo_scian, m.actividad_scian_desc, empresa.actividad)
+        } else {
+            empresa.actividad.clone()
+        };
+        let toks: Vec<&str> = src.split(|c: char| !c.is_ascii_digit()).filter(|t| t.len() >= 4).collect();
+        toks.iter().copied().find(|t| *t != "541610").or_else(|| toks.first().copied()).unwrap_or("541610").to_string()
+    };
 
     let scian_desc_clean: String = if let Some(m) = master_opt {
         let d = m
@@ -123,9 +118,9 @@ pub fn build_all_compliance_documents_with_session(
     let horario_jornada = pick_known_or_blank(
         &dossier.horario_jornada_laboral,
         "",
-        "Lunes a Viernes de 09:00 a 18:00 hrs (48 hrs semanales máx. conforme al Art. 61 LFT)",
+        "________________________________________ (conforme a los límites máximos de los Arts. 60 y 61 LFT)",
     );
-    let apoyo_teletrabajo = pick_known_or_blank(&dossier.monto_apoyo_teletrabajo_mxn, "", "850.00 (Ochocientos cincuenta pesos 00/100 M.N.)");
+    let apoyo_teletrabajo = pick_known_or_blank(&dossier.monto_apoyo_teletrabajo_mxn, "", "____________________ (monto mensual pactado conforme al Art. 330-E Fracc. III LFT)");
 
     let prov_nombre = pick_known_or_blank(&dossier.proveedor_principal_razon_social, "", BLANK_LINE);
     let prov_rfc = pick_known_or_blank(&dossier.proveedor_principal_rfc, "", BLANK_SHORT);

@@ -182,8 +182,8 @@ async fn handle_live_scan(
     let (razon_social, nombre_comercial, codigo_scian, actividad_desc, domicilio, estrato) =
         if is_mallen_self {
             (
-                "FIRMA PERICIAL MALLEN S.A.S. DE C.V.".to_string(),
-                "FIRMA PERICIAL MALLEN".to_string(),
+                "FIRMA PERICIAL MALLEN® S.A.S. DE C.V.".to_string(),
+                "FIRMA PERICIAL MALLEN®".to_string(),
                 "541110".to_string(),
                 "Auditoría Pericial, Gobernanza Regulatoria y Criptografía Legal Corporativo".to_string(),
                 "Av. Paseo de la Reforma, Juárez, Cuauhtémoc, Ciudad de México".to_string(),
@@ -698,13 +698,13 @@ async fn build_empresa_and_session(
                 .dossier
                 .telefono_corporativo
                 .clone()
-                .unwrap_or_else(|| "55-5000-0000".to_string()),
+                .unwrap_or_default(),
             email: master
                 .calibration_applied
                 .dossier
                 .email_arco_privacidad
                 .clone()
-                .unwrap_or_else(|| "privacidad@mallen.lat".to_string()),
+                .unwrap_or_default(),
             direccion: master.domicilio_fiscal_o_denue.clone(),
             estado: master
                 .calibration_applied
@@ -755,9 +755,9 @@ async fn build_empresa_and_session(
     let mut emp = if is_mallen {
         EmpresaB2B {
             id: clean_tax.to_string(),
-            nombre: "FIRMA PERICIAL MALLEN S.A.S. DE C.V.".to_string(),
+            nombre: "FIRMA PERICIAL MALLEN® S.A.S. DE C.V.".to_string(),
             actividad: "541110 - Auditoría Pericial, Gobernanza y Criptografía Legal Corporativo".to_string(),
-            telefono: "55-5000-0000".to_string(),
+            telefono: "".to_string(),
             email: "dictamenes@mallen.lat".to_string(),
             direccion: "Av. Paseo de la Reforma, Juárez, Cuauhtémoc, CDMX".to_string(),
             estado: "CIUDAD DE MÉXICO".to_string(),
@@ -811,7 +811,7 @@ async fn build_empresa_and_session(
             id: clean_tax.to_string(),
             nombre: format!("EMPRESA O RFC NO LOCALIZADO EN PADRONES PÚBLICOS ({})", clean_tax),
             actividad: "Servicios de consultoría científica, técnica y operación corporativa".to_string(),
-            telefono: "55-5000-0000".to_string(),
+            telefono: "".to_string(),
             email: "".to_string(),
             direccion: "11 a 30 personas — Domicilio Fiscal en México".to_string(),
             estado: "CIUDAD DE MÉXICO".to_string(),
@@ -848,7 +848,7 @@ async fn get_merkle_proof_api(
     let session_opt = state.db.get_audit_session(&clean_ref).await.ok().flatten();
 
     let (company_name, risk_score, estimated_fine) = if is_mallen {
-        ("FIRMA PERICIAL MALLEN S.A.S. DE C.V.".to_string(), 0, 0.0)
+        ("FIRMA PERICIAL MALLEN® S.A.S. DE C.V.".to_string(), 0, 0.0)
     } else if let Some((m, is_acc)) = session_opt {
         (
             m.razon_social,
@@ -1082,7 +1082,7 @@ async fn render_checkout_page_with_state(state: Arc<AppState>, raw_ref: String) 
 <html lang="es">
 <head>
     <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Activación de Blindaje Corporativo y CFDI 4.0 — Firma Pericial Mallen</title>
+    <title>Activación de Blindaje Corporativo y CFDI 4.0 — FIRMA PERICIAL MALLEN®</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
     <style>body {{ font-family: 'Inter', sans-serif; }} .font-mono-code {{ font-family: 'JetBrains Mono', monospace; }}</style>
@@ -1093,7 +1093,7 @@ async fn render_checkout_page_with_state(state: Arc<AppState>, raw_ref: String) 
     <div class="max-w-3xl w-full bg-white/[0.05] shadow-[0_8px_32px_rgba(0,0,0,0.5)] border border-white/15 p-8 rounded-2xl font-mono-code text-xs shadow-2xl">
         <div class="flex justify-between items-center mb-6 pb-4 border-b border-white/15">
             <div>
-                <span class="text-xs font-bold text-blue-400 block uppercase">FIRMA PERICIAL MALLEN • PASARELA CORPORATIVA 3D SECURE</span>
+                <span class="text-xs font-bold text-blue-400 block uppercase">FIRMA PERICIAL MALLEN® • PASARELA CORPORATIVA 3D SECURE</span>
                 <span class="text-[10px] text-slate-500">Instrumentación Jurídica Personalizada + Pago 3D Secure + Timbrado CFDI 4.0</span>
             </div>
             <a href="/" class="text-[10px] text-slate-400 hover:text-white transition">Volver al Portal</a>
@@ -1503,7 +1503,7 @@ async fn handle_privacy() -> impl IntoResponse {
 <html lang="es">
 <head>
     <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Aviso de Privacidad Integral — Firma Pericial Mallen</title>
+    <title>Aviso de Privacidad Integral — FIRMA PERICIAL MALLEN®</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
     <style>body { font-family: 'Inter', sans-serif; background-color: #020617; background-image: radial-gradient(at 12% 12%, rgba(37, 99, 235, 0.32) 0px, transparent 48%), radial-gradient(at 88% 18%, rgba(16, 185, 129, 0.25) 0px, transparent 48%), radial-gradient(at 50% 82%, rgba(99, 102, 241, 0.28) 0px, transparent 52%); background-attachment: fixed; } .font-mono-code { font-family: 'JetBrains Mono', monospace; }</style>
@@ -1514,7 +1514,7 @@ async fn handle_privacy() -> impl IntoResponse {
     <div class="max-w-4xl mx-auto bg-white/[0.05] shadow-[0_8px_32px_rgba(0,0,0,0.5)] border border-white/15 p-8 md:p-12 shadow-2xl rounded-2xl">
         <div class="flex items-center justify-between pb-6 mb-8 border-b border-white/15">
             <div>
-                <span class="text-xs font-bold text-blue-400 font-mono-code uppercase tracking-wider block">FIRMA PERICIAL MALLEN</span>
+                <span class="text-xs font-bold text-blue-400 font-mono-code uppercase tracking-wider block">FIRMA PERICIAL MALLEN®</span>
                 <span class="text-xs text-slate-500 font-mono-code">Aviso de Privacidad Integral conforme a la LFPDPPP vigente (SABG / Transparencia para el Pueblo)</span>
             </div>
             <a href="/" class="text-xs text-blue-400 hover:text-blue-300 font-mono-code transition">← Regresar al Portal</a>
@@ -1523,7 +1523,7 @@ async fn handle_privacy() -> impl IntoResponse {
         <div class="space-y-6 text-xs leading-relaxed font-mono-code text-slate-400">
             <section class="border-l-2 border-blue-500 pl-4 py-1">
                 <h2 class="text-xs font-bold text-slate-200 mb-1 uppercase font-sans">1. Identidad y Domicilio del Responsable</h2>
-                <p>Firma Pericial Mallen (mallen.lat), con domicilio operativo en la Ciudad de México, Estados Unidos Mexicanos, actúa como Responsable del tratamiento de los datos personales y corporativos conforme a los Artículos 8, 15, 16 y 19 de la Ley Federal de Protección de Datos Personales en Posesión de los Particulares (LFPDPPP).</p>
+                <p>FIRMA PERICIAL MALLEN® (mallen.lat), con domicilio operativo en la Ciudad de México, Estados Unidos Mexicanos, actúa como Responsable del tratamiento de los datos personales y corporativos conforme a los Artículos 8, 15, 16 y 19 de la Ley Federal de Protección de Datos Personales en Posesión de los Particulares (LFPDPPP).</p>
             </section>
             <section class="border-l-2 border-blue-500 pl-4 py-1">
                 <h2 class="text-xs font-bold text-slate-200 mb-1 uppercase font-sans">2. Datos Objeto de Tratamiento y Sanitización PII</h2>
@@ -1545,7 +1545,7 @@ async fn handle_terms() -> impl IntoResponse {
 <html lang="es">
 <head>
     <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Términos del Servicio & Alcance Pericial — Firma Pericial Mallen</title>
+    <title>Términos del Servicio & Alcance Pericial — FIRMA PERICIAL MALLEN®</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
     <style>body { font-family: 'Inter', sans-serif; background-color: #020617; background-image: radial-gradient(at 12% 12%, rgba(37, 99, 235, 0.32) 0px, transparent 48%), radial-gradient(at 88% 18%, rgba(16, 185, 129, 0.25) 0px, transparent 48%), radial-gradient(at 50% 82%, rgba(99, 102, 241, 0.28) 0px, transparent 52%); background-attachment: fixed; } .font-mono-code { font-family: 'JetBrains Mono', monospace; }</style>
@@ -1556,7 +1556,7 @@ async fn handle_terms() -> impl IntoResponse {
     <div class="max-w-4xl mx-auto bg-white/[0.05] shadow-[0_8px_32px_rgba(0,0,0,0.5)] border border-white/15 p-8 md:p-12 shadow-2xl rounded-2xl">
         <div class="flex items-center justify-between pb-6 mb-8 border-b border-white/15">
             <div>
-                <span class="text-xs font-bold text-indigo-400 font-mono-code uppercase tracking-wider block">FIRMA PERICIAL MALLEN</span>
+                <span class="text-xs font-bold text-indigo-400 font-mono-code uppercase tracking-wider block">FIRMA PERICIAL MALLEN®</span>
                 <span class="text-xs text-slate-500 font-mono-code">Términos y Condiciones del Sistema de Auditoría 360°</span>
             </div>
             <a href="/" class="text-xs text-indigo-400 hover:text-indigo-300 font-mono-code transition">← Regresar al Portal</a>
@@ -1623,14 +1623,14 @@ fn render_validez_detail(slug: &str) -> Html<String> {
             "Cumplimiento técnico con la Jurisprudencia 2a./J. 161/2019 (10a.) de la Suprema Corte de Justicia de la Nación y NOM-151-SCFI-2016.",
             "Artículos 89 a 94 del Código de Comercio • Art. 210-A del CFPC • NOM-151-SCFI-2016",
             "La Segunda Sala de la Suprema Corte de Justicia de la Nación determinó en la Jurisprudencia obligatoria 2a./J. 161/2019 (10a.) que los documentos privados exhibidos ante la autoridad fiscal (SAT) para acreditar la materialidad de operaciones (Art. 69-B CFF) deben contar con Fecha Cierta, demostrando fehacientemente que no fueron elaborados ni antedatados con posterioridad al inicio de las facultades de comprobación.",
-            "Cada expediente emitido por Firma Pericial Mallen genera un resumen criptográfico SHA-256 único sobre el binario ZIP y PDF, integrándolo en un Árbol de Merkle cuya raíz se ancla de forma inmutable en red pública L2, garantizando no repudio e integridad matemática verificable en mallen.lat/verify/{rfc}."
+            "Cada expediente emitido por FIRMA PERICIAL MALLEN® genera un resumen criptográfico SHA-256 único sobre el binario ZIP y PDF, integrándolo en un Árbol de Merkle cuya raíz se ancla de forma inmutable en red pública L2, garantizando no repudio e integridad matemática verificable en mallen.lat/verify/{rfc}."
         ),
         "colegiado" => (
             "DICTAMINACIÓN PERICIAL COLEGIADA • RESPONSABILIDAD PROFESIONAL",
             "Validez Probatoria de Dictamen Técnico y Papeles de Trabajo",
             "Instrumentación respaldada por Contador Público Certificado y Agente Capacitador Externo STPS.",
             "Artículo 52 del Código Fiscal de la Federación • Artículos 153-A a 153-X de la LFT",
-            "Todos los certificados normativos, matrices de exposición en UMAs y papeles de trabajo (PT-STPS, PT-SAT, PT-IMSS, PT-SABG y PT-PROFECO) se encuentran estructurados bajo estándares de auditoría técnico y suscritos por el C.P.C. Víctor Omar Malpica Guillén (Cédula CED-2026-MALLEN | Reg. STPS DC-5: MAVG-850101-STPS-0019).",
+            "Todos los certificados normativos, matrices de exposición en UMAs y papeles de trabajo (PT-STPS, PT-SAT, PT-IMSS, PT-SABG y PT-PROFECO) se encuentran estructurados bajo estándares de auditoría técnico y certificados institucionalmente por FIRMA PERICIAL MALLEN® (Folio Corporativo FPM-CORP-2026 | Registro Pericial REG-PERICIAL-MALLEN-360).",
             "El expediente bifurcado entrega por separado la Cédula Ejecutiva Financiera para el Consejo de Administración y el Anexo Técnico Pericial con la evidencia OSINT y los 7 Instrumentos Jurídicos listos para firma autógrafa."
         ),
         "secreto" => (
@@ -1656,7 +1656,7 @@ fn render_validez_detail(slug: &str) -> Html<String> {
 <html lang="es">
 <head>
     <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{title} — Validez Probatoria | Firma Pericial Mallen</title>
+    <title>{title} — Validez Probatoria | FIRMA PERICIAL MALLEN®</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
     <style>body {{ font-family: 'Inter', sans-serif; }} .font-mono-code {{ font-family: 'JetBrains Mono', monospace; }}</style>

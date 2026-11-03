@@ -42,7 +42,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     // 2. Si hay menos de 1000 empresas, completar el lote hasta llegar a 1,000
     if seleccionados < 1000 {
-        println!("ℹ️ Archivo base contiene {} empresas. Completando lote hasta 1,000...", seleccionados);
+        println!("ℹ Archivo base contiene {} empresas. Completando lote hasta 1,000...", seleccionados);
         for i in (seleccionados + 1)..=1000 {
             let demo_obj = json!({
                 "tax_id": format!("TAX_{:04}", i),

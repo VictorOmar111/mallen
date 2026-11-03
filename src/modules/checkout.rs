@@ -19,7 +19,7 @@ pub async fn handle_verify(Path(id): Path<String>) -> impl IntoResponse {
             "Certificación Institucional de Blindaje Normativo Activo",
             "emerald",
             "Entidad con Blindaje Normativo 360° e Inmunidad Documental Vigente",
-            "Se hace constar en el registro público de Firma Pericial Mallen que esta entidad cuenta con el 100% de sus Avisos de Privacidad LFPDPPP (SABG), Certificados TLS 1.3 con HSTS, Contratos con Fecha Cierta SCJN (Art. 69-B CFF), Carpetas STPS y Términos de Comercio Electrónico (Art. 76 BIS LFPC) instrumentados y vigentes."
+            "Se hace constar en el registro público de FIRMA PERICIAL MALLEN® que esta entidad cuenta con el 100% de sus Avisos de Privacidad LFPDPPP (SABG), Certificados TLS 1.3 con HSTS, Contratos con Fecha Cierta SCJN (Art. 69-B CFF), Carpetas STPS y Términos de Comercio Electrónico (Art. 76 BIS LFPC) instrumentados y vigentes."
         )
     } else {
         (
@@ -61,7 +61,7 @@ pub async fn handle_verify(Path(id): Path<String>) -> impl IntoResponse {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Cédula de Verificación Oficial | Firma Pericial Mallen</title>
+    <title>Cédula de Verificación Oficial | FIRMA PERICIAL MALLEN®</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="/css/quantum-glass.css?v=2026.25">
     <script src="/js/quantum-lights.js?v=2026.25" defer></script>
@@ -72,7 +72,7 @@ pub async fn handle_verify(Path(id): Path<String>) -> impl IntoResponse {
         <div class="max-w-4xl mx-auto px-6 py-4 flex flex-col sm:flex-row justify-between items-center gap-2">
             <a href="/" class="flex items-center space-x-3">
                 <div class="w-3 h-3 rounded-full bg-emerald-500 animate-pulse"></div>
-                <span class="font-sans font-bold tracking-wider text-sm text-slate-200">FIRMA PERICIAL MALLEN (MALLEN.LAT)</span>
+                <span class="font-sans font-bold tracking-wider text-sm text-slate-200">FIRMA PERICIAL MALLEN® (MALLEN.LAT)</span>
             </a>
             <div class="text-xs font-sans text-slate-400 bg-slate-800/80 px-3 py-1 rounded-full border border-slate-700">
                 Fecha Cierta SCJN • NOM-151 SCFI • Arbitrum L2
@@ -116,7 +116,7 @@ pub async fn handle_verify(Path(id): Path<String>) -> impl IntoResponse {
                 </div>
                 <div>
                     <p class="text-slate-500 text-[11px]">Perito Dictaminador Responsable</p>
-                    <p class="font-semibold text-slate-100">C.P.C. Víctor Omar Malpica Guillén (Reg. CED-2026-MALLEN)</p>
+                    <p class="font-semibold text-slate-100">FIRMA PERICIAL MALLEN® (Reg. CED-2026-MALLEN)</p>
                 </div>
             </div>
         </div>
@@ -139,7 +139,7 @@ pub async fn handle_verify(Path(id): Path<String>) -> impl IntoResponse {
     </main>
 
     <footer class="border-t border-white/15 py-6 text-center text-xs font-sans text-slate-500 bg-slate-900/40">
-        <p>© 2026 Firma Pericial Mallen (mallen.lat). Todos los derechos reservados.</p>
+        <p>© 2026 FIRMA PERICIAL MALLEN® (mallen.lat). Todos los derechos reservados.</p>
     </footer>
 </body>
 </html>"#

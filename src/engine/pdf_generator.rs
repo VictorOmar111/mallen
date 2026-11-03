@@ -186,7 +186,7 @@ fn build_report_typst_markup_full(
         Some(p) if !p.trim().is_empty() && !p.starts_with("DICTAMINADO_POR:") => {
             format!("DESPACHO AUDITOR ALIADO: {}", sanitize_for_typst(p))
         }
-        _ => "FIRMA PERICIAL MALLEN (MALLEN.LAT)".to_string(),
+        _ => "FIRMA PERICIAL MALLEN® (MALLEN.LAT)".to_string(),
     };
 
     // Calcular subtotales exactos por dependencia para sincronía matemática 1:1 con la Web
@@ -219,9 +219,16 @@ fn build_report_typst_markup_full(
         cal_telework, cal_repse, cal_boilers, cal_forklifts, cal_chemicals, cal_biometrics, cal_b2b, cal_transport, cal_pld,
         is_unindexed_orphan
     ) = if let Some(m) = master_opt {
-        let clean_scian = m.codigo_scian
+        let combined_scian_src = format!("{} {}", m.codigo_scian, m.actividad_scian_desc);
+        let tokens: Vec<&str> = combined_scian_src
             .split(|c: char| !c.is_ascii_digit())
-            .find(|tok| tok.len() >= 4)
+            .filter(|tok| tok.len() >= 4)
+            .collect();
+        let clean_scian = tokens
+            .iter()
+            .copied()
+            .find(|t| *t != "541610")
+            .or_else(|| tokens.first().copied())
             .unwrap_or("541610")
             .to_string();
         let c = &m.calibration_applied;
@@ -248,10 +255,16 @@ fn build_report_typst_markup_full(
             (m.razon_social.starts_with("REGISTRO NO INDEXADO") || m.domicilio_fiscal_o_denue.contains("Territorio Nacional")) && m.web_telemetry.target_url.is_empty()
         )
     } else {
-        let clean_scian = empresa
+        let tokens: Vec<&str> = empresa
             .actividad
             .split(|c: char| !c.is_ascii_digit())
-            .find(|tok| tok.len() >= 4)
+            .filter(|tok| tok.len() >= 4)
+            .collect();
+        let clean_scian = tokens
+            .iter()
+            .copied()
+            .find(|t| *t != "541610")
+            .or_else(|| tokens.first().copied())
             .unwrap_or("541610")
             .to_string();
         (
@@ -337,12 +350,12 @@ fn build_report_typst_markup_full(
 
     // SINCRONIZACIÓN MATEMÁTICA 1:1 ABSOLUTA:
     // Los 6 subtotales de la Página 1 se calculan sumando directamente los 37 vectores de la Página 2
-    m_stps = 0.0;
-    m_sat = 0.0;
-    m_inai = 0.0;
-    m_imss = 0.0;
-    m_pc = 0.0;
-    m_profeco = 0.0;
+    let mut m_stps = 0.0_f64;
+    let mut m_sat = 0.0_f64;
+    let mut m_inai = 0.0_f64;
+    let mut m_imss = 0.0_f64;
+    let mut m_pc = 0.0_f64;
+    let mut m_profeco = 0.0_f64;
     if !is_immune {
         for v in &evaluated_37 {
             match v.organo.as_str() {
@@ -604,22 +617,15 @@ pub fn generate_pdf_report_with_session(
     let _ = fs::remove_file(&typst_source_path);
 
     let nombre_clean = sanitize_for_typst(&empresa.nombre);
-    let scian_code_cert = master_opt
-        .map(|m| {
-            m.codigo_scian
-                .split(|c: char| !c.is_ascii_digit())
-                .find(|tok| tok.len() >= 4)
-                .unwrap_or("541610")
-                .to_string()
-        })
-        .unwrap_or_else(|| {
-            empresa
-                .actividad
-                .split(|c: char| !c.is_ascii_digit())
-                .find(|tok| tok.len() >= 4)
-                .unwrap_or("541610")
-                .to_string()
-        });
+    let scian_code_cert = {
+        let src = if let Some(m) = master_opt {
+            format!("{} {} {}", m.codigo_scian, m.actividad_scian_desc, empresa.actividad)
+        } else {
+            empresa.actividad.clone()
+        };
+        let toks: Vec<&str> = src.split(|c: char| !c.is_ascii_digit()).filter(|t| t.len() >= 4).collect();
+        toks.iter().copied().find(|t| *t != "541610").or_else(|| toks.first().copied()).unwrap_or("541610").to_string()
+    };
     let actividad_clean = if let Some(m) = master_opt {
         let clean_desc = m
             .actividad_scian_desc
@@ -787,7 +793,7 @@ pub fn generate_exit_intent_micro_pdf_with_session(
         }
     }
 
-    let typst_source_path = format!("{}.micro.typ", output_path);
+    let typst_source_path = format!("{}_micro.typ", output_path.trim_end_matches(".pdf"));
     let typst_content =
         build_report_typst_markup_full(empresa, osint, master_opt, is_accredited, true);
     fs::write(&typst_source_path, &typst_content)?;

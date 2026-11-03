@@ -463,7 +463,7 @@ fn get_category_data(
             "LOS 9 MÓDULOS SECTORIALES DINÁMICOS Y PREVENCIÓN DE LAVADO DE DINERO (LFPIORPI)",
             "Regulación Sectorial por Giro SCIAN (UIF/CNBV, COFEPRIS, PIPC, SEMARNAT, SICT, REPSE, SSPC, SEP y SECTUR)",
             "Porcentaje real de empresas clausuradas o multadas, continuidad de negocio y guía paso a paso para los 9 Módulos Sectoriales.",
-            "Además de las obligaciones generales laborales y fiscales, el motor pericial de Firma Pericial Mallen activa dinámicamente los 9 Módulos Sectoriales según el código SCIAN de 6 dígitos de la empresa, la superficie de sus instalaciones (>100 m²) y la naturaleza de sus operaciones financieras o comerciales.",
+            "Además de las obligaciones generales laborales y fiscales, el motor pericial de FIRMA PERICIAL MALLEN® activa dinámicamente los 9 Módulos Sectoriales según el código SCIAN de 6 dígitos de la empresa, la superficie de sus instalaciones (>100 m²) y la naturaleza de sus operaciones financieras o comerciales.",
             "amber",
             "border-amber-600",
             vec![
@@ -734,7 +734,7 @@ pub fn render_norma_category(category: &str) -> Html<String> {
 <html lang="es">
 <head>
     <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{titulo} — Cobertura Normativa | Firma Pericial Mallen</title>
+    <title>{titulo} — Cobertura Normativa | FIRMA PERICIAL MALLEN®</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
     <style>body {{ font-family: 'Inter', sans-serif; }} .font-mono-code {{ font-family: 'JetBrains Mono', monospace; }}</style>
@@ -745,7 +745,7 @@ pub fn render_norma_category(category: &str) -> Html<String> {
     <div class="max-w-7xl mx-auto">
         <div class="flex flex-col sm:flex-row sm:items-center justify-between pb-5 mb-6 border-b border-white/15 gap-4">
             <div>
-                <span class="text-xs font-bold text-{color_tw}-400 font-mono-code uppercase tracking-wider block">FIRMA PERICIAL MALLEN • CENTRO DE CUMPLIMIENTO Y RENDIMIENTO EMPRESARIAL</span>
+                <span class="text-xs font-bold text-{color_tw}-400 font-mono-code uppercase tracking-wider block">FIRMA PERICIAL MALLEN® • CENTRO DE CUMPLIMIENTO Y RENDIMIENTO EMPRESARIAL</span>
                 <span class="text-xs text-slate-400 font-mono-code">{siglas}</span>
             </div>
             <div class="flex flex-wrap gap-2 text-[11px] font-mono-code">
@@ -847,7 +847,7 @@ pub fn render_subnorma_detail(category: &str, code_idx: &str) -> Html<String> {
 <html lang="es">
 <head>
     <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{titulo_norma} — Expediente Técnico | Firma Pericial Mallen</title>
+    <title>{titulo_norma} — Expediente Técnico | FIRMA PERICIAL MALLEN®</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
     <style>body {{ font-family: 'Inter', sans-serif; }} .font-mono-code {{ font-family: 'JetBrains Mono', monospace; }}</style>

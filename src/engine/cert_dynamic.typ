@@ -1,7 +1,7 @@
 #set page(
   paper: "a4",
   margin: (x: 1.2cm, top: 1.1cm, bottom: 1.1cm),
-  header: align(right)[#text(size: 6.6pt, fill: rgb("#475569"), weight: "bold")[FIRMA PERICIAL MALLEN (MALLEN.LAT) • CERTIFICADO DE ACREDITACIÓN TÉCNICA Y NORMATIVA 360°]],
+  header: align(right)[#text(size: 6.6pt, fill: rgb("#475569"), weight: "bold")[FIRMA PERICIAL MALLEN® (MALLEN.LAT) • CERTIFICADO DE ACREDITACIÓN TÉCNICA Y NORMATIVA 360°]],
   footer: [
     #line(length: 100%, stroke: 0.4pt + rgb("#cbd5e1"))
     #v(2pt)
@@ -46,7 +46,7 @@
     [*Jurisdicción Aplicable:* {{EMPRESA_JURISDICCION}} / Fuero Federal],
     [*Representación Legal:* {{REPRESENTANTE_LEGAL}}],
     [*Contingencia Total Mitigada:* \$ {{CONTINGENCIA_MITIGADA}} MXN (Score Base: {{RISK_SCORE}}/100)],
-    [*Perito Dictaminador:* {{AUDITOR_NOMBRE}} ({{AUDITOR_CEDULA}})],
+    [*Órgano Certificador:* {{AUDITOR_NOMBRE}} ({{AUDITOR_CEDULA}})],
     [*Sello Criptográfico SHA-256:* #raw("{{AUDIT_HASH}}")]
   )
 ]
@@ -55,7 +55,7 @@
 
 #text(size: 7.6pt, weight: "bold", fill: rgb("#0f172a"))[1. FUNDAMENTACIÓN TÉCNICA, PARAMETRIZACIÓN POR GIRO SCIAN Y ALCANCE PERICIAL]
 #v(0.1em)
-#text(size: 6.8pt)[El Consejo Técnico de *Firma Pericial Mallen* certifica que para la entidad *{{EMPRESA_NOMBRE}}* (*{{EMPRESA_TAX_ID}}*), con actividad económica registrada en el catálogo SCIAN *{{EMPRESA_ACTIVIDAD}}* y una plantilla operativa parametrizada de *{{EMPRESA_EMPLEADOS}} personas*, se han generado, personalizado y sellado criptográficamente los instrumentos documentales, actas constitutivas y matrices de control exigibles para acreditar el cumplimiento preventivo del vector *{{NORMA_FOLIO_PREFIX}}*.]
+#text(size: 6.8pt)[El Consejo Técnico de *FIRMA PERICIAL MALLEN®* certifica que para la entidad *{{EMPRESA_NOMBRE}}* (*{{EMPRESA_TAX_ID}}*), con actividad económica registrada en el catálogo SCIAN *{{EMPRESA_ACTIVIDAD}}* y una plantilla operativa parametrizada de *{{EMPRESA_EMPLEADOS}} personas*, se han generado, personalizado y sellado criptográficamente los instrumentos documentales, actas constitutivas y matrices de control exigibles para acreditar el cumplimiento preventivo del vector *{{NORMA_FOLIO_PREFIX}}*.]
 
 #v(0.15em)
 
@@ -78,7 +78,7 @@
   [#text(fill: white, weight: "bold", size: 6.3pt)[Parámetro de Auditoría Evaluado]],
   [#text(fill: white, weight: "bold", size: 6.3pt)[Estatus de Instrumentación]],
   [#text(fill: white, weight: "bold", size: 6.3pt)[Cobertura Probatoria]],
-  [Alineación al Giro SCIAN ({{EMPRESA_SCIAN_CODE}}) y Capacidad ({{EMPRESA_EMPLEADOS}} pers.)], [CALIBRADO 1:1], [Art. 992 LFT y Art. 75 CFF],
+  [Alineación al Giro SCIAN ({{EMPRESA_SCIAN_CODE}}) y Capacidad ({{EMPRESA_EMPLEADOS}} pers.)], [PARAMETRIZADO POR PADRÓN OFICIAL], [Art. 992 LFT y Art. 75 CFF],
   [Clasificación de Riesgo Patronal ({{EMPRESA_IMSS_CLASE}})], [CONCILIADO], [Arts. 71-75 LSS y Art. 196 RACERF],
   [Inalterabilidad y Fecha Cierta Digital (Hash `{{AUDIT_HASH}}`)], [SELLADO SHA-256], [Arts. 89-93 CCom y Jurisprudencia SCJN]
 )
@@ -116,9 +116,9 @@
       #v(14pt)
       #line(length: 85%, stroke: 0.6pt + rgb("#334155"))
       #v(2pt)
-      #text(weight: "bold", size: 6.5pt)[AUDITOR DICTAMINADOR]\
+      #text(weight: "bold", size: 6.5pt)[DIRECCIÓN PERICIAL CORPORATIVA]\
       #text(size: 6pt, fill: rgb("#475569"))[{{AUDITOR_NOMBRE}}]\
-      #text(size: 5.6pt, fill: rgb("#64748b"))[Cédula: {{AUDITOR_CEDULA}} • {{AUDITOR_DC5}}]
+      #text(size: 5.6pt, fill: rgb("#64748b"))[Folio: {{AUDITOR_CEDULA}} • {{AUDITOR_DC5}}]
     ],
     [
       #v(14pt)

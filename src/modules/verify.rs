@@ -19,7 +19,7 @@ pub async fn render_verify(id: &str) -> Html<String> {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Dictamen & Certificación Pericial | Firma Pericial Mallen</title>
+    <title>Dictamen & Certificación Pericial | FIRMA PERICIAL MALLEN®</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
     <style>
@@ -37,7 +37,7 @@ pub async fn render_verify(id: &str) -> Html<String> {
 
 <nav class="navbar navbar-dark border-bottom border-secondary" style="background: #0b132b;">
     <div class="container">
-        <a class="navbar-brand fw-bold text-white fs-4" href="/">Firma Pericial Mallen</a>
+        <a class="navbar-brand fw-bold text-white fs-4" href="/">FIRMA PERICIAL MALLEN®</a>
         <span class="badge bg-dark border border-secondary text-info"><i class="bi bi-shield-check me-1"></i> Expediente Consultivo OSINT</span>
     </div>
 </nav>
@@ -90,7 +90,7 @@ pub async fn render_verify(id: &str) -> Html<String> {
                         <div class="col-md-7 mb-3 mb-md-0">
                             <span class="badge bg-info text-dark mb-2 px-3 py-1">Kit de Expediente Pericial & Blindaje Normativo (.zip)</span>
                             <h5 class="fw-bold text-white mb-1">Activar Blindaje 360° & Descargar Expediente Criptográfico</h5>
-                            <p class="text-muted small mb-2">Incluye: Dictamen Ejecutivo PDF firmado por Perito C.P.C., 10 Certificados Normativos PDF, 7 Kits Legales listos para firma autógrafa, Sello Fecha Cierta SCJN y Factura CFDI 4.0.</p>
+                            <p class="text-muted small mb-2">Incluye: Dictamen Ejecutivo PDF certificado por FIRMA PERICIAL MALLEN®, 10 Certificados Normativos PDF, 7 Kits Legales listos para firma autógrafa, Sello Fecha Cierta SCJN y Factura CFDI 4.0.</p>
                             <span class="fs-2 fw-bold text-white">${} <small class="fs-6 text-muted">MXN (IVA Incluido)</small></span>
                         </div>
                         <div class="col-md-5 text-md-end">
@@ -107,7 +107,7 @@ pub async fn render_verify(id: &str) -> Html<String> {
 </div>
 
 <footer class="text-center py-4 text-muted border-top border-secondary mt-5" style="background: #0b132b;">
-    <small>© 2026 Firma Pericial Mallen (mallen.lat) • Todos los derechos reservados</small>
+    <small>© 2026 FIRMA PERICIAL MALLEN® (mallen.lat) • Todos los derechos reservados</small>
 </footer>
 
 </body>

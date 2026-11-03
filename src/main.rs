@@ -21,7 +21,7 @@ use tokio::task::JoinSet;
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let start_time = Instant::now();
-    println!(" Iniciando Motor Firma Pericial Mallen + SQLite + OSINT Dual-TLS + Merkle L2 (mallen.lat)...");
+    println!(" Iniciando Motor FIRMA PERICIAL MALLEN® + SQLite + OSINT Dual-TLS + Merkle L2 (mallen.lat)...");
 
     let db = Arc::new(LocalDatabase::init("b2b_audits.db")?);
     let shared_client = NetworkClientManager::build_client(None)?;
@@ -52,7 +52,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let mut lines: Vec<String> = reader.lines().map_while(Result::ok).collect();
 
     if lines.is_empty() {
-        println!("️ Archivo CSV 'denue_prueba.csv' vacío.");
+        println!(" Archivo CSV 'denue_prueba.csv' vacío.");
         return Ok(());
     }
 
@@ -137,7 +137,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                     }
                 }
 
-                // 4. Firma Pericial Contable C.P.C.
+                // 4. Certificación Institucional FIRMA PERICIAL MALLEN®
                 let tax_str = e.tax_id.clone().unwrap_or_default();
                 e.accountant_signature = Some(apply_accountant_signature(&profile_clone, &tax_str));
 
@@ -180,7 +180,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .collect();
     let global_merkle_root = format!("0x{}", MerkleTree::compute_root(&hashes));
     println!(" Merkle Root Global 256-bit del Lote: {}", global_merkle_root);
-    println!("️ Proceso completado en: {:.2?}", start_time.elapsed());
+    println!(" Proceso completado en: {:.2?}", start_time.elapsed());
 
     Ok(())
 }
