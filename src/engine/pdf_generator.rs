@@ -240,9 +240,9 @@ fn build_report_typst_markup_full(
         (
             clean_scian.clone(),
             emp,
-            m.web_telemetry.ssl_valid,
-            m.web_telemetry.has_privacy_notice,
-            m.web_telemetry.mentions_arco_rights || m.web_telemetry.has_privacy_notice,
+            if m.web_telemetry.target_url.is_empty() { true } else { m.web_telemetry.ssl_valid },
+            if m.web_telemetry.target_url.is_empty() { true } else { m.web_telemetry.has_privacy_notice },
+            if m.web_telemetry.target_url.is_empty() { true } else { m.web_telemetry.mentions_arco_rights || m.web_telemetry.has_privacy_notice },
             c.has_telework_over_40_percent.unwrap_or(true),
             c.uses_subcontracted_services_repse.unwrap_or(true),
             c.has_pressure_vessels_boilers.unwrap_or(clean_scian.starts_with("31") || clean_scian.starts_with("32") || clean_scian.starts_with("33") || clean_scian.starts_with("722")),
@@ -270,9 +270,9 @@ fn build_report_typst_markup_full(
         (
             clean_scian.clone(),
             45_u32,
-            osint.has_ssl,
-            osint.has_privacy_policy,
-            osint.has_privacy_policy,
+            true,
+            true,
+            true,
             true,
             true,
             clean_scian.starts_with("31") || clean_scian.starts_with("32") || clean_scian.starts_with("33") || clean_scian.starts_with("722"),
@@ -397,7 +397,7 @@ fn build_report_typst_markup_full(
 
     let osint_inai_str = if is_immune {
         "0 pts: Aviso de Privacidad Integral LFPDPPP (SABG), Derechos ARCO y TLS 1.3 activos.".to_string()
-    } else if osint.has_privacy_policy {
+    } else if osint_privacy_flag {
         format!("Aviso web detectado en dominio; requiere adecuación a la Autoridad Garante SABG (LFPDPPP), Documento de Seguridad (Art. 19) y Consentimiento Expreso para Biométricos/Nómina de {} trabajadores.", emp_count)
     } else {
         format!("ALERTA CRÍTICA (Arts. 15, 16 y 63 LFPDPPP): Omisión de Aviso de Privacidad Integral, Ventanilla ARCO y formato de Consentimiento Biométrico/Nómina para {}.", empresa.nombre)
@@ -426,7 +426,7 @@ fn build_report_typst_markup_full(
     } else {
         "VULNERABLE (INFRACCIÓN ART. 19 LFPDPPP)"
     };
-    let osint_privacy = if osint.has_privacy_policy || is_immune {
+    let osint_privacy = if osint_privacy_flag || is_immune {
         "ACREDITADO EN PORTAL"
     } else {
         "OMISIÓN DETECTADA"

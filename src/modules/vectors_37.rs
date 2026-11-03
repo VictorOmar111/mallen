@@ -144,7 +144,7 @@ pub fn render_vectors_37_typst_table(vectors: &[EvaluatedVector], censored_blur:
     let mut out = String::from(
         r##"#table(
   columns: (4.5%, 15%, 27.5%, 37%, 16%),
-  inset: (x: 3.5pt, y: 2.35pt),
+  inset: (x: 3.2pt, y: 1.65pt),
   stroke: 0.3pt + rgb("#cbd5e1"),
   fill: (x, y) => if y == 0 { rgb("#0f172a") } else if calc.odd(y) { rgb("#f8fafc") } else { rgb("#ffffff") },
   align: (center + horizon, left + horizon, left + horizon, left + horizon, right + horizon),
@@ -161,7 +161,7 @@ pub fn render_vectors_37_typst_table(vectors: &[EvaluatedVector], censored_blur:
         let color_hex = if is_active { "#b91c1c" } else { "#047857" };
 
         let fine_label = if censored_blur && is_active {
-            r##"#text(size: 5.4pt, weight: "bold", fill: rgb("#64748b"))[RESERVADO]"##.to_string()
+            r##"#text(size: 5.0pt, weight: "bold", fill: rgb("#64748b"))[RESERVADO]"##.to_string()
         } else if is_active {
             format!(r"\$ {} MXN", format_mxn(v.multa_estimada_mxn))
         } else {
@@ -170,12 +170,12 @@ pub fn render_vectors_37_typst_table(vectors: &[EvaluatedVector], censored_blur:
 
         let precepto_cell = if censored_blur {
             format!(
-                r##"#text(size: 5.4pt, weight: "bold", fill: rgb("#475569"))[VEC-{:02} • PRECEPTO NORMATIVO RESERVADO]"##,
+                r##"#text(size: 5.0pt, weight: "bold", fill: rgb("#475569"))[VEC-{:02} • PRECEPTO NORMATIVO RESERVADO]"##,
                 v.num
             )
         } else {
             format!(
-                r##"#text(weight: "bold", size: 5.4pt)[{} — {}]"##,
+                r##"#text(weight: "bold", size: 5.0pt)[{} — {}]"##,
                 escape_typst(&v.codigo),
                 escape_typst(&v.titulo)
             )
@@ -183,20 +183,20 @@ pub fn render_vectors_37_typst_table(vectors: &[EvaluatedVector], censored_blur:
 
         let hallazgo_cell = if censored_blur {
             if is_active {
-                r##"#text(size: 5.4pt, fill: rgb("#64748b"))[DICTAMINACIÓN TÉCNICA PROTEGIDA • DESBLOQUEAR EXPEDIENTE]"##.to_string()
+                r##"#text(size: 5.0pt, fill: rgb("#64748b"))[DICTAMINACIÓN TÉCNICA PROTEGIDA • DESBLOQUEAR EXPEDIENTE]"##.to_string()
             } else {
-                r##"#text(size: 5.4pt, fill: rgb("#059669"))[CONTROL PREVENTIVO VERIFICADO ($0.00 MXN)]"##.to_string()
+                r##"#text(size: 5.0pt, fill: rgb("#059669"))[CONTROL PREVENTIVO VERIFICADO (\$0.00 MXN)]"##.to_string()
             }
         } else {
-            format!(r##"#text(size: 5.4pt)[{}]"##, escape_typst(&v.hallazgo_especifico))
+            format!(r##"#text(size: 5.0pt)[{}]"##, escape_typst(&v.hallazgo_especifico))
         };
 
         out.push_str(&format!(
-            r##"  [#text(weight: "bold", size: 5.4pt)[{:02}]],
-  [#text(weight: "bold", size: 5.4pt, fill: rgb("{}"))[{} • {}]],
+            r##"  [#text(weight: "bold", size: 5.0pt)[{:02}]],
+  [#text(weight: "bold", size: 5.0pt, fill: rgb("{}"))[{} • {}]],
   [{}],
   [{}],
-  [#text(weight: "bold", size: 5.4pt, fill: rgb("{}"))[{} ({})]],
+  [#text(weight: "bold", size: 5.0pt, fill: rgb("{}"))[{} ({})]],
 "##,
             v.num,
             color_hex,
@@ -366,7 +366,7 @@ pub fn evaluate_all_37_vectors(
                 "EXENTO SCIAN".to_string(),
                 "EXENTO".to_string(),
                 0.0,
-                format!("No exigible para la actividad económica SCIAN {} — Supuesto sectorial no actualizado ($0.00 MXN).", scian),
+                format!("No exigible para la actividad económica SCIAN {} — Supuesto sectorial no actualizado (\$0.00 MXN).", scian),
             )
         } else if active_breach {
             let m = (base_umas_calc * UMA_2026 * emp_factor).round();
