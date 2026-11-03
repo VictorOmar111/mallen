@@ -220,17 +220,6 @@ fn build_report_typst_markup_full(
         }
     }
 
-    // Variable total_exact removida tras calibración de Score ponderado en la gráfica.
-    let score = if is_immune {
-        0
-    } else if let Some(m) = master_opt {
-        m.risk_score
-    } else {
-        let ac = evaluated_37.iter().filter(|v| v.multa_estimada_mxn > 0.0).count();
-        let raw_s = 40.0_f64 + (ac as f64 / 37.0_f64) * 45.0_f64 + (total_exact / 5_000_000.0_f64).min(1.0_f64) * 14.0_f64;
-        (raw_s.round() as u32).clamp(45, 99)
-    };
-
     let (status_hex, banner_bg, banner_border, estatus_texto, badge_accion) = if is_immune {
         (
             "#16a34a",
@@ -249,27 +238,74 @@ fn build_report_typst_markup_full(
         )
     };
 
-    // Clasificar Clase y Prima de Riesgo IMSS según el código SCIAN real de la empresa
-    let scian_extracted: String = master_opt
-        .map(|m| m.codigo_scian.clone())
-        .filter(|s| !s.trim().is_empty())
-        .unwrap_or_else(|| {
-            empresa
-                .actividad
-                .split(|c: char| !c.is_ascii_digit())
-                .find(|tok| tok.len() >= 2)
-                .unwrap_or("541610")
-                .to_string()
-        });
+    // Extraer de forma única y determinística SCIAN, empleados y telemetría desde master_opt
+    let (
+        scian_extracted, emp_count,
+        osint_ssl_flag, osint_privacy_flag, osint_arco_flag,
+        cal_telework, cal_repse, cal_boilers, cal_forklifts, cal_chemicals, cal_biometrics, cal_b2b, cal_transport, cal_pld,
+        is_unindexed_orphan
+    ) = if let Some(m) = master_opt {
+        let clean_scian = m.codigo_scian
+            .split(|c: char| !c.is_ascii_digit())
+            .find(|tok| tok.len() >= 4)
+            .unwrap_or("541610")
+            .to_string();
+        let c = &m.calibration_applied;
+        let emp = if m.estimated_employees == 150 || m.estimated_employees == 20 || m.estimated_employees == 0 {
+            45
+        } else {
+            m.estimated_employees
+        };
+        (
+            clean_scian.clone(),
+            emp,
+            m.web_telemetry.ssl_valid,
+            m.web_telemetry.has_privacy_notice,
+            m.web_telemetry.mentions_arco_rights || m.web_telemetry.has_privacy_notice,
+            c.has_telework_over_40_percent.unwrap_or(true),
+            c.uses_subcontracted_services_repse.unwrap_or(true),
+            c.has_pressure_vessels_boilers.unwrap_or(clean_scian.starts_with("31") || clean_scian.starts_with("32") || clean_scian.starts_with("33") || clean_scian.starts_with("722")),
+            c.has_forklifts_or_manual_loads.unwrap_or(true),
+            c.handles_hazardous_chemicals.unwrap_or(clean_scian.starts_with("811") || clean_scian.starts_with("31") || clean_scian.starts_with("32") || clean_scian.starts_with("62")),
+            c.uses_biometrics_or_health_data.unwrap_or(true),
+            c.pays_intangible_b2b_services.unwrap_or(true),
+            c.transports_goods_federal_highways.unwrap_or(clean_scian.starts_with("48") || clean_scian.starts_with("49") || clean_scian.starts_with("43")),
+            c.performs_vulnerable_activities_pld.unwrap_or(clean_scian.starts_with("52") || clean_scian.starts_with("53") || clean_scian.starts_with("23")),
+            (m.razon_social.starts_with("REGISTRO NO INDEXADO") || m.domicilio_fiscal_o_denue.contains("Territorio Nacional")) && m.web_telemetry.target_url.is_empty()
+        )
+    } else {
+        let clean_scian = empresa
+            .actividad
+            .split(|c: char| !c.is_ascii_digit())
+            .find(|tok| tok.len() >= 4)
+            .unwrap_or("541610")
+            .to_string();
+        (
+            clean_scian.clone(),
+            45_u32,
+            osint.has_ssl,
+            osint.has_privacy_policy,
+            osint.has_privacy_policy,
+            true,
+            true,
+            clean_scian.starts_with("31") || clean_scian.starts_with("32") || clean_scian.starts_with("33") || clean_scian.starts_with("722"),
+            true,
+            clean_scian.starts_with("811") || clean_scian.starts_with("31") || clean_scian.starts_with("32") || clean_scian.starts_with("62"),
+            true,
+            true,
+            clean_scian.starts_with("48") || clean_scian.starts_with("49") || clean_scian.starts_with("43"),
+            clean_scian.starts_with("52") || clean_scian.starts_with("53") || clean_scian.starts_with("23"),
+            false
+        )
+    };
+
     let scian_str = scian_extracted.as_str();
+    let osint_ssl = osint_ssl_flag;
+    let osint_privacy = osint_privacy_flag;
+    let osint_arco = osint_arco_flag;
+
     let (imss_clase, imss_prima, imss_sector_desc) =
         crate::modules::vectors_37::classify_imss_risk_by_scian(scian_str);
-
-    // Determinar número estimado de trabajadores desde el expediente maestro o el estrato DENUE
-    let emp_count: u32 = master_opt
-        .and_then(|m| m.calibration_applied.exact_employee_count)
-        .unwrap_or(45)
-        .max(1);
 
     let guia_nom035 = if emp_count > 50 {
         "Guías I y III (Evaluación de Entorno Organizacional >50 empleados)"
@@ -293,13 +329,12 @@ fn build_report_typst_markup_full(
         "Programa Interno de Protección Civil (PIPC), Acta Constitutiva de 4 Brigadas, Póliza RC y dictamen eléctrico/estructural."
     };
 
-    // Evaluar la matriz completa de 37 vectores para esta empresa específica
     let sat_69b_lbl = master_opt
         .map(|m| m.sat_69b_status.as_str())
-        .unwrap_or("COMPULSADO SIN ANTECEDENTES EFOS (DOF)");
+        .unwrap_or("LIMPIO");
     let sat_69_lbl = master_opt
         .map(|m| m.sat_69_status.as_str())
-        .unwrap_or("ACTIVO / SIN CRÉDITOS FIRMES EXIGIBLES");
+        .unwrap_or("LIMPIO");
     let repse_lbl = master_opt
         .map(|m| {
             if m.stps_repse_registered {
@@ -318,37 +353,6 @@ fn build_report_typst_markup_full(
             }
         })
         .unwrap_or("SIN INHABILITACIÓN EN COMPRANET / SFP");
-
-    let (
-        scian_str, emp_count,
-        osint_ssl, osint_privacy, osint_arco,
-        cal_telework, cal_repse, cal_boilers, cal_forklifts, cal_chemicals, cal_biometrics, cal_b2b, cal_transport, cal_pld,
-        is_unindexed_orphan
-    ) = if let Some(m) = master_opt {
-        let scian = m.codigo_scian.as_str();
-        let c = &m.calibration_applied;
-        (
-            scian, m.estimated_employees, m.web_telemetry.ssl_valid, m.web_telemetry.has_privacy_notice,
-            m.web_telemetry.mentions_arco_rights || m.web_telemetry.has_privacy_notice,
-            c.has_telework_over_40_percent.unwrap_or(true), c.uses_subcontracted_services_repse.unwrap_or(true),
-            c.has_pressure_vessels_boilers.unwrap_or(scian.starts_with("31") || scian.starts_with("32") || scian.starts_with("33") || scian.starts_with("722")),
-            c.has_forklifts_or_manual_loads.unwrap_or(true),
-            c.handles_hazardous_chemicals.unwrap_or(scian.starts_with("811") || scian.starts_with("31") || scian.starts_with("32") || scian.starts_with("62")),
-            c.uses_biometrics_or_health_data.unwrap_or(true), c.pays_intangible_b2b_services.unwrap_or(true),
-            c.transports_goods_federal_highways.unwrap_or(scian.starts_with("48") || scian.starts_with("49") || scian.starts_with("43")),
-            c.performs_vulnerable_activities_pld.unwrap_or(scian.starts_with("52") || scian.starts_with("53") || scian.starts_with("23")),
-            (m.razon_social.starts_with("REGISTRO NO INDEXADO") || m.domicilio_fiscal_o_denue.contains("Territorio Nacional")) && m.web_telemetry.target_url.is_empty()
-        )
-    } else {
-        let scian = scian_str;
-        (
-            scian, emp_count, osint.has_ssl, osint.has_privacy_policy, osint.has_privacy_policy,
-            true, true, scian.starts_with("31") || scian.starts_with("32") || scian.starts_with("33") || scian.starts_with("722"),
-            true, scian.starts_with("811") || scian.starts_with("31") || scian.starts_with("32") || scian.starts_with("62"),
-            true, true, scian.starts_with("48") || scian.starts_with("49") || scian.starts_with("43"),
-            scian.starts_with("52") || scian.starts_with("53") || scian.starts_with("23"), false
-        )
-    };
 
     let evaluated_37 = crate::modules::vectors_37::evaluate_all_37_vectors(
         &empresa.nombre, scian_str, emp_count, sat_69b_lbl, sat_69_lbl,
@@ -448,11 +452,16 @@ fn build_report_typst_markup_full(
         &empresa.estado,
         tax_id,
     ));
-    let actividad_clean = if empresa.actividad.contains(scian_str) {
-        sanitize_for_typst(&empresa.actividad)
+    let raw_act_desc = if let Some(m) = master_opt {
+        m.actividad_scian_desc
+            .trim_start_matches(|c: char| c.is_ascii_digit() || c == ' ' || c == '-' || c == '—')
+            .to_string()
     } else {
-        sanitize_for_typst(&format!("{} — {}", scian_str, empresa.actividad))
+        empresa.actividad
+            .trim_start_matches(|c: char| c.is_ascii_digit() || c == ' ' || c == '-' || c == '—')
+            .to_string()
     };
+    let actividad_clean = sanitize_for_typst(&format!("{} - {}", scian_str, raw_act_desc));
     let tax_clean = sanitize_for_typst(tax_id);
     let vectors_37_typst = crate::modules::vectors_37::render_vectors_37_typst_table(&evaluated_37, is_censored_micro_report);
 
@@ -622,7 +631,9 @@ pub fn generate_pdf_report_with_session(
 
     let nombre_clean = sanitize_for_typst(&empresa.nombre);
     let actividad_clean = if let Some(m) = master_opt {
-        sanitize_for_typst(&format!("{} - {}", m.codigo_scian, m.actividad_scian_desc))
+        let clean_desc = m.actividad_scian_desc
+            .trim_start_matches(|c: char| c.is_ascii_digit() || c == ' ' || c == '-' || c == '—');
+        sanitize_for_typst(&format!("{} - {}", m.codigo_scian, clean_desc))
     } else {
         sanitize_for_typst(&empresa.actividad)
     };

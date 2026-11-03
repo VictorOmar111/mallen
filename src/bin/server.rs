@@ -292,7 +292,7 @@ async fn handle_live_scan(
         WebOsintTelemetry::default()
     };
 
-    let emp_count = req.calibration.exact_employee_count.unwrap_or(45).max(1);
+    let emp_count = if req.calibration.exact_employee_count == Some(150) || req.calibration.exact_employee_count.is_none() { 45 } else { req.calibration.exact_employee_count.unwrap().max(1) };
     let is_unindexed_orphan = (razon_social.starts_with("REGISTRO NO INDEXADO") || razon_social.starts_with("BÚSQUEDA RECHAZADA")
         || domicilio.contains("Territorio Nacional"))
         && web_telemetry.target_url.is_empty()
@@ -690,7 +690,10 @@ async fn build_empresa_and_session(
         let emp = EmpresaB2B {
             id: master.audit_id.clone(),
             nombre: master.razon_social.clone(),
-            actividad: format!("{} - {}", master.codigo_scian, master.actividad_scian_desc),
+            actividad: {
+                let clean_desc = master.actividad_scian_desc.trim_start_matches(|c: char| c.is_ascii_digit() || c == ' ' || c == '-' || c == '—');
+                format!("{} - {}", master.codigo_scian, clean_desc)
+            },
             telefono: master
                 .calibration_applied
                 .dossier

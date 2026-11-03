@@ -161,6 +161,7 @@ pub fn generate_custom_bundle_with_session(
     let _ = generate_compliance_kit_with_dossier(empresa, dossier);
 
     let pdf_filename = format!("{}/Dictamen_Ejecutivo_{}.pdf", base_dir, tax_id);
+    // Aseguramos la inyección limpia del master_opt para preservar el SCIAN y la parametrización exacta
     generate_pdf_report_with_session(empresa, osint, master_opt, is_accredited, &pdf_filename)?;
 
     let zip_bytes = build_zip_buffer_from_dir(empresa, dossier, &base_dir, &pdf_filename)?;
