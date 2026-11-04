@@ -1,10 +1,8 @@
-//! Compilador tipográfico sincronizado 1:1 con `AuditMasterJson` y `LegalDossierInput`.
+//! Compilador tipográfico sincronizado con `AuditMasterJson` y `LegalDossierInput`.
 //! Soporta Modo Inmune (`is_accredited = true` para `MALLEN-*` y clientes pagados con $0.00 MXN de exposición).
 
 use crate::engine::accountant::AccountantProfile;
-use crate::engine::models::{
-    AuditMasterJson, EmpresaB2B, LegalDossierInput,
-};
+use crate::engine::models::{AuditMasterJson, EmpresaB2B, LegalDossierInput};
 use crate::engine::osint_scanner::OsintResult;
 use chrono::Utc;
 use std::fs;
@@ -123,6 +121,41 @@ pub fn sanitize_for_typst(input: &str) -> String {
         .replace('`', "\\`")
 }
 
+/// Garantiza que absolutamente cualquier signo `$` en el archivo `.typ` final
+/// esté precedido por exactamente una sola barra invertida (`\$`), evitando
+/// tanto `$` sin escapar como `\\$` doblemente escapados que abren modo matemático en Typst.
+fn normalize_typst_dollars(src: &str) -> String {
+    let mut out = String::with_capacity(src.len() + 64);
+    let chars: Vec<char> = src.chars().collect();
+    let mut i = 0;
+    while i < chars.len() {
+        if chars[i] == '\\' {
+            let mut slash_count = 0;
+            while i < chars.len() && chars[i] == '\\' {
+                slash_count += 1;
+                i += 1;
+            }
+            if i < chars.len() && chars[i] == '$' {
+                out.push('\\');
+                out.push('$');
+                i += 1;
+            } else {
+                for _ in 0..slash_count {
+                    out.push('\\');
+                }
+            }
+        } else if chars[i] == '$' {
+            out.push('\\');
+            out.push('$');
+            i += 1;
+        } else {
+            out.push(chars[i]);
+            i += 1;
+        }
+    }
+    out
+}
+
 pub fn format_currency_mxn(val: f64) -> String {
     let rounded = (val.max(0.0) * 100.0).round() as u64;
     let integer_part = rounded / 100;
@@ -189,17 +222,12 @@ fn build_report_typst_markup_full(
         _ => "FIRMA PERICIAL MALLEN® (MALLEN.LAT)".to_string(),
     };
 
-    // Calcular subtotales exactos por dependencia para sincronía matemática 1:1 con la Web
-    
-
-    
-
     let (status_hex, banner_bg, banner_border, estatus_texto, badge_accion) = if is_immune {
         (
             "#16a34a",
             "#f0fdf4",
             "#86efac",
-            "100% CUMPLIMIENTO ACREDITADO • RIESGO CERO (0.00 MXN)",
+            "100% CUMPLIMIENTO ACREDITADO • RIESGO CERO (\\$0.00 MXN)",
             "EXPEDIENTE INMUNE ACTIVO",
         )
     } else {
@@ -212,7 +240,6 @@ fn build_report_typst_markup_full(
         )
     };
 
-    // Extraer de forma única y determinística SCIAN, empleados y telemetría desde master_opt
     let (
         scian_extracted, emp_count,
         osint_ssl_flag, osint_privacy_flag, osint_arco_flag,
@@ -348,8 +375,6 @@ fn build_report_typst_markup_full(
         cal_telework, cal_repse, cal_boilers, cal_forklifts, cal_chemicals, cal_biometrics, cal_b2b, cal_transport, cal_pld,
     );
 
-    // SINCRONIZACIÓN MATEMÁTICA 1:1 ABSOLUTA:
-    // Los 6 subtotales de la Página 1 se calculan sumando directamente los 37 vectores de la Página 2
     let mut m_stps = 0.0_f64;
     let mut m_sat = 0.0_f64;
     let mut m_inai = 0.0_f64;
@@ -421,12 +446,12 @@ fn build_report_typst_markup_full(
         format!("Adecuación obligatoria al Art. 76 BIS LFPC (Comercio Digital), Póliza de Garantía mínima de 90 días (Art. 77 LFPC), purga de cláusulas nulas (Art. 90) y sellado criptográfico CCom Art. 89 para {}.", empresa.nombre)
     };
 
-    let osint_ssl = if osint.has_ssl || is_immune {
+    let osint_ssl_txt = if osint_ssl || is_immune {
         "ACTIVO (TLS 1.3 VÁLIDO)"
     } else {
         "VULNERABLE (INFRACCIÓN ART. 19 LFPDPPP)"
     };
-    let osint_privacy = if osint_privacy_flag || is_immune {
+    let osint_privacy_txt = if osint_privacy_flag || is_immune {
         "ACREDITADO EN PORTAL"
     } else {
         "OMISIÓN DETECTADA"
@@ -452,7 +477,7 @@ fn build_report_typst_markup_full(
     let tax_clean = sanitize_for_typst(tax_id);
     let vectors_37_typst = crate::modules::vectors_37::render_vectors_37_typst_table(&evaluated_37, is_censored_micro_report);
 
-    TYPST_TEMPLATE
+    let out = TYPST_TEMPLATE
         .replace("{{PARTNER_HEADER}}", &partner_header)
         .replace("{{FECHA_EMISION}}", &fecha_hoy)
         .replace("{{SCAN_DATE}}", &fecha_hoy)
@@ -531,9 +556,9 @@ fn build_report_typst_markup_full(
         .replace("{{SAT_69_STATUS}}", &sanitize_for_typst(sat_69_lbl))
         .replace("{{REPSE_STATUS}}", &sanitize_for_typst(repse_lbl))
         .replace("{{SFP_STATUS}}", &sanitize_for_typst(sfp_lbl))
-        .replace("{{SSL_STATUS}}", osint_ssl)
-        .replace("{{PRIVACY_STATUS}}", osint_privacy)
-        .replace("{{INAI_STATUS}}", osint_privacy)
+        .replace("{{SSL_STATUS}}", osint_ssl_txt)
+        .replace("{{PRIVACY_STATUS}}", osint_privacy_txt)
+        .replace("{{INAI_STATUS}}", osint_privacy_txt)
         .replace("{{HTTP_STATUS}}", &osint.http_status.max(200).to_string())
         .replace("{{HTTP_CODE}}", &osint.http_status.max(200).to_string())
         .replace("{{AUDIT_HASH}}", &empresa.audit_hash)
@@ -558,7 +583,9 @@ fn build_report_typst_markup_full(
             p3
         })
         .replace("{{CALENDAR_SECTION_TYPST}}", &crate::modules::vectors_37::render_calendar_table(is_censored_micro_report && !is_immune))
-        .replace("{{VISUAL_RISK_CHART_TYPST}}", &visual_chart_typst)
+        .replace("{{VISUAL_RISK_CHART_TYPST}}", &visual_chart_typst);
+
+    normalize_typst_dollars(&out)
 }
 
 pub fn generate_pdf_report(
@@ -604,9 +631,8 @@ pub fn generate_pdf_report_with_session(
         _ => Path::new(".").to_path_buf(),
     };
 
-    let mut typst_content =
+    let typst_content =
         build_report_typst_markup_full(empresa, osint, master_opt, is_accredited, false);
-    }
     fs::write(&typst_source_path, &typst_content)?;
 
     let status = Command::new("typst")
@@ -615,7 +641,7 @@ pub fn generate_pdf_report_with_session(
         .arg(output_path)
         .status()?;
 
-    // let _ = fs::remove_file(&typst_source_path);
+    let _ = fs::remove_file(&typst_source_path);
 
     let nombre_clean = sanitize_for_typst(&empresa.nombre);
     let scian_code_cert = {
@@ -728,7 +754,7 @@ pub fn generate_pdf_report_with_session(
             ),
         };
 
-        let cert_content = CERT_DYNAMIC_TEMPLATE
+        let raw_cert = CERT_DYNAMIC_TEMPLATE
             .replace("{{EMPRESA_NOMBRE}}", &nombre_clean)
             .replace("{{EMPRESA_TAX_ID}}", &tax_clean)
             .replace("{{REPRESENTANTE_LEGAL}}", &sanitize_for_typst(rep_legal))
@@ -755,7 +781,7 @@ pub fn generate_pdf_report_with_session(
             .replace("{{AUDIT_HASH}}", &empresa.audit_hash)
             .replace("{{REF_TAX}}", &tax_clean);
 
-        }
+        let cert_content = normalize_typst_dollars(&raw_cert);
         fs::write(&cert_typ_path, cert_content)?;
 
         let _ = Command::new("typst")
@@ -796,9 +822,8 @@ pub fn generate_exit_intent_micro_pdf_with_session(
     }
 
     let typst_source_path = format!("{}_micro.typ", output_path.trim_end_matches(".pdf"));
-    let mut typst_content =
+    let typst_content =
         build_report_typst_markup_full(empresa, osint, master_opt, is_accredited, true);
-    }
     fs::write(&typst_source_path, &typst_content)?;
 
     let status = Command::new("typst")
@@ -807,7 +832,7 @@ pub fn generate_exit_intent_micro_pdf_with_session(
         .arg(output_path)
         .status()?;
 
-    // let _ = fs::remove_file(&typst_source_path);
+    let _ = fs::remove_file(&typst_source_path);
 
     if !status.success() {
         return Err("Fallo al compilar el Micro-Dictamen de rescate".into());
