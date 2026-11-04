@@ -199,7 +199,7 @@ fn build_report_typst_markup_full(
             "#16a34a",
             "#f0fdf4",
             "#86efac",
-            "100% CUMPLIMIENTO ACREDITADO • RIESGO CERO (\\$0.00 MXN)",
+            "100% CUMPLIMIENTO ACREDITADO • RIESGO CERO (0.00 MXN)",
             "EXPEDIENTE INMUNE ACTIVO",
         )
     } else {
@@ -606,11 +606,7 @@ pub fn generate_pdf_report_with_session(
 
     let mut typst_content =
         build_report_typst_markup_full(empresa, osint, master_opt, is_accredited, false);
-    // Sanitización Absoluta a prueba de balas
-    while typst_content.contains("\\$") {
-        typst_content = typst_content.replace("\\$", "$");
     }
-    typst_content = typst_content.replace("$", "\\$");
     fs::write(&typst_source_path, &typst_content)?;
 
     let status = Command::new("typst")
@@ -759,11 +755,7 @@ pub fn generate_pdf_report_with_session(
             .replace("{{AUDIT_HASH}}", &empresa.audit_hash)
             .replace("{{REF_TAX}}", &tax_clean);
 
-        let mut cert_content = cert_content;
-        while cert_content.contains("\\$") {
-            cert_content = cert_content.replace("\\$", "$");
         }
-        cert_content = cert_content.replace("$", "\\$"); // Sanitización Absoluta
         fs::write(&cert_typ_path, cert_content)?;
 
         let _ = Command::new("typst")
@@ -806,11 +798,7 @@ pub fn generate_exit_intent_micro_pdf_with_session(
     let typst_source_path = format!("{}_micro.typ", output_path.trim_end_matches(".pdf"));
     let mut typst_content =
         build_report_typst_markup_full(empresa, osint, master_opt, is_accredited, true);
-    // Sanitización Absoluta a prueba de balas
-    while typst_content.contains("\\$") {
-        typst_content = typst_content.replace("\\$", "$");
     }
-    typst_content = typst_content.replace("$", "\\$");
     fs::write(&typst_source_path, &typst_content)?;
 
     let status = Command::new("typst")
