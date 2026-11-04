@@ -211,7 +211,7 @@ pub fn render_vectors_37_typst_table(vectors: &[EvaluatedVector], censored_blur:
     }
 
     out.push_str(")\n");
-    out
+    out.replace("\\\\$", "\\$")
 }
 
 pub fn render_visual_risk_chart_typst(

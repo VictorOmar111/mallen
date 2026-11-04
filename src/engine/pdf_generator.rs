@@ -614,7 +614,7 @@ pub fn generate_pdf_report_with_session(
         .arg(output_path)
         .status()?;
 
-    let _ = fs::remove_file(&typst_source_path);
+    // // let _ = fs::remove_file(&typst_source_path);
 
     let nombre_clean = sanitize_for_typst(&empresa.nombre);
     let scian_code_cert = {
@@ -804,7 +804,7 @@ pub fn generate_exit_intent_micro_pdf_with_session(
         .arg(output_path)
         .status()?;
 
-    let _ = fs::remove_file(&typst_source_path);
+    // // let _ = fs::remove_file(&typst_source_path);
 
     if !status.success() {
         return Err("Fallo al compilar el Micro-Dictamen de rescate".into());
