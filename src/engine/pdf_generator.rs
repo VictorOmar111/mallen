@@ -606,7 +606,11 @@ pub fn generate_pdf_report_with_session(
 
     let mut typst_content =
         build_report_typst_markup_full(empresa, osint, master_opt, is_accredited, false);
-    typst_content = typst_content.replace("\\\\$", "\\$"); // Escudo Definitivo
+    // Sanitización Absoluta a prueba de balas
+    while typst_content.contains("\\$") {
+        typst_content = typst_content.replace("\\$", "$");
+    }
+    typst_content = typst_content.replace("$", "\\$");
     fs::write(&typst_source_path, &typst_content)?;
 
     let status = Command::new("typst")
@@ -615,7 +619,7 @@ pub fn generate_pdf_report_with_session(
         .arg(output_path)
         .status()?;
 
-    let _ = fs::remove_file(&typst_source_path);
+    // let _ = fs::remove_file(&typst_source_path);
 
     let nombre_clean = sanitize_for_typst(&empresa.nombre);
     let scian_code_cert = {
@@ -755,7 +759,11 @@ pub fn generate_pdf_report_with_session(
             .replace("{{AUDIT_HASH}}", &empresa.audit_hash)
             .replace("{{REF_TAX}}", &tax_clean);
 
-        let cert_content = cert_content.replace("\\\\$", "\\$"); // Escudo Definitivo
+        let mut cert_content = cert_content;
+        while cert_content.contains("\\$") {
+            cert_content = cert_content.replace("\\$", "$");
+        }
+        cert_content = cert_content.replace("$", "\\$"); // Sanitización Absoluta
         fs::write(&cert_typ_path, cert_content)?;
 
         let _ = Command::new("typst")
@@ -798,7 +806,11 @@ pub fn generate_exit_intent_micro_pdf_with_session(
     let typst_source_path = format!("{}_micro.typ", output_path.trim_end_matches(".pdf"));
     let mut typst_content =
         build_report_typst_markup_full(empresa, osint, master_opt, is_accredited, true);
-    typst_content = typst_content.replace("\\\\$", "\\$"); // Escudo Definitivo
+    // Sanitización Absoluta a prueba de balas
+    while typst_content.contains("\\$") {
+        typst_content = typst_content.replace("\\$", "$");
+    }
+    typst_content = typst_content.replace("$", "\\$");
     fs::write(&typst_source_path, &typst_content)?;
 
     let status = Command::new("typst")
@@ -807,7 +819,7 @@ pub fn generate_exit_intent_micro_pdf_with_session(
         .arg(output_path)
         .status()?;
 
-    let _ = fs::remove_file(&typst_source_path);
+    // let _ = fs::remove_file(&typst_source_path);
 
     if !status.success() {
         return Err("Fallo al compilar el Micro-Dictamen de rescate".into());
