@@ -694,7 +694,7 @@ impl HttpFormBot {
     /// al estándar internacional E.164 (+52XXXXXXXXXX para México o +CC para Europa/LATAM).
     pub fn normalize_whatsapp_e164(raw: &str) -> Option<String> {
         let low = raw.trim().to_lowercase();
-        let phone_ candidate = if let Some(idx) = low.find("phone=") {
+        let phone_candidate = if let Some(idx) = low.find("phone=") {
             let after = &raw[idx + 6..];
             after.split('&').next().unwrap_or(after)
         } else if let Some(idx) = low.find("wa.me/") {
@@ -940,6 +940,64 @@ impl HttpFormBot {
         (out, charset_tag.to_string())
     }
 
+
+    /// Sanea y normaliza un correo electrónico:
+    /// - Elimina espacios invisibles Unicode (\u{00A0}, \u{200B}, \u{FEFF}) y prefijos URL-encoded (%20).
+    /// - Convierte estrictamente a minúsculas (.trim().to_lowercase()).
+    /// - Descarta falsos positivos (archivos @2x, versiones npm/cdn como bootstrap@5.3.2, o placeholders).
+    pub fn sanitize_and_normalize_email(raw: &str) -> Option<String> {
+        let cleaned_unicode: String = raw
+            .replace("%20", "")
+            .replace("&nbsp;", "")
+            .chars()
+            .filter(|&c| {
+                !c.is_whitespace()
+                    && c != '\u{00A0}'
+                    && c != '\u{200B}'
+                    && c != '\u{200C}'
+                    && c != '\u{200D}'
+                    && c != '\u{FEFF}'
+            })
+            .collect();
+
+        let clean = cleaned_unicode
+            .trim_matches(|c: char| !c.is_ascii_alphanumeric() && c != '@' && c != '.' && c != '-' && c != '_' && c != '+')
+            .to_lowercase();
+
+        let parts: Vec<&str> = clean.split('@').collect();
+        if parts.len() != 2 {
+            return None;
+        }
+        let (local, domain) = (parts[0], parts[1]);
+        if local.is_empty() || domain.len() < 4 || !domain.contains('.') || domain.starts_with('.') || domain.ends_with('.') {
+            return None;
+        }
+
+        // Descartar extensiones de activos estáticos, imágenes retina (@2x) o versiones semver (ej. pkg@1.2.3)
+        let bad_suffixes = [
+            ".png", ".jpg", ".jpeg", ".gif", ".webp", ".svg", ".ico",
+            ".js", ".css", ".woff", ".woff2", ".ttf", ".eot", ".map", ".pdf",
+        ];
+        if bad_suffixes.iter().any(|ext| domain.ends_with(ext)) {
+            return None;
+        }
+        if domain.chars().all(|c| c.is_ascii_digit() || c == '.') {
+            return None;
+        }
+
+        // Descartar correos trampa, no-reply o placeholders de plantillas
+        let blacklisted_locals = ["no-reply", "noreply", "donotreply", "mailer-daemon", "postmaster", "ejemplo", "tu-correo", "tucorreo", "yourname", "user"];
+        let blacklisted_domains = ["example.com", "example.org", "dominio.com", "tudominio.com", "sentry.io", "wixpress.com", "email.com"];
+        if blacklisted_locals.iter().any(|&b| local == b || local.starts_with("no-reply") || local.starts_with("noreply")) {
+            return None;
+        }
+        if blacklisted_domains.iter().any(|&d| domain == d || domain.ends_with(".sentry.io") || domain.ends_with(".wixpress.com")) {
+            return None;
+        }
+
+        Some(format!("{}@{}", local, domain))
+    }
+
     /// Desofusca correos protegidos por Cloudflare (`data-cfemail="hex_string"`).
     pub fn decode_cloudflare_cfemail(hex: &str) -> Option<String> {
         let clean = hex.trim();
@@ -955,11 +1013,7 @@ impl HttpFormBot {
             i += 2;
         }
         let decoded = String::from_utf8(out).ok()?;
-        if decoded.contains('@') && decoded.contains('.') {
-            Some(decoded)
-        } else {
-            None
-        }
+        Self::sanitize_and_normalize_email(&decoded)
     }
 
     /// Cosechador Multicanal Profundo: extrae emails (incluyendo Cloudflare data-cfemail),
@@ -990,9 +1044,11 @@ impl HttpFormBot {
                 let href = a.value().attr("href").unwrap_or("").trim();
                 let low = href.to_lowercase();
                 if low.starts_with("mailto:") {
-                    let mail = href[7..].split('?').next().unwrap_or("").trim().to_lowercase();
-                    if mail.contains('@') && mail.contains('.') && !emails.contains(&mail) {
-                        emails.push(mail);
+                    let raw_mail = href[7..].split('?').next().unwrap_or("");
+                    if let Some(mail) = Self::sanitize_and_normalize_email(raw_mail) {
+                        if !emails.contains(&mail) {
+                            emails.push(mail);
+                        }
                     }
                 } else if low.contains("/cdn-cgi/l/email-protection#") {
                     if let Some(hex) = href.split('#').nth(1) {

@@ -682,5 +682,30 @@ async fn test_http_form_bot_14_scenarios_with_real_db_companies() {
     let (_pruned, db_bytes) = HttpFormBot::optimize_sqlite_storage_non_blocking(50000).unwrap();
     assert!(db_bytes > 0);
 
-    println!("✓ LOS 28 ESCENARIOS DE GRADO INDUSTRIAL (0 WARNINGS, ANTI-LOOP 301, WHATSAPP E.164 +52, CFEMAIL XOR Y WAL OPTIMIZER) SUPERADOS AL 100%");
+
+    // Escenario 29: Normalización estricta de correos con mayúsculas mezcladas, espacios invisibles Unicode (\u{200B}, %20) y descarte de basura
+    assert_eq!(
+        HttpFormBot::sanitize_and_normalize_email(" %20\u{200B}Contacto.Directivo@Corporativo-Industrial.MX\u{00A0} "),
+        Some("contacto.directivo@corporativo-industrial.mx".to_string())
+    );
+    assert_eq!(HttpFormBot::sanitize_and_normalize_email("banner@2x.png"), None);
+    assert_eq!(HttpFormBot::sanitize_and_normalize_email("bootstrap@5.3.2"), None);
+    assert_eq!(HttpFormBot::sanitize_and_normalize_email("no-reply@corporativo.mx"), None);
+
+    // Escenario 30: Cosecha multicanal deduplicando mayúsculas/minúsculas y desofuscando "[at]"
+    let dirty_html = r#"
+        <html><body>
+            <a href="mailto:%20Juridico@EmpresaReal.MX">Mail 1</a>
+            <p>Escríbenos a JURIDICO@empresareal.mx o a direccion [at] empresareal.mx</p>
+            <img src="icon@2x.png">
+        </body></html>
+    "#;
+    let (harvested_mails, _, _) = HttpFormBot::harvest_multichannel_contacts(dirty_html);
+    assert_eq!(
+        harvested_mails,
+        "juridico@empresareal.mx; direccion@empresareal.mx",
+        "Debe normalizar a minúsculas, eliminar duplicados por capitalización e ignorar icon@2x.png"
+    );
+
+    println!("✓ LOS 30 ESCENARIOS DE TORTURA Y PERFECCIÓN TÉCNICA SUPERADOS AL 100%");
 }
