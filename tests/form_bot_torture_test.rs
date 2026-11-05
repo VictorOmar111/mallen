@@ -385,6 +385,65 @@ async fn test_http_form_bot_14_scenarios_with_real_db_companies() {
                 }
             }),
         )
+        // 16. Servidor con bytes crudos en Windows-1252 / Windows-1250 (no es UTF-8 válido)
+        .route(
+            "/exotic-win1252",
+            get(|| async {
+                let mut h = HeaderMap::new();
+                h.insert("content-type", "text/html; charset=windows-1252".parse().unwrap());
+                // Incluye bytes 0x80 (€), 0xE1 (á), 0xF1 (ñ) crudos en single-byte encoding
+                let mut raw: Vec<u8> = Vec::new();
+                raw.extend_from_slice(b"<html><body><h1>Cotizaci\xf3n en \x80 para C\xf3rdoba y Espa\xf1a</h1>");
+                raw.extend_from_slice(b"<form action=\"/exotic-win1252/post\" method=\"POST\">");
+                raw.extend_from_slice(b"<input type=\"email\" name=\"email\"><textarea name=\"mensaje\"></textarea>");
+                raw.extend_from_slice(b"</form></body></html>");
+                (StatusCode::OK, h, raw)
+            }),
+        )
+        .route(
+            "/exotic-win1252/post",
+            post(|| async { (StatusCode::OK, "Gracias por su mensaje") }),
+        )
+        // 17. Sitio bloqueado por reCAPTCHA y con correo cifrado por Cloudflare Email Protection (data-cfemail)
+        .route(
+            "/cfemail-and-recaptcha",
+            get(|| async {
+                // XOR key 0x2A para "legal@corporativo.mx" ->
+                // 'l'(0x6c)^0x2a=46, 'e'(0x65)^0x2a=4f, 'g'(0x67)^0x2a=4d, 'a'(0x61)^0x2a=4b, 'l'(0x6c)^0x2a=46,
+                // '@'(0x40)^0x2a=6a, 'c'(0x63)^0x2a=49, 'o'(0x6f)^0x2a=45, 'r'(0x72)^0x2a=58, 'p'(0x70)^0x2a=5a,
+                // '.'(0x2e)^0x2a=04, 'm'(0x6d)^0x2a=47, 'x'(0x78)^0x2a=52
+                Html(
+                    r#"<html><body>
+                        <form action="/send" method="POST">
+                            <input type="email" name="email">
+                            <textarea name="message"></textarea>
+                            <div class="g-recaptcha" data-sitekey="6Lc_key"></div>
+                        </form>
+                        <footer>
+                            Contacto Jurídico: <a class="__cf_email__" data-cfemail="2a464f4d4b466a4945585a044752">[email&#160;protected]</a>
+                        </footer>
+                    </body></html>"#,
+                )
+            }),
+        )
+        // 18. Endpoint para probar deduplicación de múltiples sucursales con la misma web
+        .route(
+            "/multi-branch-contact",
+            get(|| async {
+                Html(
+                    r#"<html><body>
+                        <form action="/multi-branch-contact/post" method="POST">
+                            <input type="email" name="email">
+                            <textarea name="mensaje"></textarea>
+                        </form>
+                    </body></html>"#,
+                )
+            }),
+        )
+        .route(
+            "/multi-branch-contact/post",
+            post(|| async { (StatusCode::OK, "Gracias por su mensaje") }),
+        )
         // 11. Sitio sin formulario de contacto
         .route(
             "/only-login-search",
@@ -525,5 +584,45 @@ async fn test_http_form_bot_14_scenarios_with_real_db_companies() {
 
     // Escenario 20: Prueba de limpieza y truncado controlado (prune_prospect_logs)
     let _deleted = HttpFormBot::prune_prospect_logs(50000);
-    println!("✓ LOS 20 ESCENARIOS DE GRADO MILITAR (301 REDIRECT, AUTODISCOVERY, HUBSPOT IFRAME, BACKOFF RETRIES Y PIPELINE WAL) SUPERADOS AL 100%");
+
+    // Escenario 21: Decodificación de bytes crudos en Windows-1252 / Windows-1250 (no-UTF8)
+    let r21 = HttpFormBot::submit_form_direct(&client, &format!("{}/exotic-win1252", base), "EMPRESA WIN1252 EXOTIC", 510000.0).await;
+    assert_eq!(r21, "PROSPECCION_ENVIADA_EXITO");
+
+    // Escenario 22: Sitio con reCAPTCHA + Correo ofuscado con Cloudflare data-cfemail -> Desencripta "legal@corp.mx" y asigna TIER_2_DIRECT_SMTP_READY
+    let r22 = HttpFormBot::submit_form_direct(&client, &format!("{}/cfemail-and-recaptcha", base), "EMPRESA CFEMAIL XOR", 880000.0).await;
+    assert_eq!(r22, "PROTECCION_ANTIBOT_GOOGLE_RECAPTCHA");
+    let (tier_cf, email_cf): (String, String) = conn
+        .query_row(
+            "SELECT contact_method_tier, extracted_emails FROM prospect_pipeline WHERE empresa_nombre = 'EMPRESA CFEMAIL XOR'",
+            [],
+            |r| Ok((r.get(0)?, r.get(1)?)),
+        )
+        .unwrap();
+    assert_eq!(tier_cf, "TIER_2_DIRECT_SMTP_READY", "Aunque el form tenga reCAPTCHA, al desencriptar el correo debe subir a TIER_2_DIRECT_SMTP_READY");
+    assert_eq!(email_cf, "legal@corp.mx", "Debe desencriptar el correo protegido por Cloudflare data-cfemail");
+
+    // Escenario 23: Control de duplicados entre dos sucursales del DENUE que comparten sitio web
+    let branch_url = format!("{}/multi-branch-contact?dedup_domain=1", base);
+    let r23_suc1 = HttpFormBot::submit_form_direct(&client, &branch_url, "CADENA NACIONAL SUCURSAL NORTE", 640000.0).await;
+    assert_eq!(r23_suc1, "PROSPECCION_ENVIADA_EXITO");
+    let r23_suc2 = HttpFormBot::submit_form_direct(&client, &branch_url, "CADENA NACIONAL SUCURSAL SUR", 640000.0).await;
+    assert_eq!(r23_suc2, "DOMINIO_DUPLICADO_YA_CONTACTADO_OMITIDO");
+
+    // Escenario 24: Parametrización dinámica de MALLEN_TIMEOUT_MS
+    std::env::set_var("MALLEN_TIMEOUT_MS", "9500");
+    assert_eq!(HttpFormBot::configured_timeout_ms(), 9500);
+
+    // Escenario 25: Verificación de telemetría detallada (latency_ms, trace_detail y contact_method_tier)
+    let (tier_win, trace_win): (String, String) = conn
+        .query_row(
+            "SELECT contact_method_tier, last_trace_detail FROM prospect_pipeline WHERE empresa_nombre = 'EMPRESA WIN1252 EXOTIC'",
+            [],
+            |r| Ok((r.get(0)?, r.get(1)?)),
+        )
+        .unwrap();
+    assert_eq!(tier_win, "TIER_1_WEB_FORM_SENT");
+    assert!(trace_win.starts_with("OK:"), "Debe registrar el rastro exacto de ejecución en last_trace_detail");
+
+    println!("✓ LOS 25 ESCENARIOS DE GRADO INDUSTRIAL (INCLUYENDO CHARSETS EXÓTICOS, CLOUDFLARE CFEMAIL XOR, DEDUP MULTISUCURSAL Y TIERS OMNICANAL) SUPERADOS AL 100%");
 }

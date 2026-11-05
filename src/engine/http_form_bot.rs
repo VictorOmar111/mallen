@@ -13,7 +13,7 @@ use reqwest::{
 };
 use scraper::{Html, Selector};
 use sqlx::SqlitePool;
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 use std::sync::{
     atomic::{AtomicUsize, Ordering},
     Mutex, OnceLock,
@@ -59,6 +59,7 @@ const BROWSER_PROFILES: &[(&str, &str, &str)] = &[
 static UA_COUNTER: AtomicUsize = AtomicUsize::new(0);
 static PROXY_COUNTER: AtomicUsize = AtomicUsize::new(0);
 static DOMAIN_COOLDOWN_MAP: OnceLock<Mutex<HashMap<String, Instant>>> = OnceLock::new();
+static IN_FLIGHT_DOMAINS: OnceLock<Mutex<HashSet<String>>> = OnceLock::new();
 
 pub struct HttpFormBot;
 
@@ -679,6 +680,400 @@ impl HttpFormBot {
         0
     }
 
+
+    /// Lee el timeout global configurable por variable de entorno `MALLEN_TIMEOUT_MS` (por defecto 7500 ms).
+    pub fn configured_timeout_ms() -> u64 {
+        std::env::var("MALLEN_TIMEOUT_MS")
+            .ok()
+            .and_then(|v| v.trim().parse::<u64>().ok())
+            .filter(|&ms| ms >= 500 && ms <= 60_000)
+            .unwrap_or(7500)
+    }
+
+    /// Decodificador inteligente de bytes HTTP para charsets exóticos y legacy
+    /// (UTF-8, UTF-16LE/BE con BOM, Windows-1252, Windows-1250, ISO-8859-1, ISO-8859-2).
+    pub fn decode_response_bytes_smart(content_type_hdr: &str, raw_bytes: &[u8]) -> (String, String) {
+        if raw_bytes.starts_with(&[0xEF, 0xBB, 0xBF]) {
+            return (String::from_utf8_lossy(&raw_bytes[3..]).into_owned(), "UTF-8-BOM".to_string());
+        }
+        if raw_bytes.starts_with(&[0xFF, 0xFE]) {
+            let u16s: Vec<u16> = raw_bytes[2..]
+                .chunks_exact(2)
+                .map(|c| u16::from_le_bytes([c[0], c[1]]))
+                .collect();
+            return (String::from_utf16_lossy(&u16s), "UTF-16LE".to_string());
+        }
+        if raw_bytes.starts_with(&[0xFE, 0xFF]) {
+            let u16s: Vec<u16> = raw_bytes[2..]
+                .chunks_exact(2)
+                .map(|c| u16::from_be_bytes([c[0], c[1]]))
+                .collect();
+            return (String::from_utf16_lossy(&u16s), "UTF-16BE".to_string());
+        }
+
+        let ct_low = content_type_hdr.to_lowercase();
+        let head_ascii = String::from_utf8_lossy(&raw_bytes[..raw_bytes.len().min(1024)]).to_lowercase();
+
+        let declared_single_byte = ct_low.contains("iso-8859-")
+            || ct_low.contains("windows-125")
+            || ct_low.contains("latin1")
+            || head_ascii.contains("charset=iso-8859-")
+            || head_ascii.contains("charset=\"iso-8859-")
+            || head_ascii.contains("charset=windows-125")
+            || head_ascii.contains("charset=\"windows-125");
+
+        let charset_tag = if ct_low.contains("windows-1250") || head_ascii.contains("windows-1250") {
+            "WINDOWS-1250"
+        } else if ct_low.contains("windows-1252") || head_ascii.contains("windows-1252") {
+            "WINDOWS-1252"
+        } else if ct_low.contains("iso-8859-1") || head_ascii.contains("iso-8859-1") {
+            "ISO-8859-1"
+        } else if declared_single_byte {
+            "LEGACY-8BIT"
+        } else {
+            "UTF-8"
+        };
+
+        // Si es UTF-8 válido y no declaró explícitamente tabla de 8 bits, usar UTF-8 directo
+        if !declared_single_byte {
+            if let Ok(valid_utf8) = std::str::from_utf8(raw_bytes) {
+                return (valid_utf8.to_string(), "UTF-8".to_string());
+            }
+        }
+
+        // Si declaró charset de 1 byte (ISO-8859-1 / Windows-1252 / Windows-1250) o tiene secuencias no-UTF8,
+        // mapear cada byte (0x00..=0xFF) preservando tildes, eñes y caracteres europeos sin ""
+        let mut out = String::with_capacity(raw_bytes.len());
+        for &b in raw_bytes {
+            let ch = match b {
+                0x80 => '€',
+                0x82 => '‚',
+                0x84 => '„',
+                0x85 => '…',
+                0x8A => 'Š',
+                0x8C => 'Œ',
+                0x8E => 'Ž',
+                0x91 => '‘',
+                0x92 => '’',
+                0x93 => '“',
+                0x94 => '”',
+                0x95 => '•',
+                0x96 => '–',
+                0x97 => '—',
+                0x99 => '™',
+                0x9A => 'š',
+                0x9C => 'œ',
+                0x9E => 'ž',
+                0x9F => 'Ÿ',
+                _ => b as char,
+            };
+            out.push(ch);
+        }
+        (out, charset_tag.to_string())
+    }
+
+    /// Desofusca correos protegidos por Cloudflare (`data-cfemail="hex_string"`).
+    pub fn decode_cloudflare_cfemail(hex: &str) -> Option<String> {
+        let clean = hex.trim();
+        if clean.len() < 4 || clean.len() % 2 != 0 {
+            return None;
+        }
+        let key = u8::from_str_radix(&clean[0..2], 16).ok()?;
+        let mut out = Vec::with_capacity((clean.len() - 2) / 2);
+        let mut i = 2;
+        while i < clean.len() {
+            let b = u8::from_str_radix(&clean[i..i + 2], 16).ok()?;
+            out.push(b ^ key);
+            i += 2;
+        }
+        let decoded = String::from_utf8(out).ok()?;
+        if decoded.contains('@') && decoded.contains('.') {
+            Some(decoded)
+        } else {
+            None
+        }
+    }
+
+    /// Cosechador Multicanal Profundo: extrae emails (incluyendo Cloudflare data-cfemail),
+    /// WhatsApp corporativo y perfiles de redes B2B (LinkedIn/Facebook/Instagram) del DOM.
+    pub fn harvest_multichannel_contacts(html: &str) -> (String, String, String) {
+        let mut emails: Vec<String> = Vec::new();
+        let mut whatsapps: Vec<String> = Vec::new();
+        let mut socials: Vec<String> = Vec::new();
+
+        let doc = Html::parse_document(html);
+
+        // 1. Desofuscar cualquier etiqueta con data-cfemail de Cloudflare
+        if let Ok(cf_sel) = Selector::parse("[data-cfemail]") {
+            for el in doc.select(&cf_sel) {
+                if let Some(hex) = el.value().attr("data-cfemail") {
+                    if let Some(mail) = Self::decode_cloudflare_cfemail(hex) {
+                        if !emails.contains(&mail) {
+                            emails.push(mail);
+                        }
+                    }
+                }
+            }
+        }
+
+        // 2. Revisar todos los enlaces <a href="...">
+        if let Ok(a_sel) = Selector::parse("a[href]") {
+            for a in doc.select(&a_sel) {
+                let href = a.value().attr("href").unwrap_or("").trim();
+                let low = href.to_lowercase();
+                if low.starts_with("mailto:") {
+                    let mail = href[7..].split('?').next().unwrap_or("").trim().to_lowercase();
+                    if mail.contains('@') && mail.contains('.') && !emails.contains(&mail) {
+                        emails.push(mail);
+                    }
+                } else if low.contains("/cdn-cgi/l/email-protection#") {
+                    if let Some(hex) = href.split('#').nth(1) {
+                        if let Some(mail) = Self::decode_cloudflare_cfemail(hex) {
+                            if !emails.contains(&mail) {
+                                emails.push(mail);
+                            }
+                        }
+                    }
+                } else if low.contains("wa.me/") || low.contains("api.whatsapp.com") || low.starts_with("whatsapp:") {
+                    if !whatsapps.contains(&href.to_string()) {
+                        whatsapps.push(href.to_string());
+                    }
+                } else if low.contains("linkedin.com/company/")
+                    || low.contains("linkedin.com/in/")
+                    || low.contains("facebook.com/")
+                    || low.contains("instagram.com/")
+                {
+                    if !low.contains("sharer") && !socials.contains(&href.to_string()) {
+                        socials.push(href.to_string());
+                    }
+                }
+            }
+        }
+
+        // 3. Extraer correos visibles en texto plano y priorizar buzones directivos/legales
+        for token in html.split(|c: char| c.is_whitespace() || c == '"' || c == '\'' || c == '<' || c == '>' || c == ':' || c == ';' || c == ',') {
+            if token.contains('@') && token.contains('.') && token.len() >= 6 && token.len() <= 64 {
+                let clean = token
+                    .trim_matches(|c: char| !c.is_alphanumeric() && c != '@' && c != '.' && c != '-' && c != '_')
+                    .to_lowercase();
+                if clean.contains('@')
+                    && !clean.ends_with(".png")
+                    && !clean.ends_with(".jpg")
+                    && !clean.ends_with(".webp")
+                    && !clean.ends_with(".svg")
+                    && !clean.ends_with(".js")
+                    && !clean.ends_with(".css")
+                    && !clean.contains("sentry")
+                    && !clean.contains("wixpress")
+                    && !clean.contains("example.")
+                    && !emails.contains(&clean)
+                {
+                    emails.push(clean);
+                }
+            }
+        }
+
+        // Ordenar emails dando prioridad a legal/jurídico/cumplimiento/dirección/contacto
+        emails.sort_by_key(|m| {
+            if m.starts_with("juridico") || m.starts_with("legal") || m.starts_with("compliance") || m.starts_with("cumplimiento") {
+                0
+            } else if m.starts_with("direccion") || m.starts_with("gerencia") || m.starts_with("admon") {
+                1
+            } else if m.starts_with("contacto") || m.starts_with("info") || m.starts_with("atencion") {
+                2
+            } else {
+                3
+            }
+        });
+
+        (
+            emails.into_iter().take(3).collect::<Vec<_>>().join("; "),
+            whatsapps.into_iter().take(2).collect::<Vec<_>>().join("; "),
+            socials.into_iter().take(3).collect::<Vec<_>>().join("; "),
+        )
+    }
+
+    /// Intenta adquirir el candado en vuelo para un dominio y verifica si otra sucursal ya lo contactó hoy
+    /// (activable cuando la URL trae `?dedup_domain=1` o `MALLEN_DEDUP_DOMAIN=1`).
+    pub fn try_acquire_domain_lock(domain: &str, enforce_db_dedup: bool) -> Result<bool, &'static str> {
+        let set_mutex = IN_FLIGHT_DOMAINS.get_or_init(|| Mutex::new(HashSet::new()));
+        if let Ok(mut active_set) = set_mutex.lock() {
+            if active_set.contains(domain) {
+                return Err("DOMINIO_DUPLICADO_EN_VUELO_OMITIDO");
+            }
+            if enforce_db_dedup {
+                let db_path = std::env::var("MALLEN_DB_PATH").unwrap_or_else(|_| "data/mallen_prod.db".to_string());
+                if let Ok(conn) = rusqlite::Connection::open(db_path) {
+                    let already_contacted: i64 = conn
+                        .query_row(
+                            "SELECT COUNT(*) FROM prospect_pipeline
+                             WHERE final_domain = ?1
+                               AND ultimo_resultado_codigo = 'PROSPECCION_ENVIADA_EXITO'
+                               AND updated_at_utc >= datetime('now', '-24 hours')",
+                            rusqlite::params![domain],
+                            |r| r.get(0),
+                        )
+                        .unwrap_or(0);
+                    if already_contacted > 0 {
+                        return Err("DOMINIO_DUPLICADO_YA_CONTACTADO_OMITIDO");
+                    }
+                }
+            }
+            active_set.insert(domain.to_string());
+            return Ok(true);
+        }
+        Ok(false)
+    }
+
+    pub fn release_domain_lock(domain: &str) {
+        if let Some(set_mutex) = IN_FLIGHT_DOMAINS.get() {
+            if let Ok(mut active_set) = set_mutex.lock() {
+                active_set.remove(domain);
+            }
+        }
+    }
+
+    /// Determina el Tier exacto de método de contacto para segmentación post-web inmediata.
+    pub fn classify_contact_method_tier(
+        status_result: &str,
+        emails: &str,
+        whatsapps: &str,
+        socials: &str,
+    ) -> (&'static str, &'static str, &'static str) {
+        if status_result == "PROSPECCION_ENVIADA_EXITO" {
+            ("STAGE_CONTACTADO_FORM", "TIER_1_WEB_FORM_SENT", "FOLLOWUP_MONITOREO_72H")
+        } else if status_result == "CANAL_ALTERNATIVO_MAILTO_DETECTADO" || !emails.is_empty() {
+            ("STAGE_COLA_SMTP_DIRECTO", "TIER_2_DIRECT_SMTP_READY", "DISPARAR_EMAIL_PLANTILLA_TYPST")
+        } else if status_result == "CANAL_ALTERNATIVO_WHATSAPP_DETECTADO" || !whatsapps.is_empty() {
+            ("STAGE_COLA_WHATSAPP_B2B", "TIER_3_WHATSAPP_DIRECT_READY", "ENVIAR_AVISO_EJECUTIVO_WHATSAPP")
+        } else if status_result.starts_with("CANAL_ALTERNATIVO_IFRAME_CRM") {
+            ("STAGE_DERIVADO_CRM_EXTERNO", "TIER_4_CRM_IFRAME_WIDGET", "PROSPECCION_WIDGET_CRM_EXTERNO")
+        } else if !socials.is_empty() {
+            ("STAGE_DERIVADO_SOCIAL_B2B", "TIER_5_LINKEDIN_B2B_OUTREACH", "CONTACTO_EJECUTIVO_LINKEDIN")
+        } else if status_result == "HTTP_POST_TIMEOUT" || status_result.starts_with("ERR_HTTP_GET") || status_result == "HTTP_RATE_LIMIT_429" {
+            ("STAGE_REINTENTO_PROGRAMADO", "TIER_6_PHONE_DENUE_FALLBACK", "COLA_BACKOFF_O_TELEFONO_DENUE")
+        } else {
+            ("STAGE_SIN_CANAL_WEB", "TIER_6_PHONE_DENUE_FALLBACK", "USAR_TELEFONO_Y_CORREO_DENUE")
+        }
+    }
+
+    /// Registra telemetría operativa completa (latencia ms, HTTP status, charset, reintentos, canales extraídos y Tier).
+    #[allow(clippy::too_many_arguments)]
+    pub fn persist_detailed_operational_telemetry(
+        empresa_nombre: &str,
+        input_url: &str,
+        final_target_url: &str,
+        multa_estimada: f64,
+        status_result: &str,
+        user_agent_used: &str,
+        http_status: u16,
+        latency_ms: u64,
+        charset_detected: &str,
+        retry_count: u32,
+        emails: &str,
+        whatsapps: &str,
+        socials: &str,
+        trace_detail: &str,
+    ) {
+        let primary_contact = if !emails.is_empty() {
+            format!("mailto:{}", emails.split(';').next().unwrap_or("").trim())
+        } else if !whatsapps.is_empty() {
+            whatsapps.split(';').next().unwrap_or("").trim().to_string()
+        } else if !socials.is_empty() {
+            socials.split(';').next().unwrap_or("").trim().to_string()
+        } else {
+            String::new()
+        };
+
+        // 1. Llamar al persistidor base para mantener 100% la estructura previa
+        Self::persist_prospect_lifecycle_and_logs(
+            empresa_nombre,
+            input_url,
+            final_target_url,
+            multa_estimada,
+            status_result,
+            user_agent_used,
+            if primary_contact.is_empty() { None } else { Some(primary_contact.as_str()) },
+        );
+
+        // 2. Enriquecer con las columnas de telemetría profunda y segmentación por Tier
+        let (stage, contact_tier, next_action) = Self::classify_contact_method_tier(status_result, emails, whatsapps, socials);
+        let db_path = std::env::var("MALLEN_DB_PATH").unwrap_or_else(|_| "data/mallen_prod.db".to_string());
+
+        if let Ok(conn) = rusqlite::Connection::open(db_path) {
+            for col_sql in [
+                "ALTER TABLE prospect_logs ADD COLUMN http_status INTEGER DEFAULT 0",
+                "ALTER TABLE prospect_logs ADD COLUMN latency_ms INTEGER DEFAULT 0",
+                "ALTER TABLE prospect_logs ADD COLUMN charset_detected TEXT DEFAULT 'UTF-8'",
+                "ALTER TABLE prospect_logs ADD COLUMN retry_count INTEGER DEFAULT 0",
+                "ALTER TABLE prospect_logs ADD COLUMN contact_method_tier TEXT DEFAULT ''",
+                "ALTER TABLE prospect_logs ADD COLUMN trace_detail TEXT DEFAULT ''",
+                "ALTER TABLE prospect_pipeline ADD COLUMN contact_method_tier TEXT DEFAULT ''",
+                "ALTER TABLE prospect_pipeline ADD COLUMN extracted_emails TEXT DEFAULT ''",
+                "ALTER TABLE prospect_pipeline ADD COLUMN extracted_whatsapp TEXT DEFAULT ''",
+                "ALTER TABLE prospect_pipeline ADD COLUMN extracted_socials TEXT DEFAULT ''",
+                "ALTER TABLE prospect_pipeline ADD COLUMN last_http_status INTEGER DEFAULT 0",
+                "ALTER TABLE prospect_pipeline ADD COLUMN last_latency_ms INTEGER DEFAULT 0",
+                "ALTER TABLE prospect_pipeline ADD COLUMN last_charset TEXT DEFAULT 'UTF-8'",
+                "ALTER TABLE prospect_pipeline ADD COLUMN last_trace_detail TEXT DEFAULT ''",
+            ] {
+                let _ = conn.execute(col_sql, []);
+            }
+
+            let _ = conn.execute(
+                "UPDATE prospect_logs
+                 SET http_status = ?1,
+                     latency_ms = ?2,
+                     charset_detected = ?3,
+                     retry_count = ?4,
+                     pipeline_stage = ?5,
+                     next_action_channel = ?6,
+                     contact_method_tier = ?7,
+                     trace_detail = ?8
+                 WHERE id = (SELECT MAX(id) FROM prospect_logs WHERE empresa_nombre = ?9)",
+                rusqlite::params![
+                    http_status as i64,
+                    latency_ms as i64,
+                    charset_detected,
+                    retry_count as i64,
+                    stage,
+                    next_action,
+                    contact_tier,
+                    trace_detail,
+                    empresa_nombre
+                ],
+            );
+
+            let _ = conn.execute(
+                "UPDATE prospect_pipeline
+                 SET pipeline_stage = ?1,
+                     next_action_channel = ?2,
+                     contact_method_tier = ?3,
+                     extracted_emails = CASE WHEN ?4 != '' THEN ?4 ELSE extracted_emails END,
+                     extracted_whatsapp = CASE WHEN ?5 != '' THEN ?5 ELSE extracted_whatsapp END,
+                     extracted_socials = CASE WHEN ?6 != '' THEN ?6 ELSE extracted_socials END,
+                     last_http_status = ?7,
+                     last_latency_ms = ?8,
+                     last_charset = ?9,
+                     last_trace_detail = ?10
+                 WHERE empresa_nombre = ?11",
+                rusqlite::params![
+                    stage,
+                    next_action,
+                    contact_tier,
+                    emails,
+                    whatsapps,
+                    socials,
+                    http_status as i64,
+                    latency_ms as i64,
+                    charset_detected,
+                    trace_detail,
+                    empresa_nombre
+                ],
+            );
+        }
+    }
+
     /// Método principal retrocompatible (4 argumentos):
     /// Incluye Backoff Exponencial en GET/POST, resolución de redirecciones 301/302 y Meta-Refresh,
     /// autodescubrimiento de subpágina `/contacto`, detección de Iframes CRM (HubSpot/Typeform/Calendly),
@@ -723,7 +1118,31 @@ impl HttpFormBot {
         let mut tracked_final_url = page_url.to_string();
         let mut harvested_contact: Option<String> = None;
 
-        let task = timeout(Duration::from_millis(7500), async {
+        let start_instant = Instant::now();
+        let enforce_dedup = page_url.contains("dedup_domain=1") || std::env::var("MALLEN_DEDUP_DOMAIN").map(|v| v == "1").unwrap_or(false);
+        let dedup_key = if page_url.contains("dedup_domain=1") {
+            format!("{}:{}", initial_host, parsed_in.path())
+        } else {
+            initial_host.clone()
+        };
+        if enforce_dedup {
+            if let Err(dup_code) = Self::try_acquire_domain_lock(&dedup_key, true) {
+                Self::persist_detailed_operational_telemetry(
+                    empresa_nombre, page_url, page_url, multa_estimada, dup_code, "DEDUP_GUARD",
+                    0, start_instant.elapsed().as_millis() as u64, "N/A", 0, "", "", "", "Omitido por huella de dominio duplicada en campaña"
+                );
+                return dup_code.to_string();
+            }
+        }
+        let mut tracked_http_status: u16 = 0;
+        let mut tracked_charset = String::from("UTF-8");
+        let mut tracked_retries: u32 = 0;
+        let mut tracked_emails = String::new();
+        let mut tracked_whatsapps = String::new();
+        let mut tracked_socials = String::new();
+        let mut tracked_trace = String::from("INIT");
+        let timeout_ms = Self::configured_timeout_ms();
+        let task = timeout(Duration::from_millis(timeout_ms), async {
             // 1. GET inicial con Reintentos Exponenciales + Jitter (supera microcortes o 502/503 transitorios)
             let mut resp_opt = None;
             let mut last_get_err = "ERR_HTTP_GET".to_string();
@@ -781,6 +1200,8 @@ impl HttpFormBot {
 
             // Actualizar estrictamente target_url después de seguir redirecciones 301/302 (ej. http -> https://www.)
             let mut current_target_url = resp.url().clone();
+            let resp_http_code = resp.status().as_u16();
+            let ctype_saved = resp.headers().get("content-type").and_then(|v| v.to_str().ok()).unwrap_or("text/html").to_string();
             if Self::is_ssrf_forbidden_host(current_target_url.host_str().unwrap_or("")) {
                 return ("BLOQUEO_SEGURIDAD_ANTI_SSRF".to_string(), current_target_url.to_string(), None);
             }
@@ -790,7 +1211,8 @@ impl HttpFormBot {
                 Err(_) => return ("ERR_READ_BODY".to_string(), current_target_url.to_string(), None),
             };
             let slice = if bytes.len() > 1_500_000 { &bytes[..1_500_000] } else { &bytes[..] };
-            let mut html_text = String::from_utf8_lossy(slice).into_owned();
+            let (mut html_text, detected_cs) = Self::decode_response_bytes_smart(&ctype_saved, slice);
+            let mut active_charset = detected_cs;
 
             // Si la portada tiene una redirección <meta http-equiv="refresh" content="0; url=...">, seguirla
             if !html_text.to_lowercase().contains("<form") {
@@ -826,6 +1248,17 @@ impl HttpFormBot {
             }
 
             let fallback_contact = Self::harvest_fallback_contact_channel(&html_text);
+            let (h_emails, h_wa, h_soc) = Self::harvest_multichannel_contacts(&html_text);
+            let fallback_contact = if !h_emails.is_empty() {
+                Some(format!("mailto:{}", h_emails.split(';').next().unwrap_or("").trim()))
+            } else if !h_wa.is_empty() {
+                Some(h_wa.split(';').next().unwrap_or("").trim().to_string())
+            } else if !h_soc.is_empty() {
+                Some(h_soc.split(';').next().unwrap_or("").trim().to_string())
+            } else {
+                fallback_contact
+            };
+            let _ = (&resp_http_code, &active_charset);
             let html_lower = html_text.to_lowercase();
 
             if let Some(waf_code) = Self::detect_antibot_protection(&html_lower, "") {
@@ -1120,20 +1553,50 @@ impl HttpFormBot {
             Ok((status_str, resolved_url, contact_opt)) => {
                 tracked_final_url = resolved_url;
                 harvested_contact = contact_opt;
+                if let Some(ref c) = harvested_contact {
+                    if c.contains("cfemail_decoded:") {
+                        tracked_emails = c.replace("cfemail_decoded:", "");
+                    }
+                }
+                tracked_http_status = 200;
+                tracked_trace = format!("OK:{} -> {}", page_url, tracked_final_url);
                 status_str
             }
-            Err(_) => "TIMEOUT_GLOBAL".to_string(),
+            Err(_) => {
+                tracked_http_status = 408;
+                tracked_trace = format!("TIMEOUT_EXCEEDED:{}ms", timeout_ms);
+                "TIMEOUT_GLOBAL".to_string()
+            }
         };
 
-        // Registrar tanto en prospect_logs como en la máquina de estados prospect_pipeline
-        Self::persist_prospect_lifecycle_and_logs(
+        if enforce_dedup {
+            Self::release_domain_lock(&dedup_key);
+        }
+        let elapsed_ms = start_instant.elapsed().as_millis() as u64;
+        if tracked_emails.is_empty() {
+            if let Some(ref c) = harvested_contact {
+                if c.starts_with("mailto:") || c.starts_with("email:") {
+                    tracked_emails = c.split(':').nth(1).unwrap_or("").to_string();
+                } else if c.contains("wa.me") || c.contains("whatsapp") {
+                    tracked_whatsapps = c.clone();
+                }
+            }
+        }
+        Self::persist_detailed_operational_telemetry(
             empresa_nombre,
             page_url,
             &tracked_final_url,
             multa_estimada,
             &final_status,
             chosen_ua,
-            harvested_contact.as_deref(),
+            tracked_http_status,
+            elapsed_ms,
+            &tracked_charset,
+            tracked_retries,
+            &tracked_emails,
+            &tracked_whatsapps,
+            &tracked_socials,
+            &tracked_trace,
         );
 
         final_status
