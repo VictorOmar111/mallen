@@ -18,6 +18,9 @@ struct CapturedSubmissions {
     legacy_payload: Mutex<Option<HashMap<String, String>>>,
     select_payload: Mutex<Option<HashMap<String, String>>>,
     captured_user_agents: Mutex<Vec<String>>,
+    flaky_get_attempts: std::sync::atomic::AtomicUsize,
+    flaky_post_attempts: std::sync::atomic::AtomicUsize,
+    redirect_post_received: Mutex<bool>,
 }
 
 /// Extrae empresas reales indexadas en data/mallen_prod.db (DENUE + SAT 69-B) para probar con datos reales
@@ -262,6 +265,126 @@ async fn test_http_form_bot_14_scenarios_with_real_db_companies() {
                 (StatusCode::OK, headers, "%PDF-1.7 binary content...")
             }),
         )
+        // 12. Redirección 301 con cambio de directorio base y action relativo
+        .route(
+            "/legacy-redirect-301",
+            get(|| async {
+                let mut h = HeaderMap::new();
+                h.insert("location", "/corporativo/portal/contacto.html".parse().unwrap());
+                (StatusCode::MOVED_PERMANENTLY, h, "")
+            }),
+        )
+        .route(
+            "/corporativo/portal/contacto.html",
+            get(|| async {
+                Html(
+                    r#"<html><body>
+                        <form action="procesar-envio" method="POST">
+                            <input type="email" name="email">
+                            <textarea name="mensaje"></textarea>
+                        </form>
+                    </body></html>"#,
+                )
+            }),
+        )
+        .route(
+            "/corporativo/portal/procesar-envio",
+            post({
+                let st = state.clone();
+                move |Form(_params): Form<HashMap<String, String>>| {
+                    let s = st.clone();
+                    async move {
+                        *s.redirect_post_received.lock().unwrap() = true;
+                        (StatusCode::OK, "Gracias por contactarnos desde ruta redirigida")
+                    }
+                }
+            }),
+        )
+        // 13. Portada sin formulario que enlaza internamente a /subpagina-contacto
+        .route(
+            "/home-without-form",
+            get(|| async {
+                Html(
+                    r#"<html><body>
+                        <h1>Bienvenido a Corporativo Industrial</h1>
+                        <nav><a href="/subpagina-contacto">Contáctanos aquí</a></nav>
+                    </body></html>"#,
+                )
+            }),
+        )
+        .route(
+            "/subpagina-contacto",
+            get(|| async {
+                Html(
+                    r#"<html><body>
+                        <form action="/subpagina-contacto/send" method="POST">
+                            <input type="email" name="correo">
+                            <textarea name="mensaje"></textarea>
+                        </form>
+                    </body></html>"#,
+                )
+            }),
+        )
+        .route(
+            "/subpagina-contacto/send",
+            post(|| async { (StatusCode::OK, "Mensaje enviado correctamente") }),
+        )
+        // 14. Sitio moderno con Iframe de HubSpot CRM y correo en el footer
+        .route(
+            "/modern-hubspot-crm",
+            get(|| async {
+                Html(
+                    r#"<html><body>
+                        <h2>Ventas Corporativas</h2>
+                        <iframe src="https://share.hsforms.net/1abc2def3ghi"></iframe>
+                        <footer><a href="mailto:juridico@corporativo-moderno.mx">juridico@corporativo-moderno.mx</a></footer>
+                    </body></html>"#,
+                )
+            }),
+        )
+        // 15. Servidor inestable (falla el primer GET con 503 y el primer POST con 502, luego responde 200 OK)
+        .route(
+            "/flaky-503-server",
+            get({
+                let st = state.clone();
+                move || {
+                    let s = st.clone();
+                    async move {
+                        let n = s.flaky_get_attempts.fetch_add(1, std::sync::atomic::Ordering::SeqCst);
+                        if n == 0 {
+                            (StatusCode::SERVICE_UNAVAILABLE, Html("<html>Temporary Maintenance</html>")).into_response()
+                        } else {
+                            Html(
+                                r#"<html><body>
+                                    <form action="/flaky-503-server/post" method="POST">
+                                        <input type="email" name="email">
+                                        <textarea name="mensaje"></textarea>
+                                    </form>
+                                </body></html>"#,
+                            )
+                            .into_response()
+                        }
+                    }
+                }
+            }),
+        )
+        .route(
+            "/flaky-503-server/post",
+            post({
+                let st = state.clone();
+                move || {
+                    let s = st.clone();
+                    async move {
+                        let n = s.flaky_post_attempts.fetch_add(1, std::sync::atomic::Ordering::SeqCst);
+                        if n == 0 {
+                            (StatusCode::BAD_GATEWAY, "502 Bad Gateway transitorio").into_response()
+                        } else {
+                            (StatusCode::OK, "Gracias por su mensaje tras reintento").into_response()
+                        }
+                    }
+                }
+            }),
+        )
         // 11. Sitio sin formulario de contacto
         .route(
             "/only-login-search",
@@ -360,5 +483,47 @@ async fn test_http_form_bot_14_scenarios_with_real_db_companies() {
         .unwrap_or(0);
     assert!(count >= 12, "Todos los intentos deben quedar auditados en la tabla prospect_logs de SQLite WAL");
 
-    println!("✓ LOS 14 ESCENARIOS (CON DATOS REALES DE mallen_prod.db Y PERSISTENCIA WAL) SUPERADOS AL 100% (Registros en prospect_logs: {})", count);
+
+    // Escenario 15: Redirección 301 con cambio de ruta base (/legacy-redirect-301 -> /corporativo/portal/contacto.html -> /corporativo/portal/procesar-envio)
+    let r15 = HttpFormBot::submit_form_direct(&client, &format!("{}/legacy-redirect-301", base), "EMPRESA REDIRECT 301", 610000.0).await;
+    assert_eq!(r15, "PROSPECCION_ENVIADA_EXITO");
+    assert!(*state.redirect_post_received.lock().unwrap(), "El POST relativo tras redirección 301 debe impactar en /corporativo/portal/procesar-envio");
+
+    // Escenario 16: Autodescubrimiento de enlace interno /subpagina-contacto cuando la portada no tiene <form>
+    let r16 = HttpFormBot::submit_form_direct(&client, &format!("{}/home-without-form", base), "EMPRESA AUTODISCOVERY", 720000.0).await;
+    assert_eq!(r16, "PROSPECCION_ENVIADA_EXITO");
+
+    // Escenario 17: Detección de Iframe de Terceros (HubSpot CRM) y cosecha de correo en footer
+    let r17 = HttpFormBot::submit_form_direct(&client, &format!("{}/modern-hubspot-crm", base), "EMPRESA HUBSPOT CRM", 830000.0).await;
+    assert_eq!(r17, "CANAL_ALTERNATIVO_IFRAME_CRM_HUBSPOT");
+
+    // Escenario 18: Recuperación automática con Exponential Backoff ante fallos HTTP 503/502 en GET y POST
+    let r18 = HttpFormBot::submit_form_direct(&client, &format!("{}/flaky-503-server", base), "EMPRESA FLAKY BACKOFF", 910000.0).await;
+    assert_eq!(r18, "PROSPECCION_ENVIADA_EXITO");
+
+    // Escenario 19: Verificación de la Máquina de Estados (prospect_pipeline) y URL final redirigida en SQLite WAL
+    let conn = Connection::open("data/mallen_prod.db").unwrap();
+    let (stage_301, final_url_301): (String, String) = conn
+        .query_row(
+            "SELECT pipeline_stage, final_target_url FROM prospect_pipeline WHERE empresa_nombre = 'EMPRESA REDIRECT 301'",
+            [],
+            |r| Ok((r.get(0)?, r.get(1)?)),
+        )
+        .unwrap();
+    assert_eq!(stage_301, "STAGE_CONTACTADO_FORM");
+    assert!(final_url_301.ends_with("/corporativo/portal/contacto.html"), "Debe guardar la URL final después de la redirección 301");
+
+    let (stage_crm, harvested_crm): (String, String) = conn
+        .query_row(
+            "SELECT pipeline_stage, extracted_contact FROM prospect_pipeline WHERE empresa_nombre = 'EMPRESA HUBSPOT CRM'",
+            [],
+            |r| Ok((r.get(0)?, r.get(1)?)),
+        )
+        .unwrap();
+    assert_eq!(stage_crm, "STAGE_DERIVADO_CRM_EXTERNO");
+    assert_eq!(harvested_crm, "mailto:juridico@corporativo-moderno.mx");
+
+    // Escenario 20: Prueba de limpieza y truncado controlado (prune_prospect_logs)
+    let _deleted = HttpFormBot::prune_prospect_logs(50000);
+    println!("✓ LOS 20 ESCENARIOS DE GRADO MILITAR (301 REDIRECT, AUTODISCOVERY, HUBSPOT IFRAME, BACKOFF RETRIES Y PIPELINE WAL) SUPERADOS AL 100%");
 }

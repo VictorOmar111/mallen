@@ -378,8 +378,311 @@ impl HttpFormBot {
         res
     }
 
-    /// Método principal retrocompatible (4 argumentos): ejecuta rotación de User-Agent, Rate-Limiting + Jitter,
-    /// evasión de Honeypots, detección de Captchas/Turnstile, verificación semántica y registro WAL en SQLite.
+
+    /// Normaliza un dominio quitando 'www.' y pasándolo a minúsculas para métricas y rate-limiting unificado.
+    pub fn normalize_domain_host(url_or_host: &str) -> String {
+        if let Ok(u) = Url::parse(url_or_host) {
+            if let Some(h) = u.host_str() {
+                return h.trim().to_lowercase().trim_start_matches("www.").to_string();
+            }
+        }
+        url_or_host
+            .trim()
+            .to_lowercase()
+            .trim_start_matches("http://")
+            .trim_start_matches("https://")
+            .split('/')
+            .next()
+            .unwrap_or("localhost")
+            .split(':')
+            .next()
+            .unwrap_or("localhost")
+            .trim_start_matches("www.")
+            .to_string()
+    }
+
+    /// Detecta si la página tiene formularios embebidos de terceros (HubSpot, Typeform, Calendly, Jotform, Bitrix24, Zoho, Tally).
+    pub fn detect_third_party_crm_iframe(html_lower: &str) -> Option<(&'static str, String)> {
+        let crm_signatures: &[(&str, &str)] = &[
+            ("hsforms.net", "CANAL_ALTERNATIVO_IFRAME_CRM_HUBSPOT"),
+            ("hubspot.com", "CANAL_ALTERNATIVO_IFRAME_CRM_HUBSPOT"),
+            ("hs-form-iframe", "CANAL_ALTERNATIVO_IFRAME_CRM_HUBSPOT"),
+            ("typeform.com", "CANAL_ALTERNATIVO_IFRAME_CRM_TYPEFORM"),
+            ("data-tf-widget", "CANAL_ALTERNATIVO_IFRAME_CRM_TYPEFORM"),
+            ("calendly.com", "CANAL_ALTERNATIVO_IFRAME_CRM_CALENDLY"),
+            ("jotform.com", "CANAL_ALTERNATIVO_IFRAME_CRM_JOTFORM"),
+            ("bitrix24.", "CANAL_ALTERNATIVO_IFRAME_CRM_BITRIX24"),
+            ("b24-form", "CANAL_ALTERNATIVO_IFRAME_CRM_BITRIX24"),
+            ("forms.zohopublic.", "CANAL_ALTERNATIVO_IFRAME_CRM_ZOHO"),
+            ("tally.so", "CANAL_ALTERNATIVO_IFRAME_CRM_TALLY"),
+            ("pipedrivewebforms.com", "CANAL_ALTERNATIVO_IFRAME_CRM_PIPEDRIVE"),
+            ("docs.google.com/forms", "CANAL_ALTERNATIVO_IFRAME_CRM_GOOGLE_FORMS"),
+        ];
+
+        let doc = Html::parse_document(html_lower);
+        if let Ok(iframe_sel) = Selector::parse("iframe, div[data-tf-widget], div.calendly-inline-widget, script[src]") {
+            for el in doc.select(&iframe_sel) {
+                let src = el.value().attr("src").or_else(|| el.value().attr("data-url")).unwrap_or("");
+                let elem_html = el.html();
+                for (sig, code_label) in crm_signatures {
+                    if src.contains(sig) || elem_html.contains(sig) {
+                        return Some((*code_label, src.to_string()));
+                    }
+                }
+            }
+        }
+        for (sig, code_label) in crm_signatures {
+            if html_lower.contains(sig) {
+                return Some((*code_label, sig.to_string()));
+            }
+        }
+        None
+    }
+
+    /// Extrae redirección <meta http-equiv="refresh" content="0; url=..."> si existe en portadas legacy.
+    pub fn extract_meta_refresh_url(base_url: &Url, html: &str) -> Option<String> {
+        let doc = Html::parse_document(html);
+        let sel = Selector::parse("meta[http-equiv]").ok()?;
+        for meta in doc.select(&sel) {
+            let eq = meta.value().attr("http-equiv").unwrap_or("").to_lowercase();
+            if eq == "refresh" {
+                let content = meta.value().attr("content").unwrap_or("");
+                if let Some(pos) = content.to_lowercase().find("url=") {
+                    let raw_target = content[pos + 4..].trim().trim_matches('\'').trim_matches('"');
+                    if !raw_target.is_empty() {
+                        if let Ok(joined) = base_url.join(raw_target) {
+                            return Some(joined.to_string());
+                        }
+                    }
+                }
+            }
+        }
+        None
+    }
+
+    /// Si en la portada no hay <form>, busca un enlace interno hacia /contacto, /contactanos o /contact.
+    pub fn discover_internal_contact_link(base_url: &Url, html: &str) -> Option<String> {
+        let doc = Html::parse_document(html);
+        let a_sel = Selector::parse("a[href]").ok()?;
+        let base_host = Self::normalize_domain_host(base_url.as_str());
+
+        for a in doc.select(&a_sel) {
+            let href = a.value().attr("href").unwrap_or("").trim();
+            let text = a.text().collect::<Vec<_>>().join(" ").to_lowercase();
+            let href_lower = href.to_lowercase();
+            if href_lower.starts_with("mailto:") || href_lower.starts_with("tel:") || href_lower.starts_with("javascript:") || href_lower.starts_with('#') {
+                continue;
+            }
+            if href_lower.contains("contact")
+                || href_lower.contains("atencion")
+                || href_lower.contains("cotiza")
+                || text.contains("contacto")
+                || text.contains("contáctanos")
+                || text.contains("contactanos")
+            {
+                if let Ok(joined) = base_url.join(href) {
+                    if Self::normalize_domain_host(joined.as_str()) == base_host && joined.as_str() != base_url.as_str() {
+                        return Some(joined.to_string());
+                    }
+                }
+            }
+        }
+        None
+    }
+
+    /// Cosecha correos corporativos o enlaces de WhatsApp del HTML cuando el formulario falla o tiene Captcha,
+    /// asegurando que el prospecto pase al embudo de correo directo / WhatsApp con un dato accionable.
+    pub fn harvest_fallback_contact_channel(html: &str) -> Option<String> {
+        let doc = Html::parse_document(html);
+        if let Ok(a_sel) = Selector::parse("a[href]") {
+            for a in doc.select(&a_sel) {
+                let href = a.value().attr("href").unwrap_or("").trim();
+                let low = href.to_lowercase();
+                if low.starts_with("mailto:") {
+                    let mail = href[7..].split('?').next().unwrap_or("").trim();
+                    if mail.contains('@') {
+                        return Some(format!("mailto:{}", mail));
+                    }
+                }
+                if low.contains("wa.me/") || low.contains("api.whatsapp.com/send") {
+                    return Some(href.to_string());
+                }
+            }
+        }
+        // Búsqueda rápida de correo corporativo en texto plano
+        for token in html.split(|c: char| c.is_whitespace() || c == '"' || c == '\'' || c == '<' || c == '>' || c == ':') {
+            if token.contains('@') && token.contains('.') && token.len() >= 6 && token.len() <= 64 {
+                let clean = token.trim_matches(|c: char| !c.is_alphanumeric() && c != '@' && c != '.' && c != '-' && c != '_');
+                if clean.contains('@') && !clean.ends_with(".png") && !clean.ends_with(".jpg") && !clean.ends_with(".js") && !clean.contains("sentry") && !clean.contains("wix") {
+                    return Some(format!("email:{}", clean));
+                }
+            }
+        }
+        None
+    }
+
+    /// Máquina de Estados del Ciclo de Vida del Prospecto + Registro de Redirecciones + Poda Automática WAL.
+    pub fn persist_prospect_lifecycle_and_logs(
+        empresa_nombre: &str,
+        input_url: &str,
+        final_target_url: &str,
+        multa_estimada: f64,
+        status_result: &str,
+        user_agent_used: &str,
+        extracted_contact: Option<&str>,
+    ) {
+        let db_path = std::env::var("MALLEN_DB_PATH").unwrap_or_else(|_| "data/mallen_prod.db".to_string());
+        let final_domain = Self::normalize_domain_host(final_target_url);
+        let contact_str = extracted_contact.unwrap_or("");
+
+        // Clasificación determinista de etapa del embudo (Lifecycle Stage) y siguiente acción automática
+        let (pipeline_stage, next_action_channel) = if status_result == "PROSPECCION_ENVIADA_EXITO" {
+            ("STAGE_CONTACTADO_FORM", "FOLLOWUP_MONITOREO_72H")
+        } else if status_result == "CANAL_ALTERNATIVO_MAILTO_DETECTADO" {
+            ("STAGE_COLA_SMTP_DIRECTO", "DISPARAR_EMAIL_PLANTILLA_TYPST")
+        } else if status_result.starts_with("CANAL_ALTERNATIVO_IFRAME_CRM") {
+            ("STAGE_DERIVADO_CRM_EXTERNO", "PROSPECCION_API_O_EMAIL_DIRECTO")
+        } else if status_result.starts_with("PROTECCION_ANTIBOT_") || status_result.starts_with("BLOQUEO_WAF_") {
+            ("STAGE_BLOQUEO_WAF_DERIVADO", "CANAL_ALTERNATIVO_EMAIL_LINKEDIN_WHATSAPP")
+        } else if status_result == "HTTP_POST_TIMEOUT" || status_result == "ERR_HTTP_GET" || status_result == "HTTP_RATE_LIMIT_429" {
+            ("STAGE_REINTENTO_PROGRAMADO", "COLA_BACKOFF_DIFERIDO_6H")
+        } else {
+            ("STAGE_SIN_FORMULARIO_WEB", "BUSQUEDA_OSINT_EMAIL_TELEFONO")
+        };
+
+        if let Ok(conn) = rusqlite::Connection::open(db_path) {
+            let _ = conn.execute_batch(
+                "PRAGMA journal_mode=WAL;
+                 PRAGMA synchronous=NORMAL;
+                 CREATE TABLE IF NOT EXISTS prospect_logs (
+                     id INTEGER PRIMARY KEY AUTOINCREMENT,
+                     empresa_nombre TEXT NOT NULL,
+                     target_url TEXT NOT NULL,
+                     final_target_url TEXT DEFAULT '',
+                     final_domain TEXT DEFAULT '',
+                     multa_estimada_mxn REAL NOT NULL,
+                     resultado_codigo TEXT NOT NULL,
+                     pipeline_stage TEXT DEFAULT '',
+                     next_action_channel TEXT DEFAULT '',
+                     extracted_contact TEXT DEFAULT '',
+                     user_agent TEXT NOT NULL,
+                     created_at_utc TEXT DEFAULT (datetime('now'))
+                 );
+                 CREATE INDEX IF NOT EXISTS idx_prospect_logs_codigo ON prospect_logs(resultado_codigo);
+                 CREATE INDEX IF NOT EXISTS idx_prospect_logs_domain ON prospect_logs(final_domain);
+
+                 CREATE TABLE IF NOT EXISTS prospect_pipeline (
+                     empresa_nombre TEXT PRIMARY KEY,
+                     input_url TEXT NOT NULL,
+                     final_target_url TEXT NOT NULL,
+                     final_domain TEXT NOT NULL,
+                     multa_estimada_mxn REAL NOT NULL,
+                     ultimo_resultado_codigo TEXT NOT NULL,
+                     pipeline_stage TEXT NOT NULL,
+                     next_action_channel TEXT NOT NULL,
+                     extracted_contact TEXT NOT NULL,
+                     attempts_count INTEGER DEFAULT 1,
+                     updated_at_utc TEXT DEFAULT (datetime('now'))
+                 );",
+            );
+
+            // Migración suave por si la tabla prospect_logs ya existía de la corrida anterior sin las columnas nuevas
+            for col_sql in [
+                "ALTER TABLE prospect_logs ADD COLUMN final_target_url TEXT DEFAULT ''",
+                "ALTER TABLE prospect_logs ADD COLUMN final_domain TEXT DEFAULT ''",
+                "ALTER TABLE prospect_logs ADD COLUMN pipeline_stage TEXT DEFAULT ''",
+                "ALTER TABLE prospect_logs ADD COLUMN next_action_channel TEXT DEFAULT ''",
+                "ALTER TABLE prospect_logs ADD COLUMN extracted_contact TEXT DEFAULT ''",
+            ] {
+                let _ = conn.execute(col_sql, []);
+            }
+
+            let _ = conn.execute(
+                "INSERT INTO prospect_logs (
+                    empresa_nombre, target_url, final_target_url, final_domain,
+                    multa_estimada_mxn, resultado_codigo, pipeline_stage,
+                    next_action_channel, extracted_contact, user_agent
+                 ) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10)",
+                rusqlite::params![
+                    empresa_nombre,
+                    input_url,
+                    final_target_url,
+                    final_domain,
+                    multa_estimada,
+                    status_result,
+                    pipeline_stage,
+                    next_action_channel,
+                    contact_str,
+                    user_agent_used
+                ],
+            );
+
+            let _ = conn.execute(
+                "INSERT INTO prospect_pipeline (
+                    empresa_nombre, input_url, final_target_url, final_domain,
+                    multa_estimada_mxn, ultimo_resultado_codigo, pipeline_stage,
+                    next_action_channel, extracted_contact, attempts_count, updated_at_utc
+                 ) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, 1, datetime('now'))
+                 ON CONFLICT(empresa_nombre) DO UPDATE SET
+                    input_url = excluded.input_url,
+                    final_target_url = excluded.final_target_url,
+                    final_domain = excluded.final_domain,
+                    multa_estimada_mxn = excluded.multa_estimada_mxn,
+                    ultimo_resultado_codigo = excluded.ultimo_resultado_codigo,
+                    pipeline_stage = excluded.pipeline_stage,
+                    next_action_channel = excluded.next_action_channel,
+                    extracted_contact = CASE WHEN excluded.extracted_contact != '' THEN excluded.extracted_contact ELSE prospect_pipeline.extracted_contact END,
+                    attempts_count = prospect_pipeline.attempts_count + 1,
+                    updated_at_utc = datetime('now')",
+                rusqlite::params![
+                    empresa_nombre,
+                    input_url,
+                    final_target_url,
+                    final_domain,
+                    multa_estimada,
+                    status_result,
+                    pipeline_stage,
+                    next_action_channel,
+                    contact_str
+                ],
+            );
+
+            // Rutina de mantenimiento periódico y truncado controlado (cada 100 registros o bajo demanda)
+            let count_check = UA_COUNTER.load(Ordering::Relaxed);
+            if count_check % 100 == 0 {
+                let _ = conn.execute(
+                    "DELETE FROM prospect_logs WHERE id NOT IN (
+                        SELECT id FROM prospect_logs ORDER BY id DESC LIMIT 50000
+                    ) OR created_at_utc < datetime('now', '-90 days')",
+                    [],
+                );
+                let _ = conn.execute_batch("PRAGMA wal_checkpoint(PASSIVE);");
+            }
+        }
+    }
+
+    /// Ejecuta limpieza manual de histórico en `prospect_logs` conservando los últimos `max_rows` registros y 90 días.
+    pub fn prune_prospect_logs(max_rows: usize) -> usize {
+        let db_path = std::env::var("MALLEN_DB_PATH").unwrap_or_else(|_| "data/mallen_prod.db".to_string());
+        if let Ok(conn) = rusqlite::Connection::open(db_path) {
+            let deleted = conn
+                .execute(
+                    "DELETE FROM prospect_logs WHERE id NOT IN (
+                        SELECT id FROM prospect_logs ORDER BY id DESC LIMIT ?1
+                    ) OR created_at_utc < datetime('now', '-90 days')",
+                    rusqlite::params![max_rows as i64],
+                )
+                .unwrap_or(0);
+            let _ = conn.execute_batch("PRAGMA wal_checkpoint(PASSIVE);");
+            return deleted;
+        }
+        0
+    }
+
+    /// Método principal retrocompatible (4 argumentos):
+    /// Incluye Backoff Exponencial en GET/POST, resolución de redirecciones 301/302 y Meta-Refresh,
+    /// autodescubrimiento de subpágina `/contacto`, detección de Iframes CRM (HubSpot/Typeform/Calendly),
+    /// cosecha de email/WhatsApp de respaldo y Máquina de Estados en SQLite WAL (`prospect_pipeline`).
     pub async fn submit_form_direct(
         client: &Client,
         page_url: &str,
@@ -391,13 +694,21 @@ impl HttpFormBot {
             Err(_) => return "URL_INVALIDA".to_string(),
         };
 
-        let host_str = parsed_in.host_str().unwrap_or("localhost").to_string();
-        if Self::is_ssrf_forbidden_host(&host_str) {
+        let initial_host = Self::normalize_domain_host(page_url);
+        if Self::is_ssrf_forbidden_host(&initial_host) || Self::is_ssrf_forbidden_host(parsed_in.host_str().unwrap_or("")) {
             return "BLOQUEO_SEGURIDAD_ANTI_SSRF".to_string();
         }
 
-        // Aplicar Rate Limiting por dominio + Jitter antes del GET
-        Self::apply_domain_rate_limit_and_jitter(&host_str).await;
+        // Rate-limiting por dominio normalizado (sin 'www.')
+        Self::apply_domain_rate_limit_and_jitter(&initial_host).await;
+
+        // Si existe MALLEN_PROXY_POOL o cada 50 peticiones, podemos rotar el cliente de transporte
+        let rotated_client_opt = if std::env::var("MALLEN_PROXY_POOL").map(|s| !s.is_empty()).unwrap_or(false) {
+            Self::build_rotating_proxy_client(&[]).ok()
+        } else {
+            None
+        };
+        let active_client = rotated_client_opt.as_ref().unwrap_or(client);
 
         let (rotated_headers, chosen_ua) = Self::next_rotated_headers();
         let encoded_ref = Self::encode_url_ref(empresa_nombre);
@@ -409,57 +720,116 @@ impl HttpFormBot {
             encoded_ref
         );
 
-        let task = timeout(Duration::from_millis(5500), async {
-            let resp = match client
-                .get(page_url)
-                .headers(rotated_headers.clone())
-                .send()
-                .await
-            {
-                Ok(r) => {
-                    if r.status().as_u16() == 403 || r.status().as_u16() == 503 || r.status().as_u16() == 429 {
-                        let srv = r.headers().get("server").and_then(|v| v.to_str().ok()).unwrap_or("").to_lowercase();
-                        if srv.contains("cloudflare") || r.headers().contains_key("cf-mitigated") {
-                            return "BLOQUEO_WAF_CLOUDFLARE_CHALLENGE".to_string();
-                        }
-                        if r.status().as_u16() == 429 {
-                            return "HTTP_RATE_LIMIT_429".to_string();
-                        }
-                    }
-                    if !r.status().is_success() {
-                        return "ERR_HTTP_GET".to_string();
-                    }
-                    // Protección contra enlaces que apuntan a archivos binarios gigantes (.pdf, .zip, imágenes)
-                    let ctype = r
-                        .headers()
-                        .get("content-type")
-                        .and_then(|v| v.to_str().ok())
-                        .unwrap_or("text/html")
-                        .to_lowercase();
-                    if ctype.contains("application/pdf")
-                        || ctype.contains("application/zip")
-                        || ctype.contains("image/")
-                        || ctype.contains("video/")
-                    {
-                        return "CONTENIDO_NO_HTML_IGNORADO".to_string();
-                    }
-                    r
+        let mut tracked_final_url = page_url.to_string();
+        let mut harvested_contact: Option<String> = None;
+
+        let task = timeout(Duration::from_millis(7500), async {
+            // 1. GET inicial con Reintentos Exponenciales + Jitter (supera microcortes o 502/503 transitorios)
+            let mut resp_opt = None;
+            let mut last_get_err = "ERR_HTTP_GET".to_string();
+
+            for attempt in 0..3u32 {
+                if attempt > 0 {
+                    let backoff_ms = 120 * (1 << attempt);
+                    sleep(Duration::from_millis(backoff_ms)).await;
                 }
-                Err(_) => return "ERR_HTTP_GET".to_string(),
+                match active_client.get(page_url).headers(rotated_headers.clone()).send().await {
+                    Ok(r) => {
+                        let code = r.status().as_u16();
+                        if code == 403 || code == 503 {
+                            let srv = r.headers().get("server").and_then(|v| v.to_str().ok()).unwrap_or("").to_lowercase();
+                            if srv.contains("cloudflare") || r.headers().contains_key("cf-mitigated") {
+                                return ("BLOQUEO_WAF_CLOUDFLARE_CHALLENGE".to_string(), r.url().to_string(), None);
+                            }
+                        }
+                        if code == 429 {
+                            return ("HTTP_RATE_LIMIT_429".to_string(), r.url().to_string(), None);
+                        }
+                        // Si es un error 500/502/503/504 de servidor no-Cloudflare, reintentamos con Backoff
+                        if code >= 500 && attempt < 2 {
+                            last_get_err = format!("ERR_HTTP_GET_{}", code);
+                            continue;
+                        }
+                        if !r.status().is_success() {
+                            return ("ERR_HTTP_GET".to_string(), r.url().to_string(), None);
+                        }
+                        let ctype = r
+                            .headers()
+                            .get("content-type")
+                            .and_then(|v| v.to_str().ok())
+                            .unwrap_or("text/html")
+                            .to_lowercase();
+                        if ctype.contains("application/pdf")
+                            || ctype.contains("application/zip")
+                            || ctype.contains("image/")
+                            || ctype.contains("video/")
+                        {
+                            return ("CONTENIDO_NO_HTML_IGNORADO".to_string(), r.url().to_string(), None);
+                        }
+                        resp_opt = Some(r);
+                        break;
+                    }
+                    Err(_) => {
+                        last_get_err = "ERR_HTTP_GET".to_string();
+                    }
+                }
+            }
+
+            let Some(resp) = resp_opt else {
+                return (last_get_err, page_url.to_string(), None);
             };
 
-            let target_url = resp.url().clone();
+            // Actualizar estrictamente target_url después de seguir redirecciones 301/302 (ej. http -> https://www.)
+            let mut current_target_url = resp.url().clone();
+            if Self::is_ssrf_forbidden_host(current_target_url.host_str().unwrap_or("")) {
+                return ("BLOQUEO_SEGURIDAD_ANTI_SSRF".to_string(), current_target_url.to_string(), None);
+            }
+
             let bytes = match resp.bytes().await {
                 Ok(b) => b,
-                Err(_) => return "ERR_READ_BODY".to_string(),
+                Err(_) => return ("ERR_READ_BODY".to_string(), current_target_url.to_string(), None),
             };
-            // Límite de seguridad en RAM: máximo 1.5 MB de HTML
             let slice = if bytes.len() > 1_500_000 { &bytes[..1_500_000] } else { &bytes[..] };
-            let html_text = String::from_utf8_lossy(slice).into_owned();
+            let mut html_text = String::from_utf8_lossy(slice).into_owned();
 
+            // Si la portada tiene una redirección <meta http-equiv="refresh" content="0; url=...">, seguirla
+            if !html_text.to_lowercase().contains("<form") {
+                if let Some(meta_next_url) = Self::extract_meta_refresh_url(&current_target_url, &html_text) {
+                    if let Ok(r2) = active_client.get(&meta_next_url).headers(rotated_headers.clone()).send().await {
+                        if r2.status().is_success() {
+                            current_target_url = r2.url().clone();
+                            if let Ok(b2) = r2.bytes().await {
+                                let s2 = if b2.len() > 1_500_000 { &b2[..1_500_000] } else { &b2[..] };
+                                html_text = String::from_utf8_lossy(s2).into_owned();
+                            }
+                        }
+                    }
+                }
+            }
+
+            // Si en la página inicial no hay ningún <form> de contacto pero sí hay un link a /contacto, navegar a él automáticamente
+            if !html_text.to_lowercase().contains("<textarea") {
+                if let Some(contact_subpage) = Self::discover_internal_contact_link(&current_target_url, &html_text) {
+                    if let Ok(r3) = active_client.get(&contact_subpage).headers(rotated_headers.clone()).send().await {
+                        if r3.status().is_success() {
+                            current_target_url = r3.url().clone();
+                            if let Ok(b3) = r3.bytes().await {
+                                let s3 = if b3.len() > 1_500_000 { &b3[..1_500_000] } else { &b3[..] };
+                                let candidate_html = String::from_utf8_lossy(s3).into_owned();
+                                if candidate_html.to_lowercase().contains("<form") || candidate_html.to_lowercase().contains("<iframe") {
+                                    html_text = candidate_html;
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
+            let fallback_contact = Self::harvest_fallback_contact_channel(&html_text);
             let html_lower = html_text.to_lowercase();
+
             if let Some(waf_code) = Self::detect_antibot_protection(&html_lower, "") {
-                return waf_code.to_string();
+                return (waf_code.to_string(), current_target_url.to_string(), fallback_contact);
             }
 
             let (form_found, special_reason, form_action, form_method_is_get, form_params) = {
@@ -468,7 +838,7 @@ impl HttpFormBot {
                 let field_selector = Selector::parse("input, textarea, select").unwrap();
                 let option_selector = Selector::parse("option").unwrap();
 
-                let mut chosen_action = target_url.to_string();
+                let mut chosen_action = current_target_url.to_string();
                 let mut chosen_params = HashMap::new();
                 let mut found_valid_contact_form = false;
                 let mut detected_special_reason: Option<&'static str> = None;
@@ -496,7 +866,6 @@ impl HttpFormBot {
                         continue;
                     }
 
-                    // Detectar formularios que abren cliente de correo (mailto:) o WhatsApp
                     if act_lower.starts_with("mailto:") {
                         detected_special_reason = Some("CANAL_ALTERNATIVO_MAILTO_DETECTADO");
                         continue;
@@ -537,7 +906,6 @@ impl HttpFormBot {
                         let placeholder = field.value().attr("placeholder").unwrap_or("").to_lowercase();
                         let aria_hidden = field.value().attr("aria-hidden").unwrap_or("").to_lowercase();
 
-                        // 1. Evasión de Honeypots CSS / Off-screen / Aria-hidden / Nombres trampa
                         if style.contains("display:none")
                             || style.contains("visibility:hidden")
                             || style.contains("opacity:0")
@@ -564,7 +932,6 @@ impl HttpFormBot {
                             continue;
                         }
 
-                        // 2. Preservar tokens CSRF ocultos y metadatos de WordPress CF7 / Elementor / Gravity Forms
                         if input_type == "hidden" {
                             if let Some(val) = field.value().attr("value") {
                                 params.insert(name.to_string(), val.to_string());
@@ -572,7 +939,6 @@ impl HttpFormBot {
                             continue;
                         }
 
-                        // 3. Manejo de <select>
                         if tag_name == "select" {
                             for opt in field.select(&option_selector) {
                                 let val = opt.value().attr("value").unwrap_or("").trim();
@@ -584,7 +950,6 @@ impl HttpFormBot {
                             continue;
                         }
 
-                        // 4. Manejo de checkboxes de privacidad / términos
                         if input_type == "checkbox" {
                             if name_lower.contains("priv")
                                 || name_lower.contains("term")
@@ -600,7 +965,6 @@ impl HttpFormBot {
                             continue;
                         }
 
-                        // 5. Mapeo inteligente de campos (incluyendo nombre/apellido separados y confirmación de email)
                         if tag_name == "textarea"
                             || name_lower.contains("message")
                             || name_lower.contains("mensaje")
@@ -665,11 +1029,12 @@ impl HttpFormBot {
                             continue;
                         }
 
+                        // Resolver action estrictamente sobre current_target_url (ya actualizado tras redirecciones 301/302)
                         if !form_action_raw.is_empty()
                             && !form_action_raw.starts_with('#')
                             && !form_action_raw.starts_with("javascript:")
                         {
-                            if let Ok(abs_url) = target_url.join(form_action_raw) {
+                            if let Ok(abs_url) = current_target_url.join(form_action_raw) {
                                 chosen_action = abs_url.to_string();
                             }
                         }
@@ -686,53 +1051,90 @@ impl HttpFormBot {
 
             if !form_found {
                 if let Some(code) = special_reason {
-                    return code.to_string();
+                    return (code.to_string(), current_target_url.to_string(), fallback_contact);
                 }
-                return "SIN_FORMULARIO_CONTACTO".to_string();
+                // Si no hay <form> nativo, verificar si hay un iframe CRM de terceros (HubSpot, Typeform, Calendly, etc.)
+                if let Some((crm_code, crm_src)) = Self::detect_third_party_crm_iframe(&html_lower) {
+                    let contact_meta = fallback_contact.or(Some(crm_src));
+                    return (crm_code.to_string(), current_target_url.to_string(), contact_meta);
+                }
+                return ("SIN_FORMULARIO_CONTACTO".to_string(), current_target_url.to_string(), fallback_contact);
             }
 
             let origin_str = format!(
                 "{}://{}",
-                target_url.scheme(),
-                target_url.host_str().unwrap_or("localhost")
+                current_target_url.scheme(),
+                current_target_url.host_str().unwrap_or("localhost")
             );
 
-            let mut post_headers = rotated_headers;
-            if let Ok(ref_val) = HeaderValue::from_str(target_url.as_str()) {
-                post_headers.insert(REFERER, ref_val);
-            }
-            if let Ok(orig_val) = HeaderValue::from_str(&origin_str) {
-                post_headers.insert(ORIGIN, orig_val);
-            }
-
-            let req_builder = if form_method_is_get {
-                client.get(&form_action).headers(post_headers).query(&form_params)
-            } else {
-                client
-                    .post(&form_action)
-                    .headers(post_headers)
-                    .header("Content-Type", "application/x-www-form-urlencoded; charset=UTF-8")
-                    .form(&form_params)
-            };
-
-            match req_builder.send().await {
-                Ok(res) if res.status().is_success() || res.status().is_redirection() => {
-                    let body_resp = res.text().await.unwrap_or_default();
-                    Self::classify_post_response_semantics(&body_resp).to_string()
+            // 2. POST con Reintentos Exponenciales + Jitter ante fallos transitorios 502/503/504 o microcortes
+            for post_attempt in 0..2u32 {
+                if post_attempt > 0 {
+                    sleep(Duration::from_millis(180 * (1 << post_attempt))).await;
                 }
-                Ok(res) => format!("HTTP_POST_ERR_{}", res.status().as_u16()),
-                Err(_) => "HTTP_POST_TIMEOUT".to_string(),
+
+                let mut post_headers = rotated_headers.clone();
+                if let Ok(ref_val) = HeaderValue::from_str(current_target_url.as_str()) {
+                    post_headers.insert(REFERER, ref_val);
+                }
+                if let Ok(orig_val) = HeaderValue::from_str(&origin_str) {
+                    post_headers.insert(ORIGIN, orig_val);
+                }
+
+                let req_builder = if form_method_is_get {
+                    active_client.get(&form_action).headers(post_headers).query(&form_params)
+                } else {
+                    active_client
+                        .post(&form_action)
+                        .headers(post_headers)
+                        .header("Content-Type", "application/x-www-form-urlencoded; charset=UTF-8")
+                        .form(&form_params)
+                };
+
+                match req_builder.send().await {
+                    Ok(res) if res.status().is_success() || res.status().is_redirection() => {
+                        let body_resp = res.text().await.unwrap_or_default();
+                        let sem = Self::classify_post_response_semantics(&body_resp).to_string();
+                        return (sem, current_target_url.to_string(), fallback_contact);
+                    }
+                    Ok(res) if res.status().as_u16() >= 500 && post_attempt == 0 => {
+                        continue; // Reintentar 1 vez si el servidor destino dio 502/503 temporal en el POST
+                    }
+                    Ok(res) => {
+                        return (format!("HTTP_POST_ERR_{}", res.status().as_u16()), current_target_url.to_string(), fallback_contact);
+                    }
+                    Err(_) if post_attempt == 0 => {
+                        continue;
+                    }
+                    Err(_) => {
+                        return ("HTTP_POST_TIMEOUT".to_string(), current_target_url.to_string(), fallback_contact);
+                    }
+                }
             }
+
+            ("HTTP_POST_TIMEOUT".to_string(), current_target_url.to_string(), fallback_contact)
         })
         .await;
 
         let final_status = match task {
-            Ok(res) => res,
+            Ok((status_str, resolved_url, contact_opt)) => {
+                tracked_final_url = resolved_url;
+                harvested_contact = contact_opt;
+                status_str
+            }
             Err(_) => "TIMEOUT_GLOBAL".to_string(),
         };
 
-        // Guardar automáticamente en la tabla de auditoría prospect_logs en SQLite WAL
-        Self::persist_prospect_log_sync(empresa_nombre, page_url, multa_estimada, &final_status, chosen_ua);
+        // Registrar tanto en prospect_logs como en la máquina de estados prospect_pipeline
+        Self::persist_prospect_lifecycle_and_logs(
+            empresa_nombre,
+            page_url,
+            &tracked_final_url,
+            multa_estimada,
+            &final_status,
+            chosen_ua,
+            harvested_contact.as_deref(),
+        );
 
         final_status
     }
