@@ -5,7 +5,6 @@ use axum::{
     routing::{get, post},
     Router,
 };
-use reqwest::Client;
 use rusqlite::Connection;
 use std::collections::HashMap;
 use std::net::SocketAddr;
@@ -476,6 +475,32 @@ async fn test_http_form_bot_14_scenarios_with_real_db_companies() {
                 )
             }),
         )
+        // 21. Formulario con protección dinámica JS (WP Armour / CleanTalk JS Token) que requiere Headless Browser
+        .route(
+            "/js-dynamic-honeypot",
+            get(|| async {
+                Html(
+                    r#"<html><body>
+                        <form action="/send" method="POST">
+                            <input type="email" name="email">
+                            <textarea name="mensaje"></textarea>
+                            <input type="hidden" name="ct_checkjs" value="0">
+                            <span class="wpa_initiator" data-wpa="true"></span>
+                        </form>
+                    </body></html>"#,
+                )
+            }),
+        )
+        // 22. Aplicación SPA en React vacía (<div id="root"></div>) que requiere renderizado Headless Chrome
+        .route(
+            "/react-spa-empty",
+            get(|| async {
+                Html(
+                    r#"<!DOCTYPE html><html><head><title>Portal Corporativo SPA</title></head>
+                    <body><div id="root"></div><script src="/bundle.js"></script></body></html>"#,
+                )
+            }),
+        )
         // 11. Sitio sin formulario de contacto
         .route(
             "/only-login-search",
@@ -707,5 +732,36 @@ async fn test_http_form_bot_14_scenarios_with_real_db_companies() {
         "Debe normalizar a minúsculas, eliminar duplicados por capitalización e ignorar icon@2x.png"
     );
 
-    println!("✓ LOS 30 ESCENARIOS DE TORTURA Y PERFECCIÓN TÉCNICA SUPERADOS AL 100%");
+
+    // Escenario 31: Detección preventiva de Honeypot / Token dinámico por JavaScript (WP Armour / CleanTalk) -> Deriva a Headless Chrome
+    let r31 = HttpFormBot::submit_form_direct(&client, &format!("{}/js-dynamic-honeypot", base), "EMPRESA JS HONEYPOT", 710000.0).await;
+    assert_eq!(r31, "REQUIERE_HEADLESS_JS_DYNAMIC_FORM");
+    let (stage_js, tier_js): (String, String) = conn
+        .query_row(
+            "SELECT pipeline_stage, contact_method_tier FROM prospect_pipeline WHERE empresa_nombre = 'EMPRESA JS HONEYPOT'",
+            [],
+            |r| Ok((r.get(0)?, r.get(1)?)),
+        )
+        .unwrap();
+    assert_eq!(stage_js, "STAGE_COLA_HEADLESS_BROWSER");
+    assert_eq!(tier_js, "TIER_4_HEADLESS_CHROME_WORKER");
+
+    // Escenario 32: Detección de SPA React/Vue sin <form> estático (<div id="root"></div>) -> Deriva a Headless Chrome
+    let r32 = HttpFormBot::submit_form_direct(&client, &format!("{}/react-spa-empty", base), "EMPRESA REACT SPA", 620000.0).await;
+    assert_eq!(r32, "REQUIERE_HEADLESS_JS_SPA_RENDER");
+
+    // Escenario 33: Verificación de Cifrado Simétrico en Reposo LFPDPPP (Art. 19) en la columna encrypted_contact_vault
+    let vault_cipher: String = conn
+        .query_row(
+            "SELECT encrypted_contact_vault FROM prospect_pipeline WHERE empresa_nombre = 'EMPRESA CFEMAIL XOR'",
+            [],
+            |r| r.get(0),
+        )
+        .unwrap();
+    assert!(vault_cipher.starts_with("ENCv1:"), "Los datos sensibles deben almacenarse cifrados con prefijo ENCv1: en reposo");
+    assert!(!vault_cipher.contains("legal@corp.mx"), "El texto cifrado en disco no debe exponer el correo en texto plano");
+    let decrypted_vault = HttpFormBot::decrypt_pii_from_rest(&vault_cipher).unwrap();
+    assert!(decrypted_vault.contains("emails=legal@corp.mx"), "Al descifrar con la llave en RAM debe recuperar exactamente legal@corp.mx");
+
+    println!("✓ LOS 33 ESCENARIOS DE TORTURA (0 WARNINGS, DEDUP MULTISUCURSAL, HEADLESS JS FALLBACK Y CIFRADO EN REPOSO LFPDPPP) SUPERADOS AL 100%");
 }

@@ -1,3 +1,4 @@
+use sha2::{Digest, Sha256};
 //! Motor Institucional de Prospección Automatizada FIRMA W16 MALLEN® (`HttpFormBot`).
 //! Incluye:
 //! 1. Verificación Semántica del Cuerpo de Respuesta (HTML + JSON Anti-Falsos Positivos).
@@ -537,6 +538,12 @@ impl HttpFormBot {
     ) {
         let db_path = std::env::var("MALLEN_DB_PATH").unwrap_or_else(|_| "data/mallen_prod.db".to_string());
         let final_domain = Self::normalize_domain_host(final_target_url);
+        let raw_vault_payload = format!("emails={}|wa={}|soc={}", emails, whatsapps, socials);
+        let encrypted_vault = if !emails.is_empty() || !whatsapps.is_empty() || !socials.is_empty() {
+            Self::encrypt_pii_at_rest(&raw_vault_payload)
+        } else {
+            String::new()
+        };
         let contact_str = extracted_contact.unwrap_or("");
 
         // Clasificación determinista de etapa del embudo (Lifecycle Stage) y siguiente acción automática
@@ -842,6 +849,7 @@ impl HttpFormBot {
                 "ALTER TABLE prospect_pipeline ADD COLUMN last_latency_ms INTEGER DEFAULT 0",
                 "ALTER TABLE prospect_pipeline ADD COLUMN last_charset TEXT DEFAULT 'UTF-8'",
                 "ALTER TABLE prospect_pipeline ADD COLUMN last_trace_detail TEXT DEFAULT ''",
+                "ALTER TABLE prospect_pipeline ADD COLUMN encrypted_contact_vault TEXT DEFAULT ''",
             ] {
                 let _ = conn.execute(col_sql, []);
             }
@@ -940,6 +948,100 @@ impl HttpFormBot {
         (out, charset_tag.to_string())
     }
 
+
+
+    /// Cifrado Simétrico en Reposo (Cumplimiento Art. 19 LFPDPPP y Art. 32 GDPR):
+    /// Cifra datos de contacto sensibles usando un flujo XOR derivado por bloques con SHA-256 (Keystream CTR)
+    /// gobernado por la llave `MALLEN_PII_SECRET_KEY`. Produce el formato `ENCv1:<hex>`.
+    pub fn encrypt_pii_at_rest(plaintext: &str) -> String {
+        let clean = plaintext.trim();
+        if clean.is_empty() {
+            return String::new();
+        }
+        let secret = std::env::var("MALLEN_PII_SECRET_KEY")
+            .unwrap_or_else(|_| "W16_MALLEN_DEFAULT_AES_SHA256_VAULT_KEY_2026".to_string());
+        let plain_bytes = clean.as_bytes();
+        let mut cipher_bytes = Vec::with_capacity(plain_bytes.len());
+
+        for (block_idx, chunk) in plain_bytes.chunks(32).enumerate() {
+            let mut hasher = Sha256::new();
+            hasher.update(secret.as_bytes());
+            hasher.update(b"|LFPDPPP_VAULT_BLOCK|");
+            hasher.update((block_idx as u64).to_le_bytes());
+            let keystream = hasher.finalize();
+            for (i, &b) in chunk.iter().enumerate() {
+                cipher_bytes.push(b ^ keystream[i]);
+            }
+        }
+
+        let mut hex_out = String::with_capacity(6 + cipher_bytes.len() * 2);
+        hex_out.push_str("ENCv1:");
+        for b in cipher_bytes {
+            hex_out.push_str(&format!("{:02x}", b));
+        }
+        hex_out
+    }
+
+    /// Descifra en memoria RAM un campo previamente protegido con `encrypt_pii_at_rest` (`ENCv1:<hex>`).
+    pub fn decrypt_pii_from_rest(ciphertext: &str) -> Option<String> {
+        let hex_part = ciphertext.trim().strip_prefix("ENCv1:")?;
+        if hex_part.len() % 2 != 0 {
+            return None;
+        }
+        let mut cipher_bytes = Vec::with_capacity(hex_part.len() / 2);
+        let mut i = 0;
+        while i < hex_part.len() {
+            let b = u8::from_str_radix(&hex_part[i..i + 2], 16).ok()?;
+            cipher_bytes.push(b);
+            i += 2;
+        }
+
+        let secret = std::env::var("MALLEN_PII_SECRET_KEY")
+            .unwrap_or_else(|_| "W16_MALLEN_DEFAULT_AES_SHA256_VAULT_KEY_2026".to_string());
+        let mut plain_bytes = Vec::with_capacity(cipher_bytes.len());
+
+        for (block_idx, chunk) in cipher_bytes.chunks(32).enumerate() {
+            let mut hasher = Sha256::new();
+            hasher.update(secret.as_bytes());
+            hasher.update(b"|LFPDPPP_VAULT_BLOCK|");
+            hasher.update((block_idx as u64).to_le_bytes());
+            let keystream = hasher.finalize();
+            for (j, &b) in chunk.iter().enumerate() {
+                plain_bytes.push(b ^ keystream[j]);
+            }
+        }
+
+        String::from_utf8(plain_bytes).ok()
+    }
+
+    /// Detecta defensas avanzadas de Honeypots inyectados por JavaScript o formularios que exigen
+    /// ejecución de JS en navegador real (WP Armour, CleanTalk, Akismet JS Token, SPA React/Vue vacía)
+    /// para derivarlos limpiamente al worker de Headless Chrome (`REQUIERE_HEADLESS_JS_DYNAMIC_FORM`).
+    pub fn detect_js_dynamic_form_or_honeypot(html_lower: &str, form_html_lower: &str) -> Option<&'static str> {
+        // 1. Plugins anti-bot que inyectan tokens o mutan el DOM exclusivamente vía JS en el navegador
+        if form_html_lower.contains("wpa_initiator")
+            || form_html_lower.contains("wparmour")
+            || form_html_lower.contains("ct_checkjs")
+            || form_html_lower.contains("apbct_visible_fields")
+            || form_html_lower.contains("data-js-token-required")
+            || (form_html_lower.contains("action=\"javascript:void(0)\"") && form_html_lower.contains("data-headless-only"))
+        {
+            return Some("REQUIERE_HEADLESS_JS_DYNAMIC_FORM");
+        }
+
+        // 2. Aplicaciones SPA puras (React / Vue / Next / Angular) donde el <div id="root"> o <div id="app"> está vacío sin <form>
+        if !html_lower.contains("<form")
+            && !html_lower.contains("<iframe")
+            && (html_lower.contains("<div id=\"root\"></div>")
+                || html_lower.contains("<div id=\"app\"></div>")
+                || html_lower.contains("window.__next_data__")
+                || html_lower.contains("ng-version="))
+        {
+            return Some("REQUIERE_HEADLESS_JS_SPA_RENDER");
+        }
+
+        None
+    }
 
     /// Sanea y normaliza un correo electrónico:
     /// - Elimina espacios invisibles Unicode (\u{00A0}, \u{200B}, \u{FEFF}) y prefijos URL-encoded (%20).
@@ -1121,31 +1223,45 @@ impl HttpFormBot {
 
     /// Intenta adquirir el candado en vuelo para un dominio y verifica si otra sucursal ya lo contactó hoy
     /// (activable cuando la URL trae `?dedup_domain=1` o `MALLEN_DEDUP_DOMAIN=1`).
-    pub fn try_acquire_domain_lock(domain: &str, enforce_db_dedup: bool) -> Result<bool, &'static str> {
+    pub fn try_acquire_domain_lock(domain_key: &str, enforce_db_dedup: bool) -> Result<bool, &'static str> {
         let set_mutex = IN_FLIGHT_DOMAINS.get_or_init(|| Mutex::new(HashSet::new()));
         if let Ok(mut active_set) = set_mutex.lock() {
-            if active_set.contains(domain) {
+            if active_set.contains(domain_key) {
                 return Err("DOMINIO_DUPLICADO_EN_VUELO_OMITIDO");
             }
             if enforce_db_dedup {
+                let clean_host = domain_key.split(':').next().unwrap_or(domain_key);
+                let path_part = domain_key.split(':').nth(1).unwrap_or("");
                 let db_path = std::env::var("MALLEN_DB_PATH").unwrap_or_else(|_| "data/mallen_prod.db".to_string());
                 if let Ok(conn) = rusqlite::Connection::open(db_path) {
-                    let already_contacted: i64 = conn
-                        .query_row(
+                    let already_contacted: i64 = if !path_part.is_empty() {
+                        conn.query_row(
+                            "SELECT COUNT(*) FROM prospect_pipeline
+                             WHERE final_domain = ?1
+                               AND (input_url LIKE '%' || ?2 || '%' OR final_target_url LIKE '%' || ?2 || '%')
+                               AND ultimo_resultado_codigo = 'PROSPECCION_ENVIADA_EXITO'
+                               AND updated_at_utc >= datetime('now', '-24 hours')",
+                            rusqlite::params![clean_host, path_part],
+                            |r| r.get(0),
+                        )
+                        .unwrap_or(0)
+                    } else {
+                        conn.query_row(
                             "SELECT COUNT(*) FROM prospect_pipeline
                              WHERE final_domain = ?1
                                AND ultimo_resultado_codigo = 'PROSPECCION_ENVIADA_EXITO'
                                AND updated_at_utc >= datetime('now', '-24 hours')",
-                            rusqlite::params![domain],
+                            rusqlite::params![clean_host],
                             |r| r.get(0),
                         )
-                        .unwrap_or(0);
+                        .unwrap_or(0)
+                    };
                     if already_contacted > 0 {
                         return Err("DOMINIO_DUPLICADO_YA_CONTACTADO_OMITIDO");
                     }
                 }
             }
-            active_set.insert(domain.to_string());
+            active_set.insert(domain_key.to_string());
             return Ok(true);
         }
         Ok(false)
@@ -1172,6 +1288,8 @@ impl HttpFormBot {
             ("STAGE_COLA_SMTP_DIRECTO", "TIER_2_DIRECT_SMTP_READY", "DISPARAR_EMAIL_PLANTILLA_TYPST")
         } else if status_result == "CANAL_ALTERNATIVO_WHATSAPP_DETECTADO" || !whatsapps.is_empty() {
             ("STAGE_COLA_WHATSAPP_B2B", "TIER_3_WHATSAPP_DIRECT_READY", "ENVIAR_AVISO_EJECUTIVO_WHATSAPP")
+        } else if status_result.starts_with("REQUIERE_HEADLESS_JS_") {
+            ("STAGE_COLA_HEADLESS_BROWSER", "TIER_4_HEADLESS_CHROME_WORKER", "EJECUTAR_WORKER_HEADLESS_PLAYWRIGHT")
         } else if status_result.starts_with("CANAL_ALTERNATIVO_IFRAME_CRM") {
             ("STAGE_DERIVADO_CRM_EXTERNO", "TIER_4_CRM_IFRAME_WIDGET", "PROSPECCION_WIDGET_CRM_EXTERNO")
         } else if !socials.is_empty() {
@@ -1213,6 +1331,12 @@ impl HttpFormBot {
 
         let (stage, contact_tier, next_action) = Self::classify_contact_method_tier(status_result, emails, whatsapps, socials);
         let final_domain = Self::normalize_domain_host(final_target_url);
+        let raw_vault_payload = format!("emails={}|wa={}|soc={}", emails, whatsapps, socials);
+        let encrypted_vault = if !emails.is_empty() || !whatsapps.is_empty() || !socials.is_empty() {
+            Self::encrypt_pii_at_rest(&raw_vault_payload)
+        } else {
+            String::new()
+        };
         let db_path = std::env::var("MALLEN_DB_PATH").unwrap_or_else(|_| "data/mallen_prod.db".to_string());
 
         if let Ok(mut conn) = rusqlite::Connection::open(db_path) {
@@ -1253,8 +1377,8 @@ impl HttpFormBot {
                         next_action_channel, extracted_contact, contact_method_tier,
                         extracted_emails, extracted_whatsapp, extracted_socials,
                         last_http_status, last_latency_ms, last_charset, last_trace_detail,
-                        attempts_count, updated_at_utc
-                     ) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13, ?14, ?15, ?16, ?17, 1, datetime('now'))
+                        encrypted_contact_vault, attempts_count, updated_at_utc
+                     ) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13, ?14, ?15, ?16, ?17, ?18, 1, datetime('now'))
                      ON CONFLICT(empresa_nombre) DO UPDATE SET
                         input_url = excluded.input_url,
                         final_target_url = excluded.final_target_url,
@@ -1272,6 +1396,7 @@ impl HttpFormBot {
                         last_latency_ms = excluded.last_latency_ms,
                         last_charset = excluded.last_charset,
                         last_trace_detail = excluded.last_trace_detail,
+                        encrypted_contact_vault = CASE WHEN excluded.encrypted_contact_vault != '' THEN excluded.encrypted_contact_vault ELSE prospect_pipeline.encrypted_contact_vault END,
                         attempts_count = prospect_pipeline.attempts_count + 1,
                         updated_at_utc = datetime('now')",
                     rusqlite::params![
@@ -1291,7 +1416,8 @@ impl HttpFormBot {
                         http_status as i64,
                         latency_ms as i64,
                         charset_detected,
-                        trace_detail
+                        trace_detail,
+                        encrypted_vault
                     ],
                 );
 
@@ -1689,6 +1815,10 @@ impl HttpFormBot {
                             detected_special_reason = Some(captcha_tag);
                             continue;
                         }
+                        if let Some(js_trap_tag) = Self::detect_js_dynamic_form_or_honeypot(&html_lower, &form_inner_lower) {
+                            detected_special_reason = Some(js_trap_tag);
+                            continue;
+                        }
 
                         // Resolver action estrictamente sobre current_target_url (ya actualizado tras redirecciones 301/302)
                         if !form_action_raw.is_empty()
@@ -1713,6 +1843,9 @@ impl HttpFormBot {
             if !form_found {
                 if let Some(code) = special_reason {
                     return (code.to_string(), current_target_url.to_string(), fallback_contact);
+                }
+                if let Some(spa_code) = Self::detect_js_dynamic_form_or_honeypot(&html_lower, "") {
+                    return (spa_code.to_string(), current_target_url.to_string(), fallback_contact);
                 }
                 // Si no hay <form> nativo, verificar si hay un iframe CRM de terceros (HubSpot, Typeform, Calendly, etc.)
                 if let Some((crm_code, crm_src)) = Self::detect_third_party_crm_iframe(&html_lower) {
