@@ -9,6 +9,7 @@
 
 use reqwest::{
     header::{HeaderMap, HeaderValue, ACCEPT, ACCEPT_LANGUAGE, ORIGIN, REFERER, USER_AGENT},
+    redirect::Policy,
     Client, Proxy,
 };
 use scraper::{Html, Selector};
@@ -60,6 +61,7 @@ static UA_COUNTER: AtomicUsize = AtomicUsize::new(0);
 static PROXY_COUNTER: AtomicUsize = AtomicUsize::new(0);
 static DOMAIN_COOLDOWN_MAP: OnceLock<Mutex<HashMap<String, Instant>>> = OnceLock::new();
 static IN_FLIGHT_DOMAINS: OnceLock<Mutex<HashSet<String>>> = OnceLock::new();
+static DB_SCHEMA_INITIALIZED: OnceLock<bool> = OnceLock::new();
 
 pub struct HttpFormBot;
 
@@ -97,6 +99,7 @@ impl HttpFormBot {
         let (default_headers, _) = Self::next_rotated_headers();
         let mut builder = Client::builder()
             .timeout(Duration::from_millis(4500))
+            .redirect(Policy::limited(5))
             .pool_max_idle_per_host(32)
             .danger_accept_invalid_certs(true)
             .default_headers(default_headers);
@@ -681,6 +684,171 @@ impl HttpFormBot {
     }
 
 
+
+    /// Construye un cliente HTTP rápido con protección estricta contra bucles de redirección (máximo 5 saltos).
+    pub fn build_bounded_http_client() -> Result<Client, Box<dyn std::error::Error>> {
+        Self::build_rotating_proxy_client(&[])
+    }
+
+    /// Normaliza y sanea cualquier enlace o número de WhatsApp cosechado (wa.me/, api.whatsapp.com, tel:)
+    /// al estándar internacional E.164 (+52XXXXXXXXXX para México o +CC para Europa/LATAM).
+    pub fn normalize_whatsapp_e164(raw: &str) -> Option<String> {
+        let low = raw.trim().to_lowercase();
+        let phone_ candidate = if let Some(idx) = low.find("phone=") {
+            let after = &raw[idx + 6..];
+            after.split('&').next().unwrap_or(after)
+        } else if let Some(idx) = low.find("wa.me/") {
+            let after = &raw[idx + 6..];
+            after.split('?').next().unwrap_or(after).split('/').next().unwrap_or(after)
+        } else {
+            raw
+        };
+
+        let digits: String = phone_candidate.chars().filter(|c| c.is_ascii_digit()).collect();
+        if digits.len() < 10 || digits.len() > 15 {
+            return None;
+        }
+        // Descartar secuencias falsas como 0000000000 o 1234567890
+        if digits.chars().all(|c| c == '0') || digits == "1234567890" || digits.ends_with("0000000") {
+            return None;
+        }
+
+        // Reglas de normalización para México (+52)
+        let normalized = if digits.len() == 10 {
+            format!("+52{}", digits)
+        } else if digits.len() == 12 && digits.starts_with("52") {
+            format!("+{}", digits)
+        } else if digits.len() == 13 && digits.starts_with("521") {
+            // El prefijo móvil antiguo 521 en México se normaliza a +52 + 10 dígitos
+            format!("+52{}", &digits[3..])
+        } else if digits.len() == 13 && (digits.starts_with("044") || digits.starts_with("045")) {
+            format!("+52{}", &digits[3..])
+        } else if digits.len() == 12 && digits.starts_with("01") {
+            format!("+52{}", &digits[2..])
+        } else {
+            format!("+{}", digits)
+        };
+
+        Some(normalized)
+    }
+
+    /// Optimización de almacenamiento en disco SQLite WAL para escala de 5M de registros:
+    /// Ejecuta incremental_vacuum, trunca el archivo .db-wal cuando no hay lectores activos y actualiza estadísticas del query planner.
+    pub fn optimize_sqlite_storage_non_blocking(max_log_rows: usize) -> Result<(usize, i64), String> {
+        let db_path = std::env::var("MALLEN_DB_PATH").unwrap_or_else(|_| "data/mallen_prod.db".to_string());
+        let conn = rusqlite::Connection::open(&db_path).map_err(|e| e.to_string())?;
+
+        conn.execute_batch(
+            "PRAGMA journal_mode=WAL;
+             PRAGMA synchronous=NORMAL;
+             PRAGMA temp_store=MEMORY;
+             PRAGMA auto_vacuum=INCREMENTAL;",
+        )
+        .map_err(|e| e.to_string())?;
+
+        let deleted = conn
+            .execute(
+                "DELETE FROM prospect_logs WHERE id NOT IN (
+                    SELECT id FROM prospect_logs ORDER BY id DESC LIMIT ?1
+                ) OR created_at_utc < datetime('now', '-90 days')",
+                rusqlite::params![max_log_rows as i64],
+            )
+            .unwrap_or(0);
+
+        let _ = conn.execute_batch(
+            "PRAGMA incremental_vacuum(2000);
+             PRAGMA optimize;
+             PRAGMA wal_checkpoint(TRUNCATE);",
+        );
+
+        let page_count: i64 = conn.query_row("PRAGMA page_count;", [], |r| r.get(0)).unwrap_or(0);
+        let page_size: i64 = conn.query_row("PRAGMA page_size;", [], |r| r.get(0)).unwrap_or(4096);
+        Ok((deleted, page_count * page_size))
+    }
+
+    /// Inicializa y migra el esquema de SQLite WAL una sola vez por proceso (evita DDL repetitivo en cada petición).
+    fn ensure_db_schema_once(conn: &rusqlite::Connection) {
+        DB_SCHEMA_INITIALIZED.get_or_init(|| {
+            let _ = conn.execute_batch(
+                "PRAGMA journal_mode=WAL;
+                 PRAGMA synchronous=NORMAL;
+                 PRAGMA temp_store=MEMORY;
+                 PRAGMA cache_size=-32000;
+                 CREATE TABLE IF NOT EXISTS prospect_logs (
+                     id INTEGER PRIMARY KEY AUTOINCREMENT,
+                     empresa_nombre TEXT NOT NULL,
+                     target_url TEXT NOT NULL,
+                     final_target_url TEXT DEFAULT '',
+                     final_domain TEXT DEFAULT '',
+                     multa_estimada_mxn REAL NOT NULL,
+                     resultado_codigo TEXT NOT NULL,
+                     pipeline_stage TEXT DEFAULT '',
+                     next_action_channel TEXT DEFAULT '',
+                     extracted_contact TEXT DEFAULT '',
+                     user_agent TEXT NOT NULL,
+                     http_status INTEGER DEFAULT 0,
+                     latency_ms INTEGER DEFAULT 0,
+                     charset_detected TEXT DEFAULT 'UTF-8',
+                     retry_count INTEGER DEFAULT 0,
+                     contact_method_tier TEXT DEFAULT '',
+                     trace_detail TEXT DEFAULT '',
+                     created_at_utc TEXT DEFAULT (datetime('now'))
+                 );
+                 CREATE INDEX IF NOT EXISTS idx_prospect_logs_codigo ON prospect_logs(resultado_codigo);
+                 CREATE INDEX IF NOT EXISTS idx_prospect_logs_domain ON prospect_logs(final_domain);
+                 CREATE INDEX IF NOT EXISTS idx_prospect_logs_tier ON prospect_logs(contact_method_tier);
+
+                 CREATE TABLE IF NOT EXISTS prospect_pipeline (
+                     empresa_nombre TEXT PRIMARY KEY,
+                     input_url TEXT NOT NULL,
+                     final_target_url TEXT NOT NULL,
+                     final_domain TEXT NOT NULL,
+                     multa_estimada_mxn REAL NOT NULL,
+                     ultimo_resultado_codigo TEXT NOT NULL,
+                     pipeline_stage TEXT NOT NULL,
+                     next_action_channel TEXT NOT NULL,
+                     extracted_contact TEXT NOT NULL,
+                     contact_method_tier TEXT DEFAULT '',
+                     extracted_emails TEXT DEFAULT '',
+                     extracted_whatsapp TEXT DEFAULT '',
+                     extracted_socials TEXT DEFAULT '',
+                     last_http_status INTEGER DEFAULT 0,
+                     last_latency_ms INTEGER DEFAULT 0,
+                     last_charset TEXT DEFAULT 'UTF-8',
+                     last_trace_detail TEXT DEFAULT '',
+                     attempts_count INTEGER DEFAULT 1,
+                     updated_at_utc TEXT DEFAULT (datetime('now'))
+                 );
+                 CREATE INDEX IF NOT EXISTS idx_pipeline_tier_multa ON prospect_pipeline(contact_method_tier, multa_estimada_mxn DESC);",
+            );
+
+            for col_sql in [
+                "ALTER TABLE prospect_logs ADD COLUMN final_target_url TEXT DEFAULT ''",
+                "ALTER TABLE prospect_logs ADD COLUMN final_domain TEXT DEFAULT ''",
+                "ALTER TABLE prospect_logs ADD COLUMN pipeline_stage TEXT DEFAULT ''",
+                "ALTER TABLE prospect_logs ADD COLUMN next_action_channel TEXT DEFAULT ''",
+                "ALTER TABLE prospect_logs ADD COLUMN extracted_contact TEXT DEFAULT ''",
+                "ALTER TABLE prospect_logs ADD COLUMN http_status INTEGER DEFAULT 0",
+                "ALTER TABLE prospect_logs ADD COLUMN latency_ms INTEGER DEFAULT 0",
+                "ALTER TABLE prospect_logs ADD COLUMN charset_detected TEXT DEFAULT 'UTF-8'",
+                "ALTER TABLE prospect_logs ADD COLUMN retry_count INTEGER DEFAULT 0",
+                "ALTER TABLE prospect_logs ADD COLUMN contact_method_tier TEXT DEFAULT ''",
+                "ALTER TABLE prospect_logs ADD COLUMN trace_detail TEXT DEFAULT ''",
+                "ALTER TABLE prospect_pipeline ADD COLUMN contact_method_tier TEXT DEFAULT ''",
+                "ALTER TABLE prospect_pipeline ADD COLUMN extracted_emails TEXT DEFAULT ''",
+                "ALTER TABLE prospect_pipeline ADD COLUMN extracted_whatsapp TEXT DEFAULT ''",
+                "ALTER TABLE prospect_pipeline ADD COLUMN extracted_socials TEXT DEFAULT ''",
+                "ALTER TABLE prospect_pipeline ADD COLUMN last_http_status INTEGER DEFAULT 0",
+                "ALTER TABLE prospect_pipeline ADD COLUMN last_latency_ms INTEGER DEFAULT 0",
+                "ALTER TABLE prospect_pipeline ADD COLUMN last_charset TEXT DEFAULT 'UTF-8'",
+                "ALTER TABLE prospect_pipeline ADD COLUMN last_trace_detail TEXT DEFAULT ''",
+            ] {
+                let _ = conn.execute(col_sql, []);
+            }
+            true
+        });
+    }
+
     /// Lee el timeout global configurable por variable de entorno `MALLEN_TIMEOUT_MS` (por defecto 7500 ms).
     pub fn configured_timeout_ms() -> u64 {
         std::env::var("MALLEN_TIMEOUT_MS")
@@ -835,8 +1003,10 @@ impl HttpFormBot {
                         }
                     }
                 } else if low.contains("wa.me/") || low.contains("api.whatsapp.com") || low.starts_with("whatsapp:") {
-                    if !whatsapps.contains(&href.to_string()) {
-                        whatsapps.push(href.to_string());
+                    if let Some(clean_wa) = Self::normalize_whatsapp_e164(href) {
+                        if !whatsapps.contains(&clean_wa) {
+                            whatsapps.push(clean_wa);
+                        }
                     }
                 } else if low.contains("linkedin.com/company/")
                     || low.contains("linkedin.com/in/")
@@ -865,7 +1035,7 @@ impl HttpFormBot {
                     && !clean.ends_with(".css")
                     && !clean.contains("sentry")
                     && !clean.contains("wixpress")
-                    && !clean.contains("example.")
+                    && !clean.contains("example.") && !clean.starts_with("no-reply@") && !clean.starts_with("noreply@") && !clean.starts_with("donotreply@")
                     && !emails.contains(&clean)
                 {
                     emails.push(clean);
@@ -985,92 +1155,96 @@ impl HttpFormBot {
             String::new()
         };
 
-        // 1. Llamar al persistidor base para mantener 100% la estructura previa
-        Self::persist_prospect_lifecycle_and_logs(
-            empresa_nombre,
-            input_url,
-            final_target_url,
-            multa_estimada,
-            status_result,
-            user_agent_used,
-            if primary_contact.is_empty() { None } else { Some(primary_contact.as_str()) },
-        );
-
-        // 2. Enriquecer con las columnas de telemetría profunda y segmentación por Tier
         let (stage, contact_tier, next_action) = Self::classify_contact_method_tier(status_result, emails, whatsapps, socials);
+        let final_domain = Self::normalize_domain_host(final_target_url);
         let db_path = std::env::var("MALLEN_DB_PATH").unwrap_or_else(|_| "data/mallen_prod.db".to_string());
 
-        if let Ok(conn) = rusqlite::Connection::open(db_path) {
-            for col_sql in [
-                "ALTER TABLE prospect_logs ADD COLUMN http_status INTEGER DEFAULT 0",
-                "ALTER TABLE prospect_logs ADD COLUMN latency_ms INTEGER DEFAULT 0",
-                "ALTER TABLE prospect_logs ADD COLUMN charset_detected TEXT DEFAULT 'UTF-8'",
-                "ALTER TABLE prospect_logs ADD COLUMN retry_count INTEGER DEFAULT 0",
-                "ALTER TABLE prospect_logs ADD COLUMN contact_method_tier TEXT DEFAULT ''",
-                "ALTER TABLE prospect_logs ADD COLUMN trace_detail TEXT DEFAULT ''",
-                "ALTER TABLE prospect_pipeline ADD COLUMN contact_method_tier TEXT DEFAULT ''",
-                "ALTER TABLE prospect_pipeline ADD COLUMN extracted_emails TEXT DEFAULT ''",
-                "ALTER TABLE prospect_pipeline ADD COLUMN extracted_whatsapp TEXT DEFAULT ''",
-                "ALTER TABLE prospect_pipeline ADD COLUMN extracted_socials TEXT DEFAULT ''",
-                "ALTER TABLE prospect_pipeline ADD COLUMN last_http_status INTEGER DEFAULT 0",
-                "ALTER TABLE prospect_pipeline ADD COLUMN last_latency_ms INTEGER DEFAULT 0",
-                "ALTER TABLE prospect_pipeline ADD COLUMN last_charset TEXT DEFAULT 'UTF-8'",
-                "ALTER TABLE prospect_pipeline ADD COLUMN last_trace_detail TEXT DEFAULT ''",
-            ] {
-                let _ = conn.execute(col_sql, []);
+        if let Ok(mut conn) = rusqlite::Connection::open(db_path) {
+            Self::ensure_db_schema_once(&conn);
+            if let Ok(tx) = conn.transaction() {
+                let _ = tx.execute(
+                    "INSERT INTO prospect_logs (
+                        empresa_nombre, target_url, final_target_url, final_domain,
+                        multa_estimada_mxn, resultado_codigo, pipeline_stage,
+                        next_action_channel, extracted_contact, user_agent,
+                        http_status, latency_ms, charset_detected, retry_count,
+                        contact_method_tier, trace_detail
+                     ) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13, ?14, ?15, ?16)",
+                    rusqlite::params![
+                        empresa_nombre,
+                        input_url,
+                        final_target_url,
+                        final_domain,
+                        multa_estimada,
+                        status_result,
+                        stage,
+                        next_action,
+                        primary_contact,
+                        user_agent_used,
+                        http_status as i64,
+                        latency_ms as i64,
+                        charset_detected,
+                        retry_count as i64,
+                        contact_tier,
+                        trace_detail
+                    ],
+                );
+
+                let _ = tx.execute(
+                    "INSERT INTO prospect_pipeline (
+                        empresa_nombre, input_url, final_target_url, final_domain,
+                        multa_estimada_mxn, ultimo_resultado_codigo, pipeline_stage,
+                        next_action_channel, extracted_contact, contact_method_tier,
+                        extracted_emails, extracted_whatsapp, extracted_socials,
+                        last_http_status, last_latency_ms, last_charset, last_trace_detail,
+                        attempts_count, updated_at_utc
+                     ) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13, ?14, ?15, ?16, ?17, 1, datetime('now'))
+                     ON CONFLICT(empresa_nombre) DO UPDATE SET
+                        input_url = excluded.input_url,
+                        final_target_url = excluded.final_target_url,
+                        final_domain = excluded.final_domain,
+                        multa_estimada_mxn = excluded.multa_estimada_mxn,
+                        ultimo_resultado_codigo = excluded.ultimo_resultado_codigo,
+                        pipeline_stage = excluded.pipeline_stage,
+                        next_action_channel = excluded.next_action_channel,
+                        extracted_contact = CASE WHEN excluded.extracted_contact != '' THEN excluded.extracted_contact ELSE prospect_pipeline.extracted_contact END,
+                        contact_method_tier = excluded.contact_method_tier,
+                        extracted_emails = CASE WHEN excluded.extracted_emails != '' THEN excluded.extracted_emails ELSE prospect_pipeline.extracted_emails END,
+                        extracted_whatsapp = CASE WHEN excluded.extracted_whatsapp != '' THEN excluded.extracted_whatsapp ELSE prospect_pipeline.extracted_whatsapp END,
+                        extracted_socials = CASE WHEN excluded.extracted_socials != '' THEN excluded.extracted_socials ELSE prospect_pipeline.extracted_socials END,
+                        last_http_status = excluded.last_http_status,
+                        last_latency_ms = excluded.last_latency_ms,
+                        last_charset = excluded.last_charset,
+                        last_trace_detail = excluded.last_trace_detail,
+                        attempts_count = prospect_pipeline.attempts_count + 1,
+                        updated_at_utc = datetime('now')",
+                    rusqlite::params![
+                        empresa_nombre,
+                        input_url,
+                        final_target_url,
+                        final_domain,
+                        multa_estimada,
+                        status_result,
+                        stage,
+                        next_action,
+                        primary_contact,
+                        contact_tier,
+                        emails,
+                        whatsapps,
+                        socials,
+                        http_status as i64,
+                        latency_ms as i64,
+                        charset_detected,
+                        trace_detail
+                    ],
+                );
+
+                let _ = tx.commit();
             }
 
-            let _ = conn.execute(
-                "UPDATE prospect_logs
-                 SET http_status = ?1,
-                     latency_ms = ?2,
-                     charset_detected = ?3,
-                     retry_count = ?4,
-                     pipeline_stage = ?5,
-                     next_action_channel = ?6,
-                     contact_method_tier = ?7,
-                     trace_detail = ?8
-                 WHERE id = (SELECT MAX(id) FROM prospect_logs WHERE empresa_nombre = ?9)",
-                rusqlite::params![
-                    http_status as i64,
-                    latency_ms as i64,
-                    charset_detected,
-                    retry_count as i64,
-                    stage,
-                    next_action,
-                    contact_tier,
-                    trace_detail,
-                    empresa_nombre
-                ],
-            );
-
-            let _ = conn.execute(
-                "UPDATE prospect_pipeline
-                 SET pipeline_stage = ?1,
-                     next_action_channel = ?2,
-                     contact_method_tier = ?3,
-                     extracted_emails = CASE WHEN ?4 != '' THEN ?4 ELSE extracted_emails END,
-                     extracted_whatsapp = CASE WHEN ?5 != '' THEN ?5 ELSE extracted_whatsapp END,
-                     extracted_socials = CASE WHEN ?6 != '' THEN ?6 ELSE extracted_socials END,
-                     last_http_status = ?7,
-                     last_latency_ms = ?8,
-                     last_charset = ?9,
-                     last_trace_detail = ?10
-                 WHERE empresa_nombre = ?11",
-                rusqlite::params![
-                    stage,
-                    next_action,
-                    contact_tier,
-                    emails,
-                    whatsapps,
-                    socials,
-                    http_status as i64,
-                    latency_ms as i64,
-                    charset_detected,
-                    trace_detail,
-                    empresa_nombre
-                ],
-            );
+            if UA_COUNTER.load(Ordering::Relaxed) % 250 == 0 {
+                let _ = Self::optimize_sqlite_storage_non_blocking(50_000);
+            }
         }
     }
 
@@ -1134,13 +1308,13 @@ impl HttpFormBot {
                 return dup_code.to_string();
             }
         }
-        let mut tracked_http_status: u16 = 0;
-        let mut tracked_charset = String::from("UTF-8");
-        let mut tracked_retries: u32 = 0;
+        let tracked_http_status: u16;
+        let tracked_charset = String::from("UTF-8");
+        let tracked_retries: u32 = 0;
         let mut tracked_emails = String::new();
         let mut tracked_whatsapps = String::new();
-        let mut tracked_socials = String::new();
-        let mut tracked_trace = String::from("INIT");
+        let tracked_socials = String::new();
+        let tracked_trace: String;
         let timeout_ms = Self::configured_timeout_ms();
         let task = timeout(Duration::from_millis(timeout_ms), async {
             // 1. GET inicial con Reintentos Exponenciales + Jitter (supera microcortes o 502/503 transitorios)
@@ -1188,7 +1362,10 @@ impl HttpFormBot {
                         resp_opt = Some(r);
                         break;
                     }
-                    Err(_) => {
+                    Err(e) => {
+                        if e.is_redirect() {
+                            return ("ERR_REDIRECT_LOOP_DETECTADO".to_string(), page_url.to_string(), None);
+                        }
                         last_get_err = "ERR_HTTP_GET".to_string();
                     }
                 }
@@ -1211,8 +1388,7 @@ impl HttpFormBot {
                 Err(_) => return ("ERR_READ_BODY".to_string(), current_target_url.to_string(), None),
             };
             let slice = if bytes.len() > 1_500_000 { &bytes[..1_500_000] } else { &bytes[..] };
-            let (mut html_text, detected_cs) = Self::decode_response_bytes_smart(&ctype_saved, slice);
-            let mut active_charset = detected_cs;
+            let (mut html_text, active_charset) = Self::decode_response_bytes_smart(&ctype_saved, slice);
 
             // Si la portada tiene una redirección <meta http-equiv="refresh" content="0; url=...">, seguirla
             if !html_text.to_lowercase().contains("<form") {
@@ -1249,12 +1425,8 @@ impl HttpFormBot {
 
             let fallback_contact = Self::harvest_fallback_contact_channel(&html_text);
             let (h_emails, h_wa, h_soc) = Self::harvest_multichannel_contacts(&html_text);
-            let fallback_contact = if !h_emails.is_empty() {
-                Some(format!("mailto:{}", h_emails.split(';').next().unwrap_or("").trim()))
-            } else if !h_wa.is_empty() {
-                Some(h_wa.split(';').next().unwrap_or("").trim().to_string())
-            } else if !h_soc.is_empty() {
-                Some(h_soc.split(';').next().unwrap_or("").trim().to_string())
+            let fallback_contact = if !h_emails.is_empty() || !h_wa.is_empty() || !h_soc.is_empty() {
+                Some(format!("MULTI|{}|{}|{}", h_emails, h_wa, h_soc))
             } else {
                 fallback_contact
             };
@@ -1573,13 +1745,19 @@ impl HttpFormBot {
             Self::release_domain_lock(&dedup_key);
         }
         let elapsed_ms = start_instant.elapsed().as_millis() as u64;
-        if tracked_emails.is_empty() {
-            if let Some(ref c) = harvested_contact {
-                if c.starts_with("mailto:") || c.starts_with("email:") {
-                    tracked_emails = c.split(':').nth(1).unwrap_or("").to_string();
-                } else if c.contains("wa.me") || c.contains("whatsapp") {
-                    tracked_whatsapps = c.clone();
+        let mut final_socials = tracked_socials;
+        if let Some(ref c) = harvested_contact {
+            if let Some(rest) = c.strip_prefix("MULTI|") {
+                let parts: Vec<&str> = rest.splitn(3, '|').collect();
+                if parts.len() == 3 {
+                    tracked_emails = parts[0].to_string();
+                    tracked_whatsapps = parts[1].to_string();
+                    final_socials = parts[2].to_string();
                 }
+            } else if c.starts_with("mailto:") || c.starts_with("email:") {
+                tracked_emails = c.split(':').nth(1).unwrap_or("").to_string();
+            } else if c.contains("wa.me") || c.contains("whatsapp") || c.starts_with('+') {
+                tracked_whatsapps = c.clone();
             }
         }
         Self::persist_detailed_operational_telemetry(
@@ -1595,7 +1773,7 @@ impl HttpFormBot {
             tracked_retries,
             &tracked_emails,
             &tracked_whatsapps,
-            &tracked_socials,
+            &final_socials,
             &tracked_trace,
         );
 

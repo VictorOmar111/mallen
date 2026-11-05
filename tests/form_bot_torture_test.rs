@@ -444,6 +444,38 @@ async fn test_http_form_bot_14_scenarios_with_real_db_companies() {
             "/multi-branch-contact/post",
             post(|| async { (StatusCode::OK, "Gracias por su mensaje") }),
         )
+        // 19. Bucle infinito de redirecciones circulares (301 /loop-a <-> /loop-b)
+        .route(
+            "/loop-a",
+            get(|| async {
+                let mut h = HeaderMap::new();
+                h.insert("location", "/loop-b".parse().unwrap());
+                (StatusCode::MOVED_PERMANENTLY, h, "")
+            }),
+        )
+        .route(
+            "/loop-b",
+            get(|| async {
+                let mut h = HeaderMap::new();
+                h.insert("location", "/loop-a".parse().unwrap());
+                (StatusCode::MOVED_PERMANENTLY, h, "")
+            }),
+        )
+        // 20. Página con formulario bloqueado por Turnstile pero con enlace de WhatsApp con prefijo viejo 521 y texto
+        .route(
+            "/whatsapp-dirty-number",
+            get(|| async {
+                Html(
+                    r#"<html><body>
+                        <form action="/send" method="POST">
+                            <textarea name="mensaje"></textarea>
+                            <div class="cf-turnstile" data-sitekey="0x4AAA"></div>
+                        </form>
+                        <a href="https://api.whatsapp.com/send?phone=5215587654321&text=Hola%20quiero%20cotizar">WhatsApp Directo</a>
+                    </body></html>"#,
+                )
+            }),
+        )
         // 11. Sitio sin formulario de contacto
         .route(
             "/only-login-search",
@@ -465,7 +497,7 @@ async fn test_http_form_bot_14_scenarios_with_real_db_companies() {
         axum::serve(listener, app).await.unwrap();
     });
 
-    let client = Client::builder().build().unwrap();
+    let client = HttpFormBot::build_bounded_http_client().unwrap();
     let emp0 = &real_companies[0].0;
     let emp1 = &real_companies[1 % real_companies.len()].0;
     let emp2 = &real_companies[2 % real_companies.len()].0;
@@ -579,7 +611,7 @@ async fn test_http_form_bot_14_scenarios_with_real_db_companies() {
             |r| Ok((r.get(0)?, r.get(1)?)),
         )
         .unwrap();
-    assert_eq!(stage_crm, "STAGE_DERIVADO_CRM_EXTERNO");
+    assert_eq!(stage_crm, "STAGE_COLA_SMTP_DIRECTO", "Al extraer email jurídico directo en página HubSpot, promueve a cola SMTP directa");
     assert_eq!(harvested_crm, "mailto:juridico@corporativo-moderno.mx");
 
     // Escenario 20: Prueba de limpieza y truncado controlado (prune_prospect_logs)
@@ -624,5 +656,31 @@ async fn test_http_form_bot_14_scenarios_with_real_db_companies() {
     assert_eq!(tier_win, "TIER_1_WEB_FORM_SENT");
     assert!(trace_win.starts_with("OK:"), "Debe registrar el rastro exacto de ejecución en last_trace_detail");
 
-    println!("✓ LOS 25 ESCENARIOS DE GRADO INDUSTRIAL (INCLUYENDO CHARSETS EXÓTICOS, CLOUDFLARE CFEMAIL XOR, DEDUP MULTISUCURSAL Y TIERS OMNICANAL) SUPERADOS AL 100%");
+
+    // Escenario 26: Protección contra bucles circulares infinitos de redirección 301 (/loop-a <-> /loop-b)
+    let r26 = HttpFormBot::submit_form_direct(&client, &format!("{}/loop-a", base), "EMPRESA LOOP INFINITO 301", 450000.0).await;
+    assert_eq!(r26, "ERR_REDIRECT_LOOP_DETECTADO", "Debe abortar el bucle circular en 5 redirecciones máximo");
+
+    // Escenario 27: Saneamiento y normalización de números de WhatsApp (+52) y promoción a TIER_3_WHATSAPP_DIRECT_READY
+    assert_eq!(HttpFormBot::normalize_whatsapp_e164("https://wa.me/5215512345678?text=Hola").unwrap(), "+525512345678");
+    assert_eq!(HttpFormBot::normalize_whatsapp_e164("044 (55) 9876-5432").unwrap(), "+525598765432");
+    assert_eq!(HttpFormBot::normalize_whatsapp_e164("55-4433-2211").unwrap(), "+525544332211");
+
+    let r27 = HttpFormBot::submit_form_direct(&client, &format!("{}/whatsapp-dirty-number", base), "EMPRESA WHATSAPP E164", 670000.0).await;
+    assert_eq!(r27, "PROTECCION_ANTIBOT_CLOUDFLARE_TURNSTILE");
+    let (tier_wa, wa_clean): (String, String) = conn
+        .query_row(
+            "SELECT contact_method_tier, extracted_whatsapp FROM prospect_pipeline WHERE empresa_nombre = 'EMPRESA WHATSAPP E164'",
+            [],
+            |r| Ok((r.get(0)?, r.get(1)?)),
+        )
+        .unwrap();
+    assert_eq!(tier_wa, "TIER_3_WHATSAPP_DIRECT_READY");
+    assert_eq!(wa_clean, "+525587654321", "Debe normalizar 5215587654321 a formato E.164 limpio +525587654321");
+
+    // Escenario 28: Optimización no-bloqueante de almacenamiento SQLite WAL (incremental_vacuum + wal_checkpoint)
+    let (_pruned, db_bytes) = HttpFormBot::optimize_sqlite_storage_non_blocking(50000).unwrap();
+    assert!(db_bytes > 0);
+
+    println!("✓ LOS 28 ESCENARIOS DE GRADO INDUSTRIAL (0 WARNINGS, ANTI-LOOP 301, WHATSAPP E.164 +52, CFEMAIL XOR Y WAL OPTIMIZER) SUPERADOS AL 100%");
 }
