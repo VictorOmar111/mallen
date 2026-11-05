@@ -1,7 +1,7 @@
 #set page(
   paper: "a4",
   margin: (x: 1.2cm, top: 1.1cm, bottom: 1.1cm),
-  header: align(right)[#text(size: 6.6pt, fill: rgb("#475569"), weight: "bold")[FIRMA PERICIAL MALLEN® (MALLEN.LAT) • CERTIFICADO DE ACREDITACIÓN TÉCNICA Y NORMATIVA 360°]],
+  header: align(right)[#text(size: 6.6pt, fill: rgb("#475569"), weight: "bold")[FIRMA W16 MALLEN® (MALLEN.LAT) • CERTIFICADO DE ACREDITACIÓN TÉCNICA Y NORMATIVA 360°]],
   footer: [
     #line(length: 100%, stroke: 0.4pt + rgb("#cbd5e1"))
     #v(2pt)
@@ -55,7 +55,7 @@
 
 #text(size: 7.6pt, weight: "bold", fill: rgb("#0f172a"))[1. FUNDAMENTACIÓN TÉCNICA, PARAMETRIZACIÓN POR GIRO SCIAN Y ALCANCE PERICIAL]
 #v(0.1em)
-#text(size: 6.8pt)[El Consejo Técnico de *FIRMA PERICIAL MALLEN®* certifica que para la entidad *{{EMPRESA_NOMBRE}}* (*{{EMPRESA_TAX_ID}}*), con actividad económica registrada en el catálogo SCIAN *{{EMPRESA_ACTIVIDAD}}* y una plantilla operativa parametrizada de *{{EMPRESA_EMPLEADOS}} personas*, se han generado, personalizado y sellado criptográficamente los instrumentos documentales, actas constitutivas y matrices de control exigibles para acreditar el cumplimiento preventivo del vector *{{NORMA_FOLIO_PREFIX}}*.]
+#text(size: 6.8pt)[El Consejo Técnico de *FIRMA W16 MALLEN®* certifica que para la entidad *{{EMPRESA_NOMBRE}}* (*{{EMPRESA_TAX_ID}}*), con actividad económica registrada en el catálogo SCIAN *{{EMPRESA_ACTIVIDAD}}* y una plantilla operativa parametrizada de *{{EMPRESA_EMPLEADOS}} personas*, se han generado, personalizado y sellado criptográficamente los instrumentos documentales, actas constitutivas y matrices de control exigibles para acreditar el cumplimiento preventivo del vector *{{NORMA_FOLIO_PREFIX}}*.]
 
 #v(0.15em)
 

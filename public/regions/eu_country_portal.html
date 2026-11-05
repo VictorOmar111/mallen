@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FIRMA W16 MALLEN® — Regulatory Compliance & Cryptographic Audit Portal</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+        .font-mono-code { font-family: 'JetBrains Mono', monospace; }
+        .gpu-smooth { transform: translate3d(0,0,0); will-change: transform, opacity; }
+    </style>
+    <link rel="stylesheet" href="/css/quantum-glass.css?v=2026.150">
+    <link rel="stylesheet" href="/css/pure-light-mode.css?v=2026.150">
+    <script src="/js/quantum-lights.js?v=2026.150" defer></script>
+    <script src="/js/theme-init.js?v=2026.150"></script>
+</head>
+<body class="bg-slate-950 text-slate-100 min-h-screen flex flex-col justify-between selection:bg-blue-600 selection:text-white">
+
+    <div>
+        <!-- Minimalist Top Bar -->
+        <div class="bg-slate-900/95 border-b border-slate-800 px-6 py-2 text-xs font-mono-code">
+            <div class="max-w-7xl mx-auto flex items-center justify-between gap-3">
+                <div class="flex items-center space-x-3">
+                    <span id="eu-block-pill" class="px-2.5 py-0.5 rounded bg-blue-950 border border-blue-700 text-blue-300 font-bold uppercase">DACH</span>
+                    <span id="eu-country-name" class="text-slate-200 font-semibold">Deutschland</span>
+                    <span id="eu-currency-badge" class="text-emerald-400 font-bold">EUR (€)</span>
+                </div>
+                <div class="flex items-center space-x-2">
+                    <select id="eu-dialect-select" aria-label="Language" class="bg-slate-950 border border-slate-700 text-sky-400 rounded-lg px-3 py-1 font-bold focus:outline-none focus:border-sky-500"></select>
+                </div>
+            </div>
+        </div>
+
+        <!-- Corporate Header -->
+        <header class="border-b border-slate-800 bg-slate-950/90 backdrop-blur sticky top-0 z-40">
+            <div class="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
+                <div class="flex items-center space-x-3">
+                    <div class="w-10 h-10 bg-gradient-to-tr from-blue-700 via-indigo-600 to-emerald-500 rounded-xl flex items-center justify-center font-extrabold text-sm text-white shadow-lg">W16</div>
+                    <div>
+                        <span class="text-sm font-extrabold text-white block leading-none tracking-wide">FIRMA W16 MALLEN®</span>
+                        <span id="eu-header-sub" class="text-[10px] text-emerald-400 font-bold font-mono-code uppercase"></span>
+                    </div>
+                </div>
+                <nav class="hidden md:flex items-center space-x-6 text-xs font-mono-code text-slate-300">
+                    <a href="#laws-grid" id="eu-nav-coverage" class="hover:text-white transition"></a>
+                    <a href="#official-registries-section" id="eu-nav-registries" class="hover:text-white transition"></a>
+                    <a href="#probative-validity-section" id="eu-nav-proof" class="hover:text-white transition"></a>
+                    <a href="#osint-calibration-engine" id="eu-nav-calibration" class="text-sky-400 hover:text-sky-300 font-bold transition"></a>
+                    <a href="#sdui-tracker-section" id="eu-nav-tracker" class="text-emerald-400 hover:text-emerald-300 font-bold transition"></a>
+                </nav>
+            </div>
+        </header>
+
+        <main class="max-w-7xl mx-auto px-6 py-10">
+
+            <!-- HERO SECTION (PARIDAD 1:1 CON MÉXICO) -->
+            <section class="quantum-laser-console rounded-3xl p-8 md:p-12 shadow-2xl mb-14 gpu-smooth">
+                <div class="flex flex-wrap items-center justify-between gap-4 mb-5">
+                    <span id="eu-hero-badge" class="text-xs font-mono-code font-bold uppercase px-3.5 py-1.5 rounded-full bg-blue-950/90 border border-blue-800 text-blue-400 tracking-wider"></span>
+                    <span id="eu-crypto-law-badge" class="text-xs font-mono-code px-3 py-1 rounded bg-slate-950 border border-slate-800 text-emerald-400"></span>
+                </div>
+
+                <h1 id="eu-hero-title" class="text-3xl md:text-5xl font-extrabold text-white tracking-tight leading-tight mb-4"></h1>
+                <p id="eu-hero-subtitle" class="text-sm md:text-base text-slate-300 max-w-4xl leading-relaxed mb-8"></p>
+
+                <div class="flex flex-wrap gap-4">
+                    <a href="#osint-calibration-engine" id="eu-hero-cta-primary" class="w16-action-btn bg-gradient-to-r from-blue-600 to-emerald-600 hover:from-blue-500 hover:to-emerald-500 text-white font-extrabold px-6 py-3.5 rounded-xl text-xs font-mono-code uppercase tracking-wider shadow-lg transition"></a>
+                    <a href="#laws-grid" id="eu-hero-cta-secondary" style="background:linear-gradient(90deg,#0f172a,#064e3b);color:#6ee7b7;border:1px solid rgba(16,185,129,0.45);" class="px-6 py-3.5 rounded-xl text-xs font-mono-code font-bold transition"></a>
+                </div>
+            </section>
+
+            <!-- SECCIÓN 1: DIRECTORIO DE COBERTURA NORMATIVA 360° (6 TARJETAS CON PORCENTAJE REAL, BENEFICIO DIRECTO Y SUBPÁGINAS) -->
+            <section id="laws-grid" class="mb-14">
+                <div class="mb-6">
+                    <span id="eu-dir-kicker" class="text-xs font-mono-code font-bold uppercase text-emerald-400 tracking-wider block mb-1"></span>
+                    <div class="flex flex-wrap items-center justify-between gap-4">
+                        <h2 id="eu-section-title" class="text-2xl md:text-3xl font-extrabold text-white"></h2>
+                        <span id="eu-vectors-pill" class="text-xs font-mono-code px-3.5 py-1.5 bg-slate-900 border border-slate-800 rounded-lg text-sky-400 font-bold"></span>
+                    </div>
+                    <p id="eu-section-sub" class="text-xs md:text-sm text-slate-300 mt-2 max-w-4xl leading-relaxed"></p>
+                </div>
+
+                <!-- Banner de Instituciones Estadísticas Oficiales del País -->
+                <div id="eu-official-sources-box" class="bg-slate-900/80 border border-slate-800 rounded-xl p-4 mb-6 text-xs font-mono-code text-slate-300"></div>
+
+                <div id="eu-laws-cards-container" class="grid md:grid-cols-2 lg:grid-cols-3 gap-6"></div>
+            </section>
+
+            <!-- SECCIÓN 2: VERIFICACIÓN PERICIAL EN PADRONES OFICIALES NACIONALES (6 BASES DE DATOS Y REGISTROS) -->
+            <section id="official-registries-section" class="quantum-card rounded-3xl p-8 md:p-10 border border-slate-800 mb-14">
+                <div class="flex flex-wrap items-center justify-between gap-4 pb-6 mb-8 border-b border-slate-800">
+                    <div>
+                        <span id="eu-reg-kicker" class="text-xs font-mono-code font-bold uppercase text-sky-400 tracking-wider block mb-1"></span>
+                        <h2 id="eu-reg-title" class="text-xl md:text-2xl font-extrabold text-white"></h2>
+                    </div>
+                    <span id="eu-reg-count-badge" class="text-xs font-mono-code px-3.5 py-1.5 rounded-full bg-emerald-950/90 border border-emerald-700 text-emerald-300 font-bold"></span>
+                </div>
+                <div id="eu-registries-grid" class="grid md:grid-cols-2 lg:grid-cols-3 gap-6"></div>
+            </section>
+
+            <!-- SECCIÓN 3: SUSTENTO LEGAL & PROCESAL (4 GARANTÍAS INSTITUCIONALES INTERACTIVAS) -->
+            <section id="probative-validity-section" class="mb-14">
+                <div class="mb-6">
+                    <span id="eu-proof-kicker" class="text-xs font-mono-code font-bold uppercase text-emerald-400 tracking-wider block mb-1"></span>
+                    <h2 id="eu-proof-title" class="text-2xl md:text-3xl font-extrabold text-white"></h2>
+                    <p id="eu-proof-sub" class="text-xs md:text-sm text-slate-300 mt-1"></p>
+                </div>
+                <div id="eu-proof-cards-grid" class="grid sm:grid-cols-2 lg:grid-cols-4 gap-5"></div>
+                <div id="eu-proof-detail-drawer" class="hidden mt-6 bg-slate-900 border border-emerald-500/40 rounded-2xl p-6 font-mono-code text-xs"></div>
+            </section>
+
+            <!-- SECCIÓN 4: MOTOR DE DIAGNÓSTICO OSINT & CALIBRACIÓN PERICIAL + 16 CAMPOS DE PRE-LLENADO AUTOMÁTICO -->
+            <section id="osint-calibration-engine" class="quantum-laser-console rounded-3xl p-8 md:p-10 border border-blue-500/40 mb-14 gpu-smooth">
+                <div class="mb-6 pb-4 border-b border-slate-800">
+                    <span id="eu-cal-kicker" class="text-xs font-mono-code font-bold uppercase text-sky-400 tracking-wider block mb-1"></span>
+                    <h2 id="eu-cal-title" class="text-2xl md:text-3xl font-extrabold text-white"></h2>
+                    <p id="eu-cal-sub" class="text-xs md:text-sm text-slate-300 mt-1"></p>
+                </div>
+
+                <!-- Buscador Principal (Tax ID / Registry + Web Domain) -->
+                <div class="grid md:grid-cols-12 gap-4 bg-slate-950/90 p-5 rounded-2xl border border-slate-800 mb-6">
+                    <div class="md:col-span-5">
+                        <label id="eu-tax-label" class="block text-[11px] font-mono-code uppercase text-slate-400 mb-1.5"></label>
+                        <input type="text" id="eu-tax-input" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-3 text-sm text-white font-mono-code focus:outline-none focus:border-blue-500">
+                    </div>
+                    <div class="md:col-span-4">
+                        <label id="eu-domain-label" class="block text-[11px] font-mono-code uppercase text-slate-400 mb-1.5"></label>
+                        <input type="text" id="eu-domain-input" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-3 text-sm text-white font-mono-code focus:outline-none focus:border-blue-500">
+                    </div>
+                    <div class="md:col-span-3">
+                        <label id="eu-emp-label" class="block text-[11px] font-mono-code uppercase text-slate-400 mb-1.5"></label>
+                        <input type="number" id="eu-emp-input" value="45" min="1" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-3 text-sm text-white font-mono-code focus:outline-none focus:border-blue-500">
+                    </div>
+                </div>
+
+                <!-- 10 Checkboxes de Calibración de Variables Internas (Desplegable igual que el de 16 campos) -->
+                <details class="bg-slate-950/80 border border-slate-800 rounded-2xl p-6 mb-6 group">
+                    <summary class="cursor-pointer flex items-center justify-between text-xs font-mono-code font-bold text-emerald-400 uppercase">
+                        <span id="eu-cal-vars-title"></span>
+                        <span class="px-2.5 py-1 rounded bg-slate-900 border border-slate-700 text-[10px] text-sky-400">10 Parameters • Toggle</span>
+                    </summary>
+                    <div id="eu-cal-checkboxes-grid" class="grid sm:grid-cols-2 gap-3 text-xs text-slate-200 mt-4 pt-4 border-t border-slate-800"></div>
+                </details>
+
+                <!-- 16 Campos de Personalización de Instrumentos Jurídicos (Pre-llenado Automático ____________________) -->
+                <details class="bg-slate-950/80 border border-slate-800 rounded-2xl p-6 mb-6 group">
+                    <summary class="cursor-pointer flex items-center justify-between text-xs font-mono-code font-bold text-sky-400 uppercase">
+                        <span id="eu-dossier-form-title"></span>
+                        <span class="px-2.5 py-1 rounded bg-slate-900 border border-slate-700 text-[10px] text-emerald-400">16 Fields • Auto-Fill</span>
+                    </summary>
+                    <p id="eu-dossier-form-desc" class="text-xs text-slate-400 mt-3 mb-5 leading-relaxed"></p>
+                    <div id="eu-dossier-16-fields" class="grid sm:grid-cols-2 lg:grid-cols-4 gap-3.5 text-xs font-mono-code"></div>
+                </details>
+
+                <!-- Botones de Ejecución Pericial -->
+                <div class="flex flex-wrap items-center gap-4">
+                    <button type="button" onclick="runEuRegionalcat << 'EOF' >> public/regions/eu_country_portal.html
+Simulation()" id="eu-scan-btn" class="w16-action-btn bg-gradient-to-r from-blue-600 to-emerald-600 hover:from-blue-500 hover:to-emerald-500 text-white font-extrabold py-3.5 px-8 rounded-xl text-xs font-mono-code uppercase tracking-wider shadow-lg transition">
+                    </button>
+                    <button type="button" onclick="window.exportSduiTrackerPdf && window.exportSduiTrackerPdf()" id="eu-micro-btn" style="background:linear-gradient(90deg,#0f172a,#064e3b);color:#6ee7b7;border:1px solid rgba(16,185,129,0.45);" class="hover:opacity-95 font-bold py-3.5 px-6 rounded-xl text-xs font-mono-code transition">
+                    </button>
+                </div>
+
+                <!-- Resultado Interactivo de Simulación Pericial -->
+                <div id="eu-scan-preview" class="hidden mt-6 bg-slate-950 border border-emerald-800/70 rounded-xl p-6 font-mono-code text-xs">
+                    <div class="flex flex-wrap justify-between items-center border-b border-slate-800 pb-3 mb-4 gap-3">
+                        <span id="eu-preview-title" class="text-emerald-400 font-bold uppercase"></span>
+                        <span id="eu-preview-price" class="text-white bg-emerald-950 border border-emerald-700 px-3 py-1 rounded-lg font-bold"></span>
+                    </div>
+                    <div class="grid md:grid-cols-3 gap-4 mb-4">
+                        <div class="bg-slate-900/90 border border-red-500/30 rounded-lg p-3.5">
+                            <span id="eu-sim-exp-label" class="text-[10px] text-slate-400 uppercase block"></span>
+                            <strong id="eu-sim-fine" class="text-lg text-red-400 font-extrabold"></strong>
+                        </div>
+                        <div class="bg-slate-900/90 border border-amber-500/30 rounded-lg p-3.5">
+                            <span id="eu-sim-band-label" class="text-[10px] text-slate-400 uppercase block"></span>
+                            <strong id="eu-sim-band-val" class="text-lg text-amber-400 font-extrabold"></strong>
+                        </div>
+                        <div class="bg-slate-900/90 border border-emerald-500/30 rounded-lg p-3.5">
+                            <span id="eu-sim-kit-label" class="text-[10px] text-slate-400 uppercase block"></span>
+                            <strong id="eu-sim-kit" class="text-lg text-emerald-400 font-extrabold">37 + 7 PDF</strong>
+                        </div>
+                    </div>
+                    <p id="eu-preview-body" class="text-slate-300 leading-relaxed mb-3"></p>
+                    <div class="text-[11px] text-slate-400 border-t border-slate-800 pt-3" id="eu-fine-note"></div>
+                </div>
+            </section>
+
+            <!-- SECCIÓN 5: SERVER-DRIVEN UI — COMPLIANCE IMPLEMENTATION TRACKER (TYPST INTEGRATED) -->
+            <section id="sdui-tracker-section" class="quantum-card rounded-3xl p-8 border border-emerald-500/35 mb-14 gpu-smooth">
+                <div class="flex flex-wrap items-center justify-between gap-4 pb-5 mb-6 border-b border-slate-800">
+                    <div>
+                        <span class="text-[11px] font-mono-code font-bold text-emerald-400 uppercase tracking-wider block">SERVER-DRIVEN UI • TYPST REAL-TIME COMPILER</span>
+                        <h3 id="sdui-title" class="text-xl md:text-2xl font-extrabold text-white mt-1"></h3>
+                        <p id="sdui-subtitle" class="text-xs text-slate-300 mt-1"></p>
+                    </div>
+                    <div class="flex items-center gap-3">
+                        <div class="bg-slate-950 border border-slate-800 rounded-xl px-4 py-2 text-right font-mono-code">
+                            <span id="sdui-progress-lbl" class="text-[10px] text-slate-400 block uppercase"></span>
+                            <strong id="sdui-progress-pct" class="text-lg text-emerald-400 font-extrabold">0%</strong>
+                        </div>
+                        <button type="button" id="sdui-export-pdf-btn" onclick="window.exportSduiTrackerPdf()" class="w16-action-btn bg-gradient-to-r from-blue-600 to-emerald-600 hover:from-blue-500 hover:to-emerald-500 text-white px-4 py-3 rounded-xl text-xs font-mono-code font-bold shadow-lg transition">
+                        </button>
+                    </div>
+                </div>
+
+                <div class="w-full h-2.5 bg-slate-950 rounded-full overflow-hidden border border-slate-800 mb-6">
+                    <div id="sdui-progress-bar" class="h-full bg-gradient-to-r from-blue-600 via-sky-500 to-emerald-500 transition-all duration-300" style="width: 0%;"></div>
+                </div>
+
+                <div id="sdui-phase-tabs" class="flex flex-wrap gap-2 mb-5 font-mono-code text-xs"></div>
+                <div id="sdui-steps-container" class="grid md:grid-cols-2 gap-3.5 font-mono-code text-xs"></div>
+            </section>
+
+            <!-- SECCIÓN 7: SELLO CRIPTOGRÁFICO Y AVISO LEGAL LOCAL -->
+            <section id="crypto-proof" class="quantum-card rounded-2xl p-8 border border-emerald-500/30">
+                <div class="flex flex-wrap justify-between items-center mb-4 pb-4 border-b border-slate-800 gap-3">
+                    <span id="eu-proof-header-tag" class="text-xs font-bold text-emerald-400 uppercase font-mono-code tracking-widest"></span>
+                    <span id="eu-crypto-law-footer" class="text-xs font-mono-code px-3 py-1 bg-slate-950 border border-slate-800 text-slate-300 rounded"></span>
+                </div>
+                <p id="eu-disclaimer-footer" class="text-xs text-slate-300 font-mono-code leading-relaxed"></p>
+            </section>
+        </main>
+    </div>
+
+    <!-- Localized Institutional Footer (Frankfurt Core Hub — EU-DE-01 + Pure Light Mode Switch) -->
+    <footer class="border-t border-slate-900 bg-slate-950/95 py-10 px-6 text-xs font-mono-code text-slate-400 mt-12">
+        <div class="max-w-7xl mx-auto flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
+            <div class="space-y-1.5">
+                <div id="eu-footer-line-1" class="font-extrabold text-slate-200"></div>
+                <div id="eu-footer-line-2" class="text-emerald-400 font-semibold"></div>
+                <div id="eu-footer-line-3" class="text-slate-400"></div>
+                <div id="eu-footer-line-4" class="text-slate-500"></div>
+            </div>
+            <div class="flex flex-wrap items-center gap-3 shrink-0">
+                <button type="button" id="w16-theme-toggle-btn" onclick="window.toggleW16PureLightMode()" class="px-3.5 py-2 rounded-xl border border-slate-700 bg-slate-900 text-slate-200 font-bold text-xs transition">
+                    Light / Dark
+                </button>
+                <button type="button" id="eu-footer-region-btn" onclick="window.openMallenGateway()" class="px-3.5 py-2 rounded-xl border border-slate-700 bg-slate-900 text-sky-400 font-bold text-xs transition">
+                    Jurisdiction
+                </button>
+            </div>
+        </div>
+    </footer>
+
+    <script src="/js/dach_deep_data.js?v=2026.150"></script>
+    <script src="/js/i18n_engine.js?v=2026.150"></script>
+    <script src="/js/eu_subpages_bridge.js?v=2026.150"></script>
+    <script src="/js/eu_mexico_parity_sections.js?v=2026.150"></script>
+</body>
+</html>

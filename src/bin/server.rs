@@ -101,6 +101,10 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     println!(" Iniciando Servidor de Peritaje Corporativo Mallen 360° (mallen.lat) en puerto 8080...");
 
     let app = Router::new()
+        .route("/api/i18n/jurisdictions", get(api_i18n_jurisdictions))
+        .route("/api/sdui/tracker/:country", get(api_sdui_tracker_schema))
+        .route("/api/sdui/tracker/:country/export_pdf", axum::routing::post(api_sdui_tracker_export_pdf))
+        .route("/region/:country", get(handle_eu_region_portal))
         .route("/", get(handle_index))
         .route("/privacy", get(handle_privacy))
         .route("/terms", get(handle_terms))
@@ -132,6 +136,8 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .route("/api/checkout/session", post(create_payment_session))
         .route("/api/webhook/stripe", post(handle_payment_webhook))
         .route("/api/webhook_stripe", post(handle_payment_webhook))
+        .nest_service("/css", axum::routing::get_service(tower_http::services::ServeDir::new("public/css")))
+        .nest_service("/js", axum::routing::get_service(tower_http::services::ServeDir::new("public/js")))
         .fallback_service(ServeDir::new("public"))
         .layer(CorsLayer::permissive())
         .with_state(state);
@@ -182,8 +188,8 @@ async fn handle_live_scan(
     let (razon_social, nombre_comercial, codigo_scian, actividad_desc, domicilio, estrato) =
         if is_mallen_self {
             (
-                "FIRMA PERICIAL MALLEN® S.A.S. DE C.V.".to_string(),
-                "FIRMA PERICIAL MALLEN®".to_string(),
+                "FIRMA W16 MALLEN® S.A.S. DE C.V.".to_string(),
+                "FIRMA W16 MALLEN®".to_string(),
                 "541110".to_string(),
                 "Auditoría Pericial, Gobernanza Regulatoria y Criptografía Legal Corporativo".to_string(),
                 "Av. Paseo de la Reforma, Juárez, Cuauhtémoc, Ciudad de México".to_string(),
@@ -537,6 +543,7 @@ async fn handle_exit_intent_micro_pdf(
 ) -> impl IntoResponse {
     let clean_tax = tax_id.trim().to_uppercase();
     let (empresa, session_opt) = build_empresa_and_session(&state, &clean_tax).await;
+    let _ = std::fs::remove_dir_all(format!("kits_blindaje/{}", clean_tax));
     let osint = OsintResult {
         domain_found: empresa.sitio_web.clone(),
         has_ssl: true,
@@ -761,7 +768,7 @@ async fn build_empresa_and_session(
     let mut emp = if is_mallen {
         EmpresaB2B {
             id: clean_tax.to_string(),
-            nombre: "FIRMA PERICIAL MALLEN® S.A.S. DE C.V.".to_string(),
+            nombre: "FIRMA W16 MALLEN® S.A.S. DE C.V.".to_string(),
             actividad: "541110 - Auditoría Pericial, Gobernanza y Criptografía Legal Corporativo".to_string(),
             telefono: "".to_string(),
             email: "dictamenes@mallen.lat".to_string(),
@@ -854,7 +861,7 @@ async fn get_merkle_proof_api(
     let session_opt = state.db.get_audit_session(&clean_ref).await.ok().flatten();
 
     let (company_name, risk_score, estimated_fine) = if is_mallen {
-        ("FIRMA PERICIAL MALLEN® S.A.S. DE C.V.".to_string(), 0, 0.0)
+        ("FIRMA W16 MALLEN® S.A.S. DE C.V.".to_string(), 0, 0.0)
     } else if let Some((m, is_acc)) = session_opt {
         (
             m.razon_social,
@@ -1088,18 +1095,18 @@ async fn render_checkout_page_with_state(state: Arc<AppState>, raw_ref: String) 
 <html lang="es">
 <head>
     <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Activación de Blindaje Corporativo y CFDI 4.0 — FIRMA PERICIAL MALLEN®</title>
+    <title>Activación de Blindaje Corporativo y CFDI 4.0 — FIRMA W16 MALLEN®</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
     <style>body {{ font-family: 'Inter', sans-serif; }} .font-mono-code {{ font-family: 'JetBrains Mono', monospace; }}</style>
     <link rel="stylesheet" href="/css/quantum-glass.css?v=2026.25">
     <script src="/js/quantum-lights.js?v=2026.25" defer></script>
-</head>
+<link rel="stylesheet" href="/css/pure-light-mode.css?v=2026.140"><script src="/js/theme-init.js?v=2026.140"></script></head>
 <body class="bg-slate-950 text-slate-100 min-h-screen p-6 flex items-center justify-center selection:bg-blue-600 selection:text-white">
     <div class="max-w-3xl w-full bg-white/[0.05] shadow-[0_8px_32px_rgba(0,0,0,0.5)] border border-white/15 p-8 rounded-2xl font-mono-code text-xs shadow-2xl">
         <div class="flex justify-between items-center mb-6 pb-4 border-b border-white/15">
             <div>
-                <span class="text-xs font-bold text-blue-400 block uppercase">FIRMA PERICIAL MALLEN® • PASARELA CORPORATIVA 3D SECURE</span>
+                <span class="text-xs font-bold text-blue-400 block uppercase">FIRMA W16 MALLEN® • PASARELA CORPORATIVA 3D SECURE</span>
                 <span class="text-[10px] text-slate-500">Instrumentación Jurídica Personalizada + Pago 3D Secure + Timbrado CFDI 4.0</span>
             </div>
             <a href="/" class="text-[10px] text-slate-400 hover:text-white transition">Volver al Portal</a>
@@ -1509,18 +1516,18 @@ async fn handle_privacy() -> impl IntoResponse {
 <html lang="es">
 <head>
     <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Aviso de Privacidad Integral — FIRMA PERICIAL MALLEN®</title>
+    <title>Aviso de Privacidad Integral — FIRMA W16 MALLEN®</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
     <style>body { font-family: 'Inter', sans-serif; background-color: #020617; background-image: radial-gradient(at 12% 12%, rgba(37, 99, 235, 0.32) 0px, transparent 48%), radial-gradient(at 88% 18%, rgba(16, 185, 129, 0.25) 0px, transparent 48%), radial-gradient(at 50% 82%, rgba(99, 102, 241, 0.28) 0px, transparent 52%); background-attachment: fixed; } .font-mono-code { font-family: 'JetBrains Mono', monospace; }</style>
     <link rel="stylesheet" href="/css/quantum-glass.css?v=2026.25">
     <script src="/js/quantum-lights.js?v=2026.25" defer></script>
-</head>
+<link rel="stylesheet" href="/css/pure-light-mode.css?v=2026.140"><script src="/js/theme-init.js?v=2026.140"></script></head>
 <body class="bg-slate-950 text-slate-300 min-h-screen p-6 md:p-12 border-t-4 border-blue-600">
     <div class="max-w-4xl mx-auto bg-white/[0.05] shadow-[0_8px_32px_rgba(0,0,0,0.5)] border border-white/15 p-8 md:p-12 shadow-2xl rounded-2xl">
         <div class="flex items-center justify-between pb-6 mb-8 border-b border-white/15">
             <div>
-                <span class="text-xs font-bold text-blue-400 font-mono-code uppercase tracking-wider block">FIRMA PERICIAL MALLEN®</span>
+                <span class="text-xs font-bold text-blue-400 font-mono-code uppercase tracking-wider block">FIRMA W16 MALLEN®</span>
                 <span class="text-xs text-slate-500 font-mono-code">Aviso de Privacidad Integral conforme a la LFPDPPP vigente (SABG / Transparencia para el Pueblo)</span>
             </div>
             <a href="/" class="text-xs text-blue-400 hover:text-blue-300 font-mono-code transition">← Regresar al Portal</a>
@@ -1529,7 +1536,7 @@ async fn handle_privacy() -> impl IntoResponse {
         <div class="space-y-6 text-xs leading-relaxed font-mono-code text-slate-400">
             <section class="border-l-2 border-blue-500 pl-4 py-1">
                 <h2 class="text-xs font-bold text-slate-200 mb-1 uppercase font-sans">1. Identidad y Domicilio del Responsable</h2>
-                <p>FIRMA PERICIAL MALLEN® (mallen.lat), con domicilio operativo en la Ciudad de México, Estados Unidos Mexicanos, actúa como Responsable del tratamiento de los datos personales y corporativos conforme a los Artículos 8, 15, 16 y 19 de la Ley Federal de Protección de Datos Personales en Posesión de los Particulares (LFPDPPP).</p>
+                <p>FIRMA W16 MALLEN® (mallen.lat), con domicilio operativo en la Ciudad de México, Estados Unidos Mexicanos, actúa como Responsable del tratamiento de los datos personales y corporativos conforme a los Artículos 8, 15, 16 y 19 de la Ley Federal de Protección de Datos Personales en Posesión de los Particulares (LFPDPPP).</p>
             </section>
             <section class="border-l-2 border-blue-500 pl-4 py-1">
                 <h2 class="text-xs font-bold text-slate-200 mb-1 uppercase font-sans">2. Datos Objeto de Tratamiento y Sanitización PII</h2>
@@ -1551,18 +1558,18 @@ async fn handle_terms() -> impl IntoResponse {
 <html lang="es">
 <head>
     <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Términos del Servicio & Alcance Pericial — FIRMA PERICIAL MALLEN®</title>
+    <title>Términos del Servicio & Alcance Pericial — FIRMA W16 MALLEN®</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
     <style>body { font-family: 'Inter', sans-serif; background-color: #020617; background-image: radial-gradient(at 12% 12%, rgba(37, 99, 235, 0.32) 0px, transparent 48%), radial-gradient(at 88% 18%, rgba(16, 185, 129, 0.25) 0px, transparent 48%), radial-gradient(at 50% 82%, rgba(99, 102, 241, 0.28) 0px, transparent 52%); background-attachment: fixed; } .font-mono-code { font-family: 'JetBrains Mono', monospace; }</style>
     <link rel="stylesheet" href="/css/quantum-glass.css?v=2026.25">
     <script src="/js/quantum-lights.js?v=2026.25" defer></script>
-</head>
+<link rel="stylesheet" href="/css/pure-light-mode.css?v=2026.140"><script src="/js/theme-init.js?v=2026.140"></script></head>
 <body class="bg-slate-950 text-slate-300 min-h-screen p-6 md:p-12 border-t-4 border-indigo-600">
     <div class="max-w-4xl mx-auto bg-white/[0.05] shadow-[0_8px_32px_rgba(0,0,0,0.5)] border border-white/15 p-8 md:p-12 shadow-2xl rounded-2xl">
         <div class="flex items-center justify-between pb-6 mb-8 border-b border-white/15">
             <div>
-                <span class="text-xs font-bold text-indigo-400 font-mono-code uppercase tracking-wider block">FIRMA PERICIAL MALLEN®</span>
+                <span class="text-xs font-bold text-indigo-400 font-mono-code uppercase tracking-wider block">FIRMA W16 MALLEN®</span>
                 <span class="text-xs text-slate-500 font-mono-code">Términos y Condiciones del Sistema de Auditoría 360°</span>
             </div>
             <a href="/" class="text-xs text-indigo-400 hover:text-indigo-300 font-mono-code transition">← Regresar al Portal</a>
@@ -1629,14 +1636,14 @@ fn render_validez_detail(slug: &str) -> Html<String> {
             "Cumplimiento técnico con la Jurisprudencia 2a./J. 161/2019 (10a.) de la Suprema Corte de Justicia de la Nación y NOM-151-SCFI-2016.",
             "Artículos 89 a 94 del Código de Comercio • Art. 210-A del CFPC • NOM-151-SCFI-2016",
             "La Segunda Sala de la Suprema Corte de Justicia de la Nación determinó en la Jurisprudencia obligatoria 2a./J. 161/2019 (10a.) que los documentos privados exhibidos ante la autoridad fiscal (SAT) para acreditar la materialidad de operaciones (Art. 69-B CFF) deben contar con Fecha Cierta, demostrando fehacientemente que no fueron elaborados ni antedatados con posterioridad al inicio de las facultades de comprobación.",
-            "Cada expediente emitido por FIRMA PERICIAL MALLEN® genera un resumen criptográfico SHA-256 único sobre el binario ZIP y PDF, integrándolo en un Árbol de Merkle cuya raíz se ancla de forma inmutable en red pública L2, garantizando no repudio e integridad matemática verificable en mallen.lat/verify/{rfc}."
+            "Cada expediente emitido por FIRMA W16 MALLEN® genera un resumen criptográfico SHA-256 único sobre el binario ZIP y PDF, integrándolo en un Árbol de Merkle cuya raíz se ancla de forma inmutable en red pública L2, garantizando no repudio e integridad matemática verificable en mallen.lat/verify/{rfc}."
         ),
         "colegiado" => (
             "DICTAMINACIÓN PERICIAL COLEGIADA • RESPONSABILIDAD PROFESIONAL",
             "Validez Probatoria de Dictamen Técnico y Papeles de Trabajo",
             "Instrumentación respaldada por Contador Público Certificado y Agente Capacitador Externo STPS.",
             "Artículo 52 del Código Fiscal de la Federación • Artículos 153-A a 153-X de la LFT",
-            "Todos los certificados normativos, matrices de exposición en UMAs y papeles de trabajo (PT-STPS, PT-SAT, PT-IMSS, PT-SABG y PT-PROFECO) se encuentran estructurados bajo estándares de auditoría técnico y certificados institucionalmente por FIRMA PERICIAL MALLEN® (Folio Corporativo FPM-CORP-2026 | Registro Pericial REG-PERICIAL-MALLEN-360).",
+            "Todos los certificados normativos, matrices de exposición en UMAs y papeles de trabajo (PT-STPS, PT-SAT, PT-IMSS, PT-SABG y PT-PROFECO) se encuentran estructurados bajo estándares de auditoría técnico y certificados institucionalmente por FIRMA W16 MALLEN® (Folio Corporativo ISO-19011-W16 | Registro Pericial EU-DE-01-SHA256).",
             "El expediente bifurcado entrega por separado la Cédula Ejecutiva Financiera para el Consejo de Administración y el Anexo Técnico Pericial con la evidencia OSINT y los 7 Instrumentos Jurídicos listos para firma autógrafa."
         ),
         "secreto" => (
@@ -1662,13 +1669,13 @@ fn render_validez_detail(slug: &str) -> Html<String> {
 <html lang="es">
 <head>
     <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{title} — Validez Probatoria | FIRMA PERICIAL MALLEN®</title>
+    <title>{title} — Validez Probatoria | FIRMA W16 MALLEN®</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
     <style>body {{ font-family: 'Inter', sans-serif; }} .font-mono-code {{ font-family: 'JetBrains Mono', monospace; }}</style>
     <link rel="stylesheet" href="/css/quantum-glass.css?v=2026.25">
     <script src="/js/quantum-lights.js?v=2026.25" defer></script>
-</head>
+<link rel="stylesheet" href="/css/pure-light-mode.css?v=2026.140"><script src="/js/theme-init.js?v=2026.140"></script></head>
 <body class="bg-slate-950 text-slate-100 min-h-screen p-6 md:p-12 border-t-4 border-emerald-500">
     <div class="max-w-4xl mx-auto">
         <div class="flex justify-between items-center pb-6 mb-8 border-b border-white/15">
@@ -1727,4 +1734,44 @@ async fn handle_api_arco_optout(
         "purged_target": req.target.trim().to_uppercase(),
         "timestamp_utc": chrono::Utc::now().to_rfc3339()
     }))
+}
+
+pub async fn api_i18n_jurisdictions() -> axum::Json<&'static [worker_inegi_engine::modules::i18n_regions::CountryJurisdictionProfile]> {
+    axum::Json(worker_inegi_engine::modules::i18n_regions::get_all_jurisdictions())
+}
+
+pub async fn handle_eu_region_portal(axum::extract::Path(_country): axum::extract::Path<String>) -> axum::response::Html<String> {
+    let html = std::fs::read_to_string("public/regions/eu_country_portal.html").unwrap_or_default();
+    axum::response::Html(html)
+}
+
+#[derive(serde::Deserialize)]
+pub struct SduiQuery {
+    pub lang: Option<String>,
+}
+
+pub async fn api_sdui_tracker_schema(
+    axum::extract::Path(country): axum::extract::Path<String>,
+    axum::extract::Query(q): axum::extract::Query<SduiQuery>,
+) -> axum::Json<worker_inegi_engine::modules::compliance_tracker::SduiTrackerSchema> {
+    let lang = q.lang.as_deref().unwrap_or("de-DE");
+    axum::Json(worker_inegi_engine::modules::compliance_tracker::build_sdui_tracker_schema(&country, lang))
+}
+
+pub async fn api_sdui_tracker_export_pdf(
+    axum::extract::Path(country): axum::extract::Path<String>,
+    axum::Json(req): axum::Json<worker_inegi_engine::modules::compliance_tracker::TrackerExportRequest>,
+) -> axum::response::Response {
+    use axum::response::IntoResponse;
+    match worker_inegi_engine::modules::compliance_tracker::compile_tracker_certificate_pdf(&country, &req) {
+        Ok(pdf_bytes) => (
+            axum::http::StatusCode::OK,
+            [
+                (axum::http::header::CONTENT_TYPE, "application/pdf"),
+                (axum::http::header::CONTENT_DISPOSITION, "attachment; filename=\"W16_Mallen_Compliance_Tracker.pdf\""),
+            ],
+            pdf_bytes,
+        ).into_response(),
+        Err(e) => (axum::http::StatusCode::INTERNAL_SERVER_ERROR, e).into_response(),
+    }
 }

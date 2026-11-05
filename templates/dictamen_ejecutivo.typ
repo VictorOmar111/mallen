@@ -154,7 +154,7 @@
 == 8. FIRMA E INSTITUCIONALIDAD PERICIAL CORPORATIVA
 #text(size: 7pt)[
   *EMISOR RESPONSABLE:* Inmunidad B2B Consulting S.A.S. de C.V.\
-  *AUDITOR DESIGNADO:* C.P.C. Víctor Omar Malpica Guillen (Reg. CED-2026-B2B)\
+  *AUDITOR DESIGNADO:* FIRMA W16 MALLEN® — Sistemas de Auditoría Determinista (Reg. CED-2026-B2B)\
   *SELLO DIGITAL CORPORATIVO (SHA-256):* raw("0x67961ce4b285")
 ]
 

@@ -6,7 +6,7 @@
     if counter(page).get().first() > 1 [
       #grid(
         columns: (1fr, auto),
-        align(left)[#text(size: 6.3pt, weight: "bold", fill: rgb("#0f172a"))[FIRMA PERICIAL MALLEN® • EXPEDIENTE CORPORATIVO DE CUMPLIMIENTO INTEGRAL • {{EMPRESA_TAX_ID}}]],
+        align(left)[#text(size: 6.3pt, weight: "bold", fill: rgb("#0f172a"))[FIRMA W16 MALLEN® • EXPEDIENTE CORPORATIVO DE CUMPLIMIENTO INTEGRAL • {{EMPRESA_TAX_ID}}]],
         align(right)[#text(size: 6.3pt, fill: rgb("#475569"))[SELLO CRIPTOGRÁFICO SHA-256: {{AUDIT_HASH}}]]
       )
       #v(-0.15cm)

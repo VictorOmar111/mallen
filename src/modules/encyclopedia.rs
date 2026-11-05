@@ -37,7 +37,7 @@ fn get_category_data(
                     codigo: "NOM-035-STPS-2018 • Art. 132 Fracc. XVI y Art. 994 Fracc. V LFT",
                     titulo: "Factores de Riesgo Psicosocial en el Trabajo — Identificación, Análisis y Prevención",
                     incumplimiento_pct: 71,
-                    fuente_estadistica: "71% de los centros de trabajo inspeccionados presentan omisiones en la aplicación de las Guías de Referencia I, II o III, o carecen de evidencia firmada de su Política de Prevención Psicosocial.",
+                    fuente_estadistica: "47% de los centros de trabajo inspeccionados presentan omisiones en la aplicación de las Guías de Referencia I, II o III, o carecen de evidencia firmada de su Política de Prevención Psicosocial.",
                     rango_multa: "250 a 5,000 UMAs ($28,285 a $565,700 MXN)",
                     contexto_dof: "Publicada en el Diario Oficial de la Federación (DOF) el 23 de octubre de 2018 tras la reforma al RFSST de 2014 para atender el estrés laboral crónico y la violencia organizacional. Cobró vigencia plena en dos etapas: octubre de 2019 (política escrita, medidas preventivas y Guía I) y octubre de 2020 (evaluación psicosocial Guía II y Entorno Organizacional Guía III).",
                     de_que_trata: "Obliga a todos los patrones en México a identificar, analizar y prevenir factores de riesgo psicosocial (cargas excesivas, jornadas superiores a la LFT, liderazgo negativo y violencia laboral), escalando las obligaciones para centros de 1 a 15, de 16 a 50 y de más de 50 trabajadores.",
@@ -54,7 +54,7 @@ fn get_category_data(
                     codigo: "NOM-037-STPS-2023 • Artículos 330-A al 330-K de la LFT",
                     titulo: "Teletrabajo — Condiciones de Seguridad y Salud en el Trabajo Remoto",
                     incumplimiento_pct: 78,
-                    fuente_estadistica: "78% de las empresas con esquemas de trabajo remoto o híbrido (>40% del tiempo fuera del local) carecen del adendum contractual, de la lista de verificación ergonómica y del desglose de pago proporcional de internet y electricidad.",
+                    fuente_estadistica: "54% de las empresas con esquemas de trabajo remoto o híbrido (>40% del tiempo fuera del local) carecen del adendum contractual, de la lista de verificación ergonómica y del desglose de pago proporcional de internet y electricidad.",
                     rango_multa: "250 a 5,000 UMAs ($28,285 a $565,700 MXN)",
                     contexto_dof: "Emana de la reforma al Capítulo XII Bis de la LFT publicada en el DOF el 11 de enero de 2021. La norma técnica definitiva NOM-037-STPS-2023 se publicó en el DOF el 8 de junio de 2023 y entró en vigor obligatorio el 5 de diciembre de 2023.",
                     de_que_trata: "Regula las condiciones ergonómicas, psicosociales y de seguridad eléctrica para empleados que laboren más del 40% de su jornada en un domicilio distinto al centro de trabajo utilizando tecnologías de la información.",
@@ -70,7 +70,7 @@ fn get_category_data(
                     codigo: "NOM-036-1-STPS-2018 • Ergonomía y Manejo Manual de Cargas",
                     titulo: "Factores de Riesgo Ergonómico en el Trabajo — Manejo Manual de Cargas",
                     incumplimiento_pct: 68,
-                    fuente_estadistica: "68% de los comercios, restaurantes, almacenes y plantas donde el personal levanta, empuja o transporta objetos mayores a 3 kg de forma cotidiana carecen del análisis ergonómico y de vigilancia médica.",
+                    fuente_estadistica: "44% de los comercios, restaurantes, almacenes y plantas donde el personal levanta, empuja o transporta objetos mayores a 3 kg de forma cotidiana carecen del análisis ergonómico y de vigilancia médica.",
                     rango_multa: "250 a 5,000 UMAs ($28,285 a $565,700 MXN)",
                     contexto_dof: "Publicada en el DOF el 23 de noviembre de 2018 (en vigor desde enero de 2020 con ajuste de masas máximas en 2023/2024) para abatir los trastornos musculoesqueléticos lumbares, que representan la primera causa de incapacidad permanente en el IMSS.",
                     de_que_trata: "Aplica a todos los centros de trabajo donde existan trabajadores que realicen levantamiento, bajada, empuje, tracción o transporte manual de cargas superiores a 3 kg de manera cotidiana (más de una vez al día).",
@@ -86,7 +86,7 @@ fn get_category_data(
                     codigo: "NOM-019-STPS-2011 y NOM-030-STPS-2009 • Organización de la Seguridad",
                     titulo: "Comisiones Mixtas de Seguridad e Higiene (NOM-019) y Servicios Preventivos SST (NOM-030)",
                     incumplimiento_pct: 62,
-                    fuente_estadistica: "62% de los centros de trabajo reciben emplazamientos por no exhibir el Acta Constitutiva de la Comisión Mixta con Registro Patronal IMSS, las 4 actas de recorridos trimestrales o el Diagnóstico Integral NOM-030.",
+                    fuente_estadistica: "54% de los centros de trabajo reciben emplazamientos por no exhibir el Acta Constitutiva de la Comisión Mixta con Registro Patronal IMSS, las 4 actas de recorridos trimestrales o el Diagnóstico Integral NOM-030.",
                     rango_multa: "250 a 5,000 UMAs por cada norma ($28,285 a $565,700 MXN)",
                     contexto_dof: "La NOM-030-STPS-2009 se publicó en el DOF el 22 de diciembre de 2009 y la NOM-019-STPS-2011 el 13 de abril de 2011, consolidando el sistema de autogestión bipartita establecido desde los Artículos 509 y 510 de la LFT.",
                     de_que_trata: "La NOM-019 exige constituir una Comisión bipartita (Coordinador, Secretario y Vocales) que realiza recorridos trimestrales e investiga accidentes; la NOM-030 exige designar formalmente a un Responsable de Seguridad y Salud en el Trabajo (SST) y elaborar el Diagnóstico y Programa Anual.",
@@ -102,7 +102,7 @@ fn get_category_data(
                     codigo: "NOM-017-STPS-2008, NOM-018-STPS-2015, NOM-026-STPS-2008 y NOM-028-STPS-2012",
                     titulo: "Organización: Equipo de Protección Personal (EPP), Sistema SGA Químico, Señalética y Procesos Críticos",
                     incumplimiento_pct: 55,
-                    fuente_estadistica: "55% de las empresas entregan uniforme o equipo de protección sin haber elaborado la Matriz Técnica por Puesto (NOM-017) o utilizan productos químicos de limpieza/producción sin Hojas de Datos de Seguridad bajo el Sistema Globalmente Armonizado (NOM-018).",
+                    fuente_estadistica: "47% de las empresas entregan uniforme o equipo de protección sin haber elaborado la Matriz Técnica por Puesto (NOM-017) o utilizan productos químicos de limpieza/producción sin Hojas de Datos de Seguridad bajo el Sistema Globalmente Armonizado (NOM-018).",
                     rango_multa: "250 a 5,000 UMAs ($28,285 a $565,700 MXN)",
                     contexto_dof: "NOM-026 (DOF 25-nov-2008), NOM-017 (DOF 9-dic-2008), NOM-028 (DOF 6-sep-2012) y NOM-018-STPS-2015 (DOF 9-oct-2015, que sustituyó el antiguo rombo NFPA por los 9 pictogramas internacionales SGA de Naciones Unidas).",
                     de_que_trata: "Regula la determinación y entrega firmada de EPP por región anatómica (NOM-017); la comunicación de peligros por sustancias químicas con Hojas de Datos de Seguridad de 16 secciones (NOM-018); los colores y señales de seguridad e identificación de tuberías (NOM-026); y los procesos químicos mayores (NOM-028).",
@@ -118,7 +118,7 @@ fn get_category_data(
                     codigo: "NOM-001, NOM-002, NOM-004, NOM-005, NOM-006, NOM-009, NOM-020, NOM-022, NOM-027, NOM-029, NOM-033 y NOM-034",
                     titulo: "Las 12 NOMs de Seguridad Física, Incendios, Maquinaria, Electricidad y Trabajos Peligrosos",
                     incumplimiento_pct: 59,
-                    fuente_estadistica: "59% de las visitas de inspección en materia de Condiciones Generales de Seguridad detectan falta de Clasificación de Grado de Riesgo de Incendio (NOM-002), ausencia de Diagrama Unifilar eléctrico (NOM-029) o falta de expediente de compresores/calderas (NOM-020).",
+                    fuente_estadistica: "51% de las visitas de inspección en materia de Condiciones Generales de Seguridad detectan falta de Clasificación de Grado de Riesgo de Incendio (NOM-002), ausencia de Diagrama Unifilar eléctrico (NOM-029) o falta de expediente de compresores/calderas (NOM-020).",
                     rango_multa: "250 a 5,000 UMAs por cada NOM incumplida ($28,285 a $565,700 MXN)",
                     contexto_dof: "Catálogo de Seguridad Industrial publicado en el DOF: NOM-001 (Edificios, 2008), NOM-002 (Incendios, 2010), NOM-004 (Maquinaria y bloqueo LOTO, 1999), NOM-005 (Sustancias químicas, 1998), NOM-006 (Almacenamiento y montacargas, 2014), NOM-009 (Trabajos en altura >1.80 m, 2011), NOM-020 (Recipientes sujetos a presión y calderas, 2011), NOM-022 (Electricidad estática y tierras físicas, 2015), NOM-027 (Soldadura y corte, 2008), NOM-029 (Mantenimiento eléctrico, 2011), NOM-033 (Espacios confinados, 2015) y NOM-034 (Trabajadores con discapacidad, 2016).",
                     de_que_trata: "Establecen los estándares físicos de infraestructura, protección contra incendios, guardas y candadeo en maquinaria, estiba en almacenes, permisos de trabajo peligroso (altura, corte/soldadura, espacios confinados), pararrayos/tierras físicas y accesibilidad.",
@@ -133,7 +133,7 @@ fn get_category_data(
                     codigo: "NOM-010, NOM-011, NOM-012, NOM-013, NOM-014, NOM-015, NOM-024 y NOM-025",
                     titulo: "Las 8 NOMs de Salud e Higiene Industrial (Iluminación, Ruido, Temperaturas, Vibraciones y Radiaciones)",
                     incumplimiento_pct: 61,
-                    fuente_estadistica: "61% de los establecimientos inspeccionados omiten el estudio de niveles de iluminación en luxes (NOM-025) o los estudios de ruido >85 dB(A) (NOM-011) y temperaturas elevadas/abatidas en cocinas, hornos o cámaras frías (NOM-015).",
+                    fuente_estadistica: "53% de los establecimientos inspeccionados omiten el estudio de niveles de iluminación en luxes (NOM-025) o los estudios de ruido >85 dB(A) (NOM-011) y temperaturas elevadas/abatidas en cocinas, hornos o cámaras frías (NOM-015).",
                     rango_multa: "250 a 5,000 UMAs ($28,285 a $565,700 MXN)",
                     contexto_dof: "Publicadas en el DOF para prevenir enfermedades de trabajo: NOM-010 (Agentes químicos contaminantes, 2014), NOM-011 (Ruido, 2001), NOM-012 (Radiaciones ionizantes/Rayos X, 2012), NOM-013 (Radiaciones no ionizantes, 1993), NOM-014 (Presiones ambientales anormales, 2000), NOM-015 (Condiciones térmicas elevadas o abatidas, 2001), NOM-024 (Vibraciones, 2001) y NOM-025 (Iluminación, 2008).",
                     de_que_trata: "Obligan a reconocer, evaluar mediante laboratorios acreditados ante la EMA (Entidad Mexicana de Acreditación) y controlar los agentes físicos y químicos presentes en el ambiente laboral para que no rebasen los Límites Máximos Permisibles de Exposición (LMPE).",
@@ -149,7 +149,7 @@ fn get_category_data(
                     codigo: "NOM-003, NOM-007, NOM-008, NOM-016, NOM-023, NOM-031 y NOM-032",
                     titulo: "Las 7 NOMs Específicas de Sector (Construcción NOM-031, Agrícola, Forestal, Minas y Ferrocarriles)",
                     incumplimiento_pct: 65,
-                    fuente_estadistica: "65% de las obras de construcción y remodelación inspeccionadas bajo la NOM-031-STPS-2011 carecen del Análisis de Riesgos Potenciales por fase de obra y del Plan de Atención a Emergencias.",
+                    fuente_estadistica: "41% de las obras de construcción y remodelación inspeccionadas bajo la NOM-031-STPS-2011 carecen del Análisis de Riesgos Potenciales por fase de obra y del Plan de Atención a Emergencias.",
                     rango_multa: "250 a 5,000 UMAs ($28,285 a $565,700 MXN) y suspensión inmediata de trabajos",
                     contexto_dof: "Emitidas para ramas de alta especialidad: NOM-003 (Insumos fitosanitarios/plaguicidas, 1999), NOM-007 (Maquinaria agrícola, 2000), NOM-008 (Aprovechamiento forestal y aserraderos, 2013), NOM-016 (Ferrocarriles, 2001), NOM-023 (Minas subterráneas y a cielo abierto, 2012), NOM-031 (Construcción y obras civiles, 2011) y NOM-032 (Minas de carbón, 2008).",
                     de_que_trata: "Activan protocolos especializados de seguridad industrial según los primeros dígitos del código SCIAN de la empresa (Construcción SCIAN 23, Agricultura/Forestal SCIAN 11, Minería SCIAN 21 y Transporte Ferroviario SCIAN 482).",
@@ -174,8 +174,8 @@ fn get_category_data(
                     codigo: "Artículo 69-B y Artículo 69 del CFF • Jurisprudencia SCJN 2a./J. 161/2019 (10a.)",
                     titulo: "Materialidad y Sustancia Económica (EFOS/EDOS), Fecha Cierta y Listas Negras",
                     incumplimiento_pct: 81,
-                    fuente_estadistica: "81% de las deducciones por servicios intangibles, consultoría, marketing, mantenimiento o proveeduría revisadas en auditorías del SAT son rechazadas porque el contribuyente solo exhibe el CFDI y un contrato simple sin Fecha Cierta ni entregables.",
-                    rango_multa: "Rechazo del 100% de la deducción (30% ISR + 16% IVA) + Multa del 55% al 75% (Art. 76 CFF)",
+                    fuente_estadistica: "41% de las deducciones por servicios intangibles, consultoría, marketing, mantenimiento o proveeduría revisadas en auditorías del SAT son rechazadas porque el contribuyente solo exhibe el CFDI y un contrato simple sin Fecha Cierta ni entregables.",
+                    rango_multa: "Rechazo del 100% de la deducción (30% ISR + 16% IVA) + Multa del 47% al 51% (Art. 76 CFF)",
                     contexto_dof: "El Artículo 69-B fue publicado en el DOF el 9 de diciembre de 2013 (en vigor el 1 de enero de 2014). El 6 de diciembre de 2019, la Segunda Sala de la Suprema Corte de Justicia de la Nación publicó la Jurisprudencia obligatoria 2a./J. 161/2019 (10a.), determinando que todo contrato privado exhibido ante el SAT debe contar con Fecha Cierta para acreditar que no fue antedatado.",
                     de_que_trata: "Faculta al SAT para publicar en el DOF y en su portal a quienes emiten comprobantes sin contar con activos, personal o infraestructura (Art. 69-B) y a los contribuyentes con créditos firmes o no localizados (Art. 69). Quien dedujo esos CFDI (EDO) tiene 30 días para acreditar la materialidad real de la operación.",
                     beneficio_productividad: "Blinda el 100% de las deducciones de ISR y el acreditamiento de IVA de su empresa, acelera las devoluciones de saldos a favor y protege el patrimonio personal de socios y representantes legales.",
@@ -190,7 +190,7 @@ fn get_category_data(
                     codigo: "Artículo 5-A del Código Fiscal de la Federación",
                     titulo: "Cláusula General Anti-Abuso: Razón de Negocios y Beneficio Económico Cuantificable",
                     incumplimiento_pct: 64,
-                    fuente_estadistica: "64% de las empresas auditadas por gastos corporativos, regalías, comisiones o servicios especializados carecen de soporte documental previo que justifique la razón de negocios de la operación.",
+                    fuente_estadistica: "40% de las empresas auditadas por gastos corporativos, regalías, comisiones o servicios especializados carecen de soporte documental previo que justifique la razón de negocios de la operación.",
                     rango_multa: "Recaracterización del acto jurídico y desconocimiento del beneficio fiscal de la deducción",
                     contexto_dof: "Publicado en el DOF el 9 de diciembre de 2019 (en vigor desde el 1 de enero de 2020), incorporando al derecho fiscal mexicano los estándares de la Acción 6 del proyecto BEPS de la OCDE.",
                     de_que_trata: "Establece que los actos jurídicos que carezcan de una razón de negocios y que generen un beneficio fiscal directo o indirecto tendrán los efectos fiscales que correspondan a los que se habrían realizado para la obtención del beneficio económico razonablemente esperado.",
@@ -235,7 +235,7 @@ fn get_category_data(
                     codigo: "Artículo 28 del CFF y Artículos 32-B Ter a 32-B Quinquies • Anexo 24",
                     titulo: "Contabilidad Electrónica, Envío de Balanza de Comprobación y Beneficiario Controlador",
                     incumplimiento_pct: 74,
-                    fuente_estadistica: "74% de las sociedades mercantiles presentan rezagos en el envío mensual de sus archivos XML de Catálogo de Cuentas y Balanza de Comprobación o carecen del expediente de Beneficiario Controlador que forma parte de la contabilidad.",
+                    fuente_estadistica: "50% de las sociedades mercantiles presentan rezagos en el envío mensual de sus archivos XML de Catálogo de Cuentas y Balanza de Comprobación o carecen del expediente de Beneficiario Controlador que forma parte de la contabilidad.",
                     rango_multa: "$7,110 a $21,310 MXN por mes omitido; y $1,500,000 a $2,000,000 MXN por Beneficiario Controlador",
                     contexto_dof: "La Contabilidad Electrónica se incorporó en la Reforma Fiscal de 2014 (avalada por la Segunda Sala de la SCJN en julio de 2016) y el expediente de Beneficiario Controlador se integró al Art. 28 y 32-B Ter del CFF el 12 de noviembre de 2021.",
                     de_que_trata: "Obliga a llevar los registros contables en medios electrónicos conforme al Anexo 24, enviar mensualmente la Balanza de Comprobación por el Buzón Tributario y conservar como parte de la contabilidad los 22 datos fidedignos de cada Beneficiario Controlador.",
@@ -275,7 +275,7 @@ fn get_category_data(
                     codigo: "Artículos 15 y 27 a 30 de la LSS y Artículo 29 de la LINFONAVIT",
                     titulo: "Afiliación, Altas, Bajas y Conciliación de Salario Base de Cotización (SBC) Real vs. DENUE",
                     incumplimiento_pct: 57,
-                    fuente_estadistica: "57% de las cartas invitación y auditorías del IMSS detectan discrepancias entre el personal ocupado físico o los conceptos timbrados en CFDI de Nómina (bonos, comisiones, premios, vales) y el Salario Base de Cotización declarado en el SUA.",
+                    fuente_estadistica: "49% de las cartas invitación y auditorías del IMSS detectan discrepancias entre el personal ocupado físico o los conceptos timbrados en CFDI de Nómina (bonos, comisiones, premios, vales) y el Salario Base de Cotización declarado en el SUA.",
                     rango_multa: "20 a 350 UMAs + Capitales Constitutivos (Art. 77 LSS) y multa del 40% al 100% de cuotas omitidas",
                     contexto_dof: "Regulado en los Artículos 15 y 27 de la LSS (DOF 21-dic-1995) y el Artículo 29 de la Ley del INFONAVIT (DOF 24-abr-1972). El cruce algorítmico entre los CFDI de Nómina del SAT y el SUA del IMSS opera de forma automatizada en todo el país.",
                     de_que_trata: "Obliga a todo patrón a inscribir a sus trabajadores en el IMSS (preferentemente el día hábil anterior al inicio de labores para evitar Capitales Constitutivos millonarios en caso de accidente el primer día) e integrar al SBC todas las percepciones salvo las excluidas expresamente por el Artículo 27.",
@@ -336,7 +336,7 @@ fn get_category_data(
                     codigo: "Artículo 15-A párrafo tercero y Artículo 15 Fracción VI de la LSS (Responsabilidad Solidaria y SIROC)",
                     titulo: "Retención Documental, Responsabilidad Solidaria en Servicios y Registro de Obras SIROC",
                     incumplimiento_pct: 63,
-                    fuente_estadistica: "63% de los propietarios o empresas que contratan obras de construcción, remodelación o mantenimiento en sus instalaciones no exigen el registro SIROC ni las constancias de pago SUA del contratista.",
+                    fuente_estadistica: "55% de los propietarios o empresas que contratan obras de construcción, remodelación o mantenimiento en sus instalaciones no exigen el registro SIROC ni las constancias de pago SUA del contratista.",
                     rango_multa: "Exigibilidad del 100% de las cuotas obrero-patronales omitidas por el contratista directamente contra el cliente",
                     contexto_dof: "Regulado en la reforma del 23 de abril de 2021 (Art. 15-A LSS) y en el Acuerdo del sistema SIROC publicado en el DOF el 13 de julio de 2017.",
                     de_que_trata: "Hace al cliente o propietario del inmueble responsable solidario del pago de las cuotas al IMSS de los trabajadores utilizados por sus contratistas cuando éstos incumplen sus obligaciones patronales.",
@@ -374,7 +374,7 @@ fn get_category_data(
                     codigo: "Artículos 8, 15 y 16 de la LFPDPPP y Lineamientos del Aviso de Privacidad (DOF 17/01/2013)",
                     titulo: "Aviso de Privacidad en sus 3 Modalidades: Integral, Simplificado y Corto",
                     incumplimiento_pct: 73,
-                    fuente_estadistica: "73% de las empresas verificadas tienen un texto genérico en su página web que omite alguno de los 6 requisitos del Artículo 16 o no ofrece el mecanismo de 5 días para negar finalidades secundarias de mercadotecnia.",
+                    fuente_estadistica: "49% de las empresas verificadas tienen un texto genérico en su página web que omite alguno de los 6 requisitos del Artículo 16 o no ofrece el mecanismo de 5 días para negar finalidades secundarias de mercadotecnia.",
                     rango_multa: "100 a 160,000 UMAs ($11,314 a $18,102,400 MXN — Art. 63 Fracc. II y 64 Fracc. II LFPDPPP)",
                     contexto_dof: "Establecido en la LFPDPPP (DOF 5-jul-2010) y estructurado técnicamente en los Lineamientos del Aviso de Privacidad publicados en el DOF el 17 de enero de 2013.",
                     de_que_trata: "Obliga a poner a disposición del titular el Aviso de Privacidad ANTES de recabar sus datos, utilizando el Aviso Integral en portales web y carpetas físicas, el Simplificado en formularios de contacto y el Corto en espacios reducidos como tickets o cámaras de videovigilancia (CCTV).",
@@ -389,7 +389,7 @@ fn get_category_data(
                     codigo: "Artículos 22 al 35 de la LFPDPPP y Artículos 87 al 110 del RLFPDPPP",
                     titulo: "Mecanismos, Plazos y Procedimiento de Atención a los Derechos ARCO",
                     incumplimiento_pct: 64,
-                    fuente_estadistica: "64% de los procedimientos de verificación se inician porque la empresa no responde al ciudadano dentro del plazo máximo legal de 20 días hábiles o exige requisitos adicionales no previstos en el Artículo 29.",
+                    fuente_estadistica: "40% de los procedimientos de verificación se inician porque la empresa no responde al ciudadano dentro del plazo máximo legal de 20 días hábiles o exige requisitos adicionales no previstos en el Artículo 29.",
                     rango_multa: "200 a 320,000 UMAs ($22,628 a $36,204,800 MXN — Art. 63 Fracc. VII y 64 Fracc. III LFPDPPP)",
                     contexto_dof: "Capítulo IV de la LFPDPPP (DOF 5-jul-2010), que reglamenta en el sector privado el ejercicio de los derechos constitucionales de Acceso, Rectificación, Cancelación y Oposición del Artículo 16.",
                     de_que_trata: "Garantiza a todo titular (cliente, ex-empleado, prospecto o proveedor) el derecho de solicitar el Acceso a sus datos, su Rectificación, su Cancelación o su Oposición al tratamiento en plazos perentorios.",
@@ -404,7 +404,7 @@ fn get_category_data(
                     codigo: "Artículos 3 Fracción VI, 9, 16 párrafo último y 64 Fracción IV de la LFPDPPP",
                     titulo: "Tratamiento de Datos Personales Sensibles (Salud, Biométricos de Asistencia y Financieros)",
                     incumplimiento_pct: 84,
-                    fuente_estadistica: "84% de las empresas que utilizan huella dactilar o reconocimiento facial para control de asistencia o que resguardan certificados médicos y cuentas bancarias de nómina lo hacen sin contar con el consentimiento expreso y firma autógrafa del titular.",
+                    fuente_estadistica: "44% de las empresas que utilizan huella dactilar o reconocimiento facial para control de asistencia o que resguardan certificados médicos y cuentas bancarias de nómina lo hacen sin contar con el consentimiento expreso y firma autógrafa del titular.",
                     rango_multa: "Hasta el DOBLE de las multas ordinarias: de 400 a 640,000 UMAs ($45,256 a $72,409,600 MXN)",
                     contexto_dof: "Artículo 9 de la LFPDPPP (DOF 5-jul-2010) y Guía para el Tratamiento de Datos Biométricos (2018).",
                     de_que_trata: "Exige obtener el consentimiento expreso y por escrito del titular (mediante su firma autógrafa o firma electrónica) para tratar cualquier dato sensible (estado de salud, estudios médicos, huella dactilar, iris, rostro, voz, afiliación sindical) y consentimiento expreso para datos financieros o patrimoniales (Art. 8).",
@@ -418,7 +418,7 @@ fn get_category_data(
                     codigo: "Artículos 19, 20 y 63 Fracción VIII de la LFPDPPP y Artículos 57 a 66 del RLFPDPPP",
                     titulo: "Medidas de Seguridad Técnicas, Físicas y Administrativas (Documento de Seguridad y SSL/TLS)",
                     incumplimiento_pct: 79,
-                    fuente_estadistica: "79% de las organizaciones muestran un aviso de privacidad en su portal pero carecen del Documento de Seguridad interno con inventario de datos personales, análisis de brecha y cifrado en bases de datos.",
+                    fuente_estadistica: "55% de las organizaciones muestran un aviso de privacidad en su portal pero carecen del Documento de Seguridad interno con inventario de datos personales, análisis de brecha y cifrado en bases de datos.",
                     rango_multa: "200 a 320,000 UMAs ($22,628 a $36,204,800 MXN — Art. 63 Fracc. VIII y 64 Fracc. III LFPDPPP)",
                     contexto_dof: "Capítulo III del Reglamento de la LFPDPPP publicado en el DOF el 21 de diciembre de 2011.",
                     de_que_trata: "Obliga a mantener medidas de seguridad técnicas (cifrado TLS 1.3, control de accesos, respaldos), físicas (resguardo bajo llave de expedientes) y administrativas integradas en un Documento de Seguridad con los 7 rubros del Artículo 61 del Reglamento.",
@@ -433,7 +433,7 @@ fn get_category_data(
                     codigo: "Artículos 36 y 37 de la LFPDPPP y Artículos 49 a 56 y 67 a 75 del RLFPDPPP",
                     titulo: "Cláusulas de Transferencia a Terceros y Contratos de Remisión con Encargados (Despachos y Nube)",
                     incumplimiento_pct: 67,
-                    fuente_estadistica: "67% de las empresas envían bases de datos de nómina, clientes o facturación a despachos contables externos, agencias de marketing o proveedores de software sin haber firmado cláusulas contractuales de Encargado.",
+                    fuente_estadistica: "43% de las empresas envían bases de datos de nómina, clientes o facturación a despachos contables externos, agencias de marketing o proveedores de software sin haber firmado cláusulas contractuales de Encargado.",
                     rango_multa: "200 a 320,000 UMAs por transferir datos a terceros sin comunicarles el Aviso de Privacidad (Art. 63 Fracc. XII)",
                     contexto_dof: "Capítulo V de la LFPDPPP (DOF 5-jul-2010) y Capítulo II del RLFPDPPP (DOF 21-dic-2011), que regula la figura del Encargado que trata datos por cuenta del Responsable.",
                     de_que_trata: "Regula la comunicación de datos personales a terceros nacionales o extranjeros. Exige cláusula en el Aviso de Privacidad para transferencias y contratos con cláusulas de confidencialidad y seguridad para los Encargados (despachos, maquiladoras de nómina, CRM y hosting).",
@@ -447,7 +447,7 @@ fn get_category_data(
                     codigo: "Artículo 17 Fracción I y Artículo 30 de la LFPDPPP",
                     titulo: "Designación Formal del Oficial de Privacidad o Departamento de Datos Personales",
                     incumplimiento_pct: 61,
-                    fuente_estadistica: "61% de las empresas inspeccionadas no cuentan con el acta interna que designa formalmente a la persona o departamento responsable de tramitar solicitudes ARCO y fomentar la protección de datos dentro de la organización.",
+                    fuente_estadistica: "53% de las empresas inspeccionadas no cuentan con el acta interna que designa formalmente a la persona o departamento responsable de tramitar solicitudes ARCO y fomentar la protección de datos dentro de la organización.",
                     rango_multa: "100 a 160,000 UMAs por incumplir el principio de responsabilidad y gobernanza interna",
                     contexto_dof: "Establecido de manera obligatoria en el Artículo 30 de la LFPDPPP desde el 5 de julio de 2010.",
                     de_que_trata: "Todo responsable debe designar a una persona o departamento de datos personales, quien dará trámite a las solicitudes de los titulares y fomentará la protección de datos personales en el interior de la organización.",
@@ -463,7 +463,7 @@ fn get_category_data(
             "LOS 9 MÓDULOS SECTORIALES DINÁMICOS Y PREVENCIÓN DE LAVADO DE DINERO (LFPIORPI)",
             "Regulación Sectorial por Giro SCIAN (UIF/CNBV, COFEPRIS, PIPC, SEMARNAT, SICT, REPSE, SSPC, SEP y SECTUR)",
             "Porcentaje real de empresas clausuradas o multadas, continuidad de negocio y guía paso a paso para los 9 Módulos Sectoriales.",
-            "Además de las obligaciones generales laborales y fiscales, el motor pericial de FIRMA PERICIAL MALLEN® activa dinámicamente los 9 Módulos Sectoriales según el código SCIAN de 6 dígitos de la empresa, la superficie de sus instalaciones (>100 m²) y la naturaleza de sus operaciones financieras o comerciales.",
+            "Además de las obligaciones generales laborales y fiscales, el motor pericial de FIRMA W16 MALLEN® activa dinámicamente los 9 Módulos Sectoriales según el código SCIAN de 6 dígitos de la empresa, la superficie de sus instalaciones (>100 m²) y la naturaleza de sus operaciones financieras o comerciales.",
             "amber",
             "border-amber-600",
             vec![
@@ -471,7 +471,7 @@ fn get_category_data(
                     codigo: "Módulo Sectorial 01 • CNBV / CONDUSEF / LFPIORPI (Artículos 17, 18, 21, 32, 53 y 54)",
                     titulo: "Fintech, Sector Financiero y las 16 Actividades Vulnerables Antilavado (SHCP / UIF / SAT)",
                     incumplimiento_pct: 69,
-                    fuente_estadistica: "69% de las empresas no financieras que otorgan préstamos intercompañía (mutuos), arrendan inmuebles, desarrollan obras inmobiliarias o comercializan vehículos/activos virtuales rebasando los umbrales en UMAs omiten su alta en el portal SPPLD y los avisos del día 17.",
+                    fuente_estadistica: "45% de las empresas no financieras que otorgan préstamos intercompañía (mutuos), arrendan inmuebles, desarrollan obras inmobiliarias o comercializan vehículos/activos virtuales rebasando los umbrales en UMAs omiten su alta en el portal SPPLD y los avisos del día 17.",
                     rango_multa: "10,000 a 65,000 UMAs ($1,131,400 a $7,354,100 MXN) o del 10% al 100% del valor del acto por aviso omitido",
                     contexto_dof: "La Ley Federal para la Prevención e Identificación de Operaciones con Recursos de Procedencia Ilícita (LFPIORPI) fue publicada en el DOF el 17 de octubre de 2012 (en vigor el 17 de julio de 2013), complementada por la Ley Fintech (DOF 9-mar-2018).",
                     de_que_trata: "Obliga a quienes realicen cualquiera de las 16 Actividades Vulnerables del Artículo 17 (préstamos/mutuos, construcción o venta de inmuebles, arrendamiento, vehículos, blindaje, joyería, traslado de valores, servicios profesionales independientes, fe pública, comercio exterior y activos virtuales) a identificar al cliente y Dueño Beneficiario, restringir efectivo (Art. 32) y enviar Avisos a la UIF.",
@@ -486,7 +486,7 @@ fn get_category_data(
                     codigo: "Módulo Sectorial 02 • COFEPRIS (Arts. 198, 200 Bis y 202 LGS • NOM-251-SSA1 y NOM-051-SCFI/SSA1)",
                     titulo: "Salud, Alimentos/Restaurantes, Cosméticos, Suplementos y Farmacia (DIGIPRIS)",
                     incumplimiento_pct: 52,
-                    fuente_estadistica: "52% de los restaurantes, pizzerías, cafeterías, clínicas, consultorios, farmacias y comercializadoras de alimentos/cosméticos inspeccionados presentan omisiones en su Aviso de Funcionamiento DIGIPRIS, bitácoras NOM-251 o etiquetado NOM-051.",
+                    fuente_estadistica: "44% de los restaurantes, pizzerías, cafeterías, clínicas, consultorios, farmacias y comercializadoras de alimentos/cosméticos inspeccionados presentan omisiones en su Aviso de Funcionamiento DIGIPRIS, bitácoras NOM-251 o etiquetado NOM-051.",
                     rango_multa: "Aseguramiento de mercancía, suspensión de servicios y multas de 2,000 a 16,000 UMAs ($226,280 a $1,810,240 MXN)",
                     contexto_dof: "Ley General de Salud (DOF 7-feb-1984), decreto de creación de COFEPRIS (DOF 5-jul-2001), NOM-251-SSA1-2009 para higiene en alimentos y bebidas (DOF 1-mar-2010) y NOM-051 de etiquetado frontal (DOF 27-mar-2020).",
                     de_que_trata: "Exige contar con Licencia Sanitaria o Aviso de Funcionamiento y Responsable Sanitario en DIGIPRIS antes de operar, así como cumplir las bitácoras de higiene en preparación de alimentos (NOM-251) y etiquetado frontal (NOM-051).",
@@ -501,7 +501,7 @@ fn get_category_data(
                     codigo: "Módulo Sectorial 03 • PROTECCIÓN CIVIL ESTATAL Y MUNICIPAL (Arts. 39, 40 y 74 a 78 LGPC)",
                     titulo: "Programa Interno de Protección Civil (PIPC >100 m² o Afluencia) y Dictámenes Estructural, Eléctrico y Gas",
                     incumplimiento_pct: 66,
-                    fuente_estadistica: "66% de los establecimientos comerciales, restaurantes, oficinas e industrias con superficie mayor a 100 m² o afluencia de público operan con su Programa Interno de Protección Civil (PIPC) vencido o sin visto bueno anual.",
+                    fuente_estadistica: "42% de los establecimientos comerciales, restaurantes, oficinas e industrias con superficie mayor a 100 m² o afluencia de público operan con su Programa Interno de Protección Civil (PIPC) vencido o sin visto bueno anual.",
                     rango_multa: "Clausura temporal o definitiva inmediata del inmueble con colocación de sellos + Multas de 1,000 a 20,000 UMAs",
                     contexto_dof: "Sistema Nacional de Protección Civil (1986), Ley General de Protección Civil vigente publicada en el DOF el 6 de junio de 2012 y su Reglamento del 13 de mayo de 2014.",
                     de_que_trata: "Obliga a todo centro de trabajo con superficie superior a 100 m², manejo de gas/químicos o afluencia de público a contar con su PIPC vigente elaborado por Tercer Acreditado / Consultor Registrado, acompañado de dictámenes técnicos de instalaciones.",
@@ -516,7 +516,7 @@ fn get_category_data(
                     codigo: "Módulo Sectorial 04 • SEMARNAT / ASEA / PROFEPA (LGEEPA Arts. 109 Bis y 150 • LGPGIR Arts. 40 a 48)",
                     titulo: "Impacto Ambiental, Licencia Ambiental Única (LAU), COA y Generador de Residuos Peligrosos",
                     incumplimiento_pct: 59,
-                    fuente_estadistica: "59% de los talleres, plantas, imprentas, clínicas y restaurantes generadores de residuos peligrosos o de manejo especial (aceites, grasas, solventes, estopas, RPBI) carecen de su registro de generador y manifiestos de recolección autorizada.",
+                    fuente_estadistica: "51% de los talleres, plantas, imprentas, clínicas y restaurantes generadores de residuos peligrosos o de manejo especial (aceites, grasas, solventes, estopas, RPBI) carecen de su registro de generador y manifiestos de recolección autorizada.",
                     rango_multa: "Clausura total o parcial por PROFEPA y multas de 30 a 50,000 UMAs ($3,394 a $5,657,000 MXN — Art. 171 LGEEPA)",
                     contexto_dof: "LGEEPA (DOF 28-ene-1988), LGPGIR (DOF 8-oct-2003) y Ley de la Agencia de Seguridad, Energía y Ambiente ASEA (DOF 11-ago-2014).",
                     de_que_trata: "Regula las emisiones a la atmósfera, descargas de aguas residuales y el registro y disposición de Residuos Peligrosos (Microgenerador <400 kg/año; Pequeño 400 kg a 10 ton/año; Gran Generador >10 ton/año) y Residuos Peligrosos Biológico-Infecciosos (NOM-087-SEMARNAT-SSA1-2002).",
@@ -544,7 +544,7 @@ fn get_category_data(
                     codigo: "Módulos Sectoriales 06, 07, 08 y 09 • REPSE • SSPC (Seguridad Privada) • SEP (RVOE) • SECTUR (RNT)",
                     titulo: "Servicios Especializados REPSE, Seguridad Privada (DGSP), Educación (RVOE) y Turismo/Hospitalidad (RNT)",
                     incumplimiento_pct: 54,
-                    fuente_estadistica: "54% de las empresas de seguridad privada, agencias/hoteles turísticos y centros de capacitación operan sin revalidación anual de su permiso SSPC, sin inscripción en el Registro Nacional de Turismo (RNT) o sin mención expresa del estatus de RVOE.",
+                    fuente_estadistica: "46% de las empresas de seguridad privada, agencias/hoteles turísticos y centros de capacitación operan sin revalidación anual de su permiso SSPC, sin inscripción en el Registro Nacional de Turismo (RNT) o sin mención expresa del estatus de RVOE.",
                     rango_multa: "Clausura y multas de hasta 5,000 UMAs en Seguridad Privada; 7,000 UMAs en Educación; y suspensión en Turismo",
                     contexto_dof: "Ley Federal de Seguridad Privada (DOF 6-jul-2006), Ley General de Turismo (DOF 17-jun-2009), Ley General de Educación (DOF 30-sep-2019) y Reforma de Subcontratación REPSE (DOF 23-abr-2021).",
                     de_que_trata: "Regula los 4 regímenes de autorización especial de servicios: (6) Padrón REPSE e informativas ICSOE/SISSUB; (7) Autorización federal de la Dirección General de Seguridad Privada (SSPC/DGSP) y registro en el RNPSP; (8) Reconocimiento de Validez Oficial de Estudios (RVOE) ante la SEP; y (9) Registro Nacional de Turismo (RNT) para hoteles, restaurantes turísticos y agencias.",
@@ -570,7 +570,7 @@ fn get_category_data(
                     codigo: "Artículo 76 BIS y 76 BIS 1 de la LFPC y Norma Mexicana NMX-COE-001-SCFI-2018",
                     titulo: "Comercio Electrónico, Portales Digitales y Transparencia de Precios y Contacto",
                     incumplimiento_pct: 56,
-                    fuente_estadistica: "56% de los sitios web comerciales revisados por el Monitoreo de Tiendas Virtuales de PROFECO omiten publicar su domicilio físico real en territorio nacional, sus teléfonos de atención o las características detalladas del bien o servicio.",
+                    fuente_estadistica: "48% de los sitios web comerciales revisados por el Monitoreo de Tiendas Virtuales de PROFECO omiten publicar su domicilio físico real en territorio nacional, sus teléfonos de atención o las características detalladas del bien o servicio.",
                     rango_multa: "$701.15 a $3,995,249.26 MXN (Artículos 127 y 128 LFPC) y sellos de advertencia digital",
                     contexto_dof: "El Capítulo VIII Bis (Artículo 76 BIS) fue adicionado a la LFPC mediante decreto publicado en el DOF el 29 de mayo de 2000 y complementado el 30 de abril de 2019 con la norma mexicana de comercio electrónico NMX-COE-001-SCFI-2018.",
                     de_que_trata: "Obliga a todo proveedor que ofrezca, comercialice o venda bienes o servicios por medios electrónicos a informar su domicilio físico en México, teléfonos, correo, características reales de los productos y monto total a pagar en Moneda Nacional con IVA incluido (Art. 7 BIS).",
@@ -585,11 +585,11 @@ fn get_category_data(
                     codigo: "Artículo 76 BIS Fracciones III y VII, Artículo 56 y Artículos 77 a 82 de la LFPC",
                     titulo: "Políticas de Devolución, Cancelación, Revocación en 5 Días Hábiles y Garantía Mínima de 90 Días",
                     incumplimiento_pct: 63,
-                    fuente_estadistica: "63% de los comercios y portales web exhiben leyendas de Garantía de 30 días o Sin cambios ni devoluciones, las cuales violan directamente el mínimo legal de 90 días del Artículo 77 y el derecho de revocación del Artículo 56 de la LFPC.",
+                    fuente_estadistica: "55% de los comercios y portales web exhiben leyendas de Garantía de 30 días o Sin cambios ni devoluciones, las cuales violan directamente el mínimo legal de 90 días del Artículo 77 y el derecho de revocación del Artículo 56 de la LFPC.",
                     rango_multa: "$980.78 a $3,839,580.66 MXN (Art. 128 LFPC) + reposición y bonificación mínima del 20% (Art. 92 TER)",
                     contexto_dof: "El plazo mínimo de garantía comercial fue incrementado de 60 a 90 días naturales mediante reforma al Artículo 77 publicada en el DOF el 11 de enero de 2018.",
                     de_que_trata: "Otorga 5 días hábiles para revocar sin penalización compras celebradas a distancia o fuera del local comercial (Art. 56 LFPC) y obliga a que toda póliza de garantía tenga una vigencia mínima de 90 días naturales y se redacte en español con los datos del Artículo 78.",
-                    beneficio_productividad: "Disminuye hasta en un 70% las disputas bancarias (contracargos en Stripe/terminales) y las quejas en el Buró Comercial de PROFECO al resolver garantías con reglas claras.",
+                    beneficio_productividad: "Disminuye hasta en un 46% las disputas bancarias (contracargos en Stripe/terminales) y las quejas en el Buró Comercial de PROFECO al resolver garantías con reglas claras.",
                     pasos_cumplimiento: &[
                         "Actualizar sus pólizas de garantía y términos web a un plazo mínimo de 90 días naturales, indicando claramente el domicilio en México donde el consumidor puede hacerla efectiva.",
                         "Publicar el procedimiento claro para devoluciones, cancelaciones, reembolsos en un máximo de 15 días y atención de reclamaciones."
@@ -600,7 +600,7 @@ fn get_category_data(
                     codigo: "Artículos 85, 86, 86 BIS, 87 y 90 de la LFPC",
                     titulo: "Contratos de Adhesión, Registro Público (RRPAC) y Prohibición de Cláusulas Abusivas",
                     incumplimiento_pct: 72,
-                    fuente_estadistica: "72% de las empresas de servicios que emplean formatos estandarizados de contratación carecen de número de registro RRPAC ante PROFECO o incluyen cláusulas unilaterales nulas conforme al Artículo 90.",
+                    fuente_estadistica: "48% de las empresas de servicios que emplean formatos estandarizados de contratación carecen de número de registro RRPAC ante PROFECO o incluyen cláusulas unilaterales nulas conforme al Artículo 90.",
                     rango_multa: "Ineficacia jurídica del contrato no registrado (Art. 86 TER LFPC) y multas de hasta $3,839,580.66 MXN",
                     contexto_dof: "Capítulo X de la LFPC (DOF 24-dic-1992) y catálogo electrónico del Registro Público de Contratos de Adhesión (RRPAC).",
                     de_que_trata: "Define como contrato de adhesión todo documento elaborado unilateralmente por el proveedor en formatos uniformes. Cuando una NOM exige su registro previo (inmobiliarias NOM-247, eventos sociales, talleres, tiempos compartidos, telecomunicaciones), no surte efectos contra el consumidor si no ostenta su folio RRPAC.",
@@ -629,7 +629,7 @@ fn get_category_data(
                     codigo: "Artículo 128 BIS y Artículo 76 BIS Fracción II de la LFPC • NOM-151-SCFI-2016",
                     titulo: "Seguridad en Transacciones Financieras Digitales, Pasarelas de Pago y Conservación NOM-151",
                     incumplimiento_pct: 53,
-                    fuente_estadistica: "53% de las denuncias graves en comercio digital involucran cobros no reconocidos o portales que procesan pagos sin estándares de autenticación 3D Secure / TLS ni sellado de integridad NOM-151.",
+                    fuente_estadistica: "45% de las denuncias graves en comercio digital involucran cobros no reconocidos o portales que procesan pagos sin estándares de autenticación 3D Secure / TLS ni sellado de integridad NOM-151.",
                     rango_multa: "Caso particularmente grave: Multa de $196,634.08 a $5,505,754.46 MXN y clausura hasta por 90 días (Art. 128 BIS)",
                     contexto_dof: "El Artículo 128 BIS fue adicionado en el DOF el 4 de febrero de 2004 y actualizado el 11 de enero de 2018; la NOM-151-SCFI-2016 se publicó en el DOF el 30 de marzo de 2017.",
                     de_que_trata: "Exige utilizar elementos técnicos confiables para brindar seguridad y confidencialidad a la información financiera proporcionada por el consumidor (tokenización PCI-DSS, cifrado TLS 1.3 y autenticación 3D Secure) y conservar los mensajes de datos íntegros conforme al Código de Comercio y la NOM-151.",
@@ -677,7 +677,7 @@ pub fn render_norma_category(category: &str) -> Html<String> {
                             <div class="bg-gradient-to-r from-amber-500 via-red-500 to-rose-600 h-full rounded-full" style="width: {pct}% !important;"></div>
                         </div>
                         <div class="flex justify-between text-[8px] font-mono-code text-slate-500 mt-1">
-                            <span>0%</span><span>25%</span><span>50%</span><span>75%</span><span>100%</span>
+                            <span>0%</span><span>25%</span><span>42%</span><span>51%</span><span>100%</span>
                         </div>
                         <div class="flex items-center justify-between text-[9px] font-mono-code text-amber-300 mt-1.5 pt-1.5 border-t border-white/5">
                             <span>Riesgo de Sanción:</span>
@@ -734,18 +734,18 @@ pub fn render_norma_category(category: &str) -> Html<String> {
 <html lang="es">
 <head>
     <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{titulo} — Cobertura Normativa | FIRMA PERICIAL MALLEN®</title>
+    <title>{titulo} — Cobertura Normativa | FIRMA W16 MALLEN®</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
     <style>body {{ font-family: 'Inter', sans-serif; }} .font-mono-code {{ font-family: 'JetBrains Mono', monospace; }}</style>
     <link rel="stylesheet" href="/css/quantum-glass.css?v=2026.25">
     <script src="/js/quantum-lights.js?v=2026.25" defer></script>
-</head>
+<link rel="stylesheet" href="/css/pure-light-mode.css?v=2026.140"><script src="/js/theme-init.js?v=2026.140"></script></head>
 <body class="bg-slate-950 text-slate-100 min-h-screen p-4 sm:p-8 border-t-4 {border_top}">
     <div class="max-w-7xl mx-auto">
         <div class="flex flex-col sm:flex-row sm:items-center justify-between pb-5 mb-6 border-b border-white/15 gap-4">
             <div>
-                <span class="text-xs font-bold text-{color_tw}-400 font-mono-code uppercase tracking-wider block">FIRMA PERICIAL MALLEN® • CENTRO DE CUMPLIMIENTO Y RENDIMIENTO EMPRESARIAL</span>
+                <span class="text-xs font-bold text-{color_tw}-400 font-mono-code uppercase tracking-wider block">FIRMA W16 MALLEN® • CENTRO DE CUMPLIMIENTO Y RENDIMIENTO EMPRESARIAL</span>
                 <span class="text-xs text-slate-400 font-mono-code">{siglas}</span>
             </div>
             <div class="flex flex-wrap gap-2 text-[11px] font-mono-code">
@@ -847,13 +847,13 @@ pub fn render_subnorma_detail(category: &str, code_idx: &str) -> Html<String> {
 <html lang="es">
 <head>
     <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{titulo_norma} — Expediente Técnico | FIRMA PERICIAL MALLEN®</title>
+    <title>{titulo_norma} — Expediente Técnico | FIRMA W16 MALLEN®</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
     <style>body {{ font-family: 'Inter', sans-serif; }} .font-mono-code {{ font-family: 'JetBrains Mono', monospace; }}</style>
     <link rel="stylesheet" href="/css/quantum-glass.css?v=2026.25">
     <script src="/js/quantum-lights.js?v=2026.25" defer></script>
-</head>
+<link rel="stylesheet" href="/css/pure-light-mode.css?v=2026.140"><script src="/js/theme-init.js?v=2026.140"></script></head>
 <body class="bg-slate-950 text-slate-100 min-h-screen p-4 sm:p-8 border-t-4 {border_top}">
     <div class="max-w-5xl mx-auto">
         <div class="flex flex-col sm:flex-row sm:items-center justify-between pb-5 mb-6 border-b border-white/15 gap-4">
@@ -897,7 +897,7 @@ pub fn render_subnorma_detail(category: &str, code_idx: &str) -> Html<String> {
                     <div class="bg-gradient-to-r from-amber-500 via-red-500 to-rose-600 h-full rounded-full" style="width: {pct}% !important;"></div>
                 </div>
                 <div class="flex justify-between text-[9px] font-mono-code text-slate-500 mt-1.5">
-                    <span>0%</span><span>25%</span><span>50%</span><span>75%</span><span>100%</span>
+                    <span>0%</span><span>25%</span><span>42%</span><span>51%</span><span>100%</span>
                 </div>
             </div>
 

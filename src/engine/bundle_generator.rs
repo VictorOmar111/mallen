@@ -56,7 +56,7 @@ fn compile_kit_document_to_pdf(
         r##"#set page(
   paper: "a4",
   margin: (x: 1.8cm, y: 1.8cm),
-  header: align(right)[#text(size: 7pt, fill: rgb("#64748b"), weight: "bold")[FIRMA PERICIAL MALLEN® — INSTRUMENTO JURÍDICO PERSONALIZADO ({rfc})]],
+  header: align(right)[#text(size: 7pt, fill: rgb("#64748b"), weight: "bold")[FIRMA W16 MALLEN® — INSTRUMENTO JURÍDICO PERSONALIZADO ({rfc})]],
   footer: [
     #line(length: 100%, stroke: 0.4pt + rgb("#cbd5e1"))
     #v(2pt)
@@ -127,7 +127,7 @@ fn render_kit_as_printable_html(title: &str, markdown_body: &str, empresa: &Empr
 </head>
 <body>
   <div style="background:#f8fafc;border:1px solid #cbd5e1;padding:10px 14px;font-size:11px;margin-bottom:20px;">
-    <strong>FIRMA PERICIAL MALLEN® (MALLEN.LAT)</strong> — Instrumento Jurídico Personalizado para <strong>{}</strong> | Sello: <code>{}</code>
+    <strong>FIRMA W16 MALLEN® (MALLEN.LAT)</strong> — Instrumento Jurídico Personalizado para <strong>{}</strong> | Sello: <code>{}</code>
   </div>
   {}
 </body>
@@ -250,7 +250,7 @@ pub fn build_zip_buffer_from_dir_with_session(
     }
 
     let manifiesto_content = format!(
-        "FIRMA PERICIAL MALLEN® (MALLEN.LAT) — CERTIFICADO CRIPTOGRAFICO Y ALCANCE LEGAL\r\nENTIDAD AUDITADA: {}\r\nRFC / TAX ID: {}\r\nFECHA Y HORA UTC: {}\r\nHASH SHA-256 EXPEDIENTE: {}\r\nURL DE VERIFICACION: https://mallen.lat/verify/{}\r\n",
+        "FIRMA W16 MALLEN® (MALLEN.LAT) — CERTIFICADO CRIPTOGRAFICO Y ALCANCE LEGAL\r\nENTIDAD AUDITADA: {}\r\nRFC / TAX ID: {}\r\nFECHA Y HORA UTC: {}\r\nHASH SHA-256 EXPEDIENTE: {}\r\nURL DE VERIFICACION: https://mallen.lat/verify/{}\r\n",
         empresa.nombre,
         tax_id,
         Utc::now().to_rfc3339(),

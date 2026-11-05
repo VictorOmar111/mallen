@@ -96,7 +96,7 @@ impl SatBillingManager {
         let xml_content = format!(
 r#"<?xml version="1.0" encoding="UTF-8"?>
 <cfdi:Comprobante xmlns:cfdi="http://www.sat.gob.mx/cfd/4" xmlns:tfd="http://www.sat.gob.mx/TimbreFiscalDigital" Version="4.0" Fecha="{fecha}" Folio="MALLEN-2026" FormaPago="04" MetodoPago="PUE" Moneda="MXN" SubTotal="{subtotal:.2}" Total="{total:.2}" TipoDeComprobante="I" Exportacion="01" LugarExpedicion="06600">
-  <cfdi:Emisor Rfc="FPM260101AA1" Nombre="FIRMA PERICIAL MALLEN" RegimenFiscal="601"/>
+  <cfdi:Emisor Rfc="FPM260101AA1" Nombre="FIRMA W16 MALLEN®" RegimenFiscal="601"/>
   <cfdi:Receptor Rfc="{rfc}" Nombre="{nombre}" DomicilioFiscalReceptor="{cp}" RegimenFiscalReceptor="{regimen}" UsoCFDI="{uso}"/>
   <cfdi:Conceptos>
     <cfdi:Concepto ClaveProdServ="80121600" Cantidad="1" ClaveUnidad="E48" Unidad="Servicio" Descripcion="{concepto}" ValorUnitario="{subtotal:.2}" Importe="{subtotal:.2}" ObjetoImp="02">

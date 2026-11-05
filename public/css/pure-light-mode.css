@@ -1,0 +1,99 @@
+/* ============================================================================
+   FIRMA W16 MALLEN® — PURE WHITE LIGHT MODE ENGINE (CERO NEGROS NI GRISES)
+   ============================================================================ */
+html.w16-light-mode,
+html.w16-light-mode body {
+    background: #ffffff !important;
+    background-color: #ffffff !important;
+    background-image: none !important;
+    color: #0f172a !important;
+}
+
+html.w16-light-mode body > div:first-child,
+html.w16-light-mode body > div > div:first-child,
+html.w16-light-mode header,
+html.w16-light-mode nav,
+html.w16-light-mode main,
+html.w16-light-mode footer,
+html.w16-light-mode section,
+html.w16-light-mode article,
+html.w16-light-mode details,
+html.w16-light-mode [class*="bg-slate-950"],
+html.w16-light-mode [class*="bg-slate-900"],
+html.w16-light-mode [class*="bg-slate-800"],
+html.w16-light-mode [class*="bg-gray-9"],
+html.w16-light-mode [class*="from-slate-9"],
+html.w16-light-mode .quantum-card,
+html.w16-light-mode .quantum-laser-console,
+html.w16-light-mode #mallen-global-jurisdiction-bar {
+    background: #ffffff !important;
+    background-color: #ffffff !important;
+    background-image: none !important;
+    color: #0f172a !important;
+    border-color: #cbd5e1 !important;
+    box-shadow: 0 4px 14px rgba(2, 132, 199, 0.06) !important;
+}
+
+/* Eliminar cualquier botón gris o negro en Modo Claro */
+html.w16-light-mode button,
+html.w16-light-mode a[class*="bg-slate-"],
+html.w16-light-mode [style*="background:#0f172a"],
+html.w16-light-mode [style*="background:#020617"],
+html.w16-light-mode [style*="background:linear-gradient(90deg,#0f172a"] {
+    background: #f0f9ff !important;
+    background-color: #f0f9ff !important;
+    color: #0369a1 !important;
+    border: 1px solid #7dd3fc !important;
+}
+
+html.w16-light-mode .w16-action-btn,
+html.w16-light-mode #eu-scan-btn,
+html.w16-light-mode button[type="submit"],
+html.w16-light-mode [class*="from-blue-600"] {
+    background: linear-gradient(90deg, #0284c7, #059669) !important;
+    color: #ffffff !important;
+    border: none !important;
+}
+
+html.w16-light-mode input,
+html.w16-light-mode select,
+html.w16-light-mode textarea {
+    background-color: #ffffff !important;
+    color: #0f172a !important;
+    border: 1px solid #94a3b8 !important;
+}
+
+html.w16-light-mode [class*="text-white"],
+html.w16-light-mode [class*="text-slate-100"],
+html.w16-light-mode [class*="text-slate-200"],
+html.w16-light-mode h1,
+html.w16-light-mode h2,
+html.w16-light-mode h3,
+html.w16-light-mode h4,
+html.w16-light-mode summary {
+    color: #0f172a !important;
+}
+
+html.w16-light-mode [class*="text-slate-300"],
+html.w16-light-mode [class*="text-slate-400"],
+html.w16-light-mode [class*="text-slate-500"] {
+    color: #334155 !important;
+}
+
+html.w16-light-mode [class*="text-emerald-400"],
+html.w16-light-mode [class*="text-emerald-300"] {
+    color: #047857 !important;
+}
+
+html.w16-light-mode [class*="text-sky-400"],
+html.w16-light-mode [class*="text-sky-300"],
+html.w16-light-mode [class*="text-blue-400"],
+html.w16-light-mode [class*="text-blue-300"] {
+    color: #0369a1 !important;
+}
+
+html.w16-light-mode [class*="border-slate-800"],
+html.w16-light-mode [class*="border-slate-900"],
+html.w16-light-mode [class*="border-slate-700"] {
+    border-color: #e2e8f0 !important;
+}

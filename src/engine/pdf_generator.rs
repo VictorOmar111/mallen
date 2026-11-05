@@ -107,7 +107,8 @@ pub fn get_catalogo_certificados() -> Vec<CertificadoNorma> {
 }
 
 pub fn sanitize_for_typst(input: &str) -> String {
-    input
+    let clean = input.replace("\\\\$", "$").replace("\\$", "$");
+    clean
         .replace('\\', "\\\\")
         .replace('#', "\\#")
         .replace('$', "\\$")
@@ -195,7 +196,7 @@ fn build_report_typst_markup_full(
         .representante_legal_nombre
         .as_deref()
         .filter(|s| !s.trim().is_empty())
-        .unwrap_or("[APODERADO LEGAL POR DESIGNAR EN CÉDULA]");
+        .unwrap_or("________________________ (Por designar por la empresa)");
     let jurisdiccion = dossier
         .entidad_jurisdiccion
         .as_deref()
@@ -219,7 +220,7 @@ fn build_report_typst_markup_full(
         Some(p) if !p.trim().is_empty() && !p.starts_with("DICTAMINADO_POR:") => {
             format!("DESPACHO AUDITOR ALIADO: {}", sanitize_for_typst(p))
         }
-        _ => "FIRMA PERICIAL MALLEN® (MALLEN.LAT)".to_string(),
+        _ => "FIRMA W16 MALLEN® (MALLEN.LAT)".to_string(),
     };
 
     let (status_hex, banner_bg, banner_border, estatus_texto, badge_accion) = if is_immune {
@@ -616,7 +617,7 @@ pub fn generate_pdf_report_with_session(
         .representante_legal_nombre
         .as_deref()
         .filter(|s| !s.trim().is_empty())
-        .unwrap_or("[APODERADO LEGAL POR DESIGNAR EN CÉDULA]");
+        .unwrap_or("________________________ (Por designar por la empresa)");
     let jurisdiccion = dossier
         .entidad_jurisdiccion
         .as_deref()

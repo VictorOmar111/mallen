@@ -21,7 +21,7 @@ use tokio::task::JoinSet;
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let start_time = Instant::now();
-    println!(" Iniciando Motor FIRMA PERICIAL MALLEN® + SQLite + OSINT Dual-TLS + Merkle L2 (mallen.lat)...");
+    println!(" Iniciando Motor FIRMA W16 MALLEN® + SQLite + OSINT Dual-TLS + Merkle L2 (mallen.lat)...");
 
     let db = Arc::new(LocalDatabase::init("b2b_audits.db")?);
     let shared_client = NetworkClientManager::build_client(None)?;
@@ -137,7 +137,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                     }
                 }
 
-                // 4. Certificación Institucional FIRMA PERICIAL MALLEN®
+                // 4. Certificación Institucional FIRMA W16 MALLEN®
                 let tax_str = e.tax_id.clone().unwrap_or_default();
                 e.accountant_signature = Some(apply_accountant_signature(&profile_clone, &tax_str));
 

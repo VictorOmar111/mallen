@@ -38,7 +38,7 @@
         modal.innerHTML = `
             <div style="background:#0f172a;border:1px solid #334155;border-radius:16px;max-width:480px;width:100%;padding:24px;color:#f1f5f9;box-shadow:0 25px 50px rgba(0,0,0,0.6);">
                 <div style="display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid #1e293b;padding-bottom:12px;margin-bottom:16px;">
-                    <span style="font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:700;color:#38bdf8;">FIRMA PERICIAL MALLEN® • SELLO CRIPTOGRÁFICO</span>
+                    <span style="font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:700;color:#38bdf8;">FIRMA W16 MALLEN® • SELLO CRIPTOGRÁFICO</span>
                     <button id="mallen-badge-close" style="background:none;border:none;color:#94a3b8;cursor:pointer;font-size:16px;"></button>
                 </div>
                 <div style="font-size:12px;font-family:'JetBrains Mono',monospace;margin-bottom:14px;">
