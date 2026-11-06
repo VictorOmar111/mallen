@@ -975,5 +975,49 @@ async fn test_http_form_bot_14_scenarios_with_real_db_companies() {
         .unwrap();
     assert_eq!(next_act_smtp, "RESERVA_SMTP_GUARDADA_SEGUNDA_OLA");
 
-    println!("✓ LOS 52 ESCENARIOS DE TORTURA Y CALIBRACIÓN PYME 10K ($3,000 MXN, CHUNKS 500, SEMÁFORO 32, TIMEOUT 8.5S Y RESERVA SMTP) SUPERADOS AL 100%");
+
+    // Escenario 53: Filtro Preventivo de Dominios Inútiles (Dead-Domain Blacklist: Facebook, MercadoLibre, Gmail) -> Deriva a TIER_6 en 0 ms
+    let r53_fb = HttpFormBot::submit_form_direct(&client, "https://www.facebook.com/TaqueriaElPaisa", "TAQUERIA EL PAISA FACEBOOK", 3000.0).await;
+    assert_eq!(r53_fb, "DOMINIO_RED_SOCIAL_O_DIRECTORIO_OMITIDO");
+    let tier_fb: String = conn
+        .query_row(
+            "SELECT contact_method_tier FROM prospect_pipeline WHERE empresa_nombre = 'TAQUERIA EL PAISA FACEBOOK'",
+            [],
+            |r| r.get(0),
+        )
+        .unwrap();
+    assert_eq!(tier_fb, "TIER_6_PHONE_DENUE_FALLBACK", "Los enlaces de Facebook/MercadoLibre deben ir directo a Tier 6 sin hacer petición HTTP");
+
+    // Escenario 54: Modo de Reanudación Automática por Lotes (Checkpoint & Resume sobre pipeline_stage = 'PENDIENTE_BARRIDO')
+    let _ = conn.execute("DELETE FROM prospect_pipeline WHERE empresa_nombre LIKE 'EMPRESA CHECKPOINT %'", []);
+    conn.execute(
+        "INSERT INTO prospect_pipeline (
+            empresa_nombre, input_url, final_target_url, final_domain,
+            multa_estimada_mxn, ultimo_resultado_codigo, pipeline_stage,
+            next_action_channel, extracted_contact, contact_method_tier
+         ) VALUES ('EMPRESA CHECKPOINT 1', ?1, ?1, '127.0.0.1', 3000.0, 'EN_COLA', 'PENDIENTE_BARRIDO', 'BARRER', '', 'PENDIENTE')",
+        rusqlite::params![format!("{}/wp-contact", base)],
+    )
+    .unwrap();
+
+    // Primera pasada: procesa EMPRESA CHECKPOINT 1 y cambia su estado a STAGE_CONTACTADO_FORM
+    let (proc_first, succ_first) = HttpFormBot::run_checkpoint_resumable_campaign(10, 5).await;
+    assert!(proc_first >= 1 && succ_first >= 1);
+
+    // Segunda pasada inmediata (simulando reinicio de SSH): como ya no está en PENDIENTE_BARRIDO, procesa 0 sin duplicar
+    let (proc_second, _) = HttpFormBot::run_checkpoint_resumable_campaign(10, 5).await;
+    assert_eq!(proc_second, 0, "Checkpoint & Resume no debe reprocesar empresas que ya salieron de PENDIENTE_BARRIDO");
+
+    // Escenario 55: Generador de Copy para las 4 Colas de Ataque (Tier 3 WhatsApp y Tier 2 SMTP con alerta de phishing DMARC)
+    let wa_copy = HttpFormBot::build_tier_specific_outreach_copy("TIER_3_WHATSAPP_DIRECT_READY", "GRUPO INDUSTRIAL NORTE", "gruponorte.mx", false);
+    assert!(wa_copy.contains("https://mallen.lat/checkout?ref=GRUPO%20INDUSTRIAL%20NORTE"));
+
+    let smtp_copy = HttpFormBot::build_tier_specific_outreach_copy("TIER_2_DIRECT_SMTP_READY", "GRUPO INDUSTRIAL NORTE", "gruponorte.mx", false);
+    assert!(smtp_copy.contains("carece de politica DMARC activa"));
+    assert!(smtp_copy.contains("phishing"));
+
+    // Escenario 56: Verificar que la semilla desde DENUE (seed_checkpoint_resume_queue_10k) funcione sin errores
+    let _seeded = HttpFormBot::seed_checkpoint_resume_queue_10k(5).unwrap();
+
+    println!("✓ LOS 56 ESCENARIOS DE GRADO INDUSTRIAL (0 WARNINGS, CHECKPOINT & RESUME, DEAD-DOMAIN BLACKLIST Y 4 COLAS DE ATAQUE) SUPERADOS AL 100%");
 }

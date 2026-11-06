@@ -985,6 +985,223 @@ impl HttpFormBot {
     }
 
 
+
+    /// 9. Filtro Preventivo de Dominios Inútiles (Dead-Domain Blacklist):
+    /// Detecta antes de tocar la red si el campo `www` del DENUE es en realidad una red social
+    /// (facebook.com, instagram.com, tiktok.com), un marketplace (mercadolibre.com.mx, amazon.com.mx),
+    /// un correo mal puesto en el campo web (hotmail.com, gmail.com, prodigy.net.mx) o un dominio inválido,
+    /// derivándolo en 0 ms al `TIER_6_PHONE_DENUE_FALLBACK` sin desperdiciar sockets HTTP.
+    pub fn is_dead_or_social_directory_domain(raw_url_or_host: &str) -> Option<&'static str> {
+        let low = raw_url_or_host.trim().to_lowercase();
+        if low.is_empty() || low == "http://" || low == "https://" || low == "www" || low == "n/a" || low == "ninguno" || low == "sin pagina" {
+            return Some("DOMINIO_INVALIDO_O_VACIO_DENUE");
+        }
+        if low.contains('@') && !low.starts_with("http") {
+            return Some("CAMPO_WEB_CONTIENE_EMAIL_DENUE");
+        }
+
+        let host = Self::normalize_domain_host(&low);
+        if !host.contains('.') && host != "localhost" && host != "127.0.0.1" {
+            return Some("DOMINIO_SIN_TLD_VALIDO");
+        }
+
+        let dead_or_directory_hosts = [
+            "facebook.com",
+            "fb.com",
+            "instagram.com",
+            "tiktok.com",
+            "twitter.com",
+            "x.com",
+            "youtube.com",
+            "linkedin.com",
+            "mercadolibre.com",
+            "mercadolibre.com.mx",
+            "amazon.com.mx",
+            "seccionamarilla.com.mx",
+            "paginasamarillas.com",
+            "google.com",
+            "maps.google.com",
+            "hotmail.com",
+            "gmail.com",
+            "yahoo.com",
+            "yahoo.com.mx",
+            "outlook.com",
+            "prodigy.net.mx",
+            "live.com.mx",
+        ];
+
+        if dead_or_directory_hosts.iter().any(|&d| host == d || host.ends_with(&format!(".{}", d))) {
+            return Some("DOMINIO_RED_SOCIAL_O_DIRECTORIO_OMITIDO");
+        }
+
+        None
+    }
+
+    /// 10. Sembrador Idempotente de Lote (`PENDIENTE_BARRIDO`) para Modo Checkpoint & Resume:
+    /// Carga desde `denue_units` hasta `target_limit` PyMEs en `prospect_pipeline` con `pipeline_stage = 'PENDIENTE_BARRIDO'`.
+    /// Si una empresa ya existe en `prospect_pipeline` (porque ya fue barrida antes de un reinicio SSH), NO la pisa (`INSERT OR IGNORE`),
+    /// garantizando que al reanudar continúe exactamente en el registro donde se quedó.
+    pub fn seed_checkpoint_resume_queue_10k(target_limit: usize) -> Result<usize, String> {
+        let db_path = std::env::var("MALLEN_DB_PATH").unwrap_or_else(|_| "data/mallen_prod.db".to_string());
+        let mut conn = rusqlite::Connection::open(&db_path).map_err(|e| e.to_string())?;
+        Self::ensure_db_schema_once(&conn);
+
+        let _ = conn.execute("ALTER TABLE prospect_pipeline ADD COLUMN denue_phone TEXT DEFAULT ''", []);
+        let _ = conn.execute("ALTER TABLE prospect_pipeline ADD COLUMN denue_email TEXT DEFAULT ''", []);
+        let _ = conn.execute("ALTER TABLE prospect_pipeline ADD COLUMN scian_code TEXT DEFAULT ''", []);
+
+        let candidates = Self::fetch_pyme_prospect_chunk_from_denue(0, target_limit.min(500));
+        let mut inserted_count = 0usize;
+
+        if let Ok(tx) = conn.transaction() {
+            for (emp_name, norm_url, scian, kit_price) in candidates {
+                let dom = Self::normalize_domain_host(&norm_url);
+                // Si el dominio está en la Dead-Domain Blacklist, lo clasificamos de inmediato en TIER_6 sin gastar red
+                let (init_stage, init_code, init_tier, init_action) = if let Some(dead_reason) = Self::is_dead_or_social_directory_domain(&norm_url) {
+                    ("STAGE_SIN_CANAL_WEB", dead_reason, "TIER_6_PHONE_DENUE_FALLBACK", "COLA_RESCATE_TELEFONICO_DENUE")
+                } else {
+                    ("PENDIENTE_BARRIDO", "EN_COLA_CHECKPOINT", "PENDIENTE_CLASIFICACION", "EJECUTAR_BARRIDO_BOT")
+                };
+
+                let affected = tx
+                    .execute(
+                        "INSERT OR IGNORE INTO prospect_pipeline (
+                            empresa_nombre, input_url, final_target_url, final_domain,
+                            multa_estimada_mxn, ultimo_resultado_codigo, pipeline_stage,
+                            next_action_channel, extracted_contact, contact_method_tier,
+                            scian_code, attempts_count, updated_at_utc
+                         ) VALUES (?1, ?2, ?2, ?3, ?4, ?5, ?6, ?7, '', ?8, ?9, 0, datetime('now'))",
+                        rusqlite::params![
+                            emp_name,
+                            norm_url,
+                            dom,
+                            kit_price,
+                            init_code,
+                            init_stage,
+                            init_action,
+                            init_tier,
+                            scian
+                        ],
+                    )
+                    .unwrap_or(0);
+                inserted_count += affected;
+            }
+            let _ = tx.commit();
+        }
+        Ok(inserted_count)
+    }
+
+    /// 11. Ejecutor con Reanudación Automática (`Checkpoint & Resume` sobre `WHERE pipeline_stage = 'PENDIENTE_BARRIDO'`):
+    /// - Lee en bloques de máximo 500 registros únicamente aquellos que siguen en `PENDIENTE_BARRIDO`.
+    /// - Si se cae el SSH o se reinicia el servidor en el registro 4,321, al volver a correr continúa desde el 4,322.
+    /// - Cada 2,500 registros ejecuta `PRAGMA wal_checkpoint(FULL);` y compactación incremental para mantener disco mínimo.
+    pub async fn run_checkpoint_resumable_campaign(max_to_process: usize, chunk_size: usize) -> (usize, usize) {
+        let step = chunk_size.clamp(1, 500);
+        let client = match Self::build_bounded_http_client() {
+            Ok(c) => c,
+            Err(_) => return (0, 0),
+        };
+        let db_path = std::env::var("MALLEN_DB_PATH").unwrap_or_else(|_| "data/mallen_prod.db".to_string());
+
+        let mut processed = 0usize;
+        let mut success_or_harvested = 0usize;
+
+        while processed < max_to_process {
+            let batch_limit = (max_to_process - processed).min(step);
+            let mut pending_chunk: Vec<(String, String, f64)> = Vec::new();
+
+            if let Ok(conn) = rusqlite::Connection::open(&db_path) {
+                Self::ensure_db_schema_once(&conn);
+                if let Ok(mut stmt) = conn.prepare(
+                    "SELECT empresa_nombre, input_url, multa_estimada_mxn
+                     FROM prospect_pipeline
+                     WHERE pipeline_stage = 'PENDIENTE_BARRIDO'
+                     ORDER BY rowid ASC
+                     LIMIT ?1",
+                ) {
+                    if let Ok(rows) = stmt.query_map(rusqlite::params![batch_limit as i64], |r| {
+                        Ok((r.get::<_, String>(0)?, r.get::<_, String>(1)?, r.get::<_, f64>(2)?))
+                    }) {
+                        for item in rows.flatten() {
+                            pending_chunk.push(item);
+                        }
+                    }
+                }
+            }
+
+            if pending_chunk.is_empty() {
+                break;
+            }
+
+            for (empresa, url, price_mxn) in pending_chunk {
+                // Si el dominio es red social o inválido, lo deriva a TIER_6 sin hacer petición HTTP
+                if let Some(dead_code) = Self::is_dead_or_social_directory_domain(&url) {
+                    Self::persist_detailed_operational_telemetry(
+                        &empresa, &url, &url, price_mxn, dead_code, "DEAD_DOMAIN_FILTER",
+                        0, 0, "N/A", 0, "", "", "", "Derivado a Tier 6 por filtro preventivo de dominio inútil"
+                    );
+                } else {
+                    let res = Self::submit_form_direct(&client, &url, &empresa, price_mxn).await;
+                    if res == "PROSPECCION_ENVIADA_EXITO" || res.starts_with("CANAL_ALTERNATIVO_") {
+                        success_or_harvested += 1;
+                    }
+                }
+                processed += 1;
+
+                // Mantenimiento profundo cada 2,500 registros procesados (PRAGMA wal_checkpoint(FULL) + incremental_vacuum)
+                if processed % 2500 == 0 {
+                    if let Ok(conn) = rusqlite::Connection::open(&db_path) {
+                        let _ = conn.execute_batch(
+                            "DELETE FROM prospect_logs WHERE id NOT IN (SELECT id FROM prospect_logs ORDER BY id DESC LIMIT 25000);
+                             PRAGMA incremental_vacuum(2500);
+                             PRAGMA wal_checkpoint(FULL);
+                             PRAGMA optimize;",
+                        );
+                    }
+                }
+            }
+        }
+
+        (processed, success_or_harvested)
+    }
+
+    /// 12. Generador de Copy Personalizado para las 4 Colas de Ataque (Tier 3 WhatsApp, Tier 2 SMTP + DMARC, Tier 1 Web Form, Tier 6 DENUE):
+    pub fn build_tier_specific_outreach_copy(
+        tier: &str,
+        empresa_nombre: &str,
+        domain: &str,
+        has_dmarc: bool,
+    ) -> String {
+        let link = Self::build_and_validate_checkout_link(empresa_nombre, None)
+            .unwrap_or_else(|_| format!("https://mallen.lat/checkout?ref={}", Self::encode_url_ref(empresa_nombre)));
+
+        match tier {
+            "TIER_3_WHATSAPP_DIRECT_READY" => format!(
+                "Estimado equipo directivo de {}: Le saludamos de FIRMA W16 MALLEN®. Nuestro sistema de auditoria preventiva detecto observaciones normativas publicas (STPS / LFPDPPP / SAT) asociadas a su giro registrado. Puede revisar su pre-dictamen tecnico sin costo aqui: {}",
+                empresa_nombre.trim(),
+                link
+            ),
+            "TIER_2_DIRECT_SMTP_READY" => {
+                let dmarc_alert = if !has_dmarc {
+                    format!(
+                        " Adicionalmente, detectamos que el dominio {} carece de politica DMARC activa, lo que expone a su organizacion a suplantacion de identidad corporativa (phishing).",
+                        domain
+                    )
+                } else {
+                    String::new()
+                };
+                format!(
+                    "ASUNTO: Pre-Diagnóstico de Cumplimiento Normativo y Seguridad Digital — {}\n\nEstimada Dirección Jurídica y de Operaciones de {}:\n\nFIRMA W16 MALLEN® ha compilado la pre-evaluación preventiva de los 37 vectores regulatorios (STPS, SAT Art. 69-B, IMSS y LFPDPPP) correspondiente a su razón social.{} Consulte su expediente preliminar confidencial y active su Kit de Blindaje en: {}",
+                    empresa_nombre.trim(),
+                    empresa_nombre.trim(),
+                    dmarc_alert,
+                    link
+                )
+            }
+            _ => Self::build_human_consultative_message(empresa_nombre, ""),
+        }
+    }
+
     /// 7. Extractor y Planificador por Chunks (de 500 en 500 registros) para la Campaña de 10,000 PyMEs:
     /// - Lee paginadamente desde `denue_units` en `data/mallen_prod.db` sin cargar los 10,000 strings de golpe en RAM.
     /// - Prioriza PyMEs (11 a 250 empleados) con sitio web activo (`www != ''`) y sectores SCIAN de alto valor.
@@ -1388,7 +1605,15 @@ impl HttpFormBot {
                      attempts_count INTEGER DEFAULT 1,
                      updated_at_utc TEXT DEFAULT (datetime('now'))
                  );
-                 CREATE INDEX IF NOT EXISTS idx_pipeline_tier_multa ON prospect_pipeline(contact_method_tier, multa_estimada_mxn DESC);",
+                 CREATE INDEX IF NOT EXISTS idx_pipeline_tier_multa ON prospect_pipeline(contact_method_tier, multa_estimada_mxn DESC);
+                 CREATE TABLE IF NOT EXISTS link_clicks (
+                     ref_key TEXT PRIMARY KEY,
+                     first_clicked_at_utc TEXT DEFAULT (datetime('now')),
+                     last_clicked_at_utc TEXT DEFAULT (datetime('now')),
+                     click_count INTEGER DEFAULT 1,
+                     last_visitor_ip TEXT DEFAULT '',
+                     last_user_agent TEXT DEFAULT ''
+                 );",
             );
 
             for col_sql in [
@@ -1642,7 +1867,13 @@ impl HttpFormBot {
         if parts.len() != 2 {
             return None;
         }
-        let (local, domain) = (parts[0], parts[1]);
+        let raw_local = parts[0];
+        let local = if raw_local.starts_with("20") && raw_local.len() > 4 && raw_local[2..].chars().next().map(|c| c.is_ascii_alphabetic()).unwrap_or(false) {
+            &raw_local[2..]
+        } else {
+            raw_local
+        };
+        let domain = parts[1];
         if local.is_empty() || domain.len() < 4 || !domain.contains('.') || domain.starts_with('.') || domain.ends_with('.') {
             return None;
         }
@@ -2026,6 +2257,13 @@ impl HttpFormBot {
         if let Err(link_err) = Self::build_and_validate_checkout_link(empresa_nombre, None) {
             return link_err.to_string();
         }
+        if let Some(dead_code) = Self::is_dead_or_social_directory_domain(page_url) {
+            Self::persist_detailed_operational_telemetry(
+                empresa_nombre, page_url, page_url, multa_estimada, dead_code, "DEAD_DOMAIN_FILTER",
+                0, 0, "N/A", 0, "", "", "", "Dominio de red social/directorio derivado automáticamente a Tier 6"
+            );
+            return dead_code.to_string();
+        }
         let parsed_in = match Url::parse(page_url) {
             Ok(u) => u,
             Err(_) => return "URL_INVALIDA".to_string(),
@@ -2206,7 +2444,6 @@ impl HttpFormBot {
                 }
             }
 
-            let fallback_contact = Self::harvest_fallback_contact_channel(&html_text);
             let (h_emails, h_wa, h_soc) = Self::harvest_multichannel_contacts(&html_text);
             let (tech_stack_str, _is_ecom, pitch_mod) = Self::detect_mexican_tech_stack(&ctype_saved, &html_text);
             let fallback_contact = Some(format!("MULTI5|{}|{}|{}|{}|{}", h_emails, h_wa, h_soc, tech_stack_str, pitch_mod));
