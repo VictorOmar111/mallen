@@ -763,5 +763,47 @@ async fn test_http_form_bot_14_scenarios_with_real_db_companies() {
     let decrypted_vault = HttpFormBot::decrypt_pii_from_rest(&vault_cipher).unwrap();
     assert!(decrypted_vault.contains("emails=legal@corp.mx"), "Al descifrar con la llave en RAM debe recuperar exactamente legal@corp.mx");
 
-    println!("✓ LOS 33 ESCENARIOS DE TORTURA (0 WARNINGS, DEDUP MULTISUCURSAL, HEADLESS JS FALLBACK Y CIFRADO EN REPOSO LFPDPPP) SUPERADOS AL 100%");
+
+    // Escenario 34: Verificar que el nuevo mensaje B2B sea humano, consultivo y no incluya cifras de multa intimidantes
+    let msg_sample = HttpFormBot::build_human_consultative_message("CORPORATIVO ALSEA", "CORPORATIVO%20ALSEA");
+    assert!(msg_sample.contains("Les saludamos cordialmente de FIRMA W16 MALLEN"));
+    assert!(msg_sample.contains("descargar sin costo su resumen tecnico confidencial"));
+    assert!(!msg_sample.contains("1245958"), "El mensaje consultivo no debe exponer montos de multas intimidantes en el buzón abierto");
+
+    // Escenario 35: Circuit Breaker por Dominio/Ruta (3 bloqueos 403 WAF consecutivos abren el circuito por 48h)
+    let cb_domain_key = "127.0.0.1:/cloudflare-waf-block";
+    HttpFormBot::reset_circuit_breaker(cb_domain_key);
+    let _ = HttpFormBot::submit_form_direct(&client, &format!("{}/cloudflare-waf-block", base), "CB TEST 1", 100.0).await;
+    let _ = HttpFormBot::submit_form_direct(&client, &format!("{}/cloudflare-waf-block", base), "CB TEST 2", 100.0).await;
+    let _ = HttpFormBot::submit_form_direct(&client, &format!("{}/cloudflare-waf-block", base), "CB TEST 3", 100.0).await;
+    // El 4to intento debe ser cortado en 0ms por el Circuit Breaker sin tocar la red
+    let r35 = HttpFormBot::submit_form_direct(&client, &format!("{}/cloudflare-waf-block", base), "CB TEST 4", 100.0).await;
+    assert_eq!(r35, "CIRCUIT_BREAKER_ABIERTO_48H", "Al 4to intento tras 3 bloqueos 403 WAF debe saltar el Circuit Breaker de 48h");
+
+    // Escenario 36: Prueba de ráfaga concurrente gobernada por tokio::sync::Semaphore
+    let mut handles = Vec::new();
+    for i in 0..8 {
+        let c_clone = client.clone();
+        let url_clone = format!("{}/wp-contact", base);
+        let emp_name = format!("EMPRESA RAFAGA SEMAFORO {}", i);
+        handles.push(tokio::spawn(async move {
+            HttpFormBot::submit_form_direct(&c_clone, &url_clone, &emp_name, 300000.0).await
+        }));
+    }
+    for h in handles {
+        assert_eq!(h.await.unwrap(), "PROSPECCION_ENVIADA_EXITO");
+    }
+
+    // Escenario 37: Verificación del Snapshot de Telemetría Avanzada de Procesos
+    let snap = HttpFormBot::get_process_telemetry_snapshot();
+    assert!(snap.total_requests >= 25);
+    assert!(snap.success_count >= 12);
+    assert!(snap.circuit_breaker_trips >= 1);
+    assert_eq!(snap.active_in_flight, 0, "Al terminar todas las tareas, active_in_flight debe volver exactamente a 0");
+    println!(
+        "✓ TELEMETRÍA DE PROCESOS -> Total Reqs: {} | Éxitos: {} | WAF/Captchas: {} | Circuit Breaker Trips: {} | Permisos Libres Semáforo: {} | Latencia Promedio: {} ms",
+        snap.total_requests, snap.success_count, snap.waf_or_captcha_count, snap.circuit_breaker_trips, snap.available_semaphore_permits, snap.avg_latency_ms
+    );
+
+    println!("✓ LOS 37 ESCENARIOS DE TORTURA Y RENDIMIENTO CONCURRENTE SUPERADOS AL 100%");
 }

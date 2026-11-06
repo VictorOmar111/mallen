@@ -1,4 +1,3 @@
-use sha2::{Digest, Sha256};
 //! Motor Institucional de Prospección Automatizada FIRMA W16 MALLEN® (`HttpFormBot`).
 //! Incluye:
 //! 1. Verificación Semántica del Cuerpo de Respuesta (HTML + JSON Anti-Falsos Positivos).
@@ -8,6 +7,8 @@ use sha2::{Digest, Sha256};
 //! 5. Soporte para Pool de Proxies Rotativos (HTTP / HTTPS / SOCKS5).
 //! 6. Protección Anti-SSRF, Límite de Memoria (Anti-Bombas HTML), Detección de `mailto:` y Captchas.
 
+use sha2::{Digest, Sha256};
+use tokio::sync::Semaphore;
 use reqwest::{
     header::{HeaderMap, HeaderValue, ACCEPT, ACCEPT_LANGUAGE, ORIGIN, REFERER, USER_AGENT},
     redirect::Policy,
@@ -63,6 +64,26 @@ static PROXY_COUNTER: AtomicUsize = AtomicUsize::new(0);
 static DOMAIN_COOLDOWN_MAP: OnceLock<Mutex<HashMap<String, Instant>>> = OnceLock::new();
 static IN_FLIGHT_DOMAINS: OnceLock<Mutex<HashSet<String>>> = OnceLock::new();
 static DB_SCHEMA_INITIALIZED: OnceLock<bool> = OnceLock::new();
+static GLOBAL_CONCURRENCY_SEMAPHORE: OnceLock<Semaphore> = OnceLock::new();
+static CIRCUIT_BREAKER_MAP: OnceLock<Mutex<HashMap<String, (u32, Instant)>>> = OnceLock::new();
+
+static TELEMETRY_TOTAL_REQS: AtomicUsize = AtomicUsize::new(0);
+static TELEMETRY_IN_FLIGHT: AtomicUsize = AtomicUsize::new(0);
+static TELEMETRY_SUCCESS: AtomicUsize = AtomicUsize::new(0);
+static TELEMETRY_WAF_OR_CAPTCHA: AtomicUsize = AtomicUsize::new(0);
+static TELEMETRY_CB_TRIPS: AtomicUsize = AtomicUsize::new(0);
+static TELEMETRY_TOTAL_LATENCY_MS: AtomicUsize = AtomicUsize::new(0);
+
+#[derive(Debug, Clone)]
+pub struct BotProcessTelemetry {
+    pub total_requests: usize,
+    pub active_in_flight: usize,
+    pub available_semaphore_permits: usize,
+    pub success_count: usize,
+    pub waf_or_captcha_count: usize,
+    pub circuit_breaker_trips: usize,
+    pub avg_latency_ms: u64,
+}
 
 pub struct HttpFormBot;
 
@@ -538,12 +559,6 @@ impl HttpFormBot {
     ) {
         let db_path = std::env::var("MALLEN_DB_PATH").unwrap_or_else(|_| "data/mallen_prod.db".to_string());
         let final_domain = Self::normalize_domain_host(final_target_url);
-        let raw_vault_payload = format!("emails={}|wa={}|soc={}", emails, whatsapps, socials);
-        let encrypted_vault = if !emails.is_empty() || !whatsapps.is_empty() || !socials.is_empty() {
-            Self::encrypt_pii_at_rest(&raw_vault_payload)
-        } else {
-            String::new()
-        };
         let contact_str = extracted_contact.unwrap_or("");
 
         // Clasificación determinista de etapa del embudo (Lifecycle Stage) y siguiente acción automática
@@ -691,6 +706,99 @@ impl HttpFormBot {
     }
 
 
+
+
+    /// Devuelve la referencia al Semáforo Global de Concurrencia (por defecto 64 tareas simultáneas,
+    /// configurable entre 1 y 500 mediante `MALLEN_MAX_CONCURRENCY`).
+    pub fn global_semaphore() -> &'static Semaphore {
+        GLOBAL_CONCURRENCY_SEMAPHORE.get_or_init(|| {
+            let max_permits = std::env::var("MALLEN_MAX_CONCURRENCY")
+                .ok()
+                .and_then(|v| v.trim().parse::<usize>().ok())
+                .filter(|&n| (1..=500).contains(&n))
+                .unwrap_or(64);
+            Semaphore::new(max_permits)
+        })
+    }
+
+    /// Verifica si el Circuit Breaker está abierto para un dominio (3 fallos 403/429/WAF consecutivos -> 48h de enfriamiento).
+    pub fn check_circuit_breaker_open(domain: &str) -> bool {
+        let cb_ttl = Duration::from_secs(48 * 3600);
+        let map_mutex = CIRCUIT_BREAKER_MAP.get_or_init(|| Mutex::new(HashMap::new()));
+        if let Ok(mut map) = map_mutex.lock() {
+            if let Some((fails, opened_at)) = map.get(domain).copied() {
+                if fails >= 3 {
+                    if opened_at.elapsed() < cb_ttl {
+                        return true;
+                    } else {
+                        map.remove(domain);
+                    }
+                }
+            }
+        }
+        false
+    }
+
+    /// Actualiza el Circuit Breaker tras cada ejecución:
+    /// - Si hubo bloqueo 403 / 429 / WAF consecutivo, incrementa el contador (al llegar a 3 abre el circuito por 48h).
+    /// - Si la petición tuvo éxito o respuesta normal, reinicia el contador de fallos del dominio a 0.
+    pub fn record_circuit_breaker_outcome(domain: &str, status_code: &str) {
+        let is_hostile_failure = status_code == "BLOQUEO_WAF_CLOUDFLARE_CHALLENGE"
+            || status_code == "HTTP_RATE_LIMIT_429"
+            || status_code == "HTTP_POST_ERR_403"
+            || status_code == "ERR_HTTP_GET_403";
+
+        let map_mutex = CIRCUIT_BREAKER_MAP.get_or_init(|| Mutex::new(HashMap::new()));
+        if let Ok(mut map) = map_mutex.lock() {
+            if is_hostile_failure {
+                let entry = map.entry(domain.to_string()).or_insert((0, Instant::now()));
+                entry.0 += 1;
+                entry.1 = Instant::now();
+            } else if status_code == "PROSPECCION_ENVIADA_EXITO" {
+                map.remove(domain);
+            }
+        }
+    }
+
+    /// Reinicia manualmente el Circuit Breaker de un dominio (útil en pruebas o recargas de proxies).
+    pub fn reset_circuit_breaker(domain: &str) {
+        if let Some(map_mutex) = CIRCUIT_BREAKER_MAP.get() {
+            if let Ok(mut map) = map_mutex.lock() {
+                map.remove(domain);
+            }
+        }
+    }
+
+    /// Construye un mensaje de contacto B2B cálido, humano, consultivo y de alta conversión
+    /// (sin cifras intimidantes de multas en el primer contacto para evitar fricción con recepción/filtros).
+    pub fn build_human_consultative_message(empresa_nombre: &str, encoded_ref: &str) -> String {
+        format!(
+            "Estimado equipo directivo y area juridica de {}: Les saludamos cordialmente de FIRMA W16 MALLEN®. Como parte de nuestro programa de apoyo al cumplimiento empresarial, generamos una pre-evaluacion tecnica preventiva basada en informacion publica (padrón INEGI DENUE, normatividad STPS y aviso de privacidad web) para ayudarles a fortalecer su blindaje documental y operativo. Pueden consultar y descargar sin costo su resumen tecnico confidencial en: https://mallen.lat/checkout?ref={}",
+            empresa_nombre.trim(),
+            encoded_ref
+        )
+    }
+
+    /// Obtiene una instantánea en tiempo real de la telemetría de procesos del motor.
+    pub fn get_process_telemetry_snapshot() -> BotProcessTelemetry {
+        let total = TELEMETRY_TOTAL_REQS.load(Ordering::Relaxed);
+        let in_flight = TELEMETRY_IN_FLIGHT.load(Ordering::Relaxed);
+        let succ = TELEMETRY_SUCCESS.load(Ordering::Relaxed);
+        let waf = TELEMETRY_WAF_OR_CAPTCHA.load(Ordering::Relaxed);
+        let cb = TELEMETRY_CB_TRIPS.load(Ordering::Relaxed);
+        let total_lat = TELEMETRY_TOTAL_LATENCY_MS.load(Ordering::Relaxed);
+        let avg_lat = if total > 0 { (total_lat / total) as u64 } else { 0 };
+
+        BotProcessTelemetry {
+            total_requests: total,
+            active_in_flight: in_flight,
+            available_semaphore_permits: Self::global_semaphore().available_permits(),
+            success_count: succ,
+            waf_or_captcha_count: waf,
+            circuit_breaker_trips: cb,
+            avg_latency_ms: avg_lat,
+        }
+    }
 
     /// Construye un cliente HTTP rápido con protección estricta contra bucles de redirección (máximo 5 saltos).
     pub fn build_bounded_http_client() -> Result<Client, Box<dyn std::error::Error>> {
@@ -1445,10 +1553,30 @@ impl HttpFormBot {
             Err(_) => return "URL_INVALIDA".to_string(),
         };
 
+        TELEMETRY_TOTAL_REQS.fetch_add(1, Ordering::Relaxed);
         let initial_host = Self::normalize_domain_host(page_url);
         if Self::is_ssrf_forbidden_host(&initial_host) || Self::is_ssrf_forbidden_host(parsed_in.host_str().unwrap_or("")) {
             return "BLOQUEO_SEGURIDAD_ANTI_SSRF".to_string();
         }
+
+        // Clave del Circuit Breaker (en localhost incluye el path para aislar rutas simuladas en tests)
+        let cb_key = if initial_host == "127.0.0.1" || initial_host == "localhost" {
+            format!("{}:{}", initial_host, parsed_in.path())
+        } else {
+            initial_host.clone()
+        };
+        if Self::check_circuit_breaker_open(&cb_key) {
+            TELEMETRY_CB_TRIPS.fetch_add(1, Ordering::Relaxed);
+            Self::persist_detailed_operational_telemetry(
+                empresa_nombre, page_url, page_url, multa_estimada, "CIRCUIT_BREAKER_ABIERTO_48H",
+                "CIRCUIT_BREAKER_GUARD", 403, 0, "N/A", 0, "", "", "", "Dominio en enfriamiento de 48h por bloqueos previos"
+            );
+            return "CIRCUIT_BREAKER_ABIERTO_48H".to_string();
+        }
+
+        // Adquirir permiso del Semáforo Global de Concurrencia (protege descriptores de archivo y red)
+        let _sem_permit = Self::global_semaphore().acquire().await.ok();
+        TELEMETRY_IN_FLIGHT.fetch_add(1, Ordering::Relaxed);
 
         // Rate-limiting por dominio normalizado (sin 'www.')
         Self::apply_domain_rate_limit_and_jitter(&initial_host).await;
@@ -1464,12 +1592,7 @@ impl HttpFormBot {
         let (rotated_headers, chosen_ua) = Self::next_rotated_headers();
         let encoded_ref = Self::encode_url_ref(empresa_nombre);
 
-        let mensaje_utf8 = format!(
-            "AVISO PREVENTIVO DE CUMPLIMIENTO: Estimado equipo directivo de {}. Durante un diagnostico automatizado de fuentes publicas (DENUE / SABG-LFPDPPP / PROFECO / STPS), nuestro motor detecto brechas normativas expuestas con una contingencia estimada en {:0.2} MXN. Consulte su pre-diagnostico tecnico sin costo y su expediente de blindaje en: https://mallen.lat/checkout?ref={}",
-            empresa_nombre.trim(),
-            multa_estimada,
-            encoded_ref
-        );
+        let mensaje_utf8 = Self::build_human_consultative_message(empresa_nombre, &encoded_ref);
 
         let mut tracked_final_url = page_url.to_string();
         let mut harvested_contact: Option<String> = None;
@@ -1949,6 +2072,15 @@ impl HttpFormBot {
                 tracked_whatsapps = c.clone();
             }
         }
+        TELEMETRY_IN_FLIGHT.fetch_sub(1, Ordering::Relaxed);
+        TELEMETRY_TOTAL_LATENCY_MS.fetch_add(elapsed_ms as usize, Ordering::Relaxed);
+        if final_status == "PROSPECCION_ENVIADA_EXITO" {
+            TELEMETRY_SUCCESS.fetch_add(1, Ordering::Relaxed);
+        } else if final_status.starts_with("BLOQUEO_WAF_") || final_status.starts_with("PROTECCION_ANTIBOT_") {
+            TELEMETRY_WAF_OR_CAPTCHA.fetch_add(1, Ordering::Relaxed);
+        }
+        Self::record_circuit_breaker_outcome(&cb_key, &final_status);
+
         Self::persist_detailed_operational_telemetry(
             empresa_nombre,
             page_url,
