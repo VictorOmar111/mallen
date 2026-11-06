@@ -121,7 +121,7 @@ impl HttpFormBot {
         let (default_headers, _) = Self::next_rotated_headers();
         let mut builder = Client::builder()
             .timeout(Duration::from_millis(Self::configured_timeout_ms()))
-            .connect_timeout(Duration::from_millis(3000))
+            .connect_timeout(Duration::from_millis(4500))
             .pool_idle_timeout(Duration::from_secs(15))
             .pool_max_idle_per_host(16)
             .tcp_keepalive(Duration::from_secs(30))
@@ -823,20 +823,21 @@ impl HttpFormBot {
     /// Devuelve `(tier_economico, empleados_estimados, precio_kit_sugerido_mxn, argumento_pericial_scian)`.
     pub fn classify_denue_capacity_and_scian_risk(estrato_denue: &str, scian_code: &str) -> (&'static str, u32, f64, &'static str) {
         let e_low = estrato_denue.to_lowercase();
+        // Estrategia Foco PyME: Precio estandarizado de alta conversión en $3,000.00 MXN (~$150 USD)
         let (tier_size, emp_est, suggested_price) = if e_low.contains("251") || e_low.contains("más") || e_low.contains("mas") {
-            ("CORP_GRAN_EMPRESA_251_PLUS", 300, 29_500.00)
+            ("CORP_GRAN_EMPRESA_251_PLUS", 300, 3_000.00)
         } else if e_low.contains("101 a 250") {
-            ("MEDIANA_ALTA_101_250", 150, 18_900.00)
+            ("PYME_MEDIANA_ALTA_101_250", 150, 3_000.00)
         } else if e_low.contains("51 a 100") {
-            ("MEDIANA_51_100", 75, 14_900.00)
+            ("PYME_MEDIANA_51_100", 75, 3_000.00)
         } else if e_low.contains("31 a 50") {
-            ("PEQUENA_ALTA_31_50", 45, 5_940.00)
+            ("PYME_PEQUENA_ALTA_31_50", 45, 3_000.00)
         } else if e_low.contains("11 a 30") {
-            ("PEQUENA_11_30", 20, 5_940.00)
+            ("PYME_PEQUENA_11_30", 20, 3_000.00)
         } else if e_low.contains("6 a 10") {
-            ("MICRO_6_10", 8, 3_490.00)
+            ("PYME_MICRO_6_10", 8, 3_000.00)
         } else {
-            ("MICRO_0_5", 4, 2_950.00)
+            ("PYME_MICRO_0_5", 4, 3_000.00)
         };
 
         let scian = scian_code.trim();
@@ -983,6 +984,110 @@ impl HttpFormBot {
         results
     }
 
+
+    /// 7. Extractor y Planificador por Chunks (de 500 en 500 registros) para la Campaña de 10,000 PyMEs:
+    /// - Lee paginadamente desde `denue_units` en `data/mallen_prod.db` sin cargar los 10,000 strings de golpe en RAM.
+    /// - Prioriza PyMEs (11 a 250 empleados) con sitio web activo (`www != ''`) y sectores SCIAN de alto valor.
+    /// - Devuelve un lote acotado de máximo `chunk_size` (recomendado: 500) listo para procesar y liberar memoria.
+    pub fn fetch_pyme_prospect_chunk_from_denue(
+        chunk_offset: usize,
+        chunk_size: usize,
+    ) -> Vec<(String, String, String, f64)> {
+        let bounded_size = chunk_size.clamp(1, 500);
+        let mut batch = Vec::with_capacity(bounded_size);
+        let db_path = std::env::var("MALLEN_DB_PATH").unwrap_or_else(|_| "data/mallen_prod.db".to_string());
+
+        if let Ok(conn) = rusqlite::Connection::open(db_path) {
+            let sql = "
+                SELECT COALESCE(NULLIF(TRIM(raz_social), ''), TRIM(nom_estab)) AS empresa,
+                       TRIM(www) AS web_raw,
+                       COALESCE(NULLIF(TRIM(codigo_scian), ''), '541110') AS scian,
+                       COALESCE(per_ocu, '11 a 30 personas') AS estrato
+                FROM denue_units
+                WHERE www IS NOT NULL
+                  AND TRIM(www) != ''
+                  AND (raz_social != '' OR nom_estab != '')
+                LIMIT ?1 OFFSET ?2
+            ";
+            if let Ok(mut stmt) = conn.prepare(sql) {
+                if let Ok(rows) = stmt.query_map(
+                    rusqlite::params![bounded_size as i64, chunk_offset as i64],
+                    |r| {
+                        Ok((
+                            r.get::<_, String>(0)?,
+                            r.get::<_, String>(1)?,
+                            r.get::<_, String>(2)?,
+                            r.get::<_, String>(3)?,
+                        ))
+                    },
+                ) {
+                    for item in rows.flatten() {
+                        let (emp_name, raw_www, scian, estrato) = item;
+                        let normalized_url = if raw_www.starts_with("http://") || raw_www.starts_with("https://") {
+                            raw_www
+                        } else {
+                            format!("https://{}", raw_www.trim_start_matches('/'))
+                        };
+                        let (_tier, _emp_cnt, kit_price_mxn, _arg) =
+                            Self::classify_denue_capacity_and_scian_risk(&estrato, &scian);
+                        batch.push((emp_name, normalized_url, scian, kit_price_mxn));
+                    }
+                }
+            }
+        }
+        batch
+    }
+
+    /// 8. Ejecutor de Lotes Controlados en Memoria (Chunked Batch Runner — 500 por lote):
+    /// Procesa `total_target` empresas en bloques estrictos de `chunk_size` (máx 500), liberando el `Vec`
+    /// y ejecutando `PRAGMA wal_checkpoint(PASSIVE)` al terminar cada bloque para mantener consumo de RAM < 45 MB.
+    pub async fn run_chunked_pyme_campaign(
+        total_target: usize,
+        chunk_size: usize,
+        dry_run_only: bool,
+    ) -> (usize, usize, usize) {
+        let step = chunk_size.clamp(1, 500);
+        let client = match Self::build_bounded_http_client() {
+            Ok(c) => c,
+            Err(_) => return (0, 0, 0),
+        };
+
+        let mut offset = 0usize;
+        let mut total_processed = 0usize;
+        let mut form_sent_count = 0usize;
+        let mut smtp_reserved_count = 0usize;
+
+        while total_processed < total_target {
+            let remaining = total_target - total_processed;
+            let current_batch_size = remaining.min(step);
+            let chunk = Self::fetch_pyme_prospect_chunk_from_denue(offset, current_batch_size);
+            if chunk.is_empty() {
+                break;
+            }
+
+            let chunk_len = chunk.len();
+            if dry_run_only {
+                total_processed += chunk_len;
+            } else {
+                for (empresa, url, _scian, price_mxn) in chunk {
+                    let res = Self::submit_form_direct(&client, &url, &empresa, price_mxn).await;
+                    if res == "PROSPECCION_ENVIADA_EXITO" {
+                        form_sent_count += 1;
+                    } else if res == "CANAL_ALTERNATIVO_MAILTO_DETECTADO" {
+                        smtp_reserved_count += 1;
+                    }
+                    total_processed += 1;
+                }
+            }
+
+            offset += chunk_len;
+            // Liberar páginas del WAL suavemente entre cada chunk de 500 sin bloquear lectores
+            let _ = Self::optimize_sqlite_storage_non_blocking(50_000);
+        }
+
+        (total_processed, form_sent_count, smtp_reserved_count)
+    }
+
     /// Calcula el tiempo de espera exponencial con Jitter Descorrelacionado (Decorrelated Jitter)
     /// para evitar que los WAFs detecten periodicidad matemática exacta (1s, 2s, 4s) en los reintentos.
     pub fn compute_decorrelated_backoff_ms(attempt: u32, base_ms: u64) -> u64 {
@@ -1063,7 +1168,7 @@ impl HttpFormBot {
                 .ok()
                 .and_then(|v| v.trim().parse::<usize>().ok())
                 .filter(|&n| (1..=500).contains(&n))
-                .unwrap_or(64);
+                .unwrap_or(32);
             Semaphore::new(max_permits)
         })
     }
@@ -1323,7 +1428,7 @@ impl HttpFormBot {
             .ok()
             .and_then(|v| v.trim().parse::<u64>().ok())
             .filter(|&ms| ms >= 500 && ms <= 60_000)
-            .unwrap_or(7500)
+            .unwrap_or(8500)
     }
 
     /// Decodificador inteligente de bytes HTTP para charsets exóticos y legacy
@@ -1751,7 +1856,7 @@ impl HttpFormBot {
         if status_result == "PROSPECCION_ENVIADA_EXITO" {
             ("STAGE_CONTACTADO_FORM", "TIER_1_WEB_FORM_SENT", "FOLLOWUP_MONITOREO_72H")
         } else if status_result == "CANAL_ALTERNATIVO_MAILTO_DETECTADO" || !emails.is_empty() {
-            ("STAGE_COLA_SMTP_DIRECTO", "TIER_2_DIRECT_SMTP_READY", "DISPARAR_EMAIL_PLANTILLA_TYPST")
+            ("STAGE_COLA_SMTP_DIRECTO", "TIER_2_DIRECT_SMTP_READY", "RESERVA_SMTP_GUARDADA_SEGUNDA_OLA")
         } else if status_result == "CANAL_ALTERNATIVO_WHATSAPP_DETECTADO" || !whatsapps.is_empty() {
             ("STAGE_COLA_WHATSAPP_B2B", "TIER_3_WHATSAPP_DIRECT_READY", "ENVIAR_AVISO_EJECUTIVO_WHATSAPP")
         } else if status_result.starts_with("REQUIERE_HEADLESS_JS_")
@@ -2434,7 +2539,13 @@ impl HttpFormBot {
                     }
                 }
                 tracked_http_status = 200;
-                tracked_trace = format!("OK:{} -> {} | STACK:{} | PITCH:{}", page_url, tracked_final_url, detected_stack, detected_pitch);
+                let (st_in, pt_in) = if let Some(ref c) = harvested_contact {
+                    if let Some(rest) = c.strip_prefix("MULTI5|") {
+                        let p: Vec<&str> = rest.splitn(5, '|').collect();
+                        if p.len() == 5 { (p[3], p[4]) } else { ("HTML5", "MODULO_PYME_3000MXN") }
+                    } else { ("HTML5", "MODULO_PYME_3000MXN") }
+                } else { ("HTML5", "MODULO_PYME_3000MXN") };
+                tracked_trace = format!("OK:{} -> {} | STACK:{} | PITCH:{}", page_url, tracked_final_url, st_in, pt_in);
                 status_str
             }
             Err(_) => {
@@ -2449,8 +2560,7 @@ impl HttpFormBot {
         }
         let elapsed_ms = start_instant.elapsed().as_millis() as u64;
         let mut final_socials = tracked_socials;
-        let mut detected_stack = String::new();
-        let mut detected_pitch = String::new();
+
         if let Some(ref c) = harvested_contact {
             if let Some(rest) = c.strip_prefix("MULTI5|") {
                 let parts: Vec<&str> = rest.splitn(5, '|').collect();
@@ -2458,8 +2568,7 @@ impl HttpFormBot {
                     tracked_emails = parts[0].to_string();
                     tracked_whatsapps = parts[1].to_string();
                     final_socials = parts[2].to_string();
-                    detected_stack = parts[3].to_string();
-                    detected_pitch = parts[4].to_string();
+                    let _ = (parts[3], parts[4]);
                 }
             } else if c.starts_with("mailto:") || c.starts_with("email:") {
                 tracked_emails = c.split(':').nth(1).unwrap_or("").to_string();

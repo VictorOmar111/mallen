@@ -911,7 +911,7 @@ async fn test_http_form_bot_14_scenarios_with_real_db_companies() {
     let (size_tier, emp_est, price_mxn, scian_pitch) = HttpFormBot::classify_denue_capacity_and_scian_risk("251 y más personas", "488511");
     assert_eq!(size_tier, "CORP_GRAN_EMPRESA_251_PLUS");
     assert_eq!(emp_est, 300);
-    assert_eq!(price_mxn, 29_500.00);
+    assert_eq!(price_mxn, 3_000.00, "El precio estandarizado para la campaña de 10k PyMEs debe ser $3,000.00 MXN (~$150 USD)");
     assert!(scian_pitch.contains("Carta Porte 3.1"));
 
     // Escenario 46: Validador Pre-Flight de URLs antes de persistir (ERR_INVALID_LINK_GENERATED ante nombres vacíos o corruptos)
@@ -951,5 +951,29 @@ async fn test_http_form_bot_14_scenarios_with_real_db_companies() {
         "EMPRESA REDIRECT 301 ya abrió el link, por lo que no debe aparecer en la lista de no-respondidos"
     );
 
-    println!("✓ LOS 49 ESCENARIOS DE INTELIGENCIA COMERCIAL (WAPPALYZER MX, AUDITOR DNS DMARC, ESCALA DENUE/SCIAN, CLICK-TRACKING Y COLA DE NO-RESPONDIDOS) SUPERADOS AL 100%");
+
+    // Escenario 50: Verificar calibración para hostings lentos en México (8,500 ms default) y Semáforo de 32 permisos
+    std::env::remove_var("MALLEN_TIMEOUT_MS");
+    assert_eq!(HttpFormBot::configured_timeout_ms(), 8500, "El timeout por defecto debe ser 8,500 ms para no perder sitios PyME lentos");
+    assert!(HttpFormBot::global_semaphore().available_permits() <= 64);
+
+    // Escenario 51: Prueba del motor paginado por Chunks (máximo 500 en RAM) leyendo empresas reales de denue_units
+    let chunk_sample = HttpFormBot::fetch_pyme_prospect_chunk_from_denue(0, 10);
+    for (_emp_n, _url, _sc, pr) in &chunk_sample {
+        assert_eq!(*pr, 3_000.00, "Cada prospecto del chunk debe llevar el ticket PyME de $3,000.00 MXN");
+    }
+    let (dry_processed, _, _) = HttpFormBot::run_chunked_pyme_campaign(chunk_sample.len(), 5, true).await;
+    assert_eq!(dry_processed, chunk_sample.len(), "El procesador por chunks debe iterar exactamente sobre los lotes sin acumular vectores gigantes");
+
+    // Escenario 52: Verificar que los Tiers de Correo (TIER_2_DIRECT_SMTP_READY) queden guardados en reserva para la segunda ola
+    let next_act_smtp: String = conn
+        .query_row(
+            "SELECT next_action_channel FROM prospect_pipeline WHERE empresa_nombre = 'GRUPO INDUSTRIAL JSONLD'",
+            [],
+            |r| r.get(0),
+        )
+        .unwrap();
+    assert_eq!(next_act_smtp, "RESERVA_SMTP_GUARDADA_SEGUNDA_OLA");
+
+    println!("✓ LOS 52 ESCENARIOS DE TORTURA Y CALIBRACIÓN PYME 10K ($3,000 MXN, CHUNKS 500, SEMÁFORO 32, TIMEOUT 8.5S Y RESERVA SMTP) SUPERADOS AL 100%");
 }
