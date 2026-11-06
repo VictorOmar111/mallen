@@ -501,6 +501,62 @@ async fn test_http_form_bot_14_scenarios_with_real_db_companies() {
                 )
             }),
         )
+        // 23. Dominio vencido / estacionado (GoDaddy Parked / En construcción)
+        .route(
+            "/parked-expired-domain",
+            get(|| async {
+                Html(
+                    r#"<html><body>
+                        <h1>This domain is parked free, courtesy of GoDaddy.com</h1>
+                        <p>Domain is for sale</p>
+                    </body></html>"#,
+                )
+            }),
+        )
+        // 24. Sitio corporativo que oculta sus datos de contacto dentro de Schema.org (application/ld+json)
+        .route(
+            "/schema-jsonld-only",
+            get(|| async {
+                Html(
+                    r#"<!DOCTYPE html><html><head>
+                    <script type="application/ld+json">
+                    {
+                      "@context": "https://schema.org",
+                      "@type": "Organization",
+                      "name": "Grupo Industrial del Norte",
+                      "email": "Cumplimiento.Legal@GrupoNorte.MX",
+                      "telephone": "+52 81 8300 9900"
+                    }
+                    </script>
+                    </head><body><h1>Bienvenido a Grupo Industrial del Norte</h1></body></html>"#,
+                )
+            }),
+        )
+        // 25. Endpoint moderno que devuelve 415 Unsupported Media Type a form-urlencoded pero acepta application/json
+        .route(
+            "/modern-json-only-form",
+            get(|| async {
+                Html(
+                    r#"<html><body>
+                        <form action="/modern-json-only-form/api" method="POST">
+                            <input type="email" name="email">
+                            <textarea name="mensaje"></textarea>
+                        </form>
+                    </body></html>"#,
+                )
+            }),
+        )
+        .route(
+            "/modern-json-only-form/api",
+            post(|headers: HeaderMap, body: String| async move {
+                let ct = headers.get("content-type").and_then(|v| v.to_str().ok()).unwrap_or("");
+                if ct.contains("application/json") && body.contains("dictamenes@mallen.lat") {
+                    (StatusCode::OK, "{\"status\":\"mail_sent\",\"message\":\"Gracias\"}").into_response()
+                } else {
+                    (StatusCode::UNSUPPORTED_MEDIA_TYPE, "415 JSON Required").into_response()
+                }
+            }),
+        )
         // 11. Sitio sin formulario de contacto
         .route(
             "/only-login-search",
@@ -660,6 +716,7 @@ async fn test_http_form_bot_14_scenarios_with_real_db_companies() {
     assert_eq!(email_cf, "legal@corp.mx", "Debe desencriptar el correo protegido por Cloudflare data-cfemail");
 
     // Escenario 23: Control de duplicados entre dos sucursales del DENUE que comparten sitio web
+    let _ = conn.execute("DELETE FROM prospect_pipeline WHERE empresa_nombre LIKE 'CADENA NACIONAL SUCURSAL%'", []);
     let branch_url = format!("{}/multi-branch-contact?dedup_domain=1", base);
     let r23_suc1 = HttpFormBot::submit_form_direct(&client, &branch_url, "CADENA NACIONAL SUCURSAL NORTE", 640000.0).await;
     assert_eq!(r23_suc1, "PROSPECCION_ENVIADA_EXITO");
@@ -805,5 +862,38 @@ async fn test_http_form_bot_14_scenarios_with_real_db_companies() {
         snap.total_requests, snap.success_count, snap.waf_or_captcha_count, snap.circuit_breaker_trips, snap.available_semaphore_permits, snap.avg_latency_ms
     );
 
-    println!("✓ LOS 37 ESCENARIOS DE TORTURA Y RENDIMIENTO CONCURRENTE SUPERADOS AL 100%");
+
+    // Escenario 38: Verificar que el Backoff Exponencial con Jitter Descorrelacionado supere el umbral base y varíe orgánicamente
+    let b1 = HttpFormBot::compute_decorrelated_backoff_ms(1, 150);
+    let b2 = HttpFormBot::compute_decorrelated_backoff_ms(2, 150);
+    assert!(b1 >= 300 && b1 < 500, "Intento 1 debe incluir base exponencial + jitter orgánico");
+    assert!(b2 >= 600 && b2 < 1000, "Intento 2 debe escalar exponencialmente con jitter");
+
+    // Escenario 39: Detección inmediata de dominios estacionados o vencidos (GoDaddy / Sedo / En Construcción)
+    let r39 = HttpFormBot::submit_form_direct(&client, &format!("{}/parked-expired-domain", base), "EMPRESA DOMINIO VENCIDO", 310000.0).await;
+    assert_eq!(r39, "DOMINIO_ESTACIONADO_O_EXPIRADO");
+
+    // Escenario 40: Cosecha invisible de correo y teléfono desde microdatos Schema.org (application/ld+json)
+    let r40 = HttpFormBot::submit_form_direct(&client, &format!("{}/schema-jsonld-only", base), "GRUPO INDUSTRIAL JSONLD", 920000.0).await;
+    assert_eq!(r40, "SIN_FORMULARIO_CONTACTO");
+    let (tier_ld, mail_ld, wa_ld): (String, String, String) = conn
+        .query_row(
+            "SELECT contact_method_tier, extracted_emails, extracted_whatsapp FROM prospect_pipeline WHERE empresa_nombre = 'GRUPO INDUSTRIAL JSONLD'",
+            [],
+            |r| Ok((r.get(0)?, r.get(1)?, r.get(2)?)),
+        )
+        .unwrap();
+    assert_eq!(tier_ld, "TIER_2_DIRECT_SMTP_READY", "Gracias al extractor JSON-LD debe promoverse a TIER_2_DIRECT_SMTP_READY");
+    assert_eq!(mail_ld, "cumplimiento.legal@gruponorte.mx");
+    assert_eq!(wa_ld, "+528183009900");
+
+    // Escenario 41: Fallback automático a application/json cuando el action del formulario devuelve HTTP 415
+    let r41 = HttpFormBot::submit_form_direct(&client, &format!("{}/modern-json-only-form", base), "EMPRESA JSON 415 FALLBACK", 540000.0).await;
+    assert_eq!(r41, "PROSPECCION_ENVIADA_EXITO", "Debe reintentar automáticamente con application/json al recibir HTTP 415");
+
+    // Escenario 42: Extracción de enlaces tel: fijos/móviles en portales industriales
+    let (_, phones_tel, _) = HttpFormBot::harvest_multichannel_contacts(r#"<html><body><a href="tel:01 (33) 3612-4455">Planta Guadalajara</a></body></html>"#);
+    assert_eq!(phones_tel, "+523336124455");
+
+    println!("✓ LOS 42 ESCENARIOS DE GRADO MILITAR (KEEP-ALIVE 15S, DECORRELATED JITTER, JSON-LD HARVESTER, PARKED DETECTOR Y JSON 415 FALLBACK) SUPERADOS AL 100%");
 }

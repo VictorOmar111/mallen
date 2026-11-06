@@ -120,9 +120,13 @@ impl HttpFormBot {
     pub fn build_rotating_proxy_client(explicit_proxies: &[String]) -> Result<Client, Box<dyn std::error::Error>> {
         let (default_headers, _) = Self::next_rotated_headers();
         let mut builder = Client::builder()
-            .timeout(Duration::from_millis(4500))
+            .timeout(Duration::from_millis(Self::configured_timeout_ms()))
+            .connect_timeout(Duration::from_millis(3000))
+            .pool_idle_timeout(Duration::from_secs(15))
+            .pool_max_idle_per_host(16)
+            .tcp_keepalive(Duration::from_secs(30))
+            .tcp_nodelay(true)
             .redirect(Policy::limited(5))
-            .pool_max_idle_per_host(32)
             .danger_accept_invalid_certs(true)
             .default_headers(default_headers);
 
@@ -708,6 +712,79 @@ impl HttpFormBot {
 
 
 
+
+    /// Calcula el tiempo de espera exponencial con Jitter Descorrelacionado (Decorrelated Jitter)
+    /// para evitar que los WAFs detecten periodicidad matemática exacta (1s, 2s, 4s) en los reintentos.
+    pub fn compute_decorrelated_backoff_ms(attempt: u32, base_ms: u64) -> u64 {
+        let exp_factor = 1u64 << attempt.min(5);
+        let deterministic_base = base_ms.saturating_mul(exp_factor);
+        let nanos = SystemTime::now()
+            .duration_since(UNIX_EPOCH)
+            .unwrap_or_default()
+            .subsec_nanos() as u64;
+        let salt = (UA_COUNTER.load(Ordering::Relaxed) as u64).wrapping_mul(1103515245).wrapping_add(nanos);
+        let jitter_range = (deterministic_base / 2).max(45);
+        let random_jitter = salt % jitter_range;
+        deterministic_base + random_jitter
+    }
+
+    /// Detecta si un dominio del DENUE está estacionado (Parked), expirado o en página por defecto de hosting
+    /// (GoDaddy, Sedo, Hostinger, cPanel Default, Sitio en Construcción) para no perder recursos en él.
+    pub fn detect_parked_or_expired_domain(html_lower: &str) -> Option<&'static str> {
+        let parked_signatures = [
+            "this domain is parked",
+            "este dominio está estacionado",
+            "domain is for sale",
+            "dominio en venta",
+            "sedoparking.com",
+            "parkingcrew.net",
+            "bodis.com",
+            "hugedomains.com",
+            "godaddy.com/forsale",
+            "cgi-sys/defaultwebpage.cgi",
+            "account suspended",
+            "cuenta suspendida",
+            "sitio en construcción",
+            "sitio web en construccion",
+            "página en construcción",
+        ];
+        if !html_lower.contains("<form") && parked_signatures.iter().any(|s| html_lower.contains(s)) {
+            return Some("DOMINIO_ESTACIONADO_O_EXPIRADO");
+        }
+        None
+    }
+
+    /// Extrae correos y teléfonos corporativos ocultos dentro de bloques `<script type="application/ld+json">` (Schema.org).
+    pub fn extract_schema_org_jsonld_contacts(html: &str) -> (Vec<String>, Vec<String>) {
+        let mut ld_emails = Vec::new();
+        let mut ld_phones = Vec::new();
+        let doc = Html::parse_document(html);
+        if let Ok(sel) = Selector::parse("script[type=\"application/ld+json\"]") {
+            for script in doc.select(&sel) {
+                let raw_json = script.text().collect::<Vec<_>>().join(" ");
+                for token in raw_json.split(|c: char| c == '"' || c == '\'' || c == ',' || c == ':' || c.is_whitespace()) {
+                    let t = token.trim();
+                    if t.contains('@') && t.contains('.') {
+                        if let Some(clean_m) = Self::sanitize_and_normalize_email(t) {
+                            if !ld_emails.contains(&clean_m) {
+                                ld_emails.push(clean_m);
+                            }
+                        }
+                    } else if (t.starts_with("+52") || t.starts_with("55") || t.starts_with("33") || t.starts_with("81"))
+                        && t.chars().filter(|c| c.is_ascii_digit()).count() >= 10
+                    {
+                        if let Some(clean_p) = Self::normalize_whatsapp_e164(t) {
+                            if !ld_phones.contains(&clean_p) {
+                                ld_phones.push(clean_p);
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        (ld_emails, ld_phones)
+    }
+
     /// Devuelve la referencia al Semáforo Global de Concurrencia (por defecto 64 tareas simultáneas,
     /// configurable entre 1 y 500 mediante `MALLEN_MAX_CONCURRENCY`).
     pub fn global_semaphore() -> &'static Semaphore {
@@ -1229,8 +1306,7 @@ impl HttpFormBot {
     /// Cosechador Multicanal Profundo: extrae emails (incluyendo Cloudflare data-cfemail),
     /// WhatsApp corporativo y perfiles de redes B2B (LinkedIn/Facebook/Instagram) del DOM.
     pub fn harvest_multichannel_contacts(html: &str) -> (String, String, String) {
-        let mut emails: Vec<String> = Vec::new();
-        let mut whatsapps: Vec<String> = Vec::new();
+        let (mut emails, mut whatsapps) = Self::extract_schema_org_jsonld_contacts(html);
         let mut socials: Vec<String> = Vec::new();
 
         let doc = Html::parse_document(html);
@@ -1268,7 +1344,7 @@ impl HttpFormBot {
                             }
                         }
                     }
-                } else if low.contains("wa.me/") || low.contains("api.whatsapp.com") || low.starts_with("whatsapp:") {
+                } else if low.contains("wa.me/") || low.contains("api.whatsapp.com") || low.starts_with("whatsapp:") || low.starts_with("tel:") {
                     if let Some(clean_wa) = Self::normalize_whatsapp_e164(href) {
                         if !whatsapps.contains(&clean_wa) {
                             whatsapps.push(clean_wa);
@@ -1628,7 +1704,7 @@ impl HttpFormBot {
 
             for attempt in 0..3u32 {
                 if attempt > 0 {
-                    let backoff_ms = 120 * (1 << attempt);
+                    let backoff_ms = Self::compute_decorrelated_backoff_ms(attempt, 110);
                     sleep(Duration::from_millis(backoff_ms)).await;
                 }
                 match active_client.get(page_url).headers(rotated_headers.clone()).send().await {
@@ -1740,6 +1816,9 @@ impl HttpFormBot {
 
             if let Some(waf_code) = Self::detect_antibot_protection(&html_lower, "") {
                 return (waf_code.to_string(), current_target_url.to_string(), fallback_contact);
+            }
+            if let Some(parked_code) = Self::detect_parked_or_expired_domain(&html_lower) {
+                return (parked_code.to_string(), current_target_url.to_string(), fallback_contact);
             }
 
             let (form_found, special_reason, form_action, form_method_is_get, form_params) = {
@@ -1987,7 +2066,7 @@ impl HttpFormBot {
             // 2. POST con Reintentos Exponenciales + Jitter ante fallos transitorios 502/503/504 o microcortes
             for post_attempt in 0..2u32 {
                 if post_attempt > 0 {
-                    sleep(Duration::from_millis(180 * (1 << post_attempt))).await;
+                    sleep(Duration::from_millis(Self::compute_decorrelated_backoff_ms(post_attempt, 150))).await;
                 }
 
                 let mut post_headers = rotated_headers.clone();
@@ -2016,6 +2095,24 @@ impl HttpFormBot {
                     }
                     Ok(res) if res.status().as_u16() >= 500 && post_attempt == 0 => {
                         continue; // Reintentar 1 vez si el servidor destino dio 502/503 temporal en el POST
+                    }
+                    Ok(res) if res.status().as_u16() == 415 => {
+                        // Fallback automático para APIs modernas que exigen application/json en el action del form
+                        if let Ok(json_res) = active_client
+                            .post(&form_action)
+                            .header("Referer", current_target_url.as_str())
+                            .header("Origin", &origin_str)
+                            .json(&form_params)
+                            .send()
+                            .await
+                        {
+                            if json_res.status().is_success() {
+                                let body_resp = json_res.text().await.unwrap_or_default();
+                                let sem = Self::classify_post_response_semantics(&body_resp).to_string();
+                                return (sem, current_target_url.to_string(), fallback_contact);
+                            }
+                        }
+                        return ("HTTP_POST_ERR_415".to_string(), current_target_url.to_string(), fallback_contact);
                     }
                     Ok(res) => {
                         return (format!("HTTP_POST_ERR_{}", res.status().as_u16()), current_target_url.to_string(), fallback_contact);
