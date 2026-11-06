@@ -895,5 +895,61 @@ async fn test_http_form_bot_14_scenarios_with_real_db_companies() {
     let (_, phones_tel, _) = HttpFormBot::harvest_multichannel_contacts(r#"<html><body><a href="tel:01 (33) 3612-4455">Planta Guadalajara</a></body></html>"#);
     assert_eq!(phones_tel, "+523336124455");
 
-    println!("✓ LOS 42 ESCENARIOS DE GRADO MILITAR (KEEP-ALIVE 15S, DECORRELATED JITTER, JSON-LD HARVESTER, PARKED DETECTOR Y JSON 415 FALLBACK) SUPERADOS AL 100%");
+
+    // Escenario 43: Detector de Stack Tecnológico en México (Estilo Wappalyzer: Shopify, Conekta, WooCommerce, Next.js)
+    let ecom_html = r#"<html><head><script src="https://cdn.shopify.com/s/files/1/store.js"></script><script src="https://cdn.conekta.io/js/latest/conekta.js"></script></head><body>Carrito</body></html>"#;
+    let (stack_detected, is_ecom, pitch_mod) = HttpFormBot::detect_mexican_tech_stack("server: cloudflare", ecom_html);
+    assert!(is_ecom, "Debe identificar que es un E-Commerce activo");
+    assert!(stack_detected.contains("Shopify") && stack_detected.contains("Conekta-MX"));
+    assert_eq!(pitch_mod, "MODULO_BLINDAJE_ECOMMERCE_PASARELAS_Y_PROFECO_ART76BIS");
+
+    // Escenario 44: Auditor de Seguridad de Correo y DNS (SPF / DMARC)
+    let (_spf, _dmarc, dns_verdict) = HttpFormBot::audit_domain_email_dns_security("localhost");
+    assert_eq!(dns_verdict, "VULNERABLE_SIN_DMARC_RIESGO_SUPLANTACION");
+
+    // Escenario 45: Clasificador de Tamaño / Capacidad Económica por Estrato DENUE y Riesgo Sectorial SCIAN
+    let (size_tier, emp_est, price_mxn, scian_pitch) = HttpFormBot::classify_denue_capacity_and_scian_risk("251 y más personas", "488511");
+    assert_eq!(size_tier, "CORP_GRAN_EMPRESA_251_PLUS");
+    assert_eq!(emp_est, 300);
+    assert_eq!(price_mxn, 29_500.00);
+    assert!(scian_pitch.contains("Carta Porte 3.1"));
+
+    // Escenario 46: Validador Pre-Flight de URLs antes de persistir (ERR_INVALID_LINK_GENERATED ante nombres vacíos o corruptos)
+    assert!(HttpFormBot::build_and_validate_checkout_link("GRUPO BIMBO", Some("BIM011108DJ5")).is_ok());
+    assert_eq!(HttpFormBot::build_and_validate_checkout_link("   ", None), Err("ERR_INVALID_LINK_GENERATED"));
+    let r46_bad = HttpFormBot::submit_form_direct(&client, &format!("{}/wp-contact", base), "   ", 500000.0).await;
+    assert_eq!(r46_bad, "ERR_INVALID_LINK_GENERATED");
+
+    // Escenario 47: Verificar que un servidor con WAF pesado (sin correo en la pantalla 403) se derive automáticamente a TIER_4_HEADLESS_CHROME_WORKER
+    let (tier_waf, stage_waf): (String, String) = conn
+        .query_row(
+            "SELECT contact_method_tier, pipeline_stage FROM prospect_pipeline WHERE empresa_nombre = 'CB TEST 1'",
+            [],
+            |r| Ok((r.get(0)?, r.get(1)?)),
+        )
+        .unwrap();
+    assert_eq!(tier_waf, "TIER_4_HEADLESS_CHROME_WORKER");
+    assert_eq!(stage_waf, "STAGE_COLA_HEADLESS_BROWSER");
+
+    // Escenario 48: Registro en tiempo real de Clics en el enlace de Pre-Diagnóstico (tabla link_clicks)
+    let clicks_count = HttpFormBot::record_checkout_link_click("EMPRESA REDIRECT 301", "189.203.10.25", "Mozilla/5.0 (Macintosh)").unwrap();
+    assert!(clicks_count >= 1);
+    let stage_after_click: String = conn
+        .query_row(
+            "SELECT pipeline_stage FROM prospect_pipeline WHERE empresa_nombre = 'EMPRESA REDIRECT 301'",
+            [],
+            |r| r.get(0),
+        )
+        .unwrap();
+    assert_eq!(stage_after_click, "STAGE_LINK_ABIERTO_INTENCION_COMPRA");
+
+    // Escenario 49: Extracción de la Lista de Empresas Contactadas que NO han respondido (excluyendo a EMPRESA REDIRECT 301 que ya hizo clic)
+    let unresponsive = HttpFormBot::get_unresponsive_contacted_prospects(25);
+    assert!(!unresponsive.is_empty(), "Debe devolver la lista de prospectos contactados que aún no abren su link");
+    assert!(
+        !unresponsive.iter().any(|(name, _, _, _, _)| name == "EMPRESA REDIRECT 301"),
+        "EMPRESA REDIRECT 301 ya abrió el link, por lo que no debe aparecer en la lista de no-respondidos"
+    );
+
+    println!("✓ LOS 49 ESCENARIOS DE INTELIGENCIA COMERCIAL (WAPPALYZER MX, AUDITOR DNS DMARC, ESCALA DENUE/SCIAN, CLICK-TRACKING Y COLA DE NO-RESPONDIDOS) SUPERADOS AL 100%");
 }

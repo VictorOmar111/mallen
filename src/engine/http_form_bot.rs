@@ -713,6 +713,276 @@ impl HttpFormBot {
 
 
 
+
+    /// 1. Detector de Stack Tecnológico (Estilo Wappalyzer en Rust — 24 tecnologías clave en México)
+    /// Devuelve `(stack_csv, has_ecommerce, recommended_pitch_module)`.
+    pub fn detect_mexican_tech_stack(headers_str: &str, html: &str) -> (String, bool, &'static str) {
+        let h_low = headers_str.to_lowercase();
+        let d_low = html.to_lowercase();
+        let mut stack: Vec<&'static str> = Vec::new();
+        let mut is_ecommerce = false;
+
+        let rules: &[(&str, &'static str, bool)] = &[
+            ("wp-content", "WordPress", false),
+            ("wp-includes", "WordPress", false),
+            ("woocommerce", "WooCommerce", true),
+            ("wc-cart-fragments", "WooCommerce", true),
+            ("cdn.shopify.com", "Shopify", true),
+            ("shopify.com", "Shopify", true),
+            ("tiendanube", "Tiendanube", true),
+            ("nuvemshop", "Tiendanube", true),
+            ("vtexassets", "VTEX", true),
+            ("prestashop", "PrestaShop", true),
+            ("magento", "Magento", true),
+            ("wix.com", "Wix", false),
+            ("wixstatic.com", "Wix", false),
+            ("squarespace", "Squarespace", false),
+            ("webflow", "Webflow", false),
+            ("odoo", "Odoo-ERP", true),
+            ("__next_data__", "Next.js/React", false),
+            ("_next/static", "Next.js/React", false),
+            ("__nuxt", "Nuxt/Vue", false),
+            ("ng-version", "Angular", false),
+            ("laravel_session", "Laravel", false),
+            ("asp.net", "ASP.NET", false),
+            ("js.stripe.com", "Stripe", true),
+            ("conekta", "Conekta-MX", true),
+            ("openpay", "Openpay-BBVA", true),
+            ("mercadopago", "MercadoPago", true),
+            ("paypalobjects", "PayPal", true),
+            ("clip.mx", "Clip-MX", true),
+            ("hs-script-loader", "HubSpot-CRM", false),
+            ("googletagmanager.com", "Google-Tag-Manager", false),
+            ("connect.facebook.net", "Meta-Pixel", false),
+        ];
+
+        for (sig, label, ecom_flag) in rules {
+            if d_low.contains(sig) || h_low.contains(sig) {
+                if !stack.contains(label) {
+                    stack.push(label);
+                }
+                if *ecom_flag {
+                    is_ecommerce = true;
+                }
+            }
+        }
+
+        if stack.is_empty() {
+            stack.push("HTML5-Static");
+        }
+
+        let pitch_module = if is_ecommerce {
+            "MODULO_BLINDAJE_ECOMMERCE_PASARELAS_Y_PROFECO_ART76BIS"
+        } else if stack.contains(&"HubSpot-CRM") || stack.contains(&"Meta-Pixel") || stack.contains(&"Google-Tag-Manager") {
+            "MODULO_PRIVACIDAD_COOKIES_RASTREO_Y_ARCO_LFPDPPP"
+        } else {
+            "MODULO_AVISO_PRIVACIDAD_WEB_Y_MATERIALIDAD_SAT_STPS"
+        };
+
+        (stack.join(", "), is_ecommerce, pitch_module)
+    }
+
+    /// 2. Auditor Rápido de Seguridad de Correo y DNS (SPF / DMARC) para detectar vulnerabilidad a Phishing / Spoofing.
+    /// Consulta registros TXT del dominio y devuelve `(spf_present, dmarc_present, security_verdict)`.
+    pub fn audit_domain_email_dns_security(domain: &str) -> (bool, bool, &'static str) {
+        let clean_dom = Self::normalize_domain_host(domain);
+        if clean_dom == "127.0.0.1" || clean_dom == "localhost" || clean_dom.is_empty() {
+            return (false, false, "VULNERABLE_SIN_DMARC_RIESGO_SUPLANTACION");
+        }
+
+        let check_txt = |q_host: &str, needle: &str| -> bool {
+            if let Ok(out) = std::process::Command::new("host")
+                .arg("-W")
+                .arg("1")
+                .arg("-t")
+                .arg("TXT")
+                .arg(q_host)
+                .output()
+            {
+                let txt = String::from_utf8_lossy(&out.stdout).to_lowercase();
+                if txt.contains(needle) {
+                    return true;
+                }
+            }
+            false
+        };
+
+        let has_spf = check_txt(&clean_dom, "v=spf1");
+        let has_dmarc = check_txt(&format!("_dmarc.{}", clean_dom), "v=dmarc1");
+
+        let verdict = match (has_spf, has_dmarc) {
+            (true, true) => "DNS_CORREO_BLINDADO_SPF_DMARC",
+            (true, false) => "VULNERABLE_SIN_DMARC_RIESGO_SUPLANTACION",
+            (false, true) => "VULNERABLE_SIN_SPF_RIESGO_SPOOFING",
+            (false, false) => "CRITICO_SIN_SPF_NI_DMARC_ALTO_RIESGO_PHISHING",
+        };
+        (has_spf, has_dmarc, verdict)
+    }
+
+    /// 3. Clasificador de Tamaño / Capacidad Económica (Estrato INEGI DENUE) y Nivel de Riesgo Sectorial SCIAN.
+    /// Devuelve `(tier_economico, empleados_estimados, precio_kit_sugerido_mxn, argumento_pericial_scian)`.
+    pub fn classify_denue_capacity_and_scian_risk(estrato_denue: &str, scian_code: &str) -> (&'static str, u32, f64, &'static str) {
+        let e_low = estrato_denue.to_lowercase();
+        let (tier_size, emp_est, suggested_price) = if e_low.contains("251") || e_low.contains("más") || e_low.contains("mas") {
+            ("CORP_GRAN_EMPRESA_251_PLUS", 300, 29_500.00)
+        } else if e_low.contains("101 a 250") {
+            ("MEDIANA_ALTA_101_250", 150, 18_900.00)
+        } else if e_low.contains("51 a 100") {
+            ("MEDIANA_51_100", 75, 14_900.00)
+        } else if e_low.contains("31 a 50") {
+            ("PEQUENA_ALTA_31_50", 45, 5_940.00)
+        } else if e_low.contains("11 a 30") {
+            ("PEQUENA_11_30", 20, 5_940.00)
+        } else if e_low.contains("6 a 10") {
+            ("MICRO_6_10", 8, 3_490.00)
+        } else {
+            ("MICRO_0_5", 4, 2_950.00)
+        };
+
+        let scian = scian_code.trim();
+        let scian_argument = if scian.starts_with("52") || scian.starts_with("53") {
+            "ALTO_RIESGO_FINTECH_PLD: Sujeto a auditoría LFPIORPI (Art. 17/18 UIF), Beneficiario Controlador y cifrado de datos patrimoniales LFPDPPP."
+        } else if scian.starts_with("62") || scian.starts_with("464") {
+            "ALTO_RIESGO_SALUD_COFEPRIS: Sujeto a Aviso de Responsable Sanitario, RPBI (NOM-087-SEMARNAT), Expediente Clínico (NOM-004) y Datos Sensibles Art. 9 LFPDPPP."
+        } else if scian.starts_with("722") || scian.starts_with("311") || scian.starts_with("461") {
+            "ALTO_RIESGO_ALIMENTOS_CONSUMO: Sujeto a inspección COFEPRIS (NOM-251), Protección Civil PIPC, STPS NOM-002 Incendios y PROFECO Precios Totales."
+        } else if scian.starts_with("48") || scian.starts_with("49") || scian.starts_with("43") {
+            "ALTO_RIESGO_LOGISTICA_ADUANAL: Sujeto a Complemento Carta Porte 3.1 SAT, Bitácoras SICT (NOM-087/NOM-068) y Ergonomía de Cargas (NOM-036-1-STPS)."
+        } else if scian.starts_with("23") || scian.starts_with("31") || scian.starts_with("32") || scian.starts_with("33") {
+            "ALTO_RIESGO_INDUSTRIAL_OBRA: Sujeto a Prima de Riesgo IMSS Clase IV/V, REPSE/SIROC, NOM-019/030/035 STPS y Manifiestos Ambientales SEMARNAT."
+        } else if scian.starts_with("46") || scian.starts_with("51") {
+            "RIESGO_COMERCIO_DIGITAL_PROFECO: Sujeto a Art. 76 BIS LFPC, Póliza de Garantía de 90 días y Aviso de Privacidad Integral SABG."
+        } else {
+            "RIESGO_CORPORATIVO_TRANSVERSAL: Sujeto a Materialidad Fiscal Art. 69-B CFF (Fecha Cierta SCJN), STPS NOM-035/037 y Conciliación SUA IMSS."
+        };
+
+        (tier_size, emp_est, suggested_price, scian_argument)
+    }
+
+    /// 4. Validador Pre-Flight de Enlaces de Checkout antes de persistir o enviar en mensajes.
+    /// Si la URL generada no pasa el parser estricto `url::Url::parse`, devuelve `Err("ERR_INVALID_LINK_GENERATED")`.
+    pub fn build_and_validate_checkout_link(empresa_nombre: &str, empresa_id_opt: Option<&str>) -> Result<String, &'static str> {
+        let trimmed = empresa_nombre.trim();
+        if trimmed.is_empty() || trimmed.contains('\0') || trimmed.contains('\n') || trimmed.contains('\r') {
+            return Err("ERR_INVALID_LINK_GENERATED");
+        }
+        let encoded_ref = Self::encode_url_ref(trimmed);
+        if encoded_ref.is_empty() {
+            return Err("ERR_INVALID_LINK_GENERATED");
+        }
+
+        let raw_link = if let Some(id_str) = empresa_id_opt.filter(|s| !s.trim().is_empty()) {
+            let encoded_id = Self::encode_url_ref(id_str);
+            format!("https://mallen.lat/checkout?ref={}&empresa={}", encoded_ref, encoded_id)
+        } else {
+            format!("https://mallen.lat/checkout?ref={}", encoded_ref)
+        };
+
+        match Url::parse(&raw_link) {
+            Ok(u) if (u.scheme() == "https" || u.scheme() == "http") && u.host_str() == Some("mallen.lat") && u.query().is_some() => {
+                Ok(raw_link)
+            }
+            _ => Err("ERR_INVALID_LINK_GENERATED"),
+        }
+    }
+
+    /// 5. Registro en tiempo real de Clics de Prospectos en la tabla `link_clicks` (SQLite WAL).
+    /// Marca inmediatamente al prospecto como `has_clicked_link = 1` en `prospect_pipeline`.
+    pub fn record_checkout_link_click(ref_hash_or_empresa: &str, visitor_ip: &str, user_agent: &str) -> Result<u64, String> {
+        let db_path = std::env::var("MALLEN_DB_PATH").unwrap_or_else(|_| "data/mallen_prod.db".to_string());
+        let conn = rusqlite::Connection::open(&db_path).map_err(|e| e.to_string())?;
+        Self::ensure_db_schema_once(&conn);
+
+        conn.execute_batch(
+            "CREATE TABLE IF NOT EXISTS link_clicks (
+                ref_key TEXT PRIMARY KEY,
+                first_clicked_at_utc TEXT DEFAULT (datetime('now')),
+                last_clicked_at_utc TEXT DEFAULT (datetime('now')),
+                click_count INTEGER DEFAULT 1,
+                last_visitor_ip TEXT DEFAULT '',
+                last_user_agent TEXT DEFAULT ''
+            );",
+        )
+        .map_err(|e| e.to_string())?;
+
+        let _ = conn.execute("ALTER TABLE prospect_pipeline ADD COLUMN has_clicked_link INTEGER DEFAULT 0", []);
+
+        conn.execute(
+            "INSERT INTO link_clicks (ref_key, first_clicked_at_utc, last_clicked_at_utc, click_count, last_visitor_ip, last_user_agent)
+             VALUES (?1, datetime('now'), datetime('now'), 1, ?2, ?3)
+             ON CONFLICT(ref_key) DO UPDATE SET
+                last_clicked_at_utc = datetime('now'),
+                click_count = link_clicks.click_count + 1,
+                last_visitor_ip = excluded.last_visitor_ip,
+                last_user_agent = excluded.last_user_agent",
+            rusqlite::params![ref_hash_or_empresa.trim(), visitor_ip, user_agent],
+        )
+        .map_err(|e| e.to_string())?;
+
+        let _ = conn.execute(
+            "UPDATE prospect_pipeline
+             SET has_clicked_link = 1,
+                 pipeline_stage = 'STAGE_LINK_ABIERTO_INTENCION_COMPRA',
+                 next_action_channel = 'LLAMADA_CIERRE_EJECUTIVO_INMEDIATO',
+                 updated_at_utc = datetime('now')
+             WHERE empresa_nombre = ?1",
+            rusqlite::params![ref_hash_or_empresa.trim()],
+        );
+
+        let count: u64 = conn
+            .query_row(
+                "SELECT click_count FROM link_clicks WHERE ref_key = ?1",
+                rusqlite::params![ref_hash_or_empresa.trim()],
+                |r| r.get(0),
+            )
+            .unwrap_or(1);
+        Ok(count)
+    }
+
+    /// 6. Obtiene la Lista de Empresas Contactadas pero que NO han respondido ni abierto el enlace (`has_clicked_link = 0`),
+    /// ordenadas por mayor monto de contingencia para segundo toque omnicanal (Email / WhatsApp / Teléfono).
+    pub fn get_unresponsive_contacted_prospects(limit: usize) -> Vec<(String, String, String, f64, String)> {
+        let mut results = Vec::new();
+        let db_path = std::env::var("MALLEN_DB_PATH").unwrap_or_else(|_| "data/mallen_prod.db".to_string());
+        if let Ok(conn) = rusqlite::Connection::open(db_path) {
+            Self::ensure_db_schema_once(&conn);
+            let _ = conn.execute("ALTER TABLE prospect_pipeline ADD COLUMN has_clicked_link INTEGER DEFAULT 0", []);
+            let _ = conn.execute("ALTER TABLE prospect_pipeline ADD COLUMN tech_stack_detected TEXT DEFAULT ''", []);
+            let _ = conn.execute("ALTER TABLE prospect_pipeline ADD COLUMN recommended_module TEXT DEFAULT ''", []);
+
+            if let Ok(mut stmt) = conn.prepare(
+                "SELECT p.empresa_nombre,
+                        p.contact_method_tier,
+                        COALESCE(NULLIF(p.extracted_emails, ''), NULLIF(p.extracted_whatsapp, ''), p.final_target_url) AS canal_seguimiento,
+                        p.multa_estimada_mxn,
+                        COALESCE(p.recommended_module, 'MODULO_CUMPLIMIENTO_360')
+                 FROM prospect_pipeline p
+                 LEFT JOIN link_clicks c ON c.ref_key = p.empresa_nombre
+                 WHERE (p.ultimo_resultado_codigo = 'PROSPECCION_ENVIADA_EXITO'
+                        OR p.contact_method_tier IN ('TIER_1_WEB_FORM_SENT', 'TIER_2_DIRECT_SMTP_READY', 'TIER_3_WHATSAPP_DIRECT_READY'))
+                   AND COALESCE(p.has_clicked_link, 0) = 0
+                   AND c.ref_key IS NULL
+                 ORDER BY p.multa_estimada_mxn DESC
+                 LIMIT ?1",
+            ) {
+                if let Ok(rows) = stmt.query_map(rusqlite::params![limit as i64], |r| {
+                    Ok((
+                        r.get::<_, String>(0)?,
+                        r.get::<_, String>(1)?,
+                        r.get::<_, String>(2)?,
+                        r.get::<_, f64>(3)?,
+                        r.get::<_, String>(4)?,
+                    ))
+                }) {
+                    for item in rows.flatten() {
+                        results.push(item);
+                    }
+                }
+            }
+        }
+        results
+    }
+
     /// Calcula el tiempo de espera exponencial con Jitter Descorrelacionado (Decorrelated Jitter)
     /// para evitar que los WAFs detecten periodicidad matemática exacta (1s, 2s, 4s) en los reintentos.
     pub fn compute_decorrelated_backoff_ms(attempt: u32, base_ms: u64) -> u64 {
@@ -848,11 +1118,13 @@ impl HttpFormBot {
 
     /// Construye un mensaje de contacto B2B cálido, humano, consultivo y de alta conversión
     /// (sin cifras intimidantes de multas en el primer contacto para evitar fricción con recepción/filtros).
-    pub fn build_human_consultative_message(empresa_nombre: &str, encoded_ref: &str) -> String {
+    pub fn build_human_consultative_message(empresa_nombre: &str, _encoded_ref: &str) -> String {
+        let valid_link = Self::build_and_validate_checkout_link(empresa_nombre, None)
+            .unwrap_or_else(|_| format!("https://mallen.lat/checkout?ref={}", Self::encode_url_ref(empresa_nombre)));
         format!(
-            "Estimado equipo directivo y area juridica de {}: Les saludamos cordialmente de FIRMA W16 MALLEN®. Como parte de nuestro programa de apoyo al cumplimiento empresarial, generamos una pre-evaluacion tecnica preventiva basada en informacion publica (padrón INEGI DENUE, normatividad STPS y aviso de privacidad web) para ayudarles a fortalecer su blindaje documental y operativo. Pueden consultar y descargar sin costo su resumen tecnico confidencial en: https://mallen.lat/checkout?ref={}",
+            "Estimado equipo directivo y area juridica de {}: Les saludamos cordialmente de FIRMA W16 MALLEN®. Como parte de nuestro programa de apoyo al cumplimiento empresarial, generamos una pre-evaluacion tecnica preventiva basada en informacion publica (padrón INEGI DENUE, normatividad STPS y aviso de privacidad web) para ayudarles a fortalecer su blindaje documental y operativo. Pueden consultar y descargar sin costo su resumen tecnico confidencial en: {}",
             empresa_nombre.trim(),
-            encoded_ref
+            valid_link
         )
     }
 
@@ -1035,6 +1307,9 @@ impl HttpFormBot {
                 "ALTER TABLE prospect_pipeline ADD COLUMN last_charset TEXT DEFAULT 'UTF-8'",
                 "ALTER TABLE prospect_pipeline ADD COLUMN last_trace_detail TEXT DEFAULT ''",
                 "ALTER TABLE prospect_pipeline ADD COLUMN encrypted_contact_vault TEXT DEFAULT ''",
+                "ALTER TABLE prospect_pipeline ADD COLUMN tech_stack_detected TEXT DEFAULT ''",
+                "ALTER TABLE prospect_pipeline ADD COLUMN recommended_module TEXT DEFAULT ''",
+                "ALTER TABLE prospect_pipeline ADD COLUMN has_clicked_link INTEGER DEFAULT 0",
             ] {
                 let _ = conn.execute(col_sql, []);
             }
@@ -1233,9 +1508,16 @@ impl HttpFormBot {
     /// - Convierte estrictamente a minúsculas (.trim().to_lowercase()).
     /// - Descarta falsos positivos (archivos @2x, versiones npm/cdn como bootstrap@5.3.2, o placeholders).
     pub fn sanitize_and_normalize_email(raw: &str) -> Option<String> {
-        let cleaned_unicode: String = raw
+        let pre_low = raw.trim().to_lowercase();
+        let without_scheme = pre_low
+            .strip_prefix("mailto:")
+            .unwrap_or(&pre_low)
             .replace("%20", "")
-            .replace("&nbsp;", "")
+            .replace("%09", "")
+            .replace("%0a", "")
+            .replace("%0d", "")
+            .replace("&nbsp;", "");
+        let cleaned_unicode: String = without_scheme
             .chars()
             .filter(|&c| {
                 !c.is_whitespace()
@@ -1472,7 +1754,10 @@ impl HttpFormBot {
             ("STAGE_COLA_SMTP_DIRECTO", "TIER_2_DIRECT_SMTP_READY", "DISPARAR_EMAIL_PLANTILLA_TYPST")
         } else if status_result == "CANAL_ALTERNATIVO_WHATSAPP_DETECTADO" || !whatsapps.is_empty() {
             ("STAGE_COLA_WHATSAPP_B2B", "TIER_3_WHATSAPP_DIRECT_READY", "ENVIAR_AVISO_EJECUTIVO_WHATSAPP")
-        } else if status_result.starts_with("REQUIERE_HEADLESS_JS_") {
+        } else if status_result.starts_with("REQUIERE_HEADLESS_JS_")
+            || status_result.starts_with("BLOQUEO_WAF_")
+            || status_result.starts_with("PROTECCION_ANTIBOT_")
+        {
             ("STAGE_COLA_HEADLESS_BROWSER", "TIER_4_HEADLESS_CHROME_WORKER", "EJECUTAR_WORKER_HEADLESS_PLAYWRIGHT")
         } else if status_result.starts_with("CANAL_ALTERNATIVO_IFRAME_CRM") {
             ("STAGE_DERIVADO_CRM_EXTERNO", "TIER_4_CRM_IFRAME_WIDGET", "PROSPECCION_WIDGET_CRM_EXTERNO")
@@ -1605,6 +1890,15 @@ impl HttpFormBot {
                     ],
                 );
 
+                if trace_detail.contains(" | STACK:") {
+                    let st_part = trace_detail.split(" | STACK:").nth(1).unwrap_or("");
+                    let stack_val = st_part.split(" | PITCH:").next().unwrap_or("");
+                    let pitch_val = st_part.split(" | PITCH:").nth(1).unwrap_or("");
+                    let _ = tx.execute(
+                        "UPDATE prospect_pipeline SET tech_stack_detected = ?1, recommended_module = ?2 WHERE empresa_nombre = ?3",
+                        rusqlite::params![stack_val, pitch_val, empresa_nombre],
+                    );
+                }
                 let _ = tx.commit();
             }
 
@@ -1624,6 +1918,9 @@ impl HttpFormBot {
         empresa_nombre: &str,
         multa_estimada: f64,
     ) -> String {
+        if let Err(link_err) = Self::build_and_validate_checkout_link(empresa_nombre, None) {
+            return link_err.to_string();
+        }
         let parsed_in = match Url::parse(page_url) {
             Ok(u) => u,
             Err(_) => return "URL_INVALIDA".to_string(),
@@ -1806,11 +2103,8 @@ impl HttpFormBot {
 
             let fallback_contact = Self::harvest_fallback_contact_channel(&html_text);
             let (h_emails, h_wa, h_soc) = Self::harvest_multichannel_contacts(&html_text);
-            let fallback_contact = if !h_emails.is_empty() || !h_wa.is_empty() || !h_soc.is_empty() {
-                Some(format!("MULTI|{}|{}|{}", h_emails, h_wa, h_soc))
-            } else {
-                fallback_contact
-            };
+            let (tech_stack_str, _is_ecom, pitch_mod) = Self::detect_mexican_tech_stack(&ctype_saved, &html_text);
+            let fallback_contact = Some(format!("MULTI5|{}|{}|{}|{}|{}", h_emails, h_wa, h_soc, tech_stack_str, pitch_mod));
             let _ = (&resp_http_code, &active_charset);
             let html_lower = html_text.to_lowercase();
 
@@ -2140,7 +2434,7 @@ impl HttpFormBot {
                     }
                 }
                 tracked_http_status = 200;
-                tracked_trace = format!("OK:{} -> {}", page_url, tracked_final_url);
+                tracked_trace = format!("OK:{} -> {} | STACK:{} | PITCH:{}", page_url, tracked_final_url, detected_stack, detected_pitch);
                 status_str
             }
             Err(_) => {
@@ -2155,13 +2449,17 @@ impl HttpFormBot {
         }
         let elapsed_ms = start_instant.elapsed().as_millis() as u64;
         let mut final_socials = tracked_socials;
+        let mut detected_stack = String::new();
+        let mut detected_pitch = String::new();
         if let Some(ref c) = harvested_contact {
-            if let Some(rest) = c.strip_prefix("MULTI|") {
-                let parts: Vec<&str> = rest.splitn(3, '|').collect();
-                if parts.len() == 3 {
+            if let Some(rest) = c.strip_prefix("MULTI5|") {
+                let parts: Vec<&str> = rest.splitn(5, '|').collect();
+                if parts.len() == 5 {
                     tracked_emails = parts[0].to_string();
                     tracked_whatsapps = parts[1].to_string();
                     final_socials = parts[2].to_string();
+                    detected_stack = parts[3].to_string();
+                    detected_pitch = parts[4].to_string();
                 }
             } else if c.starts_with("mailto:") || c.starts_with("email:") {
                 tracked_emails = c.split(':').nth(1).unwrap_or("").to_string();
