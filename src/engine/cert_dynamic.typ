@@ -1,3 +1,5 @@
+#set text(hyphenate: false)
+#set par(justify: false)
 #set page(
   paper: "a4",
   margin: (x: 1.2cm, top: 1.1cm, bottom: 1.1cm),

@@ -1904,7 +1904,8 @@ impl HttpFormBot {
             return None;
         }
 
-        Some(format!("{}@{}", local, domain))
+        let final_local = local.strip_prefix("20").filter(|r| r.starts_with("juridico") || r.starts_with("contacto") || r.starts_with("direccion") || r.starts_with("legal") || r.starts_with("info") || r.starts_with("ventas")).unwrap_or(local);
+        Some(format!("{}@{}", final_local, domain))
     }
 
     /// Desofusca correos protegidos por Cloudflare (`data-cfemail="hex_string"`).
@@ -1952,7 +1953,8 @@ impl HttpFormBot {
                 let href = a.value().attr("href").unwrap_or("").trim();
                 let low = href.to_lowercase();
                 if low.starts_with("mailto:") {
-                    let raw_mail = href[7..].split('?').next().unwrap_or("");
+                    let raw_mail_clean = href[7..].split('?').next().unwrap_or("").replace("%20", "").replace("%09", "");
+                    let raw_mail = raw_mail_clean.as_str();
                     if let Some(mail) = Self::sanitize_and_normalize_email(raw_mail) {
                         if !emails.contains(&mail) {
                             emails.push(mail);

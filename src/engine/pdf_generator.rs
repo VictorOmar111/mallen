@@ -226,14 +226,39 @@ pub fn lookup_formbot_and_denue_context(empresa_nombre: &str, tax_id: &str) -> (
     (None, None, true)
 }
 
+
+pub fn load_latest_master_from_sqlite(tax_id: &str, empresa_nombre: &str) -> Option<AuditMasterJson> {
+    let db_path = std::env::var("MALLEN_DB_PATH").unwrap_or_else(|_| "data/mallen_prod.db".to_string());
+    let conn = rusqlite::Connection::open(db_path).ok()?;
+    for table_sql in [
+        "SELECT master_json FROM audit_sessions WHERE UPPER(tax_id) = UPPER(?1) OR UPPER(razon_social) = UPPER(?2) ORDER BY rowid DESC LIMIT 1",
+        "SELECT master_json FROM audit_cache WHERE UPPER(tax_id) = UPPER(?1) OR UPPER(rfc) = UPPER(?1) ORDER BY rowid DESC LIMIT 1",
+    ] {
+        if let Ok(mut stmt) = conn.prepare(table_sql) {
+            if let Ok(json_str) = stmt.query_row(rusqlite::params![tax_id.trim(), empresa_nombre.trim()], |r| r.get::<_, String>(0)) {
+                if let Ok(parsed) = serde_json::from_str::<AuditMasterJson>(&json_str) {
+                    return Some(parsed);
+                }
+            }
+        }
+    }
+    None
+}
+
 fn build_report_typst_markup_full(
     empresa: &EmpresaB2B,
     osint: &OsintResult,
-    master_opt: Option<&AuditMasterJson>,
+    master_opt_in: Option<&AuditMasterJson>,
     _is_accredited: bool,
     is_censored_micro_report: bool,
 ) -> String {
-    let tax_id = empresa.tax_id.as_deref().unwrap_or("SIN-RFC");
+    let tax_id = empresa.tax_id.as_deref().unwrap_or(&empresa.id);
+    let sqlite_master_backup = if master_opt_in.is_none() {
+        load_latest_master_from_sqlite(tax_id, &empresa.nombre)
+    } else {
+        None
+    };
+    let master_opt = master_opt_in.or(sqlite_master_backup.as_ref());
     let is_immune = tax_id.starts_with("MALLEN");
     let fecha_hoy = Utc::now().format("%d/%m/%Y %H:%M UTC").to_string();
     let auditor = AccountantProfile::default();
@@ -247,7 +272,7 @@ fn build_report_typst_markup_full(
         .representante_legal_nombre
         .as_deref()
         .filter(|s| !s.trim().is_empty())
-        .unwrap_or("________________________ (Por designar por la empresa)");
+        .unwrap_or("Por designar en Acta Interna");
     let jurisdiccion = dossier
         .entidad_jurisdiccion
         .as_deref()
@@ -268,7 +293,7 @@ fn build_report_typst_markup_full(
         .and_then(|m| m.partner_whitelabel_name.as_deref())
         .or(empresa.accountant_signature.as_deref())
     {
-        Some(p) if !p.trim().is_empty() && !p.starts_with("DICTAMINADO_POR:") => {
+        Some(p) if !p.trim().is_empty() && !p.starts_with("DICTAMINADO_POR:") && !p.starts_with("CERTIFICACIÓN") && !p.contains("FIRMA W16 MALLEN") => {
             format!("DESPACHO AUDITOR ALIADO: {}", sanitize_for_typst(p))
         }
         _ => "FIRMA W16 MALLEN® (MALLEN.LAT)".to_string(),
@@ -667,7 +692,7 @@ pub fn generate_pdf_report_with_session(
         .representante_legal_nombre
         .as_deref()
         .filter(|s| !s.trim().is_empty())
-        .unwrap_or("________________________ (Por designar por la empresa)");
+        .unwrap_or("Por designar en Acta Interna");
     let jurisdiccion = dossier
         .entidad_jurisdiccion
         .as_deref()

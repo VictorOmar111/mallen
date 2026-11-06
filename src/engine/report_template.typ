@@ -1,3 +1,5 @@
+#set text(hyphenate: false)
+#set par(justify: false)
 #set page(
   paper: "us-letter",
   margin: (top: 1.05cm, bottom: 1.15cm, left: 1.2cm, right: 1.2cm),
@@ -25,7 +27,7 @@
 )
 
 #set text(font: ("DejaVu Sans", "Liberation Sans", "Arial"), size: 7.4pt, fill: rgb("#1e293b"), lang: "es")
-#set par(justify: true, leading: 0.43em)
+#set par(justify: false, leading: 0.43em)
 
 // Macro gráfico de Efecto Difuminado (Frosted Glass Blur) para el Pre-Dictamen sin pago
 #let frosted-blur(tag_label) = box(
@@ -194,7 +196,7 @@ Dictamen pericial compilado específicamente para *"{{EMPRESA_NOMBRE}}"* (`{{EMP
   #grid(
     columns: (1fr, auto),
     [
-      #text(size: 6.4pt, weight: "bold", fill: rgb("#0f172a"))[ ÓRGANO DICTAMINADOR: {{AUDITOR_NOMBRE}} • Cédula: {{AUDITOR_CEDULA}} • Reg. STPS: {{AUDITOR_DC5}}]
+      #text(size: 6.4pt, weight: "bold", fill: rgb("#0f172a"))[ ÓRGANO EMISOR: {{AUDITOR_NOMBRE}} • Estándar: {{AUDITOR_CEDULA}} • Nodo: {{AUDITOR_DC5}}]
       #linebreak()
       #text(size: 5.9pt, fill: rgb("#475569"))[Jurisdicción: {{EMPRESA_JURISDICCION}} • Oficial Privacidad: {{OFICIAL_PRIVACIDAD}} • Coordinador NOM-019: {{COORDINADOR_CSH}} • HTTP: {{HTTP_STATUS}}]
     ],
@@ -344,23 +346,11 @@ Dictamen pericial compilado específicamente para *"{{EMPRESA_NOMBRE}}"* (`{{EMP
       #text(size: 6.1pt, fill: rgb("#1e293b"))[
         *A. 10 Certificados de Acreditación Normativa (PDF Sellados SHA-256):*
         #linebreak()
-        NOM-035 Psicosocial • NOM-037 Teletrabajo • NOM-019/030 Comisión SST • SAT Art. 69-B Materialidad • LFPDPPP Privacidad • IMSS 32-D/REPSE • Protección Civil PIPC • PROFECO Art. 76 BIS • LFPIORPI PLD • Blindaje Maestro 360°.
+        10 Constancias Digitales de Acreditación Normativa (STPS, SAT, IMSS, LFPDPPP/SABG, Protección Civil y PROFECO) selladas con huella SHA-256 (Desglose técnico reservado dentro del archivo .ZIP).
         #v(0.18em)
         *B. 7 Instrumentos Jurídicos Editables (Word-HTML y PDF Listos para Firma):*
         #linebreak()
-        1. Aviso de Privacidad Integral, Simplificado y Formato Biométrico LFPDPPP.
-        #linebreak()
-        2. Política de Prevención Psicosocial y Cuestionarios NOM-035-STPS.
-        #linebreak()
-        3. Acta Constitutiva de Comisión Mixta NOM-019 y Diagnóstico NOM-030.
-        #linebreak()
-        4. Adendum de Teletrabajo y Lista Ergonómica NOM-037-STPS-2023.
-        #linebreak()
-        5. Contrato Marco B2B con Cláusula de Fecha Cierta SCJN y Bitácora Art. 69-B.
-        #linebreak()
-        6. Protocolo de Blindaje Patronal IMSS SUA y Checklist Mensual REPSE.
-        #linebreak()
-        7. Términos y Condiciones E-Commerce Art. 76 BIS LFPC y Póliza de Garantía.
+        7 Instrumentos Jurídicos, Actas Constitutivas, Políticas y Contratos Marco parametrizados específicamente al giro SCIAN y plantilla de la empresa (Títulos y clausulado reservados para descarga exclusiva en el Kit .ZIP acreditado).
       ]
     ]
   ]
@@ -377,7 +367,7 @@ Dictamen pericial compilado específicamente para *"{{EMPRESA_NOMBRE}}"* (`{{EMP
       #text(size: 6.7pt, weight: "bold", fill: rgb("#34d399"))[CERTIFICACIÓN CRIPTOGRÁFICA DE INTEGRIDAD Y ALCANCE METODOLÓGICO (ARTS. 89–93 CÓDIGO DE COMERCIO)]
       #linebreak()
       #text(size: 5.9pt, fill: rgb("#e2e8f0"))[
-        El presente Dictamen Pericial y sus Anexos I y II han sido compilados por *{{AUDITOR_NOMBRE}}* (Cédula Profesional: `{{AUDITOR_CEDULA}}` | Registro STPS: `{{AUDITOR_DC5}}`). La huella criptográfica `{{AUDIT_HASH}}` garantiza la inalterabilidad del expediente. Los vectores clasificados como *"EXENTO SCIAN"* o *"BLINDADO"* reflejan una contingencia de \$0.00 MXN para el giro evaluado.
+        El presente Dictamen Pericial y sus Anexos I y II han sido compilados por *{{AUDITOR_NOMBRE}}* (Estándar: `{{AUDITOR_CEDULA}}` | Nodo: `{{AUDITOR_DC5}}`). La huella criptográfica `{{AUDIT_HASH}}` garantiza la inalterabilidad del expediente. Los vectores clasificados como *"EXENTO SCIAN"* o *"BLINDADO"* reflejan una contingencia de \$0.00 MXN para el giro evaluado.
       ]
     ],
     align(right + horizon)[
