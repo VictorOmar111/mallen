@@ -1838,16 +1838,21 @@ impl HttpFormBot {
     /// - Convierte estrictamente a minúsculas (.trim().to_lowercase()).
     /// - Descarta falsos positivos (archivos @2x, versiones npm/cdn como bootstrap@5.3.2, o placeholders).
     pub fn sanitize_and_normalize_email(raw: &str) -> Option<String> {
-        let pre_low = raw.trim().to_lowercase();
-        let without_scheme = pre_low
-            .strip_prefix("mailto:")
-            .unwrap_or(&pre_low)
-            .replace("%20", "")
-            .replace("%09", "")
-            .replace("%0a", "")
-            .replace("%0d", "")
-            .replace("&nbsp;", "");
-        let cleaned_unicode: String = without_scheme
+        let mut s = raw.trim().to_lowercase();
+        // Limpiar reiteradamente esquemas mailto: y escapes URL (%20, %09, %0a, %0d) antes de tocar caracteres
+        for _ in 0..3 {
+            s = s
+                .trim()
+                .strip_prefix("mailto:")
+                .unwrap_or(&s)
+                .replace("%20", " ")
+                .replace("%09", " ")
+                .replace("%0a", " ")
+                .replace("%0d", " ")
+                .replace("&nbsp;", " ");
+        }
+
+        let cleaned_unicode: String = s
             .chars()
             .filter(|&c| {
                 !c.is_whitespace()
@@ -1867,18 +1872,18 @@ impl HttpFormBot {
         if parts.len() != 2 {
             return None;
         }
-        let raw_local = parts[0];
-        let local = if raw_local.starts_with("20") && raw_local.len() > 4 && raw_local[2..].chars().next().map(|c| c.is_ascii_alphabetic()).unwrap_or(false) {
-            &raw_local[2..]
-        } else {
-            raw_local
-        };
+        let mut local = parts[0];
         let domain = parts[1];
+
+        // Si un escape URL roto dejó "20" pegado al inicio de un buzón alfabético (ej. "20juridico"), limpiarlo
+        if local.starts_with("20") && local.len() > 4 && local[2..].chars().all(|c| c.is_ascii_alphabetic() || c == '.' || c == '_' || c == '-') {
+            local = &local[2..];
+        }
+
         if local.is_empty() || domain.len() < 4 || !domain.contains('.') || domain.starts_with('.') || domain.ends_with('.') {
             return None;
         }
 
-        // Descartar extensiones de activos estáticos, imágenes retina (@2x) o versiones semver (ej. pkg@1.2.3)
         let bad_suffixes = [
             ".png", ".jpg", ".jpeg", ".gif", ".webp", ".svg", ".ico",
             ".js", ".css", ".woff", ".woff2", ".ttf", ".eot", ".map", ".pdf",
@@ -1890,7 +1895,6 @@ impl HttpFormBot {
             return None;
         }
 
-        // Descartar correos trampa, no-reply o placeholders de plantillas
         let blacklisted_locals = ["no-reply", "noreply", "donotreply", "mailer-daemon", "postmaster", "ejemplo", "tu-correo", "tucorreo", "yourname", "user"];
         let blacklisted_domains = ["example.com", "example.org", "dominio.com", "tudominio.com", "sentry.io", "wixpress.com", "email.com"];
         if blacklisted_locals.iter().any(|&b| local == b || local.starts_with("no-reply") || local.starts_with("noreply")) {

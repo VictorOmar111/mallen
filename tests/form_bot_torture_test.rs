@@ -1019,5 +1019,22 @@ async fn test_http_form_bot_14_scenarios_with_real_db_companies() {
     // Escenario 56: Verificar que la semilla desde DENUE (seed_checkpoint_resume_queue_10k) funcione sin errores
     let _seeded = HttpFormBot::seed_checkpoint_resume_queue_10k(5).unwrap();
 
-    println!("✓ LOS 56 ESCENARIOS DE GRADO INDUSTRIAL (0 WARNINGS, CHECKPOINT & RESUME, DEAD-DOMAIN BLACKLIST Y 4 COLAS DE ATAQUE) SUPERADOS AL 100%");
+
+    // Escenario 57: Integración 100% End-to-End entre HttpFormBot -> pdf_generator (Pre-Dictamen PDF + Click-Tracking automático)
+    let (resolved_scian, resolved_emp, _priv_flag) =
+        worker_inegi_engine::engine::pdf_generator::lookup_formbot_and_denue_context(emp0, "STEREN010101AAA");
+    assert!(resolved_scian.is_some(), "pdf_generator debe recuperar automáticamente el SCIAN real desde denue_units / prospect_pipeline");
+    assert!(resolved_emp.unwrap_or(0) > 0);
+
+    // Verificar que al abrir el Pre-Dictamen se haya registrado automáticamente el clic en link_clicks
+    let auto_clicks: i64 = conn
+        .query_row(
+            "SELECT COUNT(*) FROM link_clicks WHERE ref_key = ?1",
+            rusqlite::params![emp0],
+            |r| r.get(0),
+        )
+        .unwrap_or(0);
+    assert!(auto_clicks >= 1, "Generar el Pre-Dictamen de un prospecto del FormBot debe registrar automáticamente su clic en link_clicks");
+
+    println!("✓ LOS 57 ESCENARIOS (INCLUYENDO INTEGRACIÓN END-TO-END FORMBOT <-> PDF_GENERATOR Y CLICK-TRACKING) SUPERADOS AL 100%");
 }

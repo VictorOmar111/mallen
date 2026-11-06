@@ -175,6 +175,57 @@ pub fn format_currency_mxn(val: f64) -> String {
     format!("{}.{:02}", formatted, cents)
 }
 
+
+/// Puente de Compatibilidad 100% entre `HttpFormBot` (`prospect_pipeline` + `denue_units`) y `pdf_generator.rs`:
+/// Cuando un prospecto hace clic en su enlace y solicita su Pre-Dictamen o Dictamen sin haber corrido antes `/api/scan`,
+/// recupera su código SCIAN real, su tamaño de plantilla PyME y su estado web desde `data/mallen_prod.db`,
+/// además de registrar automáticamente la apertura del documento en `link_clicks`.
+pub fn lookup_formbot_and_denue_context(empresa_nombre: &str, tax_id: &str) -> (Option<String>, Option<u32>, bool) {
+    let _ = crate::engine::http_form_bot::HttpFormBot::record_checkout_link_click(
+        if !empresa_nombre.trim().is_empty() && !empresa_nombre.starts_with("REGISTRO") {
+            empresa_nombre.trim()
+        } else {
+            tax_id.trim()
+        },
+        "PDF_GENERATOR_TRIGGER",
+        "Typst-PreDictamen-Engine",
+    );
+
+    let db_path = std::env::var("MALLEN_DB_PATH").unwrap_or_else(|_| "data/mallen_prod.db".to_string());
+    if let Ok(conn) = rusqlite::Connection::open(db_path) {
+        // 1. Buscar primero en prospect_pipeline (datos cosechados por HttpFormBot)
+        if let Ok((scian_p, code_p)) = conn.query_row(
+            "SELECT COALESCE(scian_code, ''), COALESCE(ultimo_resultado_codigo, '')
+             FROM prospect_pipeline
+             WHERE UPPER(empresa_nombre) = UPPER(?1) OR UPPER(empresa_nombre) = UPPER(?2)
+             LIMIT 1",
+            rusqlite::params![empresa_nombre.trim(), tax_id.trim()],
+            |r| Ok((r.get::<_, String>(0)?, r.get::<_, String>(1)?)),
+        ) {
+            let privacy_ok = code_p == "PROSPECCION_ENVIADA_EXITO";
+            if scian_p.len() >= 4 {
+                return (Some(scian_p), Some(20), privacy_ok);
+            }
+        }
+
+        // 2. Buscar en denue_units por razón social o nombre de establecimiento
+        if let Ok((scian_d, estrato_d)) = conn.query_row(
+            "SELECT COALESCE(codigo_scian, '541110'), COALESCE(per_ocu, '11 a 30 personas')
+             FROM denue_units
+             WHERE UPPER(raz_social) LIKE '%' || UPPER(?1) || '%'
+                OR UPPER(nom_estab) LIKE '%' || UPPER(?1) || '%'
+             LIMIT 1",
+            rusqlite::params![empresa_nombre.trim()],
+            |r| Ok((r.get::<_, String>(0)?, r.get::<_, String>(1)?)),
+        ) {
+            let (_, emp_calc, _, _) =
+                crate::engine::http_form_bot::HttpFormBot::classify_denue_capacity_and_scian_risk(&estrato_d, &scian_d);
+            return (Some(scian_d), Some(emp_calc), false);
+        }
+    }
+    (None, None, true)
+}
+
 fn build_report_typst_markup_full(
     empresa: &EmpresaB2B,
     osint: &OsintResult,
@@ -260,11 +311,7 @@ fn build_report_typst_markup_full(
             .unwrap_or("541610")
             .to_string();
         let c = &m.calibration_applied;
-        let emp = if m.estimated_employees == 150 || m.estimated_employees == 20 || m.estimated_employees == 0 {
-            45
-        } else {
-            m.estimated_employees
-        };
+        let emp = m.calibration_applied.exact_employee_count.unwrap_or(m.estimated_employees).max(1);
         (
             clean_scian.clone(),
             emp,
@@ -283,24 +330,24 @@ fn build_report_typst_markup_full(
             (m.razon_social.starts_with("REGISTRO NO INDEXADO") || m.domicilio_fiscal_o_denue.contains("Territorio Nacional")) && m.web_telemetry.target_url.is_empty()
         )
     } else {
+        let (fb_scian, fb_emp, fb_priv) = lookup_formbot_and_denue_context(&empresa.nombre, tax_id);
         let tokens: Vec<&str> = empresa
             .actividad
             .split(|c: char| !c.is_ascii_digit())
             .filter(|tok| tok.len() >= 4)
             .collect();
-        let clean_scian = tokens
-            .iter()
-            .copied()
-            .find(|t| *t != "541610")
-            .or_else(|| tokens.first().copied())
-            .unwrap_or("541610")
-            .to_string();
+        let clean_scian = fb_scian
+            .filter(|s| s.len() >= 4 && s != "541610")
+            .or_else(|| tokens.iter().copied().find(|t| *t != "541610").map(|s| s.to_string()))
+            .or_else(|| tokens.first().copied().map(|s| s.to_string()))
+            .unwrap_or_else(|| "541610".to_string());
+        let resolved_emp = fb_emp.unwrap_or(20_u32);
         (
             clean_scian.clone(),
-            45_u32,
+            resolved_emp,
             true,
-            true,
-            true,
+            fb_priv,
+            fb_priv,
             true,
             true,
             clean_scian.starts_with("31") || clean_scian.starts_with("32") || clean_scian.starts_with("33") || clean_scian.starts_with("722"),
@@ -314,6 +361,9 @@ fn build_report_typst_markup_full(
         )
     };
 
+    if is_censored_micro_report {
+        let _ = crate::engine::http_form_bot::HttpFormBot::record_checkout_link_click(&empresa.nombre, "MICRO_SCAN_PDF", "Typst-MicroReport");
+    }
     let scian_str = scian_extracted.as_str();
     let osint_ssl = osint_ssl_flag;
     let osint_privacy = osint_privacy_flag;
@@ -518,8 +568,8 @@ fn build_report_typst_markup_full(
         .replace("{{FINE_PROT_CIVIL}}", &format_currency_mxn(m_pc))
         .replace("{{MULTA_PROFECO}}", &format_currency_mxn(m_profeco))
         .replace("{{FINE_PROFECO}}", &format_currency_mxn(m_profeco))
-        .replace("{{ACTIVATION_PRICE}}", "5,940.00")
-        .replace("{{KIT_PRICE_MXN}}", "5,940.00")
+        .replace("{{ACTIVATION_PRICE}}", "3,000.00")
+        .replace("{{KIT_PRICE_MXN}}", "3,000.00")
         .replace("{{RISK_SCORE}}", &score.to_string())
         .replace("{{HALLAZGO_TABLA_STPS}}", &sanitize_for_typst(&hallazgo_stps_str))
         .replace("{{HALLAZGO_TABLA_STPS_TYPST}}", &format!("#text(size: 6.2pt)[{}]", sanitize_for_typst(&hallazgo_stps_str)))
@@ -663,14 +713,8 @@ pub fn generate_pdf_report_with_session(
         sanitize_for_typst(&empresa.actividad)
     };
     let emp_cert = master_opt
-        .map(|m| {
-            if m.estimated_employees == 150 || m.estimated_employees == 20 || m.estimated_employees == 0 {
-                45
-            } else {
-                m.estimated_employees
-            }
-        })
-        .unwrap_or(45);
+        .map(|m| m.calibration_applied.exact_employee_count.unwrap_or(m.estimated_employees).max(1))
+        .unwrap_or(20);
     let (imss_clase_c, imss_prima_c, _) =
         crate::modules::vectors_37::classify_imss_risk_by_scian(&scian_code_cert);
     let imss_label_cert = sanitize_for_typst(&format!("{} (Prima {})", imss_clase_c, imss_prima_c));
