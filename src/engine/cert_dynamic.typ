@@ -3,14 +3,28 @@
 #set page(
   paper: "a4",
   margin: (x: 1.2cm, top: 1.1cm, bottom: 1.1cm),
+  background: place(
+    center + horizon,
+    rotate(
+      -28deg,
+      block(width: 18cm)[
+        #align(center)[
+          #text(size: 21pt, weight: "bold", fill: rgb(15, 23, 42, 4%))[
+            FIRMA W16 MALLEN® • SELLO CRIPTOGRÁFICO INMUTABLE\
+            #text(size: 11pt, font: ("Liberation Mono", "DejaVu Sans Mono"))[SHA-256: {{AUDIT_HASH}} • eIDAS ART. 41 / CCOM ART. 89]
+          ]
+        ]
+      ]
+    )
+  ),
   header: align(right)[#text(size: 6.6pt, fill: rgb("#475569"), weight: "bold")[FIRMA W16 MALLEN® (MALLEN.LAT) • CERTIFICADO DE ACREDITACIÓN TÉCNICA Y NORMATIVA 360°]],
   footer: [
     #line(length: 100%, stroke: 0.4pt + rgb("#cbd5e1"))
     #v(2pt)
     #grid(
       columns: (1.2fr, 1fr),
-      align(left)[#text(size: 6.5pt, fill: rgb("#475569"))[Folio Pericial: #text(weight: "bold", fill: rgb("#0f172a"))[{{NORMA_FOLIO_PREFIX}}-{{REF_TAX}}] • Giro: #text(weight: "bold")[{{EMPRESA_SCIAN_CODE}}]]],
-      align(right)[#text(size: 6.5pt, fill: rgb("#475569"))[Sello SHA-256 / Merkle L2: #text(weight: "bold", fill: rgb("#0f172a"))[mallen.lat/verify/{{REF_TAX}}]]]
+      align(left)[#text(size: 6.5pt, fill: rgb("#475569"))[Folio Criptográfico: #text(font: ("Liberation Mono", "DejaVu Sans Mono"), weight: "bold", fill: rgb("#0f172a"))[{{NORMA_FOLIO_PREFIX}}-{{REF_TAX}}] • Giro SCIAN: #text(weight: "bold")[{{EMPRESA_SCIAN_CODE}}]]],
+      align(right)[#text(size: 6.5pt, fill: rgb("#475569"))[Verificación Merkle L2: #text(font: ("Liberation Mono", "DejaVu Sans Mono"), weight: "bold", fill: rgb("#0f172a"))[mallen.lat/verify/{{REF_TAX}}]]]
     )
   ]
 )
@@ -40,24 +54,24 @@
     columns: (1.1fr, 0.9fr),
     row-gutter: 3.8pt,
     column-gutter: 8pt,
-    [*Ente Auditado:* {{EMPRESA_NOMBRE}}],
-    [*RFC / Clave Registral:* {{EMPRESA_TAX_ID}}],
-    [*Giro SCIAN Oficial:* {{EMPRESA_ACTIVIDAD}}],
-    [*Plantilla y Prima IMSS:* {{EMPRESA_EMPLEADOS}} colaboradores • {{EMPRESA_IMSS_CLASE}}],
-    [*Domicilio del Centro de Trabajo:* {{EMPRESA_DIRECCION}}],
-    [*Jurisdicción Aplicable:* {{EMPRESA_JURISDICCION}} / Fuero Federal],
-    [*Representación Legal:* {{REPRESENTANTE_LEGAL}}],
-    [*Contingencia Total Mitigada:* \$ {{CONTINGENCIA_MITIGADA}} MXN (Score Base: {{RISK_SCORE}}/100)],
-    [*Órgano Certificador:* {{AUDITOR_NOMBRE}} ({{AUDITOR_CEDULA}})],
-    [*Sello Criptográfico SHA-256:* #raw("{{AUDIT_HASH}}")]
+    [#box(width: 100%, clip: false)[#set par(leading: 0.42em); *Ente Auditado:* #text(size: 6.9pt, weight: "bold")[{{EMPRESA_NOMBRE}}]]],
+    [#box(width: 100%, clip: false)[*RFC / Clave Registral:* #text(font: ("Liberation Mono", "DejaVu Sans Mono"), size: 6.9pt, weight: "bold")[{{EMPRESA_TAX_ID}}]]],
+    [#box(width: 100%, clip: false)[#set par(leading: 0.42em); *Giro SCIAN Oficial:* #text(size: 6.8pt)[{{EMPRESA_ACTIVIDAD}}]]],
+    [#box(width: 100%, clip: false)[*Plantilla y Prima IMSS:* #text(font: ("Liberation Mono", "DejaVu Sans Mono"), size: 6.8pt, weight: "bold")[{{EMPRESA_EMPLEADOS}}] colaboradores • {{EMPRESA_IMSS_CLASE}}]],
+    [#box(width: 100%, clip: false)[#set par(leading: 0.42em); *Domicilio del Centro de Trabajo:* #text(size: 6.7pt)[{{EMPRESA_DIRECCION}}]]],
+    [#box(width: 100%, clip: false)[*Jurisdicción Aplicable:* {{EMPRESA_JURISDICCION}} / Fuero Federal]],
+    [#box(width: 100%, clip: false)[#set par(leading: 0.42em); *Representación Legal:* #text(size: 6.8pt)[{{REPRESENTANTE_LEGAL}}]]],
+    [#box(width: 100%, clip: false)[*Contingencia Total Mitigada:* #text(font: ("Liberation Mono", "DejaVu Sans Mono"), size: 7pt, weight: "bold", fill: rgb("#047857"))[\$ {{CONTINGENCIA_MITIGADA}} MXN] #text(size: 6.4pt)[(Score: {{RISK_SCORE}}/100)]]],
+    [#box(width: 100%, clip: false)[#set par(leading: 0.42em); *Infraestructura Emisora:* #text(size: 6.6pt)[{{AUDITOR_NOMBRE}}]]],
+    [#box(width: 100%, clip: false)[*Sello Criptográfico SHA-256:* #text(font: ("Liberation Mono", "DejaVu Sans Mono"), size: 6.6pt, weight: "bold", fill: rgb("#0369a1"))[#raw("{{AUDIT_HASH}}")]]]
   )
 ]
 
 #v(0.2em)
 
-#text(size: 7.6pt, weight: "bold", fill: rgb("#0f172a"))[1. FUNDAMENTACIÓN TÉCNICA, PARAMETRIZACIÓN POR GIRO SCIAN Y ALCANCE PERICIAL]
+#text(size: 7.6pt, weight: "bold", fill: rgb("#0f172a"))[1. FUNDAMENTACIÓN TÉCNICA, PARAMETRIZACIÓN POR GIRO SCIAN Y ALCANCE DOCUMENTAL]
 #v(0.1em)
-#text(size: 6.8pt)[El Consejo Técnico de *FIRMA W16 MALLEN®* certifica que para la entidad *{{EMPRESA_NOMBRE}}* (*{{EMPRESA_TAX_ID}}*), con actividad económica registrada en el catálogo SCIAN *{{EMPRESA_ACTIVIDAD}}* y una plantilla operativa parametrizada de *{{EMPRESA_EMPLEADOS}} personas*, se han generado, personalizado y sellado criptográficamente los instrumentos documentales, actas constitutivas y matrices de control exigibles para acreditar el cumplimiento preventivo del vector *{{NORMA_FOLIO_PREFIX}}*.]
+#text(size: 6.8pt)[La División de Ingeniería Regulatoria de *FIRMA W16 MALLEN®* hace constar que para la entidad *{{EMPRESA_NOMBRE}}* (*{{EMPRESA_TAX_ID}}*), con actividad económica registrada en el catálogo SCIAN *{{EMPRESA_ACTIVIDAD}}* y una plantilla operativa parametrizada de *{{EMPRESA_EMPLEADOS}} personas*, se han compilado, estructurado y sellado criptográficamente los instrumentos documentales, actas constitutivas y matrices de control preventivo correspondientes al vector *{{NORMA_FOLIO_PREFIX}}*.]
 
 #v(0.15em)
 
@@ -80,9 +94,9 @@
   [#text(fill: white, weight: "bold", size: 6.3pt)[Parámetro de Auditoría Evaluado]],
   [#text(fill: white, weight: "bold", size: 6.3pt)[Estatus de Instrumentación]],
   [#text(fill: white, weight: "bold", size: 6.3pt)[Cobertura Probatoria]],
-  [Alineación al Giro SCIAN ({{EMPRESA_SCIAN_CODE}}) y Capacidad ({{EMPRESA_EMPLEADOS}} pers.)], [PARAMETRIZADO POR PADRÓN OFICIAL], [Art. 992 LFT y Art. 75 CFF],
-  [Clasificación de Riesgo Patronal ({{EMPRESA_IMSS_CLASE}})], [CONCILIADO], [Arts. 71-75 LSS y Art. 196 RACERF],
-  [Inalterabilidad y Fecha Cierta Digital (Hash `{{AUDIT_HASH}}`)], [SELLADO SHA-256], [Arts. 89-93 CCom y Jurisprudencia SCJN]
+  [Alineación al Giro SCIAN ({{EMPRESA_SCIAN_CODE}}) y Capacidad ({{EMPRESA_EMPLEADOS}} pers.)], [#text(font: ("Liberation Mono", "DejaVu Sans Mono"), size: 6.1pt, weight: "bold")[PARAMETRIZADO OFICIAL]], [Art. 992 LFT y Art. 75 CFF],
+  [Clasificación de Riesgo Patronal ({{EMPRESA_IMSS_CLASE}})], [#text(font: ("Liberation Mono", "DejaVu Sans Mono"), size: 6.1pt, weight: "bold")[CONCILIADO RACERF]], [Arts. 71-75 LSS y Art. 196 RACERF],
+  [Inalterabilidad y Fecha Cierta Digital (Hash `{{AUDIT_HASH}}`)], [#text(font: ("Liberation Mono", "DejaVu Sans Mono"), size: 6.1pt, weight: "bold", fill: rgb("#047857"))[SELLADO SHA-256]], [Arts. 89-93 CCom • eIDAS Art. 41]
 )
 
 #v(0.2em)
@@ -101,10 +115,10 @@
   [#text(fill: white, weight: "bold", size: 6.2pt)[Código Papel]],
   [#text(fill: white, weight: "bold", size: 6.2pt)[Instrumento Jurídico / Evidencia Técnica Integrada en el Kit]],
   [#text(fill: white, weight: "bold", size: 6.2pt)[Estado]],
-  [PT-{{NORMA_FOLIO_PREFIX}}-01], [{{NORMA_PT_1}}], [INSTRUMENTADO],
-  [PT-{{NORMA_FOLIO_PREFIX}}-02], [{{NORMA_PT_2}}], [INSTRUMENTADO],
-  [PT-{{NORMA_FOLIO_PREFIX}}-03], [{{NORMA_PT_3}}], [VERIFICADO],
-  [PT-{{NORMA_FOLIO_PREFIX}}-04], [Dictamen Pericial 37 Vectores y Sello Criptográfico (`{{AUDIT_HASH}}`)], [SELLADO SHA-256]
+  [#text(font: ("Liberation Mono", "DejaVu Sans Mono"), size: 6pt, weight: "bold")[PT-{{NORMA_FOLIO_PREFIX}}-01]], [{{NORMA_PT_1}}], [#text(font: ("Liberation Mono", "DejaVu Sans Mono"), size: 6pt, weight: "bold")[INSTRUMENTADO]],
+  [#text(font: ("Liberation Mono", "DejaVu Sans Mono"), size: 6pt, weight: "bold")[PT-{{NORMA_FOLIO_PREFIX}}-02]], [{{NORMA_PT_2}}], [#text(font: ("Liberation Mono", "DejaVu Sans Mono"), size: 6pt, weight: "bold")[INSTRUMENTADO]],
+  [#text(font: ("Liberation Mono", "DejaVu Sans Mono"), size: 6pt, weight: "bold")[PT-{{NORMA_FOLIO_PREFIX}}-03]], [{{NORMA_PT_3}}], [#text(font: ("Liberation Mono", "DejaVu Sans Mono"), size: 6pt, weight: "bold")[VERIFICADO]],
+  [#text(font: ("Liberation Mono", "DejaVu Sans Mono"), size: 6pt, weight: "bold")[PT-{{NORMA_FOLIO_PREFIX}}-04]], [Dictamen Determinístico 37 Vectores y Sello Criptográfico (`{{AUDIT_HASH}}`)], [#text(font: ("Liberation Mono", "DejaVu Sans Mono"), size: 6pt, weight: "bold", fill: rgb("#047857"))[SELLADO SHA-256]]
 )
 
 #v(0.45em)
@@ -118,25 +132,25 @@
       #v(14pt)
       #line(length: 85%, stroke: 0.6pt + rgb("#334155"))
       #v(2pt)
-      #text(weight: "bold", size: 6.5pt)[DIRECCIÓN PERICIAL CORPORATIVA]\
-      #text(size: 6pt, fill: rgb("#475569"))[{{AUDITOR_NOMBRE}}]\
-      #text(size: 5.6pt, fill: rgb("#64748b"))[Folio: {{AUDITOR_CEDULA}} • {{AUDITOR_DC5}}]
+      #text(weight: "bold", size: 6.3pt)[INFRAESTRUCTURA DE AUDITORÍA]\
+      #box(width: 100%, clip: false)[#text(size: 5.8pt, fill: rgb("#475569"))[{{AUDITOR_NOMBRE}}]]\
+      #box(width: 100%, clip: false)[#text(size: 5.4pt, fill: rgb("#64748b"))[{{AUDITOR_CEDULA}} • {{AUDITOR_DC5}}]]
     ],
     [
       #v(14pt)
       #line(length: 85%, stroke: 0.6pt + rgb("#334155"))
       #v(2pt)
-      #text(weight: "bold", size: 6.5pt)[REPRESENTACIÓN LEGAL]\
-      #text(size: 6pt, fill: rgb("#475569"))[{{REPRESENTANTE_LEGAL}}]\
-      #text(size: 5.6pt, fill: rgb("#64748b"))[{{EMPRESA_NOMBRE}} ({{EMPRESA_TAX_ID}})]
+      #text(weight: "bold", size: 6.3pt)[REPRESENTACIÓN LEGAL]\
+      #box(width: 100%, clip: false)[#text(size: 5.8pt, fill: rgb("#475569"))[{{REPRESENTANTE_LEGAL}}]]\
+      #box(width: 100%, clip: false)[#text(size: 5.4pt, fill: rgb("#64748b"))[{{EMPRESA_NOMBRE}} ({{EMPRESA_TAX_ID}})]]
     ],
     [
       #rect(width: 100%, fill: rgb("#ffffff"), stroke: 0.4pt + rgb("#94a3b8"), inset: 4pt, radius: 2pt)[
         #align(left)[
           #text(size: 5.8pt, weight: "bold", fill: rgb("#0f172a"))[VERIFICACIÓN PÚBLICA INMUTABLE]\
           #text(size: 5.4pt, fill: rgb("#475569"))[Emisión UTC: {{FECHA_EMISION}}]\
-          #text(size: 5.4pt, fill: rgb("#475569"))[Hash: #raw("{{AUDIT_HASH}}")]\
-          #text(size: 5.4pt, weight: "bold", fill: rgb("#2563eb"))[https://mallen.lat/verify/{{REF_TAX}}]
+          #text(font: ("Liberation Mono", "DejaVu Sans Mono"), size: 5.4pt, fill: rgb("#475569"))[Hash: #raw("{{AUDIT_HASH}}")]\
+          #text(font: ("Liberation Mono", "DejaVu Sans Mono"), size: 5.4pt, weight: "bold", fill: rgb("#2563eb"))[https://mallen.lat/verify/{{REF_TAX}}]
         ]
       ]
     ]

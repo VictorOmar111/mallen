@@ -1838,18 +1838,19 @@ impl HttpFormBot {
     /// - Convierte estrictamente a minúsculas (.trim().to_lowercase()).
     /// - Descarta falsos positivos (archivos @2x, versiones npm/cdn como bootstrap@5.3.2, o placeholders).
     pub fn sanitize_and_normalize_email(raw: &str) -> Option<String> {
-        let mut s = raw.trim().to_lowercase();
-        // Limpiar reiteradamente esquemas mailto: y escapes URL (%20, %09, %0a, %0d) antes de tocar caracteres
-        for _ in 0..3 {
-            s = s
-                .trim()
-                .strip_prefix("mailto:")
-                .unwrap_or(&s)
-                .replace("%20", " ")
-                .replace("%09", " ")
-                .replace("%0a", " ")
-                .replace("%0d", " ")
-                .replace("&nbsp;", " ");
+        let mut s = raw
+            .replace("%20", " ")
+            .replace("%09", " ")
+            .replace("%0a", " ")
+            .replace("%0A", " ")
+            .replace("%0d", " ")
+            .replace("%0D", " ")
+            .replace("&nbsp;", " ")
+            .trim()
+            .to_lowercase();
+
+        if let Some(rest) = s.strip_prefix("mailto:") {
+            s = rest.trim().to_string();
         }
 
         let cleaned_unicode: String = s
@@ -1875,9 +1876,19 @@ impl HttpFormBot {
         let mut local = parts[0];
         let domain = parts[1];
 
-        // Si un escape URL roto dejó "20" pegado al inicio de un buzón alfabético (ej. "20juridico"), limpiarlo
-        if local.starts_with("20") && local.len() > 4 && local[2..].chars().all(|c| c.is_ascii_alphabetic() || c == '.' || c == '_' || c == '-') {
-            local = &local[2..];
+        // Limpiar cualquier prefijo numérico residual de escape URL (como "20" de "%20") antes de buzones corporativos
+        let stripped_digits = local.trim_start_matches(|c: char| c.is_ascii_digit());
+        if stripped_digits.len() >= 4
+            && (stripped_digits.starts_with("juridico")
+                || stripped_digits.starts_with("contacto")
+                || stripped_digits.starts_with("direccion")
+                || stripped_digits.starts_with("legal")
+                || stripped_digits.starts_with("info")
+                || stripped_digits.starts_with("ventas")
+                || stripped_digits.starts_with("cumplimiento")
+                || stripped_digits.starts_with("admon"))
+        {
+            local = stripped_digits;
         }
 
         if local.is_empty() || domain.len() < 4 || !domain.contains('.') || domain.starts_with('.') || domain.ends_with('.') {
@@ -1904,8 +1915,7 @@ impl HttpFormBot {
             return None;
         }
 
-        let final_local = local.strip_prefix("20").filter(|r| r.starts_with("juridico") || r.starts_with("contacto") || r.starts_with("direccion") || r.starts_with("legal") || r.starts_with("info") || r.starts_with("ventas")).unwrap_or(local);
-        Some(format!("{}@{}", final_local, domain))
+        Some(format!("{}@{}", local, domain))
     }
 
     /// Desofusca correos protegidos por Cloudflare (`data-cfemail="hex_string"`).
@@ -1926,13 +1936,14 @@ impl HttpFormBot {
         Self::sanitize_and_normalize_email(&decoded)
     }
 
-    /// Cosechador Multicanal Profundo: extrae emails (incluyendo Cloudflare data-cfemail),
-    /// WhatsApp corporativo y perfiles de redes B2B (LinkedIn/Facebook/Instagram) del DOM.
+    /// Cosechador Multicanal Profundo: extrae emails (incluyendo Cloudflare data-cfemail y Schema.org JSON-LD),
+    /// WhatsApp corporativo E.164 y perfiles de redes B2B del DOM.
     pub fn harvest_multichannel_contacts(html: &str) -> (String, String, String) {
-        let (mut emails, mut whatsapps) = Self::extract_schema_org_jsonld_contacts(html);
+        let pre_cleaned_html = html.replace("%20", " ").replace("%09", " ").replace("&nbsp;", " ");
+        let (mut emails, mut whatsapps) = Self::extract_schema_org_jsonld_contacts(&pre_cleaned_html);
         let mut socials: Vec<String> = Vec::new();
 
-        let doc = Html::parse_document(html);
+        let doc = Html::parse_document(&pre_cleaned_html);
 
         // 1. Desofuscar cualquier etiqueta con data-cfemail de Cloudflare
         if let Ok(cf_sel) = Selector::parse("[data-cfemail]") {
@@ -1953,8 +1964,7 @@ impl HttpFormBot {
                 let href = a.value().attr("href").unwrap_or("").trim();
                 let low = href.to_lowercase();
                 if low.starts_with("mailto:") {
-                    let raw_mail_clean = href[7..].split('?').next().unwrap_or("").replace("%20", "").replace("%09", "");
-                    let raw_mail = raw_mail_clean.as_str();
+                    let raw_mail = href[7..].split('?').next().unwrap_or("");
                     if let Some(mail) = Self::sanitize_and_normalize_email(raw_mail) {
                         if !emails.contains(&mail) {
                             emails.push(mail);
@@ -1986,30 +1996,24 @@ impl HttpFormBot {
             }
         }
 
-        // 3. Extraer correos visibles en texto plano y priorizar buzones directivos/legales
-        for token in html.split(|c: char| c.is_whitespace() || c == '"' || c == '\'' || c == '<' || c == '>' || c == ':' || c == ';' || c == ',') {
-            if token.contains('@') && token.contains('.') && token.len() >= 6 && token.len() <= 64 {
-                let clean = token
-                    .trim_matches(|c: char| !c.is_alphanumeric() && c != '@' && c != '.' && c != '-' && c != '_')
-                    .to_lowercase();
-                if clean.contains('@')
-                    && !clean.ends_with(".png")
-                    && !clean.ends_with(".jpg")
-                    && !clean.ends_with(".webp")
-                    && !clean.ends_with(".svg")
-                    && !clean.ends_with(".js")
-                    && !clean.ends_with(".css")
-                    && !clean.contains("sentry")
-                    && !clean.contains("wixpress")
-                    && !clean.contains("example.") && !clean.starts_with("no-reply@") && !clean.starts_with("noreply@") && !clean.starts_with("donotreply@")
-                    && !emails.contains(&clean)
-                {
-                    emails.push(clean);
+        // 3. Extraer correos visibles en texto plano (desofuscando "[at]" y "[dot]")
+        let deobfuscated_html = pre_cleaned_html
+            .replace("mailto:", " ")
+            .replace("MAILTO:", " ")
+            .replace(" [at] ", "@")
+            .replace(" (at) ", "@")
+            .replace(" [arroba] ", "@")
+            .replace(" [dot] ", ".");
+        for token in deobfuscated_html.split(|c: char| c.is_whitespace() || c == '"' || c == '\'' || c == '<' || c == '>' || c == ':' || c == ';' || c == ',') {
+            if token.contains('@') && token.len() >= 6 && token.len() <= 75 {
+                if let Some(clean) = Self::sanitize_and_normalize_email(token) {
+                    if !emails.contains(&clean) {
+                        emails.push(clean);
+                    }
                 }
             }
         }
 
-        // Ordenar emails dando prioridad a legal/jurídico/cumplimiento/dirección/contacto
         emails.sort_by_key(|m| {
             if m.starts_with("juridico") || m.starts_with("legal") || m.starts_with("compliance") || m.starts_with("cumplimiento") {
                 0
