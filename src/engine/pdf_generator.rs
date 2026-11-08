@@ -567,7 +567,7 @@ pub fn render_exact_proportional_risk_chart_typst(
     }
 
     format!(
-        r#"#rect(width: 100%, fill: rgb("#f8fafc"), stroke: 0.5pt + rgb("#cbd5e1"), inset: (x: 8pt, y: 6pt), radius: 3pt)[
+        r##"#rect(width: 100%, fill: rgb("#f8fafc"), stroke: 0.5pt + rgb("#cbd5e1"), inset: (x: 8pt, y: 6pt), radius: 3pt)[
   #grid(
     columns: (1fr, auto),
     align: horizon,
@@ -581,9 +581,41 @@ pub fn render_exact_proportional_risk_chart_typst(
     column-gutter: 6pt,
     align: horizon,
 {}  )
-]"#,
+]"##,
         score, table_rows
     )
+}
+
+
+/// Resuelve el `AuditMasterJson` aplicando la jerarquía SSOT:
+/// 1) Si `master_opt_in` trae un conteo real (!= 45), lo guarda en la Caché SSOT en RAM y lo usa.
+/// 2) Si `master_opt_in` trae el fallback antiguo de 45 pero en la Caché SSOT en RAM ya existe un conteo calibrado (ej. 258), rescata el conteo calibrado.
+/// 3) Si `master_opt_in` es `None`, recupera desde la Caché SSOT en RAM o desde SQLite WAL.
+pub fn upgrade_or_recover_ssot_master(
+    tax_id: &str,
+    empresa_nombre: &str,
+    master_opt_in: Option<&AuditMasterJson>,
+) -> Option<AuditMasterJson> {
+    if let Some(m_in) = master_opt_in {
+        let in_emp = m_in
+            .calibration_applied
+            .exact_employee_count
+            .unwrap_or(m_in.estimated_employees);
+        if in_emp == 45 {
+            if let Some(cached) = get_ssot_session_from_memory(tax_id, empresa_nombre) {
+                if cached.emp_count != 45 && cached.emp_count > 0 {
+                    let mut m_fixed = m_in.clone();
+                    m_fixed.estimated_employees = cached.emp_count;
+                    m_fixed.calibration_applied.exact_employee_count = Some(cached.emp_count);
+                    return Some(m_fixed);
+                }
+            }
+        }
+        store_ssot_session_in_memory(tax_id, empresa_nombre, m_in);
+        Some(m_in.clone())
+    } else {
+        load_latest_master_from_sqlite(tax_id, empresa_nombre)
+    }
 }
 
 fn build_report_typst_markup_full(
@@ -595,32 +627,8 @@ fn build_report_typst_markup_full(
 ) -> String {
     let tax_id = empresa.tax_id.as_deref().unwrap_or(&empresa.id);
 
-    // Si master_opt_in trae un conteo real (!= 45) o no hay nada en caché, guardarlo en SSOT;
-    // pero si master_opt_in viene con el fallback viejo de 45 y en SSOT ya teníamos el cálculo web real (ej. 258), preservar el de SSOT
-    let mut upgraded_master_opt: Option<AuditMasterJson> = None;
-    if let Some(m_in) = master_opt_in {
-        let in_emp = m_in.calibration_applied.exact_employee_count.unwrap_or(m_in.estimated_employees);
-        if in_emp == 45 {
-            if let Some(cached) = get_ssot_session_from_memory(tax_id, &empresa.nombre) {
-                if cached.emp_count != 45 && cached.emp_count > 0 {
-                    let mut m_fixed = m_in.clone();
-                    m_fixed.estimated_employees = cached.emp_count;
-                    m_fixed.calibration_applied.exact_employee_count = Some(cached.emp_count);
-                    upgraded_master_opt = Some(m_fixed);
-                }
-            }
-        }
-        if upgraded_master_opt.is_none() {
-            store_ssot_session_in_memory(tax_id, &empresa.nombre, m_in);
-        }
-    }
-
-    let sqlite_master_backup = if master_opt_in.is_none() {
-        load_latest_master_from_sqlite(tax_id, &empresa.nombre)
-    } else {
-        None
-    };
-    let master_opt = upgraded_master_opt.as_ref().or(master_opt_in).or(sqlite_master_backup.as_ref());
+    let resolved_master = upgrade_or_recover_ssot_master(tax_id, &empresa.nombre, master_opt_in);
+    let master_opt = resolved_master.as_ref();
 
     let is_immune = tax_id.starts_with("MALLEN");
     let fecha_hoy = Utc::now().format("%d/%m/%Y %H:%M UTC").to_string();
@@ -1068,16 +1076,8 @@ pub fn generate_pdf_report_with_session(
 ) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
     let tax_id = empresa.tax_id.as_deref().unwrap_or(&empresa.id);
 
-    if let Some(m_in) = master_opt_in {
-        store_ssot_session_in_memory(tax_id, &empresa.nombre, m_in);
-    }
-
-    let sqlite_master_backup = if master_opt_in.is_none() {
-        load_latest_master_from_sqlite(tax_id, &empresa.nombre)
-    } else {
-        None
-    };
-    let master_opt = upgraded_master_opt.as_ref().or(master_opt_in).or(sqlite_master_backup.as_ref());
+    let resolved_master = upgrade_or_recover_ssot_master(tax_id, &empresa.nombre, master_opt_in);
+    let master_opt = resolved_master.as_ref();
 
     let fecha_hoy = Utc::now().format("%d/%m/%Y").to_string();
     let typst_source_path = format!("{}.typ", output_path);
