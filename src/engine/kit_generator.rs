@@ -61,9 +61,11 @@ pub fn build_all_compliance_documents_with_dossier(
 pub fn build_all_compliance_documents_with_session(
     empresa: &EmpresaB2B,
     dossier: &LegalDossierInput,
-    master_opt: Option<&AuditMasterJson>,
+    master_opt_in: Option<&AuditMasterJson>,
 ) -> Vec<GeneratedKitDocument> {
     let tax_id = empresa.tax_id.as_deref().unwrap_or(&empresa.id);
+    let recovered_snap = crate::engine::pdf_generator::upgrade_or_recover_ssot_master(tax_id, &empresa.nombre, master_opt_in);
+    let master_opt = recovered_snap.as_ref();
     let fecha = Utc::now().format("%d/%m/%Y").to_string();
 
     // 1. Extracción exacta del código SCIAN desde AuditMasterJson o EmpresaB2B

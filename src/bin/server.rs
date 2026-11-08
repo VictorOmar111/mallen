@@ -531,7 +531,7 @@ async fn handle_save_dossier(
             }
         }
         master.calibration_applied.dossier = req.dossier;
-        worker_inegi_engine::engine::pdf_generator::store_ssot_session_in_memory(&clean_tax, &master.razon_social, &master);
+        let _snap_id = worker_inegi_engine::engine::pdf_generator::freeze_immutable_audit_snapshot(&clean_tax, &master.razon_social, &master);
         let _ = state.db.save_audit_session(&clean_tax, &master, is_acc).await;
     }
 
@@ -1344,7 +1344,7 @@ async fn create_payment_session(
                 }
             }
             master.calibration_applied.dossier = dossier;
-            worker_inegi_engine::engine::pdf_generator::store_ssot_session_in_memory(&clean_tax, &master.razon_social, &master);
+            let _snap_id = worker_inegi_engine::engine::pdf_generator::freeze_immutable_audit_snapshot(&clean_tax, &master.razon_social, &master);
         let _ = state.db.save_audit_session(&clean_tax, &master, is_acc).await;
         }
     }

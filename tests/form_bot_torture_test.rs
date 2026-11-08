@@ -1139,5 +1139,54 @@ async fn test_http_form_bot_14_scenarios_with_real_db_companies() {
     let payroll_258_cents = worker_inegi_engine::engine::pdf_generator::estimate_monthly_payroll_exposure_cents(258, "485111");
     assert!(payroll_258_cents > 400_000_000, "258 colaboradores en transporte deben proyectar una masa salarial > $4.0M MXN/mes");
 
-    println!("✓ LOS 60 ESCENARIOS DE TORTURA, PARIDAD AL CENTAVO (250 PERMUTACIONES PROPERTY-BASED) Y HIPER-PERSONALIZACIÓN SOCIETARIA SUPERADOS AL 100%");
+
+    // Escenario 61: Prueba del Patrón de Instantánea Inmutable (`audit_snapshots`) — Fin definitivo a la asimetría 258 vs 45 empleados
+    let mut master_urbvan_258 = worker_inegi_engine::engine::models::AuditMasterJson::default();
+    master_urbvan_258.tax_id = "URB180101AAA".to_string();
+    master_urbvan_258.razon_social = "CORPORATIVO URBVAN S.A.P.I. DE C.V.".to_string();
+    master_urbvan_258.codigo_scian = "485111".to_string();
+    master_urbvan_258.actividad_scian_desc = "485111 - Transporte colectivo urbano y suburbano de pasajeros".to_string();
+    master_urbvan_258.estimated_employees = 258;
+    master_urbvan_258.calibration_applied.exact_employee_count = Some(258);
+    master_urbvan_258.total_estimated_fine_mxn = 3_523_632.00;
+    master_urbvan_258.risk_score = 78;
+
+    // 1. Congelar el Snapshot Inmutable cuando el usuario calcula el Pre-Dictamen en la web (258 empleados)
+    let snap_uuid = worker_inegi_engine::engine::pdf_generator::freeze_immutable_audit_snapshot(
+        "URB180101AAA",
+        "CORPORATIVO URBVAN S.A.P.I. DE C.V.",
+        &master_urbvan_258,
+    );
+    assert!(snap_uuid.starts_with("SNAP-"));
+
+    // 2. Simular que el endpoint del ZIP o de un PDF secundario recibe `None` o recibe un struct desactualizado con 45 empleados
+    let mut stale_master_45 = master_urbvan_258.clone();
+    stale_master_45.estimated_employees = 45;
+    stale_master_45.calibration_applied.exact_employee_count = Some(45);
+
+    let recovered_from_none = worker_inegi_engine::engine::pdf_generator::upgrade_or_recover_ssot_master(
+        "URB180101AAA",
+        "CORPORATIVO URBVAN S.A.P.I. DE C.V.",
+        None,
+    )
+    .unwrap();
+    assert_eq!(
+        recovered_from_none.calibration_applied.exact_employee_count,
+        Some(258),
+        "Cuando el generador de PDF/ZIP recibe None, debe leer obligatoriamente los 258 empleados de audit_snapshots"
+    );
+
+    let recovered_from_stale_45 = worker_inegi_engine::engine::pdf_generator::upgrade_or_recover_ssot_master(
+        "URB180101AAA",
+        "CORPORATIVO URBVAN S.A.P.I. DE C.V.",
+        Some(&stale_master_45),
+    )
+    .unwrap();
+    assert_eq!(
+        recovered_from_stale_45.calibration_applied.exact_employee_count,
+        Some(258),
+        "Incluso si una tabla secundaria pasa el default antiguo de 45 empleados, el Snapshot Inmutable debe imponer los 258 empleados reales"
+    );
+
+    println!("✓ LOS 61 ESCENARIOS (INCLUYENDO PATRÓN DE INSTANTÁNEA INMUTABLE audit_snapshots PARA 258 EMPLEADOS) SUPERADOS AL 100%");
 }

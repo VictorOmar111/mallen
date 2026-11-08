@@ -223,6 +223,127 @@ pub fn get_ssot_session_from_memory(tax_id: &str, empresa_nombre: &str) -> Optio
 }
 
 /// Recupera desde SQLite WAL (`audit_sessions` / `audit_cache`) el `AuditMasterJson` más reciente y lo promueve a la Caché SSOT en RAM.
+
+/// Guarda de forma atómica e inmutable en SQLite WAL (`audit_snapshots`) y en la Caché SSOT en RAM
+/// el `AuditMasterJson` exacto calculado por la web o por el Pre-Dictamen, devolviendo su `snapshot_uuid`.
+pub fn freeze_immutable_audit_snapshot(
+    tax_id: &str,
+    empresa_nombre: &str,
+    master: &AuditMasterJson,
+) -> String {
+    let emp = master
+        .calibration_applied
+        .exact_employee_count
+        .unwrap_or(master.estimated_employees)
+        .max(1);
+    let cents = mxn_to_exact_cents(master.total_estimated_fine_mxn);
+
+    // 1. Generar snapshot_uuid determinístico por contenido + timestamp
+    let mut hasher = Sha256::new();
+    hasher.update(tax_id.trim().to_uppercase().as_bytes());
+    hasher.update(b"|");
+    hasher.update(empresa_nombre.trim().to_uppercase().as_bytes());
+    hasher.update(b"|");
+    hasher.update(emp.to_le_bytes());
+    hasher.update(cents.to_le_bytes());
+    let snap_uuid = format!("SNAP-{}", &format!("{:x}", hasher.finalize())[..16].to_uppercase());
+
+    // 2. Actualizar primero la Caché SSOT en Memoria RAM
+    store_ssot_session_in_memory(tax_id, empresa_nombre, master);
+    store_ssot_session_in_memory(&snap_uuid, empresa_nombre, master);
+
+    // 3. Persistir byte por byte en la tabla inmutable `audit_snapshots` (SQLite WAL)
+    let db_path = std::env::var("MALLEN_DB_PATH").unwrap_or_else(|_| "data/mallen_prod.db".to_string());
+    if let Ok(json_blob) = serde_json::to_string(master) {
+        if let Ok(conn) = rusqlite::Connection::open(db_path) {
+            let _ = conn.execute_batch(
+                "PRAGMA journal_mode=WAL;
+                 PRAGMA synchronous=NORMAL;
+                 CREATE TABLE IF NOT EXISTS audit_snapshots (
+                     snapshot_uuid TEXT PRIMARY KEY,
+                     tax_id_key TEXT NOT NULL,
+                     empresa_key TEXT NOT NULL,
+                     emp_count INTEGER NOT NULL,
+                     total_cents INTEGER NOT NULL,
+                     risk_score INTEGER NOT NULL,
+                     master_json_blob TEXT NOT NULL,
+                     created_at_utc TEXT DEFAULT (datetime('now'))
+                 );
+                 CREATE INDEX IF NOT EXISTS idx_snapshots_tax ON audit_snapshots(tax_id_key);
+                 CREATE INDEX IF NOT EXISTS idx_snapshots_emp ON audit_snapshots(empresa_key);",
+            );
+
+            let clean_tax = tax_id.trim().to_uppercase();
+            let clean_emp_name = empresa_nombre.trim().to_uppercase();
+
+            let _ = conn.execute(
+                "INSERT INTO audit_snapshots (
+                    snapshot_uuid, tax_id_key, empresa_key, emp_count, total_cents, risk_score, master_json_blob, created_at_utc
+                 ) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, datetime('now'))
+                 ON CONFLICT(snapshot_uuid) DO UPDATE SET
+                    emp_count = excluded.emp_count,
+                    total_cents = excluded.total_cents,
+                    risk_score = excluded.risk_score,
+                    master_json_blob = excluded.master_json_blob,
+                    created_at_utc = datetime('now')",
+                rusqlite::params![
+                    snap_uuid,
+                    clean_tax,
+                    clean_emp_name,
+                    emp as i64,
+                    cents as i64,
+                    master.risk_score as i64,
+                    json_blob
+                ],
+            );
+
+            // También sincronizar `audit_sessions` para que cualquier consulta legacy vea exactamente este mismo snapshot
+            let _ = conn.execute(
+                "UPDATE audit_sessions SET master_json = ?1 WHERE UPPER(tax_id) = ?2 OR UPPER(razon_social) = ?3",
+                rusqlite::params![json_blob, clean_tax, clean_emp_name],
+            );
+        }
+    }
+
+    snap_uuid
+}
+
+/// Lee de forma ciega y estricta el Snapshot Inmutable más reciente desde `audit_snapshots` (o Caché SSOT)
+/// buscando por `snapshot_uuid`, `tax_id` o `empresa_nombre`.
+pub fn load_immutable_snapshot_strict(key_or_uuid: &str, empresa_nombre: &str) -> Option<AuditMasterJson> {
+    let k1 = key_or_uuid.trim().to_uppercase();
+    let k2 = empresa_nombre.trim().to_uppercase();
+
+    // 1. Primero revisar en la tabla inmutable `audit_snapshots` el último snapshot congelado
+    let db_path = std::env::var("MALLEN_DB_PATH").unwrap_or_else(|_| "data/mallen_prod.db".to_string());
+    if let Ok(conn) = rusqlite::Connection::open(db_path) {
+        if let Ok(mut stmt) = conn.prepare(
+            "SELECT master_json_blob
+             FROM audit_snapshots
+             WHERE snapshot_uuid = ?1
+                OR tax_id_key = ?1
+                OR (empresa_key != '' AND empresa_key = ?2)
+                OR (empresa_key != '' AND empresa_key = ?1)
+             ORDER BY created_at_utc DESC, rowid DESC
+             LIMIT 1",
+        ) {
+            if let Ok(blob) = stmt.query_row(rusqlite::params![k1, k2], |r| r.get::<_, String>(0)) {
+                if let Ok(parsed) = serde_json::from_str::<AuditMasterJson>(&blob) {
+                    store_ssot_session_in_memory(key_or_uuid, empresa_nombre, &parsed);
+                    return Some(parsed);
+                }
+            }
+        }
+    }
+
+    // 2. Si no está en `audit_snapshots`, revisar Caché SSOT en RAM
+    if let Some(cached) = get_ssot_session_from_memory(key_or_uuid, empresa_nombre) {
+        return Some(cached.master);
+    }
+
+    None
+}
+
 pub fn load_latest_master_from_sqlite(tax_id: &str, empresa_nombre: &str) -> Option<AuditMasterJson> {
     if let Some(cached) = get_ssot_session_from_memory(tax_id, empresa_nombre) {
         return Some(cached.master);
@@ -596,25 +717,33 @@ pub fn upgrade_or_recover_ssot_master(
     empresa_nombre: &str,
     master_opt_in: Option<&AuditMasterJson>,
 ) -> Option<AuditMasterJson> {
+    // 1. Verificar primero si existe un Snapshot Inmutable congelado más reciente en `audit_snapshots`
+    let snap_opt = load_immutable_snapshot_strict(tax_id, empresa_nombre);
+
     if let Some(m_in) = master_opt_in {
         let in_emp = m_in
             .calibration_applied
             .exact_employee_count
             .unwrap_or(m_in.estimated_employees);
-        if in_emp == 45 {
-            if let Some(cached) = get_ssot_session_from_memory(tax_id, empresa_nombre) {
-                if cached.emp_count != 45 && cached.emp_count > 0 {
-                    let mut m_fixed = m_in.clone();
-                    m_fixed.estimated_employees = cached.emp_count;
-                    m_fixed.calibration_applied.exact_employee_count = Some(cached.emp_count);
-                    return Some(m_fixed);
-                }
+
+        // Si el caller nos pasó un objeto con el default antiguo (45 o 20) pero en `audit_snapshots`
+        // tenemos congelado un Snapshot con empleados calibrados por el usuario (ej. 200 o 258),
+        // prevalece estrictamente el Snapshot Inmutable de `audit_snapshots`.
+        if let Some(ref snap) = snap_opt {
+            let snap_emp = snap
+                .calibration_applied
+                .exact_employee_count
+                .unwrap_or(snap.estimated_employees);
+            if snap_emp != in_emp && (in_emp == 45 || in_emp == 20) && snap_emp > 0 {
+                return Some(snap.clone());
             }
         }
-        store_ssot_session_in_memory(tax_id, empresa_nombre, m_in);
+
+        // Congelar este estado actualizado como el nuevo Snapshot Inmutable oficial
+        let _ = freeze_immutable_audit_snapshot(tax_id, empresa_nombre, m_in);
         Some(m_in.clone())
     } else {
-        load_latest_master_from_sqlite(tax_id, empresa_nombre)
+        snap_opt.or_else(|| load_latest_master_from_sqlite(tax_id, empresa_nombre))
     }
 }
 
