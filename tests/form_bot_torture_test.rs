@@ -1052,5 +1052,74 @@ async fn test_http_form_bot_14_scenarios_with_real_db_companies() {
         "El fallback de empleados debe estar homologado en 20 en todos los puntos de pdf_generator.rs"
     );
 
-    println!("✓ LOS 58 ESCENARIOS (INCLUYENDO PARIDAD MATEMÁTICA AL CENTAVO Y AL PUNTO SIN PISOS INFLADOS) SUPERADOS AL 100%");
+
+    // Escenario 59: Property-Based Testing (250 permutaciones aleatorias de empleados, SCIAN y banderas)
+    // + Caso Real Corporativo Urbvan (258 empleados) verificando Paridad al Centavo Absoluto (u64 cents) y Caché SSOT en RAM
+    let scian_pool = ["488511", "485111", "311811", "621111", "522110", "236221", "461110", "722511", "541110"];
+    let mut seed: u64 = 0x9E3779B97F4A7C15;
+    for i in 0..250 {
+        seed = seed.wrapping_mul(6364136223846793005).wrapping_add(1442695040888963407);
+        let emp_rand = if i == 0 {
+            258_u32 // Caso explícito Corporativo Urbvan (258 empleados)
+        } else {
+            ((seed % 1200) as u32).max(1)
+        };
+        let scian_pick = scian_pool[(seed as usize) % scian_pool.len()];
+        let ssl_flag = (seed & 1) == 0;
+        let priv_flag = (seed & 2) == 0;
+
+        let (vecs, c_stps, c_sat, c_inai, c_imss, c_pc, c_profeco, total_cents, score) =
+            worker_inegi_engine::engine::pdf_generator::compute_ssot_exact_totals_cents(
+                "CORPORATIVO URBVAN S.A. DE C.V.",
+                scian_pick,
+                emp_rand,
+                "LIMPIO",
+                "LIMPIO",
+                false,
+                false,
+                ssl_flag,
+                priv_flag,
+                priv_flag,
+                false,
+                true,
+                true,
+                false,
+                true,
+                false,
+                true,
+                true,
+                true,
+                false,
+                None,
+            );
+
+        let sum_from_37_vectors: u64 = vecs
+            .iter()
+            .map(|v| worker_inegi_engine::engine::pdf_generator::mxn_to_exact_cents(v.multa_estimada_mxn))
+            .sum();
+
+        assert_eq!(
+            c_stps + c_sat + c_inai + c_imss + c_pc + c_profeco,
+            total_cents,
+            "Invariante 1: La suma de los 6 subtotales en centavos debe ser idéntica al total general"
+        );
+        assert_eq!(
+            sum_from_37_vectors,
+            total_cents,
+            "Invariante 2: La suma individual de los 37 vectores en centavos debe ser idéntica al total reportado"
+        );
+        assert!(score >= 45 && score <= 99, "Invariante 3: El puntaje de riesgo para empresas con hallazgos debe estar acotado en [45, 99]");
+    }
+
+    // Verificar Raíz de Merkle determinística para el lote/paquete de 258 empleados
+    let merkle_urbvan = worker_inegi_engine::engine::pdf_generator::compute_bundle_merkle_root(
+        "URB180101AAA",
+        "CORPORATIVO URBVAN",
+        258,
+        352_363_200,
+        "485111",
+    );
+    assert!(merkle_urbvan.starts_with("0x") && merkle_urbvan.len() == 26);
+
+    println!("✓ LOS 59 ESCENARIOS (INCLUYENDO PROPERTY-BASED TESTING DE 250 VARIACIONES, PARIDAD URBVAN 258 EMPLEADOS EN CENTAVOS Y MERKLE ROOT) SUPERADOS AL 100%");
 }

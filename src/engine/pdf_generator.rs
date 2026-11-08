@@ -1,16 +1,34 @@
-//! Compilador tipográfico sincronizado con `AuditMasterJson` y `LegalDossierInput`.
-//! Soporta Modo Inmune (`is_accredited = true` para `MALLEN-*` y clientes pagados con $0.00 MXN de exposición).
+//! Compilador Tipográfico Determinístico con Única Fuente de Verdad (SSOT),
+//! Caché Concurrente en Memoria (TTL 24h), Aritmética Exacta en Centavos (`u64`),
+//! Trazabilidad Estructurada JSON y Raíz de Merkle SHA-256 — FIRMA W16 MALLEN®.
 
 use crate::engine::accountant::AccountantProfile;
 use crate::engine::models::{AuditMasterJson, EmpresaB2B, LegalDossierInput};
 use crate::engine::osint_scanner::OsintResult;
 use chrono::Utc;
+use sha2::{Digest, Sha256};
+use std::collections::HashMap;
 use std::fs;
 use std::path::Path;
 use std::process::Command;
+use std::sync::{OnceLock, RwLock};
+use std::time::{Duration, Instant};
 
 const TYPST_TEMPLATE: &str = include_str!("report_template.typ");
 const CERT_DYNAMIC_TEMPLATE: &str = include_str!("cert_dynamic.typ");
+
+/// Entrada inmutable en la Caché SSOT en Memoria (TTL 24 horas)
+#[derive(Clone, Debug)]
+pub struct SsotCacheEntry {
+    pub master: AuditMasterJson,
+    pub emp_count: u32,
+    pub total_cents: u64,
+    pub risk_score: u32,
+    pub merkle_root_hex: String,
+    pub stored_at: Instant,
+}
+
+static SSOT_MEMORY_CACHE: OnceLock<RwLock<HashMap<String, SsotCacheEntry>>> = OnceLock::new();
 
 pub struct CertificadoNorma {
     pub id: &'static str,
@@ -106,6 +124,177 @@ pub fn get_catalogo_certificados() -> Vec<CertificadoNorma> {
     ]
 }
 
+/// Convierte un monto en `f64` a centavos enteros exactos (`u64`) eliminando desviaciones IEEE-754.
+#[inline]
+pub fn mxn_to_exact_cents(val: f64) -> u64 {
+    if !val.is_finite() || val <= 0.0 {
+        0
+    } else {
+        (val * 100.0).round() as u64
+    }
+}
+
+/// Formatea centavos enteros (`u64`) directamente a cadena monetaria (`1,245,958.00`).
+pub fn format_cents_mxn(total_cents: u64) -> String {
+    let integer_part = total_cents / 100;
+    let cents = total_cents % 100;
+    let num_str = integer_part.to_string();
+    let mut formatted = String::with_capacity(num_str.len() + 8);
+    let len = num_str.len();
+
+    for (i, c) in num_str.chars().enumerate() {
+        if i > 0 && (len - i) % 3 == 0 {
+            formatted.push(',');
+        }
+        formatted.push(c);
+    }
+    format!("{}.{:02}", formatted, cents)
+}
+
+pub fn format_currency_mxn(val: f64) -> String {
+    format_cents_mxn(mxn_to_exact_cents(val))
+}
+
+/// Calcula la Raíz de Merkle SHA-256 de 2 niveles sobre los artefactos del expediente (`AuditMasterJson` + `Empleados` + `Centavos`).
+pub fn compute_bundle_merkle_root(tax_id: &str, empresa_nombre: &str, emp_count: u32, total_cents: u64, scian: &str) -> String {
+    let mut leaf1 = Sha256::new();
+    leaf1.update(format!("LEAF1_ENTITY|{}|{}|{}", tax_id.trim().to_uppercase(), empresa_nombre.trim().to_uppercase(), scian.trim()).as_bytes());
+    let h1 = leaf1.finalize();
+
+    let mut leaf2 = Sha256::new();
+    leaf2.update(format!("LEAF2_MATH_SSOT|EMP={}|CENTS={}", emp_count, total_cents).as_bytes());
+    let h2 = leaf2.finalize();
+
+    let mut root = Sha256::new();
+    root.update(b"W16_MALLEN_MERKLE_ROOT_V1|");
+    root.update(h1);
+    root.update(h2);
+    format!("0x{}", &format!("{:x}", root.finalize())[..24])
+}
+
+/// Guarda en la Caché Concurrente en Memoria (TTL 24h) la Única Fuente de Verdad (SSOT) de una sesión.
+pub fn store_ssot_session_in_memory(tax_id: &str, empresa_nombre: &str, master: &AuditMasterJson) {
+    let emp = master
+        .calibration_applied
+        .exact_employee_count
+        .unwrap_or(master.estimated_employees)
+        .max(1);
+    let cents = mxn_to_exact_cents(master.total_estimated_fine_mxn);
+    let merkle = compute_bundle_merkle_root(tax_id, empresa_nombre, emp, cents, &master.codigo_scian);
+
+    let entry = SsotCacheEntry {
+        master: master.clone(),
+        emp_count: emp,
+        total_cents: cents,
+        risk_score: master.risk_score,
+        merkle_root_hex: merkle,
+        stored_at: Instant::now(),
+    };
+
+    let cache_lock = SSOT_MEMORY_CACHE.get_or_init(|| RwLock::new(HashMap::new()));
+    if let Ok(mut map) = cache_lock.write() {
+        let k_tax = tax_id.trim().to_uppercase();
+        if !k_tax.is_empty() {
+            map.insert(k_tax, entry.clone());
+        }
+        let k_name = empresa_nombre.trim().to_uppercase();
+        if !k_name.is_empty() {
+            map.insert(k_name, entry);
+        }
+    }
+}
+
+/// Consulta la Caché SSOT en Memoria (TTL 24h) sin tocar el disco.
+pub fn get_ssot_session_from_memory(tax_id: &str, empresa_nombre: &str) -> Option<SsotCacheEntry> {
+    let ttl = Duration::from_secs(24 * 3600);
+    let cache_lock = SSOT_MEMORY_CACHE.get_or_init(|| RwLock::new(HashMap::new()));
+    if let Ok(map) = cache_lock.read() {
+        for key in [tax_id.trim().to_uppercase(), empresa_nombre.trim().to_uppercase()] {
+            if !key.is_empty() {
+                if let Some(entry) = map.get(&key) {
+                    if entry.stored_at.elapsed() < ttl {
+                        return Some(entry.clone());
+                    }
+                }
+            }
+        }
+    }
+    None
+}
+
+/// Recupera desde SQLite WAL (`audit_sessions` / `audit_cache`) el `AuditMasterJson` más reciente y lo promueve a la Caché SSOT en RAM.
+pub fn load_latest_master_from_sqlite(tax_id: &str, empresa_nombre: &str) -> Option<AuditMasterJson> {
+    if let Some(cached) = get_ssot_session_from_memory(tax_id, empresa_nombre) {
+        return Some(cached.master);
+    }
+
+    let db_path = std::env::var("MALLEN_DB_PATH").unwrap_or_else(|_| "data/mallen_prod.db".to_string());
+    let conn = rusqlite::Connection::open(db_path).ok()?;
+    for table_sql in [
+        "SELECT master_json FROM audit_sessions WHERE UPPER(tax_id) = UPPER(?1) OR UPPER(razon_social) = UPPER(?2) ORDER BY rowid DESC LIMIT 1",
+        "SELECT master_json FROM audit_cache WHERE UPPER(tax_id) = UPPER(?1) OR UPPER(rfc) = UPPER(?1) ORDER BY rowid DESC LIMIT 1",
+    ] {
+        if let Ok(mut stmt) = conn.prepare(table_sql) {
+            if let Ok(json_str) = stmt.query_row(rusqlite::params![tax_id.trim(), empresa_nombre.trim()], |r| r.get::<_, String>(0)) {
+                if let Ok(parsed) = serde_json::from_str::<AuditMasterJson>(&json_str) {
+                    store_ssot_session_in_memory(tax_id, empresa_nombre, &parsed);
+                    return Some(parsed);
+                }
+            }
+        }
+    }
+    None
+}
+
+/// Puente de Compatibilidad 100% entre `HttpFormBot` (`prospect_pipeline` + `denue_units`) y `pdf_generator.rs`.
+pub fn lookup_formbot_and_denue_context(empresa_nombre: &str, tax_id: &str) -> (Option<String>, Option<u32>, bool) {
+    let _ = crate::engine::http_form_bot::HttpFormBot::record_checkout_link_click(
+        if !empresa_nombre.trim().is_empty() && !empresa_nombre.starts_with("REGISTRO") {
+            empresa_nombre.trim()
+        } else {
+            tax_id.trim()
+        },
+        "PDF_GENERATOR_TRIGGER",
+        "Typst-PreDictamen-Engine",
+    );
+
+    if let Some(cached) = get_ssot_session_from_memory(tax_id, empresa_nombre) {
+        return (Some(cached.master.codigo_scian), Some(cached.emp_count), cached.master.web_telemetry.has_privacy_notice);
+    }
+
+    let db_path = std::env::var("MALLEN_DB_PATH").unwrap_or_else(|_| "data/mallen_prod.db".to_string());
+    if let Ok(conn) = rusqlite::Connection::open(db_path) {
+        if let Ok((scian_p, code_p)) = conn.query_row(
+            "SELECT COALESCE(scian_code, ''), COALESCE(ultimo_resultado_codigo, '')
+             FROM prospect_pipeline
+             WHERE UPPER(empresa_nombre) = UPPER(?1) OR UPPER(empresa_nombre) = UPPER(?2)
+             LIMIT 1",
+            rusqlite::params![empresa_nombre.trim(), tax_id.trim()],
+            |r| Ok((r.get::<_, String>(0)?, r.get::<_, String>(1)?)),
+        ) {
+            let privacy_ok = code_p == "PROSPECCION_ENVIADA_EXITO";
+            if scian_p.len() >= 4 {
+                return (Some(scian_p), Some(20), privacy_ok);
+            }
+        }
+
+        if let Ok((scian_d, estrato_d)) = conn.query_row(
+            "SELECT COALESCE(codigo_scian, '541110'), COALESCE(per_ocu, '11 a 30 personas')
+             FROM denue_units
+             WHERE UPPER(raz_social) LIKE '%' || UPPER(?1) || '%'
+                OR UPPER(nom_estab) LIKE '%' || UPPER(?1) || '%'
+             LIMIT 1",
+            rusqlite::params![empresa_nombre.trim()],
+            |r| Ok((r.get::<_, String>(0)?, r.get::<_, String>(1)?)),
+        ) {
+            let (_, emp_calc, _, _) =
+                crate::engine::http_form_bot::HttpFormBot::classify_denue_capacity_and_scian_risk(&estrato_d, &scian_d);
+            return (Some(scian_d), Some(emp_calc), false);
+        }
+    }
+    (None, None, true)
+}
+
 pub fn sanitize_for_typst(input: &str) -> String {
     let clean = input.replace("\\\\$", "$").replace("\\$", "$");
     clean
@@ -122,9 +311,6 @@ pub fn sanitize_for_typst(input: &str) -> String {
         .replace('`', "\\`")
 }
 
-/// Garantiza que absolutamente cualquier signo `$` en el archivo `.typ` final
-/// esté precedido por exactamente una sola barra invertida (`\$`), evitando
-/// tanto `$` sin escapar como `\\$` doblemente escapados que abren modo matemático en Typst.
 fn normalize_typst_dollars(src: &str) -> String {
     let mut out = String::with_capacity(src.len() + 64);
     let chars: Vec<char> = src.chars().collect();
@@ -157,92 +343,89 @@ fn normalize_typst_dollars(src: &str) -> String {
     out
 }
 
-pub fn format_currency_mxn(val: f64) -> String {
-    let rounded = (val.max(0.0) * 100.0).round() as u64;
-    let integer_part = rounded / 100;
-    let cents = rounded % 100;
-    let num_str = integer_part.to_string();
-    let mut formatted = String::new();
-    let len = num_str.len();
-
-    for (i, c) in num_str.chars().enumerate() {
-        if i > 0 && (len - i) % 3 == 0 {
-            formatted.push(',');
-        }
-        formatted.push(c);
-    }
-
-    format!("{}.{:02}", formatted, cents)
-}
-
-
-/// Puente de Compatibilidad 100% entre `HttpFormBot` (`prospect_pipeline` + `denue_units`) y `pdf_generator.rs`:
-/// Cuando un prospecto hace clic en su enlace y solicita su Pre-Dictamen o Dictamen sin haber corrido antes `/api/scan`,
-/// recupera su código SCIAN real, su tamaño de plantilla PyME y su estado web desde `data/mallen_prod.db`,
-/// además de registrar automáticamente la apertura del documento en `link_clicks`.
-pub fn lookup_formbot_and_denue_context(empresa_nombre: &str, tax_id: &str) -> (Option<String>, Option<u32>, bool) {
-    let _ = crate::engine::http_form_bot::HttpFormBot::record_checkout_link_click(
-        if !empresa_nombre.trim().is_empty() && !empresa_nombre.starts_with("REGISTRO") {
-            empresa_nombre.trim()
-        } else {
-            tax_id.trim()
-        },
-        "PDF_GENERATOR_TRIGGER",
-        "Typst-PreDictamen-Engine",
+/// Calcula en centavos enteros exactos (`u64`) los subtotales por dependencia, el total general y el puntaje de riesgo,
+/// garantizando paridad matemática absoluta ($0.00 de diferencia) entre la interfaz web, el Pre-Dictamen y el ZIP.
+pub fn compute_ssot_exact_totals_cents(
+    empresa_nombre: &str,
+    scian_str: &str,
+    emp_count: u32,
+    sat_69b_lbl: &str,
+    sat_69_lbl: &str,
+    repse_ok: bool,
+    sfp_alert: bool,
+    osint_ssl: bool,
+    osint_privacy: bool,
+    osint_arco: bool,
+    is_immune_or_orphan: bool,
+    cal_telework: bool,
+    cal_repse: bool,
+    cal_boilers: bool,
+    cal_forklifts: bool,
+    cal_chemicals: bool,
+    cal_biometrics: bool,
+    cal_b2b: bool,
+    cal_transport: bool,
+    cal_pld: bool,
+    master_score_opt: Option<u32>,
+) -> (Vec<crate::modules::vectors_37::VectorEvaluation>, u64, u64, u64, u64, u64, u64, u64, u32) {
+    let evaluated_37 = crate::modules::vectors_37::evaluate_all_37_vectors(
+        empresa_nombre,
+        scian_str,
+        emp_count.max(1),
+        sat_69b_lbl,
+        sat_69_lbl,
+        repse_ok,
+        sfp_alert,
+        osint_ssl,
+        osint_privacy,
+        osint_arco,
+        is_immune_or_orphan,
+        cal_telework,
+        cal_repse,
+        cal_boilers,
+        cal_forklifts,
+        cal_chemicals,
+        cal_biometrics,
+        cal_b2b,
+        cal_transport,
+        cal_pld,
     );
 
-    let db_path = std::env::var("MALLEN_DB_PATH").unwrap_or_else(|_| "data/mallen_prod.db".to_string());
-    if let Ok(conn) = rusqlite::Connection::open(db_path) {
-        // 1. Buscar primero en prospect_pipeline (datos cosechados por HttpFormBot)
-        if let Ok((scian_p, code_p)) = conn.query_row(
-            "SELECT COALESCE(scian_code, ''), COALESCE(ultimo_resultado_codigo, '')
-             FROM prospect_pipeline
-             WHERE UPPER(empresa_nombre) = UPPER(?1) OR UPPER(empresa_nombre) = UPPER(?2)
-             LIMIT 1",
-            rusqlite::params![empresa_nombre.trim(), tax_id.trim()],
-            |r| Ok((r.get::<_, String>(0)?, r.get::<_, String>(1)?)),
-        ) {
-            let privacy_ok = code_p == "PROSPECCION_ENVIADA_EXITO";
-            if scian_p.len() >= 4 {
-                return (Some(scian_p), Some(20), privacy_ok);
-            }
-        }
+    let mut c_stps: u64 = 0;
+    let mut c_sat: u64 = 0;
+    let mut c_inai: u64 = 0;
+    let mut c_imss: u64 = 0;
+    let mut c_pc: u64 = 0;
+    let mut c_profeco: u64 = 0;
 
-        // 2. Buscar en denue_units por razón social o nombre de establecimiento
-        if let Ok((scian_d, estrato_d)) = conn.query_row(
-            "SELECT COALESCE(codigo_scian, '541110'), COALESCE(per_ocu, '11 a 30 personas')
-             FROM denue_units
-             WHERE UPPER(raz_social) LIKE '%' || UPPER(?1) || '%'
-                OR UPPER(nom_estab) LIKE '%' || UPPER(?1) || '%'
-             LIMIT 1",
-            rusqlite::params![empresa_nombre.trim()],
-            |r| Ok((r.get::<_, String>(0)?, r.get::<_, String>(1)?)),
-        ) {
-            let (_, emp_calc, _, _) =
-                crate::engine::http_form_bot::HttpFormBot::classify_denue_capacity_and_scian_risk(&estrato_d, &scian_d);
-            return (Some(scian_d), Some(emp_calc), false);
-        }
-    }
-    (None, None, true)
-}
-
-
-pub fn load_latest_master_from_sqlite(tax_id: &str, empresa_nombre: &str) -> Option<AuditMasterJson> {
-    let db_path = std::env::var("MALLEN_DB_PATH").unwrap_or_else(|_| "data/mallen_prod.db".to_string());
-    let conn = rusqlite::Connection::open(db_path).ok()?;
-    for table_sql in [
-        "SELECT master_json FROM audit_sessions WHERE UPPER(tax_id) = UPPER(?1) OR UPPER(razon_social) = UPPER(?2) ORDER BY rowid DESC LIMIT 1",
-        "SELECT master_json FROM audit_cache WHERE UPPER(tax_id) = UPPER(?1) OR UPPER(rfc) = UPPER(?1) ORDER BY rowid DESC LIMIT 1",
-    ] {
-        if let Ok(mut stmt) = conn.prepare(table_sql) {
-            if let Ok(json_str) = stmt.query_row(rusqlite::params![tax_id.trim(), empresa_nombre.trim()], |r| r.get::<_, String>(0)) {
-                if let Ok(parsed) = serde_json::from_str::<AuditMasterJson>(&json_str) {
-                    return Some(parsed);
-                }
+    if !is_immune_or_orphan {
+        for v in &evaluated_37 {
+            let v_cents = mxn_to_exact_cents(v.multa_estimada_mxn);
+            match v.organo.as_str() {
+                "STPS" => c_stps += v_cents,
+                "SAT" => c_sat += v_cents,
+                "LFPDPPP" => c_inai += v_cents,
+                "IMSS" => c_imss += v_cents,
+                "PROFECO" | "ECONOMÍA" => c_profeco += v_cents,
+                _ => c_pc += v_cents,
             }
         }
     }
-    None
+
+    let total_cents = c_stps + c_sat + c_inai + c_imss + c_pc + c_profeco;
+    let total_mxn = (total_cents as f64) / 100.0;
+
+    let score: u32 = if is_immune_or_orphan || total_cents == 0 {
+        0
+    } else if let Some(ms) = master_score_opt.filter(|&s| s > 0) {
+        ms
+    } else {
+        let ac = evaluated_37.iter().filter(|v| mxn_to_exact_cents(v.multa_estimada_mxn) > 0).count();
+        let raw_score = 40.0_f64 + (ac as f64 / 37.0_f64) * 45.0_f64 + (total_mxn / 5_000_000.0_f64).min(1.0_f64) * 14.0_f64;
+        (raw_score.round() as u32).clamp(45, 99)
+    };
+
+    (evaluated_37, c_stps, c_sat, c_inai, c_imss, c_pc, c_profeco, total_cents, score)
 }
 
 fn build_report_typst_markup_full(
@@ -253,12 +436,19 @@ fn build_report_typst_markup_full(
     is_censored_micro_report: bool,
 ) -> String {
     let tax_id = empresa.tax_id.as_deref().unwrap_or(&empresa.id);
+
+    // Si master_opt_in viene con datos reales, actualizar inmediatamente la Caché SSOT en RAM
+    if let Some(m_in) = master_opt_in {
+        store_ssot_session_in_memory(tax_id, &empresa.nombre, m_in);
+    }
+
     let sqlite_master_backup = if master_opt_in.is_none() {
         load_latest_master_from_sqlite(tax_id, &empresa.nombre)
     } else {
         None
     };
     let master_opt = master_opt_in.or(sqlite_master_backup.as_ref());
+
     let is_immune = tax_id.starts_with("MALLEN");
     let fecha_hoy = Utc::now().format("%d/%m/%Y %H:%M UTC").to_string();
     let auditor = AccountantProfile::default();
@@ -293,7 +483,12 @@ fn build_report_typst_markup_full(
         .and_then(|m| m.partner_whitelabel_name.as_deref())
         .or(empresa.accountant_signature.as_deref())
     {
-        Some(p) if !p.trim().is_empty() && !p.starts_with("DICTAMINADO_POR:") && !p.starts_with("CERTIFICACIÓN") && !p.contains("FIRMA W16 MALLEN") => {
+        Some(p)
+            if !p.trim().is_empty()
+                && !p.starts_with("DICTAMINADO_POR:")
+                && !p.starts_with("CERTIFICACIÓN")
+                && !p.contains("FIRMA W16 MALLEN") =>
+        {
             format!("DESPACHO AUDITOR ALIADO: {}", sanitize_for_typst(p))
         }
         _ => "FIRMA W16 MALLEN® (MALLEN.LAT)".to_string(),
@@ -318,10 +513,21 @@ fn build_report_typst_markup_full(
     };
 
     let (
-        scian_extracted, emp_count,
-        osint_ssl_flag, osint_privacy_flag, osint_arco_flag,
-        cal_telework, cal_repse, cal_boilers, cal_forklifts, cal_chemicals, cal_biometrics, cal_b2b, cal_transport, cal_pld,
-        is_unindexed_orphan
+        scian_extracted,
+        emp_count,
+        osint_ssl_flag,
+        osint_privacy_flag,
+        osint_arco_flag,
+        cal_telework,
+        cal_repse,
+        cal_boilers,
+        cal_forklifts,
+        cal_chemicals,
+        cal_biometrics,
+        cal_b2b,
+        cal_transport,
+        cal_pld,
+        is_unindexed_orphan,
     ) = if let Some(m) = master_opt {
         let combined_scian_src = format!("{} {}", m.codigo_scian, m.actividad_scian_desc);
         let tokens: Vec<&str> = combined_scian_src
@@ -336,7 +542,7 @@ fn build_report_typst_markup_full(
             .unwrap_or("541610")
             .to_string();
         let c = &m.calibration_applied;
-        let emp = m.calibration_applied.exact_employee_count.unwrap_or(m.estimated_employees).max(1);
+        let emp = c.exact_employee_count.unwrap_or(m.estimated_employees).max(1);
         (
             clean_scian.clone(),
             emp,
@@ -352,7 +558,7 @@ fn build_report_typst_markup_full(
             c.pays_intangible_b2b_services.unwrap_or(true),
             c.transports_goods_federal_highways.unwrap_or(clean_scian.starts_with("48") || clean_scian.starts_with("49") || clean_scian.starts_with("43")),
             c.performs_vulnerable_activities_pld.unwrap_or(clean_scian.starts_with("52") || clean_scian.starts_with("53") || clean_scian.starts_with("23")),
-            (m.razon_social.starts_with("REGISTRO NO INDEXADO") || m.domicilio_fiscal_o_denue.contains("Territorio Nacional")) && m.web_telemetry.target_url.is_empty()
+            (m.razon_social.starts_with("REGISTRO NO INDEXADO") || m.domicilio_fiscal_o_denue.contains("Territorio Nacional")) && m.web_telemetry.target_url.is_empty(),
         )
     } else {
         let (fb_scian, fb_emp, fb_priv) = lookup_formbot_and_denue_context(&empresa.nombre, tax_id);
@@ -382,13 +588,14 @@ fn build_report_typst_markup_full(
             true,
             clean_scian.starts_with("48") || clean_scian.starts_with("49") || clean_scian.starts_with("43"),
             clean_scian.starts_with("52") || clean_scian.starts_with("53") || clean_scian.starts_with("23"),
-            false
+            false,
         )
     };
 
     if is_censored_micro_report {
         let _ = crate::engine::http_form_bot::HttpFormBot::record_checkout_link_click(&empresa.nombre, "MICRO_SCAN_PDF", "Typst-MicroReport");
     }
+
     let scian_str = scian_extracted.as_str();
     let osint_ssl = osint_ssl_flag;
     let osint_privacy = osint_privacy_flag;
@@ -419,12 +626,8 @@ fn build_report_typst_markup_full(
         "Programa Interno de Protección Civil (PIPC), Acta Constitutiva de 4 Brigadas, Póliza RC y dictamen eléctrico/estructural."
     };
 
-    let sat_69b_lbl = master_opt
-        .map(|m| m.sat_69b_status.as_str())
-        .unwrap_or("LIMPIO");
-    let sat_69_lbl = master_opt
-        .map(|m| m.sat_69_status.as_str())
-        .unwrap_or("LIMPIO");
+    let sat_69b_lbl = master_opt.map(|m| m.sat_69b_status.as_str()).unwrap_or("LIMPIO");
+    let sat_69_lbl = master_opt.map(|m| m.sat_69_status.as_str()).unwrap_or("LIMPIO");
     let repse_lbl = master_opt
         .map(|m| {
             if m.stps_repse_registered {
@@ -444,44 +647,41 @@ fn build_report_typst_markup_full(
         })
         .unwrap_or("SIN INHABILITACIÓN EN COMPRANET / SFP");
 
-    let evaluated_37 = crate::modules::vectors_37::evaluate_all_37_vectors(
-        &empresa.nombre, scian_str, emp_count, sat_69b_lbl, sat_69_lbl,
-        repse_lbl.contains("VIGENTE") || repse_lbl.contains("ACTIVO"), sfp_lbl.contains("ALERTA") || sfp_lbl.contains("SANCIONADO"),
-        osint_ssl || is_immune, osint_privacy || is_immune, osint_arco || is_immune, is_immune || is_unindexed_orphan,
-        cal_telework, cal_repse, cal_boilers, cal_forklifts, cal_chemicals, cal_biometrics, cal_b2b, cal_transport, cal_pld,
-    );
+    let (evaluated_37, c_stps, c_sat, c_inai, c_imss, c_pc, c_profeco, total_cents, score) =
+        compute_ssot_exact_totals_cents(
+            &empresa.nombre,
+            scian_str,
+            emp_count,
+            sat_69b_lbl,
+            sat_69_lbl,
+            repse_lbl.contains("VIGENTE") || repse_lbl.contains("ACTIVO"),
+            sfp_lbl.contains("ALERTA") || sfp_lbl.contains("SANCIONADO"),
+            osint_ssl || is_immune,
+            osint_privacy || is_immune,
+            osint_arco || is_immune,
+            is_immune || is_unindexed_orphan,
+            cal_telework,
+            cal_repse,
+            cal_boilers,
+            cal_forklifts,
+            cal_chemicals,
+            cal_biometrics,
+            cal_b2b,
+            cal_transport,
+            cal_pld,
+            master_opt.map(|m| m.risk_score),
+        );
 
-    let mut m_stps = 0.0_f64;
-    let mut m_sat = 0.0_f64;
-    let mut m_inai = 0.0_f64;
-    let mut m_imss = 0.0_f64;
-    let mut m_pc = 0.0_f64;
-    let mut m_profeco = 0.0_f64;
-    if !is_immune {
-        for v in &evaluated_37 {
-            match v.organo.as_str() {
-                "STPS" => m_stps += v.multa_estimada_mxn,
-                "SAT" => m_sat += v.multa_estimada_mxn,
-                "LFPDPPP" => m_inai += v.multa_estimada_mxn,
-                "IMSS" => m_imss += v.multa_estimada_mxn,
-                "PROFECO" | "ECONOMÍA" => m_profeco += v.multa_estimada_mxn,
-                _ => m_pc += v.multa_estimada_mxn,
-            }
-        }
-    }
-    let total_exact = ((m_stps + m_sat + m_inai + m_imss + m_pc + m_profeco) * 100.0).round() / 100.0;
-    let score: u32 = if is_immune || total_exact == 0.0 {
-        0
-    } else if let Some(m) = master_opt {
-        m.risk_score
-    } else {
-        let ac = evaluated_37.iter().filter(|v| v.multa_estimada_mxn > 0.0).count();
-        let raw_score = 40.0_f64 + (ac as f64 / 37.0_f64) * 45.0_f64 + (total_exact / 5_000_000.0_f64).min(1.0_f64) * 14.0_f64;
-        (raw_score.round() as u32).clamp(45, 99)
-    };
+    let m_stps = (c_stps as f64) / 100.0;
+    let m_sat = (c_sat as f64) / 100.0;
+    let m_inai = (c_inai as f64) / 100.0;
+    let m_imss = (c_imss as f64) / 100.0;
+    let m_pc = (c_pc as f64) / 100.0;
+    let m_profeco = (c_profeco as f64) / 100.0;
     let risk_score_val = score as f64;
+
     let visual_chart_typst = crate::modules::vectors_37::render_visual_risk_chart_typst(
-        m_stps, m_sat, m_imss, m_inai, m_pc, m_profeco, risk_score_val
+        m_stps, m_sat, m_imss, m_inai, m_pc, m_profeco, risk_score_val,
     );
 
     let hallazgo_stps_str = if is_immune {
@@ -545,13 +745,15 @@ fn build_report_typst_markup_full(
             .trim_start_matches(|c: char| c.is_ascii_digit() || c == ' ' || c == '-' || c == '—')
             .to_string()
     } else {
-        empresa.actividad
+        empresa
+            .actividad
             .trim_start_matches(|c: char| c.is_ascii_digit() || c == ' ' || c == '-' || c == '—')
             .to_string()
     };
     let actividad_clean = sanitize_for_typst(&format!("{} - {}", scian_str, raw_act_desc));
     let tax_clean = sanitize_for_typst(tax_id);
-    let vectors_37_typst = crate::modules::vectors_37::render_vectors_37_typst_table(&evaluated_37, is_censored_micro_report);
+    let vectors_37_typst =
+        crate::modules::vectors_37::render_vectors_37_typst_table(&evaluated_37, is_censored_micro_report);
 
     let out = TYPST_TEMPLATE
         .replace("{{PARTNER_HEADER}}", &partner_header)
@@ -579,20 +781,20 @@ fn build_report_typst_markup_full(
         .replace("{{ESTATUS_TEXTO}}", estatus_texto)
         .replace("{{ESTATUS_GLOBAL}}", estatus_texto)
         .replace("{{BADGE_ACCION}}", badge_accion)
-        .replace("{{ESTIMATED_FINE}}", &format_currency_mxn(total_exact))
-        .replace("{{TOTAL_FINE_MXN}}", &format_currency_mxn(total_exact))
-        .replace("{{MULTA_STPS}}", &format_currency_mxn(m_stps))
-        .replace("{{FINE_STPS}}", &format_currency_mxn(m_stps))
-        .replace("{{MULTA_SAT}}", &format_currency_mxn(m_sat))
-        .replace("{{FINE_SAT}}", &format_currency_mxn(m_sat))
-        .replace("{{MULTA_INAI}}", &format_currency_mxn(m_inai))
-        .replace("{{FINE_INAI}}", &format_currency_mxn(m_inai))
-        .replace("{{MULTA_IMSS}}", &format_currency_mxn(m_imss))
-        .replace("{{FINE_IMSS}}", &format_currency_mxn(m_imss))
-        .replace("{{MULTA_PC}}", &format_currency_mxn(m_pc))
-        .replace("{{FINE_PROT_CIVIL}}", &format_currency_mxn(m_pc))
-        .replace("{{MULTA_PROFECO}}", &format_currency_mxn(m_profeco))
-        .replace("{{FINE_PROFECO}}", &format_currency_mxn(m_profeco))
+        .replace("{{ESTIMATED_FINE}}", &format_cents_mxn(total_cents))
+        .replace("{{TOTAL_FINE_MXN}}", &format_cents_mxn(total_cents))
+        .replace("{{MULTA_STPS}}", &format_cents_mxn(c_stps))
+        .replace("{{FINE_STPS}}", &format_cents_mxn(c_stps))
+        .replace("{{MULTA_SAT}}", &format_cents_mxn(c_sat))
+        .replace("{{FINE_SAT}}", &format_cents_mxn(c_sat))
+        .replace("{{MULTA_INAI}}", &format_cents_mxn(c_inai))
+        .replace("{{FINE_INAI}}", &format_cents_mxn(c_inai))
+        .replace("{{MULTA_IMSS}}", &format_cents_mxn(c_imss))
+        .replace("{{FINE_IMSS}}", &format_cents_mxn(c_imss))
+        .replace("{{MULTA_PC}}", &format_cents_mxn(c_pc))
+        .replace("{{FINE_PROT_CIVIL}}", &format_cents_mxn(c_pc))
+        .replace("{{MULTA_PROFECO}}", &format_cents_mxn(c_profeco))
+        .replace("{{FINE_PROFECO}}", &format_cents_mxn(c_profeco))
         .replace("{{ACTIVATION_PRICE}}", "3,000.00")
         .replace("{{KIT_PRICE_MXN}}", "3,000.00")
         .replace("{{RISK_SCORE}}", &score.to_string())
@@ -680,12 +882,18 @@ pub fn generate_pdf_report_with_session(
     output_path: &str,
 ) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
     let tax_id = empresa.tax_id.as_deref().unwrap_or(&empresa.id);
+
+    if let Some(m_in) = master_opt_in {
+        store_ssot_session_in_memory(tax_id, &empresa.nombre, m_in);
+    }
+
     let sqlite_master_backup = if master_opt_in.is_none() {
         load_latest_master_from_sqlite(tax_id, &empresa.nombre)
     } else {
         None
     };
     let master_opt = master_opt_in.or(sqlite_master_backup.as_ref());
+
     let fecha_hoy = Utc::now().format("%d/%m/%Y").to_string();
     let typst_source_path = format!("{}.typ", output_path);
     let auditor = AccountantProfile::default();
@@ -726,15 +934,18 @@ pub fn generate_pdf_report_with_session(
     let _ = fs::remove_file(&typst_source_path);
 
     let nombre_clean = sanitize_for_typst(&empresa.nombre);
+    let (fb_scian_cert, fb_emp_cert, fb_priv_cert) = lookup_formbot_and_denue_context(&empresa.nombre, tax_id);
+
     let scian_code_cert = {
         let src = if let Some(m) = master_opt {
             format!("{} {} {}", m.codigo_scian, m.actividad_scian_desc, empresa.actividad)
         } else {
-            empresa.actividad.clone()
+            format!("{} {}", fb_scian_cert.clone().unwrap_or_default(), empresa.actividad)
         };
         let toks: Vec<&str> = src.split(|c: char| !c.is_ascii_digit()).filter(|t| t.len() >= 4).collect();
         toks.iter().copied().find(|t| *t != "541610").or_else(|| toks.first().copied()).unwrap_or("541610").to_string()
     };
+
     let actividad_clean = if let Some(m) = master_opt {
         let clean_desc = m
             .actividad_scian_desc
@@ -743,30 +954,46 @@ pub fn generate_pdf_report_with_session(
     } else {
         sanitize_for_typst(&empresa.actividad)
     };
-    let (fb_scian_cert, fb_emp_cert, fb_priv_cert) = lookup_formbot_and_denue_context(&empresa.nombre, tax_id);
-    if scian_code_cert == "541610" {
-        if let Some(s_real) = fb_scian_cert.filter(|s| s.len() >= 4) {
-            let _ = s_real;
-        }
-    }
+
     let emp_cert = master_opt
         .map(|m| m.calibration_applied.exact_employee_count.unwrap_or(m.estimated_employees).max(1))
         .or(fb_emp_cert)
         .unwrap_or(20);
+
     let (imss_clase_c, imss_prima_c, _) =
         crate::modules::vectors_37::classify_imss_risk_by_scian(&scian_code_cert);
     let imss_label_cert = sanitize_for_typst(&format!("{} (Prima {})", imss_clase_c, imss_prima_c));
 
-    // Paridad Matemática Exacta (Cero pisos forzados de $1,245,958.00 ni Score 71):
-    // 1) Si existe master_opt con multa > 0, usa el monto exacto de la sesión.
-    // 2) Si no, si empresa.estimated_fine_mxn > 0, respeta exactamente empresa.estimated_fine_mxn y empresa.risk_score.
-    // 3) Si ambos vienen en 0.0, evalúa determinísticamente los 37 vectores con el mismo motor del Dictamen.
-    let (exact_fine_val, exact_score_val) = if let Some(m) = master_opt.filter(|m| m.total_estimated_fine_mxn > 0.0) {
-        (m.total_estimated_fine_mxn, m.risk_score)
+    // Paridad Matemática Absoluta en Centavos (Cero pisos forzados de $1,245,958.00 ni Score 71)
+    let (exact_fine_cents, exact_score_val) = if let Some(m) = master_opt.filter(|m| m.total_estimated_fine_mxn > 0.0) {
+        let (_, _, _, _, _, _, _, calc_cents, calc_sc) = compute_ssot_exact_totals_cents(
+            &empresa.nombre,
+            &scian_code_cert,
+            emp_cert,
+            &m.sat_69b_status,
+            &m.sat_69_status,
+            m.stps_repse_registered,
+            m.sfp_sanctioned,
+            if m.web_telemetry.target_url.is_empty() { true } else { m.web_telemetry.ssl_valid },
+            if m.web_telemetry.target_url.is_empty() { true } else { m.web_telemetry.has_privacy_notice },
+            if m.web_telemetry.target_url.is_empty() { true } else { m.web_telemetry.mentions_arco_rights || m.web_telemetry.has_privacy_notice },
+            tax_id.starts_with("MALLEN"),
+            m.calibration_applied.has_telework_over_40_percent.unwrap_or(true),
+            m.calibration_applied.uses_subcontracted_services_repse.unwrap_or(true),
+            m.calibration_applied.has_pressure_vessels_boilers.unwrap_or(scian_code_cert.starts_with("31") || scian_code_cert.starts_with("32") || scian_code_cert.starts_with("33") || scian_code_cert.starts_with("722")),
+            m.calibration_applied.has_forklifts_or_manual_loads.unwrap_or(true),
+            m.calibration_applied.handles_hazardous_chemicals.unwrap_or(scian_code_cert.starts_with("811") || scian_code_cert.starts_with("31") || scian_code_cert.starts_with("32") || scian_code_cert.starts_with("62")),
+            m.calibration_applied.uses_biometrics_or_health_data.unwrap_or(true),
+            m.calibration_applied.pays_intangible_b2b_services.unwrap_or(true),
+            m.calibration_applied.transports_goods_federal_highways.unwrap_or(scian_code_cert.starts_with("48") || scian_code_cert.starts_with("49") || scian_code_cert.starts_with("43")),
+            m.calibration_applied.performs_vulnerable_activities_pld.unwrap_or(scian_code_cert.starts_with("52") || scian_code_cert.starts_with("53") || scian_code_cert.starts_with("23")),
+            Some(m.risk_score),
+        );
+        (calc_cents, calc_sc)
     } else if empresa.estimated_fine_mxn > 0.0 || empresa.risk_score > 0 {
-        (empresa.estimated_fine_mxn, empresa.risk_score)
+        (mxn_to_exact_cents(empresa.estimated_fine_mxn), empresa.risk_score)
     } else {
-        let ev37 = crate::modules::vectors_37::evaluate_all_37_vectors(
+        let (_, _, _, _, _, _, _, calc_cents, calc_sc) = compute_ssot_exact_totals_cents(
             &empresa.nombre,
             &scian_code_cert,
             emp_cert,
@@ -787,20 +1014,14 @@ pub fn generate_pdf_report_with_session(
             true,
             scian_code_cert.starts_with("48") || scian_code_cert.starts_with("49") || scian_code_cert.starts_with("43"),
             scian_code_cert.starts_with("52") || scian_code_cert.starts_with("53") || scian_code_cert.starts_with("23"),
+            None,
         );
-        let sum_37: f64 = ev37.iter().map(|v| v.multa_estimada_mxn).sum();
-        let total_37 = (sum_37 * 100.0).round() / 100.0;
-        let ac = ev37.iter().filter(|v| v.multa_estimada_mxn > 0.0).count();
-        let calc_sc = if total_37 == 0.0 {
-            0
-        } else {
-            let raw_s = 40.0 + (ac as f64 / 37.0) * 45.0 + (total_37 / 5_000_000.0).min(1.0) * 14.0;
-            (raw_s.round() as u32).clamp(45, 99)
-        };
-        (total_37, calc_sc)
+        (calc_cents, calc_sc)
     };
-    let total_mitigado_str = format_currency_mxn(exact_fine_val);
+
+    let total_mitigado_str = format_cents_mxn(exact_fine_cents);
     let risk_score_cert = exact_score_val;
+
     let sector_esp_cert = if scian_code_cert.starts_with("722") || scian_code_cert.starts_with("311") || scian_code_cert.starts_with("431") {
         "Trazabilidad sanitaria COFEPRIS (DIGIPRIS / NOM-251-SSA1), bitácora logística NOM-087-SCT y PIPC de centro de distribución."
     } else if scian_code_cert.starts_with("62") || scian_code_cert.starts_with("464") {
@@ -812,6 +1033,7 @@ pub fn generate_pdf_report_with_session(
     } else {
         "Cumplimiento integral corporativo LFT, CFF, LSS, LFPDPPP, LFPC y Programa Interno de Protección Civil (PIPC)."
     };
+
     let direccion_clean = sanitize_for_typst(&crate::modules::vectors_37::sanitize_denue_address(
         &empresa.direccion,
         &empresa.estado,
@@ -933,7 +1155,7 @@ pub fn generate_exit_intent_micro_pdf(
 pub fn generate_exit_intent_micro_pdf_with_session(
     empresa: &EmpresaB2B,
     osint: &OsintResult,
-    master_opt: Option<&AuditMasterJson>,
+    master_opt_in: Option<&AuditMasterJson>,
     is_accredited: bool,
     output_path: &str,
 ) -> Result<Vec<u8>, Box<dyn std::error::Error + Send + Sync>> {
@@ -945,7 +1167,7 @@ pub fn generate_exit_intent_micro_pdf_with_session(
 
     let typst_source_path = format!("{}_micro.typ", output_path.trim_end_matches(".pdf"));
     let typst_content =
-        build_report_typst_markup_full(empresa, osint, master_opt, is_accredited, true);
+        build_report_typst_markup_full(empresa, osint, master_opt_in, is_accredited, true);
     fs::write(&typst_source_path, &typst_content)?;
 
     let status = Command::new("typst")
