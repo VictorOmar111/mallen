@@ -15,6 +15,52 @@
   <script src="/js/quantum-lights.js?v=2026.140" defer></script>
     <link rel="stylesheet" href="/css/pure-light-mode.css?v=2026.140">
     <script src="/js/theme-init.js?v=2026.140"></script>
+
+<style id="w16-lightmode-and-footer-guard">
+  /* Evitar que el selector flotante de región tape el pie de página */
+  footer {
+    padding-bottom: 5.5rem !important;
+  }
+  #mallen-country-switcher-bar, .country-switcher-floating {
+    bottom: 14px !important;
+    right: 16px !important;
+    left: auto !important;
+    transform: none !important;
+    max-width: calc(100vw - 32px) !important;
+    z-index: 40 !important;
+    opacity: 0.94;
+  }
+  /* Aclarar todos los botones oscuros cuando está activo el Modo Claro */
+  html.light-mode button.bg-slate-900,
+  html.light-mode button.bg-slate-950,
+  html.light-mode button.bg-gray-900,
+  html.light-mode a.bg-slate-900,
+  html.light-mode a.bg-slate-950,
+  html.light-mode .bg-slate-900\/90,
+  html.light-mode .bg-slate-950\/90,
+  html.light-mode #mallen-country-switcher-bar,
+  html.light-mode #mallen-country-switcher-bar button,
+  html.light-mode #mallen-country-switcher-bar a {
+    background: #ffffff !important;
+    color: #0f172a !important;
+    border-color: #cbd5e1 !important;
+    box-shadow: 0 4px 14px rgba(15, 23, 42, 0.08) !important;
+  }
+  html.light-mode button.bg-slate-900:hover,
+  html.light-mode button.bg-slate-950:hover,
+  html.light-mode a.bg-slate-900:hover,
+  html.light-mode a.bg-slate-950:hover {
+    background: #eff6ff !important;
+    color: #1d4ed8 !important;
+    border-color: #60a5fa !important;
+  }
+  html.light-mode .w16-action-btn {
+    background: linear-gradient(135deg, #2563eb 0%, #059669 100%) !important;
+    color: #ffffff !important;
+    border: none !important;
+  }
+</style>
+
 </head>
 <body class="bg-slate-950 text-slate-100 min-h-screen selection:bg-blue-600 selection:text-white">
 
@@ -250,10 +296,9 @@
       <div class="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
         <a href="/validez/nom-151" class="bg-white/[0.04] shadow-[0_8px_32px_rgba(0,0,0,0.5)] border border-white/15 rounded-2xl p-6 hover:border-blue-500/50 transition group flex flex-col justify-between">
           <div>
-            <div class="w-10 h-10 bg-blue-950 border border-blue-800/80 text-blue-400 rounded-xl flex items-center justify-center font-bold text-lg mb-4">️</div>
-            <h3 class="text-sm font-bold text-white mb-2">Fecha Cierta SCJN & NOM-151</h3>
+            <h3 class="text-sm font-bold text-white mb-2">Integridad Criptográfica & Fecha Cierta</h3>
             <p class="text-xs text-slate-400 font-mono-code leading-relaxed mb-4">
-              Acreditación de inalterabilidad conforme al Código de Comercio, Jurisprudencia SCJN y Arbitrum L2.
+              Inalterabilidad probatoria de mensajes de datos conforme a estándares UNCITRAL, Jurisprudencia SCJN y sellado SHA-256.
             </p>
           </div>
           <span class="text-[10px] font-bold font-mono-code text-blue-400 group-hover:translate-x-1 transition">Ver marco procesal →</span>
@@ -262,12 +307,12 @@
         <a href="/validez/dictamen-pericial" class="bg-white/[0.04] shadow-[0_8px_32px_rgba(0,0,0,0.5)] border border-white/15 rounded-2xl p-6 hover:border-emerald-500/50 transition group flex flex-col justify-between">
           <div>
             
-            <h3 class="text-sm font-bold text-white mb-2">Dictamen Pericial Certificado</h3>
+            <h3 class="text-sm font-bold text-white mb-2">Auditoría Algorítmica Determinista</h3>
             <p class="text-xs text-slate-400 font-mono-code leading-relaxed mb-4">
-              Supervisado por Contador Público Certificado (FIRMA W16 MALLEN®).
+              Compilación paramétrica automatizada bajo el estándar internacional de auditoría ISO 19011 (FIRMA W16 MALLEN®).
             </p>
           </div>
-          <span class="text-[10px] font-bold font-mono-code text-emerald-400 group-hover:translate-x-1 transition">Ver acreditación C.P.C. →</span>
+          <span class="text-[10px] font-bold font-mono-code text-emerald-400 group-hover:translate-x-1 transition">Ver estándar ISO 19011 →</span>
         </a>
 
         <a href="/validez/cifrado-sha256" class="bg-white/[0.04] shadow-[0_8px_32px_rgba(0,0,0,0.5)] border border-white/15 rounded-2xl p-6 hover:border-indigo-500/50 transition group flex flex-col justify-between">
@@ -283,10 +328,9 @@
 
         <a href="/validez/lfpdppp-privacidad" class="bg-white/[0.04] shadow-[0_8px_32px_rgba(0,0,0,0.5)] border border-white/15 rounded-2xl p-6 hover:border-sky-500/50 transition group flex flex-col justify-between">
           <div>
-            <div class="w-10 h-10 bg-sky-950 border border-sky-800/80 text-sky-400 rounded-xl flex items-center justify-center font-bold text-lg mb-4">️</div>
-            <h3 class="text-sm font-bold text-white mb-2">Sanitización PII & LFPDPPP</h3>
+            <h3 class="text-sm font-bold text-white mb-2">Gobernanza de Datos & Cifrado en Reposo</h3>
             <p class="text-xs text-slate-400 font-mono-code leading-relaxed mb-4">
-              Procesamiento en memoria RAM con enmascaramiento Regex y validación e.firma en navegador (Wasm).
+              Procesamiento seguro en memoria RAM con cifrado simétrico en reposo (Art. 19 LFPDPPP / GDPR Art. 32) y sanitización automática.
             </p>
           </div>
           <span class="text-[10px] font-bold font-mono-code text-sky-400 group-hover:translate-x-1 transition">Ver gobernanza de datos →</span>
@@ -556,9 +600,9 @@
         <div class="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
             <div class="space-y-1.5">
                 <div class="font-extrabold text-white">© 2026 FIRMA W16 MALLEN® (mallen.lat) • Todos los derechos reservados.</div>
-                <div class="text-emerald-400 font-semibold">Infraestructura de Auditoría Determinista y Peritaje Digital</div>
-                <div class="text-slate-300">Firma Criptográfica: Región Europa Central (Frankfurt Core Hub — EU-DE-01).</div>
-                <div class="text-slate-400">Cumplimiento normativo y validez probatoria transfronteriza: eIDAS Art. 41 (UE) • Código de Comercio Art. 89-93 (MX) • SEC / FINRA Compliance.</div>
+                <div class="text-emerald-400 font-semibold">Infraestructura Global de Auditoría Determinista e Ingeniería Regulatoria</div>
+                <div class="text-slate-300">Nodo de Sellado Criptográfico: Frankfurt Core Hub (SHA-256 / Merkle Tree).</div>
+                <div class="text-slate-400">Estándares Internacionales de Integridad y Gobernanza Digital: ISO 19011 • UNCITRAL / CNUDMI • eIDAS Art. 41 • SEC / FINRA Compliance.</div>
             </div>
             <div class="flex flex-wrap gap-4 shrink-0">
                 <a href="/privacidad" class="hover:text-white transition">Aviso de Privacidad Integral</a>

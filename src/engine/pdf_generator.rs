@@ -450,7 +450,7 @@ pub fn compute_ssot_exact_totals_cents(
     cal_transport: bool,
     cal_pld: bool,
     master_score_opt: Option<u32>,
-) -> (Vec<crate::modules::vectors_37::VectorResult>, u64, u64, u64, u64, u64, u64, u64, u32) {
+) -> (Vec<crate::modules::vectors_37::EvaluatedVector>, u64, u64, u64, u64, u64, u64, u64, u32) {
     let evaluated_37 = crate::modules::vectors_37::evaluate_all_37_vectors(
         empresa_nombre,
         scian_str,

@@ -15,6 +15,52 @@
     <link rel="stylesheet" href="/css/pure-light-mode.css?v=2026.150">
     <script src="/js/quantum-lights.js?v=2026.150" defer></script>
     <script src="/js/theme-init.js?v=2026.150"></script>
+
+<style id="w16-lightmode-and-footer-guard">
+  /* Evitar que el selector flotante de región tape el pie de página */
+  footer {
+    padding-bottom: 5.5rem !important;
+  }
+  #mallen-country-switcher-bar, .country-switcher-floating {
+    bottom: 14px !important;
+    right: 16px !important;
+    left: auto !important;
+    transform: none !important;
+    max-width: calc(100vw - 32px) !important;
+    z-index: 40 !important;
+    opacity: 0.94;
+  }
+  /* Aclarar todos los botones oscuros cuando está activo el Modo Claro */
+  html.light-mode button.bg-slate-900,
+  html.light-mode button.bg-slate-950,
+  html.light-mode button.bg-gray-900,
+  html.light-mode a.bg-slate-900,
+  html.light-mode a.bg-slate-950,
+  html.light-mode .bg-slate-900\/90,
+  html.light-mode .bg-slate-950\/90,
+  html.light-mode #mallen-country-switcher-bar,
+  html.light-mode #mallen-country-switcher-bar button,
+  html.light-mode #mallen-country-switcher-bar a {
+    background: #ffffff !important;
+    color: #0f172a !important;
+    border-color: #cbd5e1 !important;
+    box-shadow: 0 4px 14px rgba(15, 23, 42, 0.08) !important;
+  }
+  html.light-mode button.bg-slate-900:hover,
+  html.light-mode button.bg-slate-950:hover,
+  html.light-mode a.bg-slate-900:hover,
+  html.light-mode a.bg-slate-950:hover {
+    background: #eff6ff !important;
+    color: #1d4ed8 !important;
+    border-color: #60a5fa !important;
+  }
+  html.light-mode .w16-action-btn {
+    background: linear-gradient(135deg, #2563eb 0%, #059669 100%) !important;
+    color: #ffffff !important;
+    border: none !important;
+  }
+</style>
+
 </head>
 <body class="bg-slate-950 text-slate-100 min-h-screen flex flex-col justify-between selection:bg-blue-600 selection:text-white">
 

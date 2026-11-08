@@ -13,6 +13,52 @@
   <link rel="stylesheet" href="/css/quantum-glass.css?v=2026.130">
   <script src="/js/quantum-lights.js?v=2026.130" defer></script>
     <link rel="stylesheet" href="/css/pure-light-mode.css?v=2026.130">
+
+<style id="w16-lightmode-and-footer-guard">
+  /* Evitar que el selector flotante de región tape el pie de página */
+  footer {
+    padding-bottom: 5.5rem !important;
+  }
+  #mallen-country-switcher-bar, .country-switcher-floating {
+    bottom: 14px !important;
+    right: 16px !important;
+    left: auto !important;
+    transform: none !important;
+    max-width: calc(100vw - 32px) !important;
+    z-index: 40 !important;
+    opacity: 0.94;
+  }
+  /* Aclarar todos los botones oscuros cuando está activo el Modo Claro */
+  html.light-mode button.bg-slate-900,
+  html.light-mode button.bg-slate-950,
+  html.light-mode button.bg-gray-900,
+  html.light-mode a.bg-slate-900,
+  html.light-mode a.bg-slate-950,
+  html.light-mode .bg-slate-900\/90,
+  html.light-mode .bg-slate-950\/90,
+  html.light-mode #mallen-country-switcher-bar,
+  html.light-mode #mallen-country-switcher-bar button,
+  html.light-mode #mallen-country-switcher-bar a {
+    background: #ffffff !important;
+    color: #0f172a !important;
+    border-color: #cbd5e1 !important;
+    box-shadow: 0 4px 14px rgba(15, 23, 42, 0.08) !important;
+  }
+  html.light-mode button.bg-slate-900:hover,
+  html.light-mode button.bg-slate-950:hover,
+  html.light-mode a.bg-slate-900:hover,
+  html.light-mode a.bg-slate-950:hover {
+    background: #eff6ff !important;
+    color: #1d4ed8 !important;
+    border-color: #60a5fa !important;
+  }
+  html.light-mode .w16-action-btn {
+    background: linear-gradient(135deg, #2563eb 0%, #059669 100%) !important;
+    color: #ffffff !important;
+    border: none !important;
+  }
+</style>
+
 </head>
 <body class="bg-slate-950 text-slate-100 min-h-screen border-t-4 border-purple-500">
   <!-- Header Sticky con Cristal Difuminado -->
@@ -62,7 +108,7 @@
              Cargar Cartera Demo (6 Empresas)
           </button>
           <button type="button" onclick="loadSamplePortfolio('proveedores')" class="px-3 py-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-emerald-300 border border-emerald-500/40 font-bold transition">
-            ️ Demo Auditoría de Proveedores (69-B / REPSE)
+             Demo Auditoría de Proveedores (69-B / REPSE)
           </button>
         </div>
       </div>
@@ -574,7 +620,7 @@
     <span class="text-slate-400">Apariencia Visual del Portal:</span>
     <button type="button" id="theme-switch-btn" onclick="toggleMallenTheme()"
       class="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-slate-900 border border-emerald-500/40 text-emerald-300 hover:border-emerald-400 transition cursor-pointer shadow">
-      <span id="theme-switch-icon">️</span>
+      <span id="theme-switch-icon"></span>
       <span id="theme-switch-label" class="font-bold">Cambiar a Modo Claro</span>
     </button>
   </div>
@@ -588,7 +634,7 @@
         const isLight = document.documentElement.classList.contains("light-mode");
         const icon = document.getElementById("theme-switch-icon");
         const lbl = document.getElementById("theme-switch-label");
-        if (icon) icon.textContent = isLight ? "" : "️";
+        if (icon) icon.textContent = isLight ? "" : "";
         if (lbl) lbl.textContent = isLight ? "Volver a Modo Oscuro" : "Cambiar a Modo Claro";
       };
       window.toggleMallenTheme = function () {
@@ -607,9 +653,9 @@
         <div class="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
             <div class="space-y-1.5">
                 <div class="font-extrabold text-white">© 2026 FIRMA W16 MALLEN® (mallen.lat) • Todos los derechos reservados.</div>
-                <div class="text-emerald-400 font-semibold">Infraestructura de Auditoría Determinista y Peritaje Digital</div>
-                <div class="text-slate-300">Firma Criptográfica: Región Europa Central (Frankfurt Core Hub — EU-DE-01).</div>
-                <div class="text-slate-400">Cumplimiento normativo y validez probatoria transfronteriza: eIDAS Art. 41 (UE) • Código de Comercio Art. 89-93 (MX) • SEC / FINRA Compliance.</div>
+                <div class="text-emerald-400 font-semibold">Infraestructura Global de Auditoría Determinista e Ingeniería Regulatoria</div>
+                <div class="text-slate-300">Nodo de Sellado Criptográfico: Frankfurt Core Hub (SHA-256 / Merkle Tree).</div>
+                <div class="text-slate-400">Estándares Internacionales de Integridad y Gobernanza Digital: ISO 19011 • UNCITRAL / CNUDMI • eIDAS Art. 41 • SEC / FINRA Compliance.</div>
             </div>
             <div class="flex flex-wrap gap-4 shrink-0">
                 <a href="/privacidad" class="hover:text-white transition">Aviso de Privacidad Integral</a>

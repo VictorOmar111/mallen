@@ -469,45 +469,35 @@
     const REALISTIC_CARD_RATES = [74, 68, 79, 57, 64, 62];
     const DIRECT_BENEFITS_BY_LANG = {
         "de": [
-            "Vermeidet Bußgelder nach Art. 83 DSGVO und Abmahnungen wegen fehlender Pflichtangaben oder unsicherer Telemetrie.",
-            "Senkt Ausfallzeiten, verhindert Beitragszuschläge der Unfallversicherung und schützt die Geschäftsleitung vor persönlicher Haftung.",
-            "Sichert 100% der Betriebsausgaben und den Vorsteuerabzug bei steuerlichen Außenprüfungen.",
-            "Schützt vor hohen Registerbußgeldern und gesamtschuldnerischer Nachhaftung bei Auftragnehmern.",
-            "Gewährleistet Betriebskontinuität, behördliche Betriebsgenehmigungen und vollen Versicherungsschutz im Schadensfall.",
-            "Schützt vor wettbewerbsrechtlichen Abmahnungen, Klauselnichtigkeit und verlängerten Widerrufsfristen."
-        ],
+                "© 2026 FIRMA W16 MALLEN® (mallen.lat) • Alle Rechte vorbehalten.",
+                "Globale Infrastruktur für deterministische Audits und Regulierungs-Engineering",
+                "Kryptografischer Signaturknoten: Frankfurt Core Hub (SHA-256 / Merkle Tree).",
+                "Internationale Standards für digitale Integrität und Governance: ISO 19011 • UNCITRAL • eIDAS Art. 41 • SEC / FINRA Compliance."
+            ],
         "fr": [
-            "Prévient les amendes RGPD / nLPD et sécurise les flux de données et les mentions légales du portail web.",
-            "Réduit l'absentéisme, prévient les majorations de primes d'assurance et protège la responsabilité des dirigeants.",
-            "Garantit à 100% la déductibilité fiscale des charges et la récupération de la TVA lors des contrôles.",
-            "Évite les sanctions liées au registre UBO/RBE et la responsabilité solidaire vis-à-vis des sous-traitants.",
-            "Assure la continuité d'exploitation, la résilience cyber (NIS2/LSI) et la conformité incendie.",
-            "Protège contre l'annulation des Conditions Générales (CGV) et les litiges de consommation."
-        ],
+                "© 2026 FIRMA W16 MALLEN® (mallen.lat) • Tous droits réservés.",
+                "Infrastructure Mondiale d'Audit Déterministe et d'Ingénierie Réglementaire",
+                "Nœud de Scellement Cryptographique : Frankfurt Core Hub (SHA-256 / Merkle Tree).",
+                "Normes Internationales d'Intégrité et de Gouvernance Numérique : ISO 19011 • CNUDCI / UNCITRAL • eIDAS Art. 41 • SEC / FINRA Compliance."
+            ],
         "it": [
-            "Previene le multe penali fino a CHF 250'000 (art. 60 nLPD) e mette in sicurezza il portale web aziendale.",
-            "Riduce l'assenteismo, previene aumenti dei premi SUVA e tutela gli organi societari da azioni ex art. 328 CO.",
-            "Garantisce il 100% della deducibilità fiscale e dell'imposta precedente IVA durante i controlli dell'AFC.",
-            "Evita la sospensione dei diritti sociali (art. 697m CO) e la responsabilità personale ex art. 52 LAVS.",
-            "Assicura la continuità operativa, la conformità antincendio AICAA e la sicurezza delle informazioni (LSI).",
-            "Tutela da diffide SECO (art. 3 lett. s LCSl), sanzioni OIP e nullità delle clausole contrattuali (art. 8 LCSl)."
-        ],
+                "© 2026 FIRMA W16 MALLEN® (mallen.lat) • Tutti i diritti riservati.",
+                "Infrastruttura Globale di Audit Deterministico e Ingegneria Normativa",
+                "Nodo di Sigillatura Crittografica: Frankfurt Core Hub (SHA-256 / Merkle Tree).",
+                "Standard Internazionali di Integrità e Governance Digitale: ISO 19011 • UNCITRAL • eIDAS Art. 41 • SEC / FINRA Compliance."
+            ],
         "nl": [
-            "Voorkomt bestuurlijke boetes van de AP/GBA en beveiligt alle zakelijke gegevensstromen.",
-            "Verlaagt het ziekteverzuim, voorkomt boetes van de Arbeidsinspectie en beschermt het bestuur tegen aansprakelijkheid.",
-            "Waarborgt 100% fiscale aftrekbaarheid en voorkomt naheffingen bij belastingcontroles.",
-            "Voorkomt UBO-sancties en vrijwaart de onderneming tegen ketenaansprakelijkheid (Wka / Art. 30bis RSZ).",
-            "Garandeert bedrijfscontinuïteit, NIS2-cyberweerbaarheid en volledige BHV-/brandveiligheidsdekking.",
-            "Beschermt tegen handhaving door ACM/FOD Economie en vernietiging van algemene voorwaarden."
-        ],
+                "© 2026 FIRMA W16 MALLEN® (mallen.lat) • Alle rechten voorbehouden.",
+                "Wereldwijde Infrastructuur voor Deterministische Audit en Regulatory Engineering",
+                "Cryptografisch Zegelknooppunt: Frankfurt Core Hub (SHA-256 / Merkle Tree).",
+                "Internationale Normen voor Digitale Integriteit en Governance: ISO 19011 • UNCITRAL • eIDAS Art. 41 • SEC / FINRA Compliance."
+            ],
         "lb": [
-            "Verhënnert CNPD-Sanktiounen a séchert d'Dateschutzerklärung an den Art. L.261-1 Code du Travail of.",
-            "Reduzéiert Ausfäll, verhënnert ITM-Strofen a schützt d'Gérance viru perséinlecher Haftung.",
-            "Séchert 100% vun de steierlechen Ofzich an d'TVA-Recuperatioun bei Kontrollen.",
-            "Vermeit RBE-Strofe bis 1.250.000 € beim LBR a solidarësch Haftung bei Sous-traitanten.",
-            "Garantéiert d'Betribskontinuitéit, d'NIS2-Cybersécherheet an den ITM-Brandschutz.",
-            "Schützt géint ongülteg AGB-Klauselen a Konsumenteschutz-Litigen zu Lëtzebuerg."
-        ]
+                "© 2026 FIRMA W16 MALLEN® (mallen.lat) • All Rechter virbehalen.",
+                "Global Infrastruktur fir Deterministeschen Audit a Reglementarescht Engineering",
+                "Kryptographesche Signaturkapp: Frankfurt Core Hub (SHA-256 / Merkle Tree).",
+                "International Standarde fir Digital Integritéit a Governance: ISO 19011 • UNCITRAL • eIDAS Art. 41 • SEC / FINRA Compliance."
+            ]
     };
 
     function renderParitySections() {
@@ -550,33 +540,33 @@
         const FOOTER_BY_LANG = {
             "de": [
                 "© 2026 FIRMA W16 MALLEN® (mallen.lat) • Alle Rechte vorbehalten.",
-                "Infrastruktur für deterministische Audits und digitale Sachverständigenbegutachtung",
-                "Kryptografische Signatur: Region Zentraleuropa (Frankfurt Core Hub — EU-DE-01).",
-                "Regulatorische Konformität und grenzüberschreitende Beweiskraft: eIDAS Art. 41 (EU) • Handelsgesetzbuch Art. 89-93 (MX) • SEC / FINRA Compliance."
+                "Globale Infrastruktur für deterministische Audits und Regulierungs-Engineering",
+                "Kryptografischer Signaturknoten: Frankfurt Core Hub (SHA-256 / Merkle Tree).",
+                "Internationale Standards für digitale Integrität und Governance: ISO 19011 • UNCITRAL • eIDAS Art. 41 • SEC / FINRA Compliance."
             ],
             "fr": [
                 "© 2026 FIRMA W16 MALLEN® (mallen.lat) • Tous droits réservés.",
-                "Infrastructure d'Audit Déterministe et d'Expertise Numérique",
-                "Signature Cryptographique : Région Europe Centrale (Frankfurt Core Hub — EU-DE-01).",
-                "Conformité réglementaire et valeur probante transfrontalière : eIDAS Art. 41 (UE) • Code de Commerce Art. 89-93 (MX) • Conformité SEC / FINRA."
+                "Infrastructure Mondiale d'Audit Déterministe et d'Ingénierie Réglementaire",
+                "Nœud de Scellement Cryptographique : Frankfurt Core Hub (SHA-256 / Merkle Tree).",
+                "Normes Internationales d'Intégrité et de Gouvernance Numérique : ISO 19011 • CNUDCI / UNCITRAL • eIDAS Art. 41 • SEC / FINRA Compliance."
             ],
             "it": [
                 "© 2026 FIRMA W16 MALLEN® (mallen.lat) • Tutti i diritti riservati.",
-                "Infrastruttura di Audit Deterministico e Perizia Digitale",
-                "Firma Crittografica: Regione Europa Centrale (Frankfurt Core Hub — EU-DE-01).",
-                "Conformità normativa e validità probatoria transfrontaliera: eIDAS Art. 41 (UE) • Codice di Commercio Art. 89-93 (MX) • SEC / FINRA Compliance."
+                "Infrastruttura Globale di Audit Deterministico e Ingegneria Normativa",
+                "Nodo di Sigillatura Crittografica: Frankfurt Core Hub (SHA-256 / Merkle Tree).",
+                "Standard Internazionali di Integrità e Governance Digitale: ISO 19011 • UNCITRAL • eIDAS Art. 41 • SEC / FINRA Compliance."
             ],
             "nl": [
                 "© 2026 FIRMA W16 MALLEN® (mallen.lat) • Alle rechten voorbehouden.",
-                "Infrastructuur voor Deterministische Audit en Digitale Expertise",
-                "Cryptografische Handtekening: Regio Centraal-Europa (Frankfurt Core Hub — EU-DE-01).",
-                "Wettelijke naleving en grensoverschrijdende bewijskracht: eIDAS Art. 41 (EU) • Wetboek van Koophandel Art. 89-93 (MX) • SEC / FINRA Compliance."
+                "Wereldwijde Infrastructuur voor Deterministische Audit en Regulatory Engineering",
+                "Cryptografisch Zegelknooppunt: Frankfurt Core Hub (SHA-256 / Merkle Tree).",
+                "Internationale Normen voor Digitale Integriteit en Governance: ISO 19011 • UNCITRAL • eIDAS Art. 41 • SEC / FINRA Compliance."
             ],
             "lb": [
                 "© 2026 FIRMA W16 MALLEN® (mallen.lat) • All Rechter virbehalen.",
-                "Infrastruktur fir Deterministeschen Audit an Digital Expertise",
-                "Kryptographesch Ënnerschrëft: Regioun Zentraleuropa (Frankfurt Core Hub — EU-DE-01).",
-                "Reglementaresch Konformitéit a grenziwwerschreidend Beweiskraaft: eIDAS Art. 41 (EU) • Code de Commerce Art. 89-93 (MX) • SEC / FINRA Compliance."
+                "Global Infrastruktur fir Deterministeschen Audit a Reglementarescht Engineering",
+                "Kryptographesche Signaturkapp: Frankfurt Core Hub (SHA-256 / Merkle Tree).",
+                "International Standarde fir Digital Integritéit a Governance: ISO 19011 • UNCITRAL • eIDAS Art. 41 • SEC / FINRA Compliance."
             ]
         };
         const flines = FOOTER_BY_LANG[langPrefix] || FOOTER_BY_LANG["de"];
