@@ -230,20 +230,35 @@ pub fn load_latest_master_from_sqlite(tax_id: &str, empresa_nombre: &str) -> Opt
 
     let db_path = std::env::var("MALLEN_DB_PATH").unwrap_or_else(|_| "data/mallen_prod.db".to_string());
     let conn = rusqlite::Connection::open(db_path).ok()?;
+    let mut candidates: Vec<AuditMasterJson> = Vec::new();
+
     for table_sql in [
-        "SELECT master_json FROM audit_sessions WHERE UPPER(tax_id) = UPPER(?1) OR UPPER(razon_social) = UPPER(?2) ORDER BY rowid DESC LIMIT 1",
-        "SELECT master_json FROM audit_cache WHERE UPPER(tax_id) = UPPER(?1) OR UPPER(rfc) = UPPER(?1) ORDER BY rowid DESC LIMIT 1",
+        "SELECT master_json FROM audit_sessions WHERE UPPER(tax_id) = UPPER(?1) OR UPPER(razon_social) LIKE '%' || UPPER(?2) || '%' ORDER BY rowid DESC LIMIT 5",
+        "SELECT master_json FROM audit_cache WHERE UPPER(tax_id) = UPPER(?1) OR UPPER(rfc) = UPPER(?1) ORDER BY rowid DESC LIMIT 5",
     ] {
         if let Ok(mut stmt) = conn.prepare(table_sql) {
-            if let Ok(json_str) = stmt.query_row(rusqlite::params![tax_id.trim(), empresa_nombre.trim()], |r| r.get::<_, String>(0)) {
-                if let Ok(parsed) = serde_json::from_str::<AuditMasterJson>(&json_str) {
-                    store_ssot_session_in_memory(tax_id, empresa_nombre, &parsed);
-                    return Some(parsed);
+            if let Ok(rows) = stmt.query_map(rusqlite::params![tax_id.trim(), empresa_nombre.trim()], |r| r.get::<_, String>(0)) {
+                for json_str in rows.flatten() {
+                    if let Ok(parsed) = serde_json::from_str::<AuditMasterJson>(&json_str) {
+                        candidates.push(parsed);
+                    }
                 }
             }
         }
     }
-    None
+
+    // Priorizar el candidato que tenga exact_employee_count explícito o que tenga un conteo real distinto del default antiguo 45
+    let best = candidates
+        .iter()
+        .find(|m| m.calibration_applied.exact_employee_count.is_some() && m.calibration_applied.exact_employee_count != Some(45))
+        .or_else(|| candidates.iter().find(|m| m.estimated_employees > 0 && m.estimated_employees != 45))
+        .or_else(|| candidates.first())
+        .cloned();
+
+    if let Some(ref chosen) = best {
+        store_ssot_session_in_memory(tax_id, empresa_nombre, chosen);
+    }
+    best
 }
 
 /// Puente de Compatibilidad 100% entre `HttpFormBot` (`prospect_pipeline` + `denue_units`) y `pdf_generator.rs`.
@@ -511,6 +526,66 @@ pub fn compute_ssot_exact_totals_cents(
     (evaluated_37, c_stps, c_sat, c_inai, c_imss, c_pc, c_profeco, total_cents, score)
 }
 
+
+/// Renderiza en Typst la Sección 4 (Gráfica Pericial de Distribución de Riesgo Patrimonial por Dependencia)
+/// con barras horizontales vectoriales de alta precisión cuyos porcentajes se calculan directamente
+/// sobre `total_cents` (sumando siempre 100% de la exposición real, sin desbordamientos ni desalineaciones).
+pub fn render_exact_proportional_risk_chart_typst(
+    c_stps: u64,
+    c_sat: u64,
+    c_imss: u64,
+    c_inai: u64,
+    c_pc: u64,
+    c_profeco: u64,
+    score: u32,
+) -> String {
+    let total = (c_stps + c_sat + c_imss + c_inai + c_pc + c_profeco).max(1);
+    let rows: [(&str, u64, &str); 6] = [
+        ("1. STPS (Seguridad, Salud y NOMs)", c_stps, "#2563eb"),
+        ("2. SAT / SHCP (Materialidad 69-B y CFDI 4.0)", c_sat, "#dc2626"),
+        ("3. IMSS / INFONAVIT (SUA, SBC y REPSE)", c_imss, "#059669"),
+        ("4. SABG / LFPDPPP (Privacidad y ARCO)", c_inai, "#d97706"),
+        ("5. 9 Sectoriales y Prot. Civil (PIPC)", c_pc, "#ea580c"),
+        ("6. PROFECO y Economía (LFPC Digital)", c_profeco, "#7c3aed"),
+    ];
+
+    let mut table_rows = String::new();
+    for (label, cents, hex_color) in rows {
+        let pct = if c_stps + c_sat + c_imss + c_inai + c_pc + c_profeco == 0 {
+            0.0
+        } else {
+            ((cents as f64) * 100.0) / (total as f64)
+        };
+        let pct_round = pct.round() as u32;
+        let bar_width_pct = if pct_round == 0 { 2 } else { pct_round.clamp(4, 100) };
+        let amount_str = format_cents_mxn(cents);
+
+        table_rows.push_str(&format!(
+            "  [#text(size: 6.2pt, weight: \"bold\", fill: rgb(\"#1e293b\"))[{}]],\n  [#box(width: 100%, height: 6.5pt, fill: rgb(\"#e2e8f0\"), radius: 2pt)[#box(width: {}%, height: 6.5pt, fill: rgb(\"{}\"), radius: 2pt)]],\n  [#align(right)[#text(font: (\"Liberation Mono\", \"DejaVu Sans Mono\"), size: 6.1pt, weight: \"bold\", fill: rgb(\"#0f172a\"))[{}% (\\$ {} MXN)]]],\n",
+            label, bar_width_pct, hex_color, pct_round, amount_str
+        ));
+    }
+
+    format!(
+        r#"#rect(width: 100%, fill: rgb("#f8fafc"), stroke: 0.5pt + rgb("#cbd5e1"), inset: (x: 8pt, y: 6pt), radius: 3pt)[
+  #grid(
+    columns: (1fr, auto),
+    align: horizon,
+    [#text(size: 6.6pt, weight: "bold", fill: rgb("#0f172a"))[PONDERACIÓN PORCENTUAL Y MONETARIA POR ÓRGANO REGULADOR (BASE 100%)]],
+    [#text(font: ("Liberation Mono", "DejaVu Sans Mono"), size: 6.4pt, weight: "bold", fill: rgb("#dc2626"))[ÍNDICE DE EXPOSICIÓN: {}/100]]
+  )
+  #v(3pt)
+  #grid(
+    columns: (1.35fr, 1.45fr, 0.95fr),
+    row-gutter: 4.2pt,
+    column-gutter: 6pt,
+    align: horizon,
+{}  )
+]"#,
+        score, table_rows
+    )
+}
+
 fn build_report_typst_markup_full(
     empresa: &EmpresaB2B,
     osint: &OsintResult,
@@ -520,9 +595,24 @@ fn build_report_typst_markup_full(
 ) -> String {
     let tax_id = empresa.tax_id.as_deref().unwrap_or(&empresa.id);
 
-    // Si master_opt_in viene con datos reales, actualizar inmediatamente la Caché SSOT en RAM
+    // Si master_opt_in trae un conteo real (!= 45) o no hay nada en caché, guardarlo en SSOT;
+    // pero si master_opt_in viene con el fallback viejo de 45 y en SSOT ya teníamos el cálculo web real (ej. 258), preservar el de SSOT
+    let mut upgraded_master_opt: Option<AuditMasterJson> = None;
     if let Some(m_in) = master_opt_in {
-        store_ssot_session_in_memory(tax_id, &empresa.nombre, m_in);
+        let in_emp = m_in.calibration_applied.exact_employee_count.unwrap_or(m_in.estimated_employees);
+        if in_emp == 45 {
+            if let Some(cached) = get_ssot_session_from_memory(tax_id, &empresa.nombre) {
+                if cached.emp_count != 45 && cached.emp_count > 0 {
+                    let mut m_fixed = m_in.clone();
+                    m_fixed.estimated_employees = cached.emp_count;
+                    m_fixed.calibration_applied.exact_employee_count = Some(cached.emp_count);
+                    upgraded_master_opt = Some(m_fixed);
+                }
+            }
+        }
+        if upgraded_master_opt.is_none() {
+            store_ssot_session_in_memory(tax_id, &empresa.nombre, m_in);
+        }
     }
 
     let sqlite_master_backup = if master_opt_in.is_none() {
@@ -530,7 +620,7 @@ fn build_report_typst_markup_full(
     } else {
         None
     };
-    let master_opt = master_opt_in.or(sqlite_master_backup.as_ref());
+    let master_opt = upgraded_master_opt.as_ref().or(master_opt_in).or(sqlite_master_backup.as_ref());
 
     let is_immune = tax_id.starts_with("MALLEN");
     let fecha_hoy = Utc::now().format("%d/%m/%Y %H:%M UTC").to_string();
@@ -684,7 +774,7 @@ fn build_report_typst_markup_full(
     let osint_privacy = osint_privacy_flag;
     let osint_arco = osint_arco_flag;
 
-    let (imss_clase, imss_prima, imss_sector_desc) =
+    let (imss_clase, imss_prima, _imss_sector_desc) =
         crate::modules::vectors_37::classify_imss_risk_by_scian(scian_str);
 
     let guia_nom035 = if emp_count > 50 {
@@ -763,8 +853,9 @@ fn build_report_typst_markup_full(
     let m_profeco = (c_profeco as f64) / 100.0;
     let risk_score_val = score as f64;
 
-    let visual_chart_typst = crate::modules::vectors_37::render_visual_risk_chart_typst(
-        m_stps, m_sat, m_imss, m_inai, m_pc, m_profeco, risk_score_val,
+    let _ = (m_stps, m_sat, m_imss, m_inai, m_pc, m_profeco, risk_score_val);
+    let visual_chart_typst = render_exact_proportional_risk_chart_typst(
+        c_stps, c_sat, c_imss, c_inai, c_pc, c_profeco, score,
     );
 
     let (regimen_societario_lbl, regimen_societario_oblig) = analyze_corporate_entity_regime(&empresa.nombre, tax_id);
@@ -986,7 +1077,7 @@ pub fn generate_pdf_report_with_session(
     } else {
         None
     };
-    let master_opt = master_opt_in.or(sqlite_master_backup.as_ref());
+    let master_opt = upgraded_master_opt.as_ref().or(master_opt_in).or(sqlite_master_backup.as_ref());
 
     let fecha_hoy = Utc::now().format("%d/%m/%Y").to_string();
     let typst_source_path = format!("{}.typ", output_path);

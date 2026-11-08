@@ -85,6 +85,20 @@ pub struct BotProcessTelemetry {
     pub avg_latency_ms: u64,
 }
 
+
+struct InFlightTelemetryGuard;
+impl InFlightTelemetryGuard {
+    fn new() -> Self {
+        TELEMETRY_IN_FLIGHT.fetch_add(1, Ordering::SeqCst);
+        Self
+    }
+}
+impl Drop for InFlightTelemetryGuard {
+    fn drop(&mut self) {
+        TELEMETRY_IN_FLIGHT.fetch_sub(1, Ordering::SeqCst);
+    }
+}
+
 pub struct HttpFormBot;
 
 impl HttpFormBot {
@@ -2302,7 +2316,7 @@ impl HttpFormBot {
 
         // Adquirir permiso del Semáforo Global de Concurrencia (protege descriptores de archivo y red)
         let _sem_permit = Self::global_semaphore().acquire().await.ok();
-        TELEMETRY_IN_FLIGHT.fetch_add(1, Ordering::Relaxed);
+        let _in_flight_guard = InFlightTelemetryGuard::new();
 
         // Rate-limiting por dominio normalizado (sin 'www.')
         Self::apply_domain_rate_limit_and_jitter(&initial_host).await;
@@ -2823,8 +2837,7 @@ impl HttpFormBot {
                 tracked_whatsapps = c.clone();
             }
         }
-        TELEMETRY_IN_FLIGHT.fetch_sub(1, Ordering::Relaxed);
-        TELEMETRY_TOTAL_LATENCY_MS.fetch_add(elapsed_ms as usize, Ordering::Relaxed);
+                TELEMETRY_TOTAL_LATENCY_MS.fetch_add(elapsed_ms as usize, Ordering::Relaxed);
         if final_status == "PROSPECCION_ENVIADA_EXITO" {
             TELEMETRY_SUCCESS.fetch_add(1, Ordering::Relaxed);
         } else if final_status.starts_with("BLOQUEO_WAF_") || final_status.starts_with("PROTECCION_ANTIBOT_") {
