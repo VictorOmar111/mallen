@@ -675,11 +675,17 @@ pub fn generate_pdf_report(
 pub fn generate_pdf_report_with_session(
     empresa: &EmpresaB2B,
     osint: &OsintResult,
-    master_opt: Option<&AuditMasterJson>,
+    master_opt_in: Option<&AuditMasterJson>,
     is_accredited: bool,
     output_path: &str,
 ) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
-    let tax_id = empresa.tax_id.as_deref().unwrap_or("SIN-RFC");
+    let tax_id = empresa.tax_id.as_deref().unwrap_or(&empresa.id);
+    let sqlite_master_backup = if master_opt_in.is_none() {
+        load_latest_master_from_sqlite(tax_id, &empresa.nombre)
+    } else {
+        None
+    };
+    let master_opt = master_opt_in.or(sqlite_master_backup.as_ref());
     let fecha_hoy = Utc::now().format("%d/%m/%Y").to_string();
     let typst_source_path = format!("{}.typ", output_path);
     let auditor = AccountantProfile::default();
@@ -737,18 +743,64 @@ pub fn generate_pdf_report_with_session(
     } else {
         sanitize_for_typst(&empresa.actividad)
     };
+    let (fb_scian_cert, fb_emp_cert, fb_priv_cert) = lookup_formbot_and_denue_context(&empresa.nombre, tax_id);
+    if scian_code_cert == "541610" {
+        if let Some(s_real) = fb_scian_cert.filter(|s| s.len() >= 4) {
+            let _ = s_real;
+        }
+    }
     let emp_cert = master_opt
         .map(|m| m.calibration_applied.exact_employee_count.unwrap_or(m.estimated_employees).max(1))
+        .or(fb_emp_cert)
         .unwrap_or(20);
     let (imss_clase_c, imss_prima_c, _) =
         crate::modules::vectors_37::classify_imss_risk_by_scian(&scian_code_cert);
     let imss_label_cert = sanitize_for_typst(&format!("{} (Prima {})", imss_clase_c, imss_prima_c));
-    let total_mitigado_str = master_opt
-        .map(|m| format_currency_mxn(m.total_estimated_fine_mxn))
-        .unwrap_or_else(|| format_currency_mxn(empresa.estimated_fine_mxn.max(1_245_958.0)));
-    let risk_score_cert = master_opt
-        .map(|m| m.risk_score)
-        .unwrap_or(empresa.risk_score.max(71));
+
+    // Paridad Matemática Exacta (Cero pisos forzados de $1,245,958.00 ni Score 71):
+    // 1) Si existe master_opt con multa > 0, usa el monto exacto de la sesión.
+    // 2) Si no, si empresa.estimated_fine_mxn > 0, respeta exactamente empresa.estimated_fine_mxn y empresa.risk_score.
+    // 3) Si ambos vienen en 0.0, evalúa determinísticamente los 37 vectores con el mismo motor del Dictamen.
+    let (exact_fine_val, exact_score_val) = if let Some(m) = master_opt.filter(|m| m.total_estimated_fine_mxn > 0.0) {
+        (m.total_estimated_fine_mxn, m.risk_score)
+    } else if empresa.estimated_fine_mxn > 0.0 || empresa.risk_score > 0 {
+        (empresa.estimated_fine_mxn, empresa.risk_score)
+    } else {
+        let ev37 = crate::modules::vectors_37::evaluate_all_37_vectors(
+            &empresa.nombre,
+            &scian_code_cert,
+            emp_cert,
+            "LIMPIO",
+            "LIMPIO",
+            false,
+            false,
+            true,
+            fb_priv_cert,
+            fb_priv_cert,
+            tax_id.starts_with("MALLEN"),
+            true,
+            true,
+            scian_code_cert.starts_with("31") || scian_code_cert.starts_with("32") || scian_code_cert.starts_with("33") || scian_code_cert.starts_with("722"),
+            true,
+            scian_code_cert.starts_with("811") || scian_code_cert.starts_with("31") || scian_code_cert.starts_with("32") || scian_code_cert.starts_with("62"),
+            true,
+            true,
+            scian_code_cert.starts_with("48") || scian_code_cert.starts_with("49") || scian_code_cert.starts_with("43"),
+            scian_code_cert.starts_with("52") || scian_code_cert.starts_with("53") || scian_code_cert.starts_with("23"),
+        );
+        let sum_37: f64 = ev37.iter().map(|v| v.multa_estimada_mxn).sum();
+        let total_37 = (sum_37 * 100.0).round() / 100.0;
+        let ac = ev37.iter().filter(|v| v.multa_estimada_mxn > 0.0).count();
+        let calc_sc = if total_37 == 0.0 {
+            0
+        } else {
+            let raw_s = 40.0 + (ac as f64 / 37.0) * 45.0 + (total_37 / 5_000_000.0).min(1.0) * 14.0;
+            (raw_s.round() as u32).clamp(45, 99)
+        };
+        (total_37, calc_sc)
+    };
+    let total_mitigado_str = format_currency_mxn(exact_fine_val);
+    let risk_score_cert = exact_score_val;
     let sector_esp_cert = if scian_code_cert.starts_with("722") || scian_code_cert.starts_with("311") || scian_code_cert.starts_with("431") {
         "Trazabilidad sanitaria COFEPRIS (DIGIPRIS / NOM-251-SSA1), bitácora logística NOM-087-SCT y PIPC de centro de distribución."
     } else if scian_code_cert.starts_with("62") || scian_code_cert.starts_with("464") {

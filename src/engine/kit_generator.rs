@@ -97,7 +97,7 @@ pub fn build_all_compliance_documents_with_session(
         format!("{} - {}", scian_code, d)
     };
 
-    // 2. Número exacto de trabajadores (Sin alterar 20 ni 150 empleados)
+    // 2. Número exacto de trabajadores sincronizado con DENUE / FormBot y fallback homologado a 20
     let emp_count: u32 = master_opt
         .map(|m| {
             m.calibration_applied
@@ -105,7 +105,10 @@ pub fn build_all_compliance_documents_with_session(
                 .unwrap_or(m.estimated_employees)
                 .max(1)
         })
-        .unwrap_or(45);
+        .or_else(|| {
+            crate::engine::pdf_generator::lookup_formbot_and_denue_context(&empresa.nombre, tax_id).1
+        })
+        .unwrap_or(20);
 
     let (imss_clase, imss_prima, imss_sector_desc) = classify_imss_risk_by_scian(&scian_code);
     let default_imss_str = format!(

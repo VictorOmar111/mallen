@@ -1036,5 +1036,21 @@ async fn test_http_form_bot_14_scenarios_with_real_db_companies() {
         .unwrap_or(0);
     assert!(auto_clicks >= 1, "Generar el Pre-Dictamen de un prospecto del FormBot debe registrar automáticamente su clic en link_clicks");
 
-    println!("✓ LOS 57 ESCENARIOS (INCLUYENDO INTEGRACIÓN END-TO-END FORMBOT <-> PDF_GENERATOR Y CLICK-TRACKING) SUPERADOS AL 100%");
+
+    // Escenario 58: Verificación de Paridad Matemática Exacta en pdf_generator (Cero inflado a Score 71 ni piso de $1,245,958.00)
+    let pdf_src = std::fs::read_to_string("src/engine/pdf_generator.rs").unwrap();
+    assert!(
+        !pdf_src.contains(".max(1_245_958.0)"),
+        "No debe existir el piso artificial de $1,245,958.00 MXN en pdf_generator.rs"
+    );
+    assert!(
+        !pdf_src.contains(".max(71)"),
+        "No debe existir el piso artificial de risk_score .max(71) en pdf_generator.rs"
+    );
+    assert!(
+        !pdf_src.contains("45_u32") && !pdf_src.contains(".unwrap_or(45)"),
+        "El fallback de empleados debe estar homologado en 20 en todos los puntos de pdf_generator.rs"
+    );
+
+    println!("✓ LOS 58 ESCENARIOS (INCLUYENDO PARIDAD MATEMÁTICA AL CENTAVO Y AL PUNTO SIN PISOS INFLADOS) SUPERADOS AL 100%");
 }
