@@ -1188,5 +1188,87 @@ async fn test_http_form_bot_14_scenarios_with_real_db_companies() {
         "Incluso si una tabla secundaria pasa el default antiguo de 45 empleados, el Snapshot Inmutable debe imponer los 258 empleados reales"
     );
 
-    println!("✓ LOS 61 ESCENARIOS (INCLUYENDO PATRÓN DE INSTANTÁNEA INMUTABLE audit_snapshots PARA 258 EMPLEADOS) SUPERADOS AL 100%");
+
+    // =========================================================================
+    // BATERÍA DE PRUEBAS DE INTEGRACIÓN PROFUNDA (FORMBOT ⇄ GENERADOR PDF)
+    // =========================================================================
+
+    // Escenario 62 (Prueba 1): Resistencia al Salto de Contexto (Caso Urbvan — 258 Colaboradores en el Markup Typst compilado)
+    let typst_urbvan_doc = worker_inegi_engine::engine::pdf_generator::render_typst_from_strict_snapshot(&snap_uuid)
+        .expect("El SNAP-UUID de Urbvan debe existir y renderizar el Dictamen completo");
+    assert!(
+        typst_urbvan_doc.contains("258 colaboradores"),
+        "El documento Typst generado desde el SNAP-UUID debe contener literalmente '258 colaboradores'"
+    );
+    assert!(
+        !typst_urbvan_doc.contains("45 colaboradores") && !typst_urbvan_doc.contains("45 personas"),
+        "El documento Typst jamás debe caer en el respaldo antiguo de 45 colaboradores"
+    );
+
+    // Escenario 63 (Prueba 2): Rechazo Estricto a Peticiones Huérfanas (Tolerancia Cero a Fallbacks con UUID inexistente)
+    let orphan_res = worker_inegi_engine::engine::pdf_generator::render_typst_from_strict_snapshot("SNAP-UUID-INEXISTENTE-999999");
+    assert_eq!(
+        orphan_res,
+        Err("HTTP_404_ORPHAN_SNAPSHOT_REJECTED"),
+        "Cualquier intento de descargar un PDF con un session_uuid inexistente debe ser rechazado con 404 sin adivinar datos"
+    );
+    let empty_uuid_res = worker_inegi_engine::engine::pdf_generator::require_strict_snapshot_or_reject("   ");
+    assert_eq!(empty_uuid_res, Err("HTTP_400_EMPTY_SESSION_UUID"));
+
+    // Escenario 64 (Prueba 3): 50 Variaciones de Calibración en Paralelo — Coherencia Criptográfica SHA-256 Bit a Bit de los 37 Vectores
+    let mut parallel_tasks = Vec::with_capacity(50);
+    for idx in 0..50u32 {
+        parallel_tasks.push(tokio::spawn(async move {
+            let mut m_var = worker_inegi_engine::engine::models::AuditMasterJson::default();
+            m_var.tax_id = format!("PAR{:02}0101AAA", idx);
+            m_var.razon_social = format!("CORPORATIVO PARALELO {} S.A.P.I. DE C.V.", idx);
+            m_var.codigo_scian = match idx % 5 {
+                0 => "485111".to_string(),
+                1 => "311811".to_string(),
+                2 => "621111".to_string(),
+                3 => "522110".to_string(),
+                _ => "236221".to_string(),
+            };
+            let dynamic_emp = 12 + (idx * 7);
+            m_var.estimated_employees = dynamic_emp;
+            m_var.calibration_applied.exact_employee_count = Some(dynamic_emp);
+            m_var.calibration_applied.has_telework_over_40_percent = Some((idx & 1) == 0);
+            m_var.calibration_applied.uses_subcontracted_services_repse = Some((idx & 2) == 0);
+            m_var.calibration_applied.has_pressure_vessels_boilers = Some((idx & 4) == 0);
+            m_var.calibration_applied.uses_biometrics_or_health_data = Some((idx & 8) == 0);
+            m_var.calibration_applied.handles_hazardous_chemicals = Some((idx & 16) == 0);
+
+            // 1. Calcular el Hash SHA-256 y total en centavos en el momento del Pre-Dictamen Web
+            let (web_hash, web_total_cents) =
+                worker_inegi_engine::engine::pdf_generator::compute_vectors_37_sha256_fingerprint(&m_var);
+            m_var.total_estimated_fine_mxn = (web_total_cents as f64) / 100.0;
+
+            // 2. Congelar en SQLite WAL (`audit_snapshots`) y obtener su SNAP-UUID
+            let s_uuid = worker_inegi_engine::engine::pdf_generator::freeze_immutable_audit_snapshot(
+                &m_var.tax_id,
+                &m_var.razon_social,
+                &m_var,
+            );
+
+            // 3. Leer el Snapshot desde el generador como lo hace la descarga del PDF/ZIP y recalcular el Hash SHA-256
+            let loaded_snap = worker_inegi_engine::engine::pdf_generator::require_strict_snapshot_or_reject(&s_uuid)
+                .expect("El snapshot paralelo recién congelado debe recuperarse sin fallo");
+            let (pdf_hash, pdf_total_cents) =
+                worker_inegi_engine::engine::pdf_generator::compute_vectors_37_sha256_fingerprint(&loaded_snap);
+
+            assert_eq!(
+                web_hash, pdf_hash,
+                "El Hash SHA-256 de los 37 vectores debe coincidir bit a bit entre la Web y el Generador PDF (variación #{})",
+                idx
+            );
+            assert_eq!(web_total_cents, pdf_total_cents);
+            assert_eq!(loaded_snap.calibration_applied.exact_employee_count, Some(dynamic_emp));
+        }));
+    }
+
+    for task in parallel_tasks {
+        task.await.expect("Ninguna de las 50 variaciones paralelas debe fallar");
+    }
+
+    println!("✓ LOS 64 ESCENARIOS (INCLUYENDO URBVAN 258 EMPLEADOS, RECHAZO 404 A HUÉRFANOS Y 50 PRUEBAS DE COHERENCIA SHA-256 EN PARALELO) SUPERADOS AL 100%");
 }

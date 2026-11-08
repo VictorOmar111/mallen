@@ -344,6 +344,104 @@ pub fn load_immutable_snapshot_strict(key_or_uuid: &str, empresa_nombre: &str) -
     None
 }
 
+
+/// Exige de forma estricta que exista el `snapshot_uuid` (o `tax_id` previamente congelado) en `audit_snapshots`.
+/// Si la sesión es huérfana o el UUID no existe, rechaza la operación con `"HTTP_404_ORPHAN_SNAPSHOT_REJECTED"`
+/// prohibiendo terminantemente adivinar datos o usar respaldos de 45 empleados.
+pub fn require_strict_snapshot_or_reject(snapshot_uuid_or_tax: &str) -> Result<AuditMasterJson, &'static str> {
+    let key = snapshot_uuid_or_tax.trim();
+    if key.is_empty() {
+        return Err("HTTP_400_EMPTY_SESSION_UUID");
+    }
+    match load_immutable_snapshot_strict(key, "") {
+        Some(master) => Ok(master),
+        None => Err("HTTP_404_ORPHAN_SNAPSHOT_REJECTED"),
+    }
+}
+
+/// Calcula el Hash SHA-256 bit a bit del estado de los 37 vectores y los 6 subtotales regulatorios
+/// (`STPS`, `SAT`, `IMSS`, `LFPDPPP`, `PIPC`, `PROFECO`) para verificar coherencia criptográfica 1:1
+/// entre el cálculo web y el compilador Typst.
+pub fn compute_vectors_37_sha256_fingerprint(master: &AuditMasterJson) -> (String, u64) {
+    let emp = master
+        .calibration_applied
+        .exact_employee_count
+        .unwrap_or(master.estimated_employees)
+        .max(1);
+    let scian = if master.codigo_scian.trim().is_empty() {
+        "541110"
+    } else {
+        master.codigo_scian.trim()
+    };
+    let c = &master.calibration_applied;
+    let is_immune = master.tax_id.trim().to_uppercase().starts_with("MALLEN");
+
+    let (vecs, c_stps, c_sat, c_inai, c_imss, c_pc, c_profeco, total_cents, score) =
+        compute_ssot_exact_totals_cents(
+            &master.razon_social,
+            scian,
+            emp,
+            &master.sat_69b_status,
+            &master.sat_69_status,
+            master.stps_repse_registered,
+            master.sfp_sanctioned,
+            if master.web_telemetry.target_url.is_empty() { true } else { master.web_telemetry.ssl_valid },
+            if master.web_telemetry.target_url.is_empty() { true } else { master.web_telemetry.has_privacy_notice },
+            if master.web_telemetry.target_url.is_empty() { true } else { master.web_telemetry.mentions_arco_rights || master.web_telemetry.has_privacy_notice },
+            is_immune,
+            c.has_telework_over_40_percent.unwrap_or(true),
+            c.uses_subcontracted_services_repse.unwrap_or(true),
+            c.has_pressure_vessels_boilers.unwrap_or(scian.starts_with("31") || scian.starts_with("32") || scian.starts_with("33") || scian.starts_with("722")),
+            c.has_forklifts_or_manual_loads.unwrap_or(true),
+            c.handles_hazardous_chemicals.unwrap_or(scian.starts_with("811") || scian.starts_with("31") || scian.starts_with("32") || scian.starts_with("62")),
+            c.uses_biometrics_or_health_data.unwrap_or(true),
+            c.pays_intangible_b2b_services.unwrap_or(true),
+            c.transports_goods_federal_highways.unwrap_or(scian.starts_with("48") || scian.starts_with("49") || scian.starts_with("43")),
+            c.performs_vulnerable_activities_pld.unwrap_or(scian.starts_with("52") || scian.starts_with("53") || scian.starts_with("23")),
+            Some(master.risk_score).filter(|&s| s > 0),
+        );
+
+    let mut hasher = Sha256::new();
+    hasher.update(format!("HEADER|EMP={}|TOTAL={}|SCORE={}|", emp, total_cents, score).as_bytes());
+    hasher.update(format!("ORG|STPS={}|SAT={}|INAI={}|IMSS={}|PC={}|PROFECO={}|", c_stps, c_sat, c_inai, c_imss, c_pc, c_profeco).as_bytes());
+    for v in &vecs {
+        let vc = mxn_to_exact_cents(v.multa_estimada_mxn);
+        hasher.update(format!("V{}={}:{};", v.id, v.organo, vc).as_bytes());
+    }
+    (format!("0x{:x}", hasher.finalize()), total_cents)
+}
+
+/// Renderiza el código fuente Typst del Dictamen leyendo única y exclusivamente desde un `snapshot_uuid` válido.
+/// Si el `snapshot_uuid` no existe en `audit_snapshots`, rechaza la operación sin aplicar fallbacks.
+pub fn render_typst_from_strict_snapshot(snapshot_uuid: &str) -> Result<String, &'static str> {
+    let master = require_strict_snapshot_or_reject(snapshot_uuid)?;
+    let mut emp_b2b = EmpresaB2B::default();
+    emp_b2b.id = master.tax_id.clone();
+    emp_b2b.tax_id = Some(master.tax_id.clone());
+    emp_b2b.nombre = master.razon_social.clone();
+    emp_b2b.actividad = format!("{} - {}", master.codigo_scian, master.actividad_scian_desc);
+    emp_b2b.direccion = master.domicilio_fiscal_o_denue.clone();
+    emp_b2b.estado = master
+        .calibration_applied
+        .dossier
+        .entidad_jurisdiccion
+        .clone()
+        .unwrap_or_else(|| "CIUDAD DE MÉXICO".to_string());
+    emp_b2b.estimated_fine_mxn = master.total_estimated_fine_mxn;
+    emp_b2b.risk_score = master.risk_score;
+    emp_b2b.audit_hash = master.cryptographic_hash.clone();
+
+    let osint = OsintResult {
+        ssl_valido: master.web_telemetry.ssl_valid,
+        aviso_privacidad: master.web_telemetry.has_privacy_notice,
+        terminos_condiciones: true,
+        http_status: master.web_telemetry.http_status.max(200),
+        tracker_detectado: false,
+    };
+
+    Ok(build_report_typst_markup_full(&emp_b2b, &osint, Some(&master), false, false))
+}
+
 pub fn load_latest_master_from_sqlite(tax_id: &str, empresa_nombre: &str) -> Option<AuditMasterJson> {
     if let Some(cached) = get_ssot_session_from_memory(tax_id, empresa_nombre) {
         return Some(cached.master);

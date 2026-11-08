@@ -39,7 +39,7 @@ pub enum CanalContacto {
     SinContactoUtil,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, Default)]
 pub struct EvaluacionObjetivo {
     pub id_empresa: String,
     pub canal_optimo: CanalContacto,
@@ -47,7 +47,7 @@ pub struct EvaluacionObjetivo {
     pub requiere_bypass: bool,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, Default)]
 pub struct ResultadoAuditoria {
     pub id_empresa: String,
     pub estado_riesgo: String,
@@ -115,7 +115,7 @@ pub struct AgencyFineBreakdown {
     pub profeco_points: u32,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, Default)]
 pub struct ScanRequest {
     pub tax_id: String,
     pub domain: Option<String>,
@@ -189,7 +189,7 @@ pub enum RiskSeverity {
     CriticalClosure,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, Default)]
 pub struct RegulatoryFinding {
     pub code: String,
     pub agency: RegulatoryAgency,
@@ -206,7 +206,7 @@ pub struct RegulatoryFinding {
     pub verified_by_osint: bool,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, Default)]
 pub struct UmaCalculator {
     pub uma_daily_mxn: f64,
     pub fiscal_year: u16,
@@ -275,7 +275,7 @@ pub struct WebOsintTelemetry {
     pub orphan_subdomains: Vec<String>,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, Default)]
 pub struct AuditMasterJson {
     pub audit_id: String,
     pub generated_at_utc: String,
