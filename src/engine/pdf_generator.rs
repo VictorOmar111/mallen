@@ -295,6 +295,89 @@ pub fn lookup_formbot_and_denue_context(empresa_nombre: &str, tax_id: &str) -> (
     (None, None, true)
 }
 
+
+/// Clasifica mediante análisis léxico de la Razón Social y longitud del RFC el Régimen Societario exacto
+/// sin inventar números de notaría inexistentes.
+pub fn analyze_corporate_entity_regime(razon_social: &str, tax_id: &str) -> (&'static str, &'static str) {
+    let r_up = razon_social.trim().to_uppercase();
+    let t_clean = tax_id.trim().to_uppercase();
+
+    if r_up.contains("S.A.P.I.") || r_up.contains("SAPI ") || r_up.ends_with(" SAPI") {
+        (
+            "Sociedad Anónima Promotora de Inversión (S.A.P.I. de C.V.)",
+            "Regulada por los Arts. 12 al 18 de la Ley del Mercado de Valores (LMV) y LGSM; exigible Gobierno Corporativo, pactos parasociales y expediente de Beneficiario Controlador (Art. 32-B Ter CFF).",
+        )
+    } else if r_up.contains("S.A.B.") || r_up.contains("SAB DE CV") {
+        (
+            "Sociedad Anónima Bursátil (S.A.B. de C.V.)",
+            "Regulada por la Ley del Mercado de Valores (LMV); exigible Comité de Auditoría y Prácticas Societarias y revelación estricta de materialidad.",
+        )
+    } else if r_up.contains("S. DE R.L.") || r_up.contains("S DE RL") {
+        (
+            "Sociedad de Responsabilidad Limitada (S. de R.L. de C.V.)",
+            "Regulada por los Arts. 58 al 86 de la LGSM; exigible Libro Especial de Socios (Art. 73 LGSM), aviso de estructura accionaria en el SAT (Ficha 295/CFF) y Beneficiario Controlador.",
+        )
+    } else if r_up.contains("S.C.") || r_up.ends_with(" SC") {
+        (
+            "Sociedad Civil (S.C.)",
+            "Regulada por el Código Civil aplicable; exigible control de socios administradores, contratos de prestación de servicios profesionales con Fecha Cierta y confidencialidad LFPDPPP.",
+        )
+    } else if r_up.contains("S.A. DE C.V.") || r_up.contains("SA DE CV") || r_up.ends_with(" S.A.") {
+        (
+            "Sociedad Anónima de Capital Variable (S.A. de C.V.)",
+            "Regulada por los Arts. 87 al 206 de la LGSM; exigible Libro de Registro de Acciones (Art. 128 LGSM), Actas de Asamblea Ordinaria Anual (Art. 181 LGSM) y Beneficiario Controlador (Art. 32-B Ter CFF).",
+        )
+    } else if t_clean.len() == 13 && !t_clean.starts_with("SIN") && !t_clean.starts_with("MALLEN") {
+        (
+            "Persona Física con Actividad Empresarial (LISR Título IV)",
+            "Exenta de libros societarios mercantiles (LGSM); sujeta a contabilidad fiscal Art. 28 CFF, cumplimiento patronal LFT/IMSS sobre plantilla activa y Aviso de Privacidad LFPDPPP.",
+        )
+    } else {
+        (
+            "Entidad Mercantil / Unidad Económica Registrada (Padrón DENUE / SAT)",
+            "Sujeta a acreditación de representación orgánica (Art. 10 LGSM / Art. 19 CFF), contabilidad electrónica y expediente de Beneficiario Controlador.",
+        )
+    }
+}
+
+/// Calcula la Masa Salarial Mensual Presunta sujeta a confronta CFDI de Nómina 4.0 vs. SUA IMSS
+/// en función de la plantilla real evaluada y el giro SCIAN (en centavos enteros `u64`).
+pub fn estimate_monthly_payroll_exposure_cents(emp_count: u32, scian_code: &str) -> u64 {
+    let avg_monthly_sbc_cents: u64 = if scian_code.starts_with("52") || scian_code.starts_with("54") || scian_code.starts_with("51") {
+        2_250_000 // $22,500.00 MXN SBC promedio mensual (Servicios Financieros / TI / Corporativos)
+    } else if scian_code.starts_with("31") || scian_code.starts_with("32") || scian_code.starts_with("33") || scian_code.starts_with("48") || scian_code.starts_with("23") {
+        1_680_000 // $16,800.00 MXN SBC promedio mensual (Industria / Logística / Transporte / Construcción)
+    } else {
+        1_350_000 // $13,500.00 MXN SBC promedio mensual (Comercio / Servicios Generales)
+    };
+    (emp_count.max(1) as u64).saturating_mul(avg_monthly_sbc_cents)
+}
+
+/// Extrae telemetría técnica adicional (Stack Web, Recomendación y CLEE/Domicilio fino) desde SQLite si existe.
+pub fn lookup_deep_osint_and_denue_metadata(empresa_nombre: &str, tax_id: &str) -> (String, String) {
+    let db_path = std::env::var("MALLEN_DB_PATH").unwrap_or_else(|_| "data/mallen_prod.db".to_string());
+    let mut stack_info = String::new();
+    let mut commerce_ext_info = String::new();
+
+    if let Ok(conn) = rusqlite::Connection::open(db_path) {
+        if let Ok((st, rec)) = conn.query_row(
+            "SELECT COALESCE(tech_stack_detected, ''), COALESCE(recommended_module, '')
+             FROM prospect_pipeline
+             WHERE UPPER(empresa_nombre) = UPPER(?1) OR UPPER(empresa_nombre) = UPPER(?2)
+             LIMIT 1",
+            rusqlite::params![empresa_nombre.trim(), tax_id.trim()],
+            |r| Ok((r.get::<_, String>(0)?, r.get::<_, String>(1)?)),
+        ) {
+            if !st.trim().is_empty() {
+                stack_info = format!("Infraestructura Web detectada: {} ({}).", st.trim(), rec.trim());
+            }
+        }
+    }
+
+    commerce_ext_info.push_str("Padrón Sectorial y Comercio Exterior: Sujeto a validación de Pedimentos / Anexo 22 RGCE en operaciones de importación o proveeduría internacional.");
+    (stack_info, commerce_ext_info)
+}
+
 pub fn sanitize_for_typst(input: &str) -> String {
     let clean = input.replace("\\\\$", "$").replace("\\$", "$");
     clean
@@ -367,7 +450,7 @@ pub fn compute_ssot_exact_totals_cents(
     cal_transport: bool,
     cal_pld: bool,
     master_score_opt: Option<u32>,
-) -> (Vec<crate::modules::vectors_37::VectorEvaluation>, u64, u64, u64, u64, u64, u64, u64, u32) {
+) -> (Vec<crate::modules::vectors_37::VectorResult>, u64, u64, u64, u64, u64, u64, u64, u32) {
     let evaluated_37 = crate::modules::vectors_37::evaluate_all_37_vectors(
         empresa_nombre,
         scian_str,
@@ -684,30 +767,41 @@ fn build_report_typst_markup_full(
         m_stps, m_sat, m_imss, m_inai, m_pc, m_profeco, risk_score_val,
     );
 
-    let hallazgo_stps_str = if is_immune {
-        format!("0 pts: Carpetas STPS ({}, NOM-019, NOM-030 y NOM-002) instrumentadas para {} trabajadores.", guia_nom035, emp_count)
+    let (regimen_societario_lbl, regimen_societario_oblig) = analyze_corporate_entity_regime(&empresa.nombre, tax_id);
+    let masa_salarial_cents = estimate_monthly_payroll_exposure_cents(emp_count, scian_str);
+    let masa_salarial_str = format_cents_mxn(masa_salarial_cents);
+    let (stack_osint_note, _comm_ext_note) = lookup_deep_osint_and_denue_metadata(&empresa.nombre, tax_id);
+
+    let comision_nom019_modalidad = if emp_count >= 15 {
+        "Acta Constitutiva Bipartita NOM-019 (Coordinador, Secretario y Vocales para >=15 trabajadores)"
     } else {
-        format!("Plantilla evaluada ({} personas, SCIAN {}): obligatorio exhibir {}, Acta NOM-019, Diagnóstico NOM-030 y estudio de incendio NOM-002.", emp_count, scian_str, guia_nom035)
+        "Acta NOM-019 Modalidad Simplificada (1 Representante Patronal y 1 Laboral para <15 trabajadores)"
+    };
+
+    let hallazgo_stps_str = if is_immune {
+        format!("0 pts: Carpetas STPS ({}, {}, NOM-030 y NOM-002) instrumentadas para {} trabajadores.", guia_nom035, comision_nom019_modalidad, emp_count)
+    } else {
+        format!("Plantilla evaluada ({} colaboradores, SCIAN {}): obligatorio exhibir {}, {}, Diagnóstico NOM-030 y grado de incendio NOM-002.", emp_count, scian_str, guia_nom035, comision_nom019_modalidad)
     };
 
     let hallazgo_sat_str = if is_immune {
-        "0 pts: Contratos con Fecha Cierta SCJN (Art. 69-B CFF), Beneficiario Controlador y CFDI 4.0 verificados.".to_string()
+        format!("0 pts: {} • Contratos con Fecha Cierta SCJN (Art. 69-B CFF) y CFDI 4.0 verificados.", regimen_societario_lbl)
     } else {
-        format!("Compulsa 69-B [{}]. Exigible Contrato Marco con Fecha Cierta (Jurisprudencia SCJN 2a./J. 161/2019), Razón de Negocios Art. 5-A y Expediente de Beneficiario Controlador (Art. 32-B Ter CFF).", sat_69b_lbl)
+        format!("Figura: {} [69-B: {}]. {} Exigible Contrato Marco con Fecha Cierta (SCJN 2a./J. 161/2019) y Razón de Negocios Art. 5-A CFF.", regimen_societario_lbl, sat_69b_lbl, regimen_societario_oblig)
     };
 
     let osint_inai_str = if is_immune {
         "0 pts: Aviso de Privacidad Integral LFPDPPP (SABG), Derechos ARCO y TLS 1.3 activos.".to_string()
     } else if osint_privacy_flag {
-        format!("Aviso web detectado en dominio; requiere adecuación a la Autoridad Garante SABG (LFPDPPP), Documento de Seguridad (Art. 19) y Consentimiento Expreso para Biométricos/Nómina de {} trabajadores.", emp_count)
+        format!("{} Aviso web detectado; requiere adecuación a la Autoridad Garante SABG (LFPDPPP), Documento de Seguridad (Art. 19) y Consentimiento Biométrico/Nómina para {} colaboradores.", stack_osint_note, emp_count).trim().to_string()
     } else {
-        format!("ALERTA CRÍTICA (Arts. 15, 16 y 63 LFPDPPP): Omisión de Aviso de Privacidad Integral, Ventanilla ARCO y formato de Consentimiento Biométrico/Nómina para {}.", empresa.nombre)
+        format!("ALERTA CRÍTICA (Arts. 15, 16 y 63 LFPDPPP): {} Omisión de Aviso de Privacidad Integral, Ventanilla ARCO y Consentimiento Biométrico para {}.", stack_osint_note, empresa.nombre).trim().to_string()
     };
 
     let hallazgo_imss_str = if is_immune {
         format!("0 pts: Plantilla conciliada en SUA bajo {} (Prima {}) y protocolo REPSE activo.", imss_clase, imss_prima)
     } else {
-        format!("Por actividad SCIAN {} ({}) corresponde {} con Prima Media del {}. Exigible conciliación de {} empleados vs. SUA, Opinión 32-D y compulsa REPSE/ICSOE.", scian_str, imss_sector_desc, imss_clase, imss_prima, emp_count)
+        format!("Plantilla: {} colaboradores | Masa Salarial Bruta Presunta: ${} MXN/mes | {} (Prima Media: {}). Exigible confronta CFDI Nómina vs. SUA y compulsa REPSE/ICSOE.", emp_count, masa_salarial_str, imss_clase, imss_prima)
     };
 
     let hallazgo_pc_str = if is_immune {

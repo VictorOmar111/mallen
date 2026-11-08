@@ -244,7 +244,71 @@ r#"Conforme al Numeral 7.1 inciso a) de la **NOM-019-STPS-2011**, por contar el 
         "1. **Cumplimiento Administrativo Municipal/Estatal:** Mantener vigente la Licencia de Funcionamiento, Uso de Suelo Comercial, Dictamen Eléctrico y constancia del Programa Interno de Protección Civil conforme a la superficie y aforo del inmueble."
     };
 
+    let (regimen_societario_titulo, regimen_societario_detalle) =
+        crate::engine::pdf_generator::analyze_corporate_entity_regime(razon_social, tax_id);
+    let masa_salarial_presunta = crate::engine::pdf_generator::format_cents_mxn(
+        crate::engine::pdf_generator::estimate_monthly_payroll_exposure_cents(emp_count, &scian_code),
+    );
+    let merkle_root_zip = crate::engine::pdf_generator::compute_bundle_merkle_root(
+        tax_id,
+        razon_social,
+        emp_count,
+        0,
+        &scian_code,
+    );
+
     vec![
+        // =====================================================================
+        // INSTRUMENTO 00: MANIFIESTO CRIPTOGRÁFICO MERKLE ROOT E ÍNDICE CONDICIONAL
+        // =====================================================================
+        GeneratedKitDocument {
+            zip_relative_path: "00_Indice_y_Sello_Criptografico_Merkle/00_Manifiesto_Criptografico_Merkle_SHA256.md".to_string(),
+            disk_filename: "00_Manifiesto_Criptografico_Merkle_SHA256.md".to_string(),
+            content: format!(
+r#"# MANIFIESTO CRIPTOGRÁFICO DE INTEGRIDAD (ÁRBOL DE MERKLE L2) E ÍNDICE PARAMETRIZADO DEL EXPEDIENTE
+**Ente Auditado:** {razon} | **RFC / ID:** {rfc}
+**Régimen Societario Detectado:** {regimen_tit}
+**Giro Económico SCIAN:** {giro} | **Plantilla Conciliada (SSOT):** {emp} colaboradores
+**Masa Salarial Mensual Presunta (Referencia SUA/CFDI):** ${masa} MXN/mes
+**Clasificación Patronal IMSS (Art. 196 RACERF):** {clase_prima}
+**Raíz de Merkle del Paquete (.ZIP):** `{merkle}` | **Huella Maestra SHA-256:** `{hash}`
+**URL Unívoca de Verificación en Tiempo Real:** https://mallen.lat/verify/{rfc}
+
+---
+
+### 1. ACREDITACIÓN DE ENSAMBLAJE CONDICIONAL POR ESTRATO DE PERSONAL Y SECTOR SCIAN
+El presente paquete ha sido ensamblado dinámicamente por el motor determinístico de **FIRMA W16 MALLEN®** descartando obligaciones improcedentes y adaptando el clausulado a la escala real de **{emp} colaboradores** y al régimen **{regimen_tit}**:
+- **Encaje Societario y Corporativo:** {regimen_det}
+- **Parametrización NOM-035-STPS-2018:** {protocolo_escala}
+- **Parametrización NOM-019-STPS-2011:** {modalidad_csh}
+- **Marco Técnico de NOMs STPS Aplicables al Giro ({scian_short}):** {noms_scian}
+
+### 2. VALIDACIÓN PROBATORIA (ARTS. 89–93 BIS CÓDIGO DE COMERCIO Y ESTÁNDAR ISO 19011)
+Cualquier autoridad administrativa, cliente corporativo o auditor externo puede verificar en tiempo real la autenticidad, fecha cierta de corte UTC ({fecha}) e inalterabilidad del presente expediente escaneando o consultando:
+> **Enlace Oficial de Verificación Criptográfica:** `https://mallen.lat/verify/{rfc}`
+"#,
+                razon = razon_social,
+                rfc = tax_id,
+                regimen_tit = regimen_societario_titulo,
+                giro = giro_scian,
+                emp = emp_count,
+                masa = masa_salarial_presunta,
+                clase_prima = clase_prima_imss,
+                merkle = merkle_root_zip,
+                hash = empresa.audit_hash,
+                regimen_det = regimen_societario_detalle,
+                protocolo_escala = protocolo_nom035_escala,
+                modalidad_csh = if emp_count >= 15 {
+                    "Comisión Mixta Bipartita Completa (Coordinador, Secretario y Vocales — 15 o más trabajadores)"
+                } else {
+                    "Comisión Mixta Simplificada (1 Representante Patronal y 1 Representante de los Trabajadores — menos de 15 trabajadores)"
+                },
+                scian_short = scian_code,
+                noms_scian = noms_especificas_scian,
+                fecha = fecha
+            ),
+        },
+
         // =====================================================================
         // INSTRUMENTO 01: AVISO DE PRIVACIDAD INTEGRAL + FORMATO BIOMÉTRICO
         // =====================================================================

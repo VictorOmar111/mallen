@@ -1121,5 +1121,23 @@ async fn test_http_form_bot_14_scenarios_with_real_db_companies() {
     );
     assert!(merkle_urbvan.starts_with("0x") && merkle_urbvan.len() == 26);
 
-    println!("✓ LOS 59 ESCENARIOS (INCLUYENDO PROPERTY-BASED TESTING DE 250 VARIACIONES, PARIDAD URBVAN 258 EMPLEADOS EN CENTAVOS Y MERKLE ROOT) SUPERADOS AL 100%");
+
+    // Escenario 60: Verificación de Análisis Léxico de Régimen Societario (SAPI, S. de R.L., S.A., Persona Física) y Masa Salarial SUA
+    let (reg_sapi, det_sapi) = worker_inegi_engine::engine::pdf_generator::analyze_corporate_entity_regime(
+        "CORPORATIVO URBVAN S.A.P.I. DE C.V.",
+        "URB180101AAA",
+    );
+    assert!(reg_sapi.contains("S.A.P.I."));
+    assert!(det_sapi.contains("Ley del Mercado de Valores"));
+
+    let (reg_pf, _) = worker_inegi_engine::engine::pdf_generator::analyze_corporate_entity_regime(
+        "JUAN PEREZ GARCIA",
+        "PEGJ850101HDF",
+    );
+    assert!(reg_pf.contains("Persona Física"));
+
+    let payroll_258_cents = worker_inegi_engine::engine::pdf_generator::estimate_monthly_payroll_exposure_cents(258, "485111");
+    assert!(payroll_258_cents > 400_000_000, "258 colaboradores en transporte deben proyectar una masa salarial > $4.0M MXN/mes");
+
+    println!("✓ LOS 60 ESCENARIOS DE TORTURA, PARIDAD AL CENTAVO (250 PERMUTACIONES PROPERTY-BASED) Y HIPER-PERSONALIZACIÓN SOCIETARIA SUPERADOS AL 100%");
 }
