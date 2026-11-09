@@ -99,7 +99,7 @@ pub struct LegalDossierInput {
 }
 
 /// Desglose matemático exacto por cada una de las 6 dependencias para sincronizar 1:1 la Web y la tabla del PDF.
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, Default)]
 pub struct AgencyFineBreakdown {
     pub stps_fine_mxn: f64,
     pub sat_fine_mxn: f64,
@@ -127,7 +127,7 @@ pub struct ScanRequest {
 }
 
 /// Cuestionario de Certeza Pericial (12 bloques de riesgo + Ficha `LegalDossierInput` embebida con `#[serde(default)]`).
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, Default)]
 pub struct CalibrationAnswers {
     pub exact_employee_count: Option<u32>,
     pub has_telework_over_40_percent: Option<bool>,
@@ -261,7 +261,7 @@ pub struct LegalAcceptanceMetadata {
     pub three_d_secure_status: Option<String>,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, Default)]
 pub struct WebOsintTelemetry {
     pub target_url: String,
     pub http_status: u16,

@@ -319,6 +319,7 @@ pub fn load_immutable_snapshot_strict(key_or_uuid: &str, empresa_nombre: &str) -
     // 1. Primero revisar en la tabla inmutable `audit_snapshots` el último snapshot congelado
     let db_path = std::env::var("MALLEN_DB_PATH").unwrap_or_else(|_| "data/mallen_prod.db".to_string());
     if let Ok(conn) = rusqlite::Connection::open(db_path) {
+        let _ = conn.execute_batch("PRAGMA journal_mode=WAL; PRAGMA busy_timeout=5000;");
         if let Ok(mut stmt) = conn.prepare(
             "SELECT master_json_blob
              FROM audit_snapshots
@@ -437,7 +438,8 @@ pub fn render_typst_from_strict_snapshot(snapshot_uuid: &str) -> Result<String, 
         master.audit_id.clone()
     };
 
-    let osint = crate::engine::osint_scanner::scan_company_web("");
+    let mut osint = OsintResult::default();
+    osint.http_status = master.web_telemetry.http_status.max(200);
 
     Ok(build_report_typst_markup_full(&emp_b2b, &osint, Some(&master), false, false))
 }
@@ -451,7 +453,7 @@ pub fn prune_expired_audit_snapshots_30d() -> usize {
         let _ = conn.execute_batch("PRAGMA journal_mode=WAL; PRAGMA busy_timeout=5000;");
         let deleted = conn
             .execute(
-                "DELETE FROM audit_snapshots WHERE created_at_utc < datetime('now', '-30 days')",
+                "DELETE FROM audit_snapshots WHERE created_at_utc < datetime('now', '-30 days') AND tax_id_key NOT IN (SELECT ref_key FROM link_clicks)",
                 [],
             )
             .unwrap_or(0);
