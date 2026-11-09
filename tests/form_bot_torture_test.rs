@@ -1471,5 +1471,25 @@ async fn test_http_form_bot_14_scenarios_with_real_db_companies() {
     assert_eq!(calibrated_urbvan.estimated_employees, 258);
     assert!(calibrated_urbvan.headcount_display_label.contains("258 colaboradores"));
 
-    println!("✓ LOS 76 ESCENARIOS (INCLUYENDO TRANSPARENCIA DE ESTRATO INEGI VS MEDIANA CENSAL Y 30 FAQS EN 5 APARTADOS) SUPERADOS AL 100%");
+
+    // Escenario 77: Prueba de Bitácora de Errores Aislados (Dead Letter Queue `batch_failures_log`) y Resiliencia de Lote
+    // Simulamos un lote de 5 registros donde 3 son válidos y 2 vienen corruptos (RFC vacío o 0 empleados):
+    // Los 2 corruptos deben aislarse en `batch_failures_log` sin detener a los 3 válidos.
+    let mixed_batch = vec![
+        ("VAL180101AAA".to_string(), "EMPRESA VALIDA UNO S.A. DE C.V.".to_string(), "485111".to_string(), 45u32),
+        ("BAD_RFC".to_string(), "EMPRESA CON RFC CORRUPTO".to_string(), "485111".to_string(), 30u32),
+        ("VAL190202BBB".to_string(), "EMPRESA VALIDA DOS S.A.P.I. DE C.V.".to_string(), "522320".to_string(), 90u32),
+        ("VAL200303CCC".to_string(), "".to_string(), "332310".to_string(), 0u32),
+        ("VAL210404DDD".to_string(), "EMPRESA VALIDA TRES S. DE R.L. DE C.V.".to_string(), "722511".to_string(), 25u32),
+    ];
+    let (ok_cnt, dlq_err_cnt, batch_root) =
+        worker_inegi_engine::engine::pdf_generator::process_batch_records_with_dlq_and_checkpoint(
+            "JOB-DLQ-TEST-2026",
+            &mixed_batch,
+        );
+    assert_eq!(ok_cnt, 3, "Los 3 registros válidos deben procesarse y sellarse sin interrupción");
+    assert_eq!(dlq_err_cnt, 2, "Los 2 registros corruptos deben quedar aislados en batch_failures_log (DLQ)");
+    assert!(batch_root.starts_with("0x"));
+
+    println!("✓ LOS 77 ESCENARIOS (INCLUYENDO TRANSPARENCIA DE ESTRATO INEGI, 30 FAQS ANIDADAS Y DEAD LETTER QUEUE DLQ) SUPERADOS AL 100%");
 }

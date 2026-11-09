@@ -672,39 +672,40 @@ window.runInstantLookup360 = async function() {
   var box = document.getElementById('lookup-360-result');
   if (!inp || !box || !inp.value.trim()) return;
   box.classList.remove('hidden');
-  box.innerHTML = '<div class="col-span-3 text-blue-400">Consultando padrón indexado en RAM y enriquecimiento 360°...</div>';
+  box.innerHTML = '<div class="col-span-3 text-blue-400 py-2">Verificando registros públicos y parámetros normativos aplicables...</div>';
   try {
     var res = await fetch('/api/lookup?q=' + encodeURIComponent(inp.value.trim()));
     var d = await res.json();
     var branchBadge = d.is_multi_branch_corp
-      ? '<span class="text-emerald-400 font-bold">CORPORATIVO MULTI-SUCURSAL (' + d.branch_count + ' unidades detectadas)</span>'
-      : '<span>Unidad Económica Única (' + d.branch_count + ' establecimiento)</span>';
+      ? '<span class="text-emerald-400 font-bold">CORPORATIVO MULTI-SUCURSAL (' + d.branch_count + ' establecimientos en padrón)</span>'
+      : '<span class="text-slate-300">Establecimiento en Padrón (' + d.branch_count + ' unidad registrada)</span>';
+    var gpsLine = d.longitud ? ('Coordenadas: ' + d.latitud + ', ' + d.longitud) : d.latitud;
     box.innerHTML =
-      '<div class="p-3 rounded-lg border border-slate-800 bg-slate-900/80">' +
-        '<div class="text-slate-400 text-[10px]">RAZÓN SOCIAL Y GIRO SCIAN</div>' +
-        '<div class="font-bold text-sm mt-0.5">' + d.razon_social + '</div>' +
-        '<div class="text-blue-400 mt-1">SCIAN ' + d.codigo_scian + ' • ' + d.estimated_employees + ' colaboradores</div>' +
-        '<div class="mt-1 text-[11px]">' + branchBadge + '</div>' +
+      '<div class="p-3.5 rounded-lg border border-slate-800 bg-slate-900/80 text-left">' +
+        '<div class="text-slate-400 text-[10px] uppercase tracking-wider">ENTIDAD, GIRO SCIAN Y ESTRATO OFICIAL</div>' +
+        '<div class="font-bold text-sm mt-1">' + d.razon_social + '</div>' +
+        '<div class="text-blue-400 mt-1 font-bold">SCIAN ' + d.codigo_scian + ' • ' + (d.headcount_display_label || ('Estrato INEGI: ' + d.estrato_personal)) + '</div>' +
+        '<div class="text-[11px] text-amber-400/90 mt-1">' + (d.vemp_methodology_note || '') + '</div>' +
+        '<div class="mt-1.5 text-[11px]">' + branchBadge + '</div>' +
       '</div>' +
-      '<div class="p-3 rounded-lg border border-slate-800 bg-slate-900/80">' +
-        '<div class="text-slate-400 text-[10px]">GEOLOCALIZACIÓN GPS, ISN ESTATAL Y PIPC</div>' +
-        '<div class="font-bold mt-0.5">' + d.entidad_federativa + ' (' + d.municipio_alcaldia + ')</div>' +
-        '<div class="text-amber-400 mt-1">ISN Estatal (' + d.isn_rate_pct.toFixed(1) + '%): $' + d.isn_mensual_presunto_mxn.toLocaleString('en-US', {minimumFractionDigits:2}) + ' MXN/mes</div>' +
-        '<div class="text-[11px] text-slate-400 mt-1">GPS: ' + d.latitud + ', ' + d.longitud + '</div>' +
+      '<div class="p-3.5 rounded-lg border border-slate-800 bg-slate-900/80 text-left">' +
+        '<div class="text-slate-400 text-[10px] uppercase tracking-wider">JURISDICCIÓN, ISN ESTATAL Y REGISTRO</div>' +
+        '<div class="font-bold mt-1">' + d.entidad_federativa + ' (' + d.municipio_alcaldia + ')</div>' +
+        '<div class="text-amber-400 mt-1">ISN Estatal (' + d.isn_rate_pct.toFixed(1) + '% sobre Mediana): $' + d.isn_mensual_presunto_mxn.toLocaleString('en-US', {minimumFractionDigits:2}) + ' MXN/mes</div>' +
+        '<div class="text-[11px] text-slate-400 mt-1">' + gpsLine + '</div>' +
       '</div>' +
-      '<div class="p-3 rounded-lg border border-slate-800 bg-slate-900/80">' +
-        '<div class="text-slate-400 text-[10px]">ANTIGÜEDAD Y LEY LOCAL APLICABLE</div>' +
-        '<div class="font-bold text-emerald-400 mt-0.5">Alta Padrón: ' + d.fecha_alta_denue + ' (~' + d.antiguedad_estimada_anios + ' años)</div>' +
-        '<div class="text-[11px] text-slate-300 mt-1">' + d.ley_proteccion_civil_local + '</div>' +
+      '<div class="p-3.5 rounded-lg border border-slate-800 bg-slate-900/80 text-left">' +
+        '<div class="text-slate-400 text-[10px] uppercase tracking-wider">ANTIGÜEDAD Y MARCO DE PROTECCIÓN CIVIL</div>' +
+        '<div class="font-bold text-emerald-400 mt-1">Referencia Registral: ' + d.fecha_alta_denue + ' (~' + d.antiguedad_estimada_anios + ' años)</div>' +
+        '<div class="text-[11px] text-slate-300 mt-1 leading-relaxed">' + d.ley_proteccion_civil_local + '</div>' +
       '</div>';
-    // Si existe el slider del Simulador In Situ, sincronizarlo automáticamente con los empleados detectados
     var sbxSlider = document.getElementById('sbx-emp-slider');
     if (sbxSlider && d.estimated_employees) {
       sbxSlider.value = Math.min(500, d.estimated_employees);
       if (window.updateMallenSandbox) window.updateMallenSandbox();
     }
   } catch (e) {
-    box.innerHTML = '<div class="col-span-3 text-red-400">Error al consultar /api/lookup</div>';
+    box.innerHTML = '<div class="col-span-3 text-red-400">No fue posible completar la consulta en este momento.</div>';
   }
 };
 // Cargar dinámicamente las 4 noticias del Radar Regulatorio Diario al iniciar
@@ -828,129 +829,344 @@ window.updateMallenSandbox = function() {
 };
 </script>
 
-<!-- SECCIÓN DE PREGUNTAS FRECUENTES, ALCANCE METODOLÓGICO Y BLINDAJE PERICIAL (#faq) -->
+<!-- SECCIÓN DE PREGUNTAS FRECUENTES, ALCANCE METODOLÓGICO Y BLINDAJE PERICIAL (#faq — 5 CATEGORÍAS / 30 PREGUNTAS) -->
 <section id="faq" class="max-w-6xl mx-auto px-4 sm:px-6 py-14 border-t border-slate-800/60">
   <div class="text-center max-w-3xl mx-auto mb-10">
     <span class="inline-block px-3 py-1 rounded-full text-xs font-mono uppercase tracking-widest bg-blue-500/10 text-blue-400 border border-blue-500/20 mb-3">
-      CENTRO DE CERTEZA METODOLÓGICA, ALCANCE JURÍDICO &amp; FAQ
+      CENTRO DE CERTEZA METODOLÓGICA, ALCANCE JURÍDICO &amp; GUÍA DE ADQUISICIÓN (30 RESPUESTAS)
     </span>
     <h2 class="text-2xl sm:text-3xl font-extrabold tracking-tight mb-3">
-      Preguntas Frecuentes y Naturaleza del Dictamen Determinista
+      Preguntas Frecuentes, Naturaleza del Dictamen y Guía Operativa del Kit 360°
     </h2>
     <p class="text-sm text-slate-400">
-      Transparencia técnica total sobre el cálculo matemático de exposición normativa (VEMP), la cadena de custodia criptográfica SHA-256 y la sinergia con su equipo contable o jurídico.
+      Seleccione cualquiera de los 5 apartados temáticos para desplegar las 30 respuestas detalladas sobre validez jurídica, metodología del estrato INEGI, proceso de compra y uso en inspecciones.
     </p>
   </div>
-
-  <div class="space-y-3 max-w-4xl mx-auto">
-    <!-- Q1 -->
-    <details class="group rounded-xl border border-slate-800 bg-slate-900/50 p-5 transition-all duration-200 open:border-blue-500/50 open:bg-slate-900/80">
-      <summary class="flex cursor-pointer list-none items-center justify-between font-bold text-sm sm:text-base select-none">
-        <span>Q1. ¿Este dictamen constituye una resolución, crédito fiscal o sanción oficial emitida por una autoridad?</span>
-        <span class="ml-4 flex h-6 w-6 shrink-0 items-center justify-center rounded-full border border-slate-700 text-xs font-mono transition-transform duration-200 group-open:rotate-45">+</span>
+  <div class="space-y-4 max-w-5xl mx-auto text-left">
+    <details open class="faq-cat rounded-2xl border border-slate-700/80 bg-slate-900/70 p-5 sm:p-6 shadow-lg">
+      <summary class="flex cursor-pointer list-none items-center justify-between gap-4 select-none">
+        <div class="flex items-center gap-3 text-left">
+          <span class="px-2.5 py-1 rounded-md text-xs font-mono font-bold bg-blue-500/15 text-blue-400 border border-blue-500/30 shrink-0">APARTADO 01</span>
+          <span class="font-extrabold text-sm sm:text-lg tracking-tight text-left">Naturaleza Jurídica, Cálculo de Multas (VEMP) y Estratos Oficiales INEGI (Q1 – Q6)</span>
+        </div>
+        <span class="flex h-7 w-7 shrink-0 items-center justify-center rounded-full border border-slate-600 text-xs font-mono">▼</span>
       </summary>
-      <p class="mt-3 text-xs sm:text-sm text-slate-300 leading-relaxed border-t border-slate-800/80 pt-3">
-        <strong>No de manera ejecutiva ni gubernamental.</strong> Este documento es un <em>Dictamen Preventivo de Análisis de Riesgo y Exposición Normativa</em> compilado de forma privada. No proviene de un buzón tributario ni de un actuario gubernamental. Su propósito es actuar como una simulación matemática de cumplimiento preventivo (GRC) —análoga a una auditoría diagnóstica preventiva de una firma internacional— para que la dirección general y su órgano de administración conozcan y subsanen su grado de exposición ante una eventual inspección de la STPS, SAT, IMSS, SABG o PROFECO antes de que ocurra.
-      </p>
+      <div class="mt-5 space-y-3 border-t border-slate-800 pt-4">
+        <details class="faq-sub rounded-xl border border-slate-800 bg-slate-950/60 p-4 transition-all">
+          <summary class="flex cursor-pointer list-none items-start justify-between gap-4 font-semibold text-xs sm:text-sm text-left select-none">
+            <span class="flex-1 leading-snug">Q1. ¿Este dictamen constituye una resolución, crédito fiscal o sanción oficial emitida por una autoridad?</span>
+            <span class="shrink-0 font-mono text-blue-400 font-bold">+</span>
+          </summary>
+          <p class="mt-3 text-xs sm:text-sm text-slate-300 leading-relaxed border-t border-slate-800/80 pt-3 text-left">
+            <strong>No de manera ejecutiva ni gubernamental.</strong> Este documento es un <em>Dictamen Pericial Preventivo de Análisis de Riesgo y Exposición Normativa</em> compilado de forma privada. No proviene de un buzón tributario ni de un actuario gubernamental. Su propósito es actuar como una simulación matemática de cumplimiento preventivo (GRC) —análoga a una auditoría diagnóstica de una firma Big Four— para que el comité directivo conozca y subsane su grado de exposición ante una eventual revisión de la STPS, SAT, IMSS, SABG o PROFECO antes de que ocurra.
+          </p>
+        </details>
+        <details class="faq-sub rounded-xl border border-slate-800 bg-slate-950/60 p-4 transition-all">
+          <summary class="flex cursor-pointer list-none items-start justify-between gap-4 font-semibold text-xs sm:text-sm text-left select-none">
+            <span class="flex-1 leading-snug">Q2. ¿Cómo se calculan los montos de exposición si las multas reales dependen del criterio de la autoridad?</span>
+            <span class="shrink-0 font-mono text-blue-400 font-bold">+</span>
+          </summary>
+          <p class="mt-3 text-xs sm:text-sm text-slate-300 leading-relaxed border-t border-slate-800/80 pt-3 text-left">
+            El motor de <strong>FIRMA W16 MALLEN®</strong> no impone multas; calcula el <strong>Vector de Exposición Patrimonial Máxima y Probable (VEMP)</strong> con base en los rangos sancionatorios estrictos que marcan las leyes federales vigentes (Arts. 992 a 1004-C de la LFT, Art. 80 de la LFPC, Art. 304-B de la LSS y Arts. 75 a 86 del CFF). Se pondera la capacidad económica real del ente auditado (colaboradores, masa salarial presunta y nivel de riesgo de su giro SCIAN), simulando el escenario sancionable acumulado por omisión documental.
+          </p>
+        </details>
+        <details class="faq-sub rounded-xl border border-slate-800 bg-slate-950/60 p-4 transition-all">
+          <summary class="flex cursor-pointer list-none items-start justify-between gap-4 font-semibold text-xs sm:text-sm text-left select-none">
+            <span class="flex-1 leading-snug">Q3. ¿Por qué el diagnóstico inicial muestra un 'Estrato Oficial INEGI' y una 'Mediana Estadística Censal'?</span>
+            <span class="shrink-0 font-mono text-blue-400 font-bold">+</span>
+          </summary>
+          <p class="mt-3 text-xs sm:text-sm text-slate-300 leading-relaxed border-t border-slate-800/80 pt-3 text-left">
+            Por rigor estadístico y transparencia: el Directorio Estadístico Nacional de Unidades Económicas (INEGI DENUE) publica el personal ocupado en <strong>7 rangos censales oficiales</strong> (<em>0 a 5, 6 a 10, 11 a 30, 31 a 50, 51 a 100, 101 a 250 y 251 y más personas</em>). Mientras usted no calibre su plantilla exacta, el motor exhibe el rango oficial del INEGI y calcula la exposición utilizando la <strong>Mediana Estadística Censal</strong> de dicho estrato. En cuanto usted ingresa su número exacto de colaboradores, el sistema sustituye la mediana por su plantilla exacta conciliada.
+          </p>
+        </details>
+        <details class="faq-sub rounded-xl border border-slate-800 bg-slate-950/60 p-4 transition-all">
+          <summary class="flex cursor-pointer list-none items-start justify-between gap-4 font-semibold text-xs sm:text-sm text-left select-none">
+            <span class="flex-1 leading-snug">Q4. ¿Qué ocurre si busco únicamente por RFC y mi empresa aún no aparece vinculada por nombre en el DENUE?</span>
+            <span class="shrink-0 font-mono text-blue-400 font-bold">+</span>
+          </summary>
+          <p class="mt-3 text-xs sm:text-sm text-slate-300 leading-relaxed border-t border-slate-800/80 pt-3 text-left">
+            El padrón público del INEGI DENUE indexa unidades económicas por Razón Social y Nombre Comercial, pero no publica el RFC por reserva fiscal. Nuestro motor cruza primero su RFC contra padrones públicos (REPSE, Art. 69/69-B y sesiones previas) para localizar su Razón Social. Si su RFC es limpio y nuevo, el sistema extrae el año de constitución directamente de la estructura alfanumérica de su RFC y aplica un Parámetro Base Preventivo PyME hasta que usted ajuste su plantilla.
+          </p>
+        </details>
+        <details class="faq-sub rounded-xl border border-slate-800 bg-slate-950/60 p-4 transition-all">
+          <summary class="flex cursor-pointer list-none items-start justify-between gap-4 font-semibold text-xs sm:text-sm text-left select-none">
+            <span class="flex-1 leading-snug">Q5. ¿Cómo influye el penúltimo párrafo del Artículo 992 de la LFT en el cálculo por trabajador afectado?</span>
+            <span class="shrink-0 font-mono text-blue-400 font-bold">+</span>
+          </summary>
+          <p class="mt-3 text-xs sm:text-sm text-slate-300 leading-relaxed border-t border-slate-800/80 pt-3 text-left">
+            El penúltimo párrafo del <strong>Artículo 992 de la Ley Federal del Trabajo</strong> dispone que cuando con un solo acto u omisión se afecten a varios trabajadores, <em>se impondrá sanción por cada uno de los trabajadores afectados</em>. Por ello, nuestro motor aplica una curva de escalamiento marginal continuo proporcional a la plantilla real.
+          </p>
+        </details>
+        <details class="faq-sub rounded-xl border border-slate-800 bg-slate-950/60 p-4 transition-all">
+          <summary class="flex cursor-pointer list-none items-start justify-between gap-4 font-semibold text-xs sm:text-sm text-left select-none">
+            <span class="flex-1 leading-snug">Q6. ¿Cómo se integran el Impuesto Sobre Nómina (ISN) Estatal y la Ley Local de Protección Civil en el cálculo?</span>
+            <span class="shrink-0 font-mono text-blue-400 font-bold">+</span>
+          </summary>
+          <p class="mt-3 text-xs sm:text-sm text-slate-300 leading-relaxed border-t border-slate-800/80 pt-3 text-left">
+            Además de los 6 órganos federales, el motor identifica la entidad federativa del establecimiento y calcula la masa salarial mensual presunta junto con la tasa estatal de <strong>ISN (3.0% a 4.0% según el estado)</strong> y la legislación local de Protección Civil aplicable (CDMX, Nuevo León, Jalisco, Estado de México, etc.).
+          </p>
+        </details>
+      </div>
     </details>
-
-    <!-- Q2 -->
-    <details class="group rounded-xl border border-slate-800 bg-slate-900/50 p-5 transition-all duration-200 open:border-blue-500/50 open:bg-slate-900/80">
-      <summary class="flex cursor-pointer list-none items-center justify-between font-bold text-sm sm:text-base select-none">
-        <span>Q2. ¿Cómo se calculan los montos de exposición si las sanciones reales dependen del criterio de la autoridad?</span>
-        <span class="ml-4 flex h-6 w-6 shrink-0 items-center justify-center rounded-full border border-slate-700 text-xs font-mono transition-transform duration-200 group-open:rotate-45">+</span>
+    <details class="faq-cat rounded-2xl border border-slate-700/80 bg-slate-900/70 p-5 sm:p-6 shadow-lg">
+      <summary class="flex cursor-pointer list-none items-center justify-between gap-4 select-none">
+        <div class="flex items-center gap-3 text-left">
+          <span class="px-2.5 py-1 rounded-md text-xs font-mono font-bold bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 shrink-0">APARTADO 02</span>
+          <span class="font-extrabold text-sm sm:text-lg tracking-tight text-left">Validez Criptográfica SHA-256, Árboles de Merkle y Protección de Datos (Q7 – Q12)</span>
+        </div>
+        <span class="flex h-7 w-7 shrink-0 items-center justify-center rounded-full border border-slate-600 text-xs font-mono">▼</span>
       </summary>
-      <p class="mt-3 text-xs sm:text-sm text-slate-300 leading-relaxed border-t border-slate-800/80 pt-3">
-        El motor determinista de <strong>FIRMA W16 MALLEN®</strong> no impone multas; calcula el <strong>Vector de Exposición Patrimonial Máxima y Probable (VEMP)</strong> con base en los tabuladores sancionatorios vigentes en las leyes federales aplicables (por ejemplo, los rangos en Unidades de Medida y Actualización —UMA— previstos en los Arts. 992 a 1004-C de la LFT, Art. 80 de la LFPC, Art. 304-B de la LSS y Arts. 75 a 86 del CFF). El algoritmo pondera el giro SCIAN oficial, la prima de riesgo patronal y el estrato de personal para cuantificar con aritmética exacta al centavo el escenario de contingencia acumulada por omisión documental.
-      </p>
+      <div class="mt-5 space-y-3 border-t border-slate-800 pt-4">
+        <details class="faq-sub rounded-xl border border-slate-800 bg-slate-950/60 p-4 transition-all">
+          <summary class="flex cursor-pointer list-none items-start justify-between gap-4 font-semibold text-xs sm:text-sm text-left select-none">
+            <span class="flex-1 leading-snug">Q7. ¿Qué sustento legal tiene el uso de criptografía (SHA-256, Árboles de Merkle y Código de Comercio)?</span>
+            <span class="shrink-0 font-mono text-emerald-400 font-bold">+</span>
+          </summary>
+          <p class="mt-3 text-xs sm:text-sm text-slate-300 leading-relaxed border-t border-slate-800/80 pt-3 text-left">
+            La inclusión de un folio criptográfico <strong>SHA-256</strong> y una <strong>Raíz de Merkle (L2)</strong> garantiza la cadena de custodia digital y la integridad inmutable de los mensajes de datos conforme a los Artículos 89 a 93 Bis del Código de Comercio, la Ley Modelo de la CNUDMI (UNCITRAL) y el Art. 41 del Reglamento eIDAS.
+          </p>
+        </details>
+        <details class="faq-sub rounded-xl border border-slate-800 bg-slate-950/60 p-4 transition-all">
+          <summary class="flex cursor-pointer list-none items-start justify-between gap-4 font-semibold text-xs sm:text-sm text-left select-none">
+            <span class="flex-1 leading-snug">Q8. ¿Cómo funciona el Sello QR Vectorial Antifraude impreso en los certificados y en el dictamen?</span>
+            <span class="shrink-0 font-mono text-emerald-400 font-bold">+</span>
+          </summary>
+          <p class="mt-3 text-xs sm:text-sm text-slate-300 leading-relaxed border-t border-slate-800/80 pt-3 text-left">
+            Cada certificado incorpora un sello matricial vectorial generado directamente a partir de los 256 bits del hash de auditoría y vinculado a <code>https://mallen.lat/verify/SU_RFC</code>. Cualquier auditor externo o cliente corporativo puede verificar en línea que el folio existe en la bóveda inmutable y no ha sido manipulado.
+          </p>
+        </details>
+        <details class="faq-sub rounded-xl border border-slate-800 bg-slate-950/60 p-4 transition-all">
+          <summary class="flex cursor-pointer list-none items-start justify-between gap-4 font-semibold text-xs sm:text-sm text-left select-none">
+            <span class="flex-1 leading-snug">Q9. ¿Solicitan contraseñas del SAT (CIEC / e.firma) o acceso a cuentas bancarias?</span>
+            <span class="shrink-0 font-mono text-emerald-400 font-bold">+</span>
+          </summary>
+          <p class="mt-3 text-xs sm:text-sm text-slate-300 leading-relaxed border-t border-slate-800/80 pt-3 text-left">
+            <strong>Jamás.</strong> Por política estricta de seguridad de la información, <strong>FIRMA W16 MALLEN® nunca solicita su contraseña CIEC, llaves privadas <code>.key</code> de su e.firma ni credenciales bancarias</strong>.
+          </p>
+        </details>
+        <details class="faq-sub rounded-xl border border-slate-800 bg-slate-950/60 p-4 transition-all">
+          <summary class="flex cursor-pointer list-none items-start justify-between gap-4 font-semibold text-xs sm:text-sm text-left select-none">
+            <span class="flex-1 leading-snug">Q10. ¿Qué es el Patrón de Instantánea Inmutable (SNAP-UUID) y por qué protege mi expediente?</span>
+            <span class="shrink-0 font-mono text-emerald-400 font-bold">+</span>
+          </summary>
+          <p class="mt-3 text-xs sm:text-sm text-slate-300 leading-relaxed border-t border-slate-800/80 pt-3 text-left">
+            En el milisegundo en que usted calibra su empresa en el portal web, nuestro motor congela una instantánea criptográfica (<code>SNAP-UUID</code>) en nuestra bóveda transaccional WAL. Esto garantiza paridad matemática al centavo entre la pantalla web, el Pre-Dictamen, el Dictamen Ejecutivo, los 10 Certificados y los 7 Contratos.
+          </p>
+        </details>
+        <details class="faq-sub rounded-xl border border-slate-800 bg-slate-950/60 p-4 transition-all">
+          <summary class="flex cursor-pointer list-none items-start justify-between gap-4 font-semibold text-xs sm:text-sm text-left select-none">
+            <span class="flex-1 leading-snug">Q11. ¿Cómo se resguardan los datos de contacto y expedientes conforme a la LFPDPPP (SABG) y GDPR?</span>
+            <span class="shrink-0 font-mono text-emerald-400 font-bold">+</span>
+          </summary>
+          <p class="mt-3 text-xs sm:text-sm text-slate-300 leading-relaxed border-t border-slate-800/80 pt-3 text-left">
+            Los metadatos de contacto se almacenan en una bóveda cifrada simétricamente en reposo (<code>ENCv1</code>) conforme al Artículo 19 de la LFPDPPP vigente y el Artículo 32 del GDPR europeo, contando con ventanilla automatizada de Derechos ARCO en <code>/arco</code>.
+          </p>
+        </details>
+        <details class="faq-sub rounded-xl border border-slate-800 bg-slate-950/60 p-4 transition-all">
+          <summary class="flex cursor-pointer list-none items-start justify-between gap-4 font-semibold text-xs sm:text-sm text-left select-none">
+            <span class="flex-1 leading-snug">Q12. ¿Cómo contribuye el Contrato Marco del Kit a acreditar la 'Fecha Cierta' exigida por la SCJN (Art. 69-B CFF)?</span>
+            <span class="shrink-0 font-mono text-emerald-400 font-bold">+</span>
+          </summary>
+          <p class="mt-3 text-xs sm:text-sm text-slate-300 leading-relaxed border-t border-slate-800/80 pt-3 text-left">
+            Conforme a la Jurisprudencia <strong>2a./J. 161/2019 (10a.) de la SCJN</strong>, los contratos privados requieren acreditar Fecha Cierta y materialidad. El Kit incluye el Contrato Marco B2B con cláusulas de sustancia económica (Art. 5-A CFF), bitácora de entregables tangibles y anclaje en Raíz de Merkle.
+          </p>
+        </details>
+      </div>
     </details>
-
-    <!-- Q3 -->
-    <details class="group rounded-xl border border-slate-800 bg-slate-900/50 p-5 transition-all duration-200 open:border-blue-500/50 open:bg-slate-900/80">
-      <summary class="flex cursor-pointer list-none items-center justify-between font-bold text-sm sm:text-base select-none">
-        <span>Q3. ¿Qué sustento legal tiene el uso de criptografía (SHA-256, Árboles de Merkle y Código de Comercio)?</span>
-        <span class="ml-4 flex h-6 w-6 shrink-0 items-center justify-center rounded-full border border-slate-700 text-xs font-mono transition-transform duration-200 group-open:rotate-45">+</span>
+    <details class="faq-cat rounded-2xl border border-slate-700/80 bg-slate-900/70 p-5 sm:p-6 shadow-lg">
+      <summary class="flex cursor-pointer list-none items-center justify-between gap-4 select-none">
+        <div class="flex items-center gap-3 text-left">
+          <span class="px-2.5 py-1 rounded-md text-xs font-mono font-bold bg-amber-500/15 text-amber-400 border border-amber-500/30 shrink-0">APARTADO 03</span>
+          <span class="font-extrabold text-sm sm:text-lg tracking-tight text-left">Contenido Exacto del Kit (.ZIP), Formatos Editables y Régimen Societario (Q13 – Q18)</span>
+        </div>
+        <span class="flex h-7 w-7 shrink-0 items-center justify-center rounded-full border border-slate-600 text-xs font-mono">▼</span>
       </summary>
-      <p class="mt-3 text-xs sm:text-sm text-slate-300 leading-relaxed border-t border-slate-800/80 pt-3">
-        La inclusión de un folio criptográfico <strong>SHA-256</strong> y una <strong>Raíz de Merkle (L2)</strong> no pretende suplantar a ninguna autoridad pública, sino garantizar la <strong>cadena de custodia digital y la integridad inmutable de los mensajes de datos</strong>. Conforme a los Artículos 89 a 93 Bis del Código de Comercio, la Ley Modelo de la CNUDMI (UNCITRAL) y el Art. 41 del Reglamento eIDAS, este sellado prueba matemáticamente que ni los cálculos ni los instrumentos del expediente han sido alterados desde su corte UTC de emisión.
-      </p>
+      <div class="mt-5 space-y-3 border-t border-slate-800 pt-4">
+        <details class="faq-sub rounded-xl border border-slate-800 bg-slate-950/60 p-4 transition-all">
+          <summary class="flex cursor-pointer list-none items-start justify-between gap-4 font-semibold text-xs sm:text-sm text-left select-none">
+            <span class="flex-1 leading-snug">Q13. ¿Qué archivos exactos recibo al descargar el Kit de Blindaje Integral ($3,000.00 MXN)?</span>
+            <span class="shrink-0 font-mono text-amber-400 font-bold">+</span>
+          </summary>
+          <p class="mt-3 text-xs sm:text-sm text-slate-300 leading-relaxed border-t border-slate-800/80 pt-3 text-left">
+            Usted descarga un archivo <code>Paquete_Blindaje_Integral_{SU_RFC}.zip</code> con: <strong>(1) Dictamen Pericial Ejecutivo y Técnico Desbloqueado (PDF de 3 páginas)</strong>; <strong>(2) 10 Certificados Digitales de Acreditación Normativa (PDF)</strong> sellados con SHA-256; <strong>(3) 7 Instrumentos Jurídicos, Actas y Políticas Corporativas</strong> editables; y <strong>(4) Manifiesto Criptográfico de Raíz de Merkle</strong>.
+          </p>
+        </details>
+        <details class="faq-sub rounded-xl border border-slate-800 bg-slate-950/60 p-4 transition-all">
+          <summary class="flex cursor-pointer list-none items-start justify-between gap-4 font-semibold text-xs sm:text-sm text-left select-none">
+            <span class="flex-1 leading-snug">Q14. ¿Por qué en el Pre-Dictamen gratuito aparecen reservados los nombres específicos de los 17 instrumentos?</span>
+            <span class="shrink-0 font-mono text-amber-400 font-bold">+</span>
+          </summary>
+          <p class="mt-3 text-xs sm:text-sm text-slate-300 leading-relaxed border-t border-slate-800/80 pt-3 text-left">
+            Para proteger la ingeniería jurídica del sistema: el Pre-Dictamen le muestra con total transparencia su exposición por dependencia y su calificación de riesgo, reservando la receta documental específica y el clausulado de los 7 contratos y 10 certificados para la descarga acreditada del Kit.
+          </p>
+        </details>
+        <details class="faq-sub rounded-xl border border-slate-800 bg-slate-950/60 p-4 transition-all">
+          <summary class="flex cursor-pointer list-none items-start justify-between gap-4 font-semibold text-xs sm:text-sm text-left select-none">
+            <span class="flex-1 leading-snug">Q15. ¿En qué formatos vienen los 7 instrumentos jurídicos y puedo editarlos en Microsoft Word o Google Docs?</span>
+            <span class="shrink-0 font-mono text-amber-400 font-bold">+</span>
+          </summary>
+          <p class="mt-3 text-xs sm:text-sm text-slate-300 leading-relaxed border-t border-slate-800/80 pt-3 text-left">
+            Sí. Todos los contratos, actas constitutivas, políticas y avisos se entregan en formato editable compatible con <strong>Microsoft Word, Google Docs y LibreOffice</strong>, además de Markdown estructurado, ya pre-llenados con los datos de su empresa listos para firma.
+          </p>
+        </details>
+        <details class="faq-sub rounded-xl border border-slate-800 bg-slate-950/60 p-4 transition-all">
+          <summary class="flex cursor-pointer list-none items-start justify-between gap-4 font-semibold text-xs sm:text-sm text-left select-none">
+            <span class="flex-1 leading-snug">Q16. ¿Cómo adapta el sistema los documentos según mi número de empleados (menos de 15, de 15 a 50, o más de 50)?</span>
+            <span class="shrink-0 font-mono text-amber-400 font-bold">+</span>
+          </summary>
+          <p class="mt-3 text-xs sm:text-sm text-slate-300 leading-relaxed border-t border-slate-800/80 pt-3 text-left">
+            Si tiene menos de 15 colaboradores, genera el Acta NOM-019 en modalidad simplificada y Guía I en NOM-035; de 15 a 50 colaboradores activa la Comisión Bipartita completa y Guía II NOM-035; y con más de 50 colaboradores incorpora la Guía III de Entorno Organizacional y auditoría ampliada SUA/REPSE.
+          </p>
+        </details>
+        <details class="faq-sub rounded-xl border border-slate-800 bg-slate-950/60 p-4 transition-all">
+          <summary class="flex cursor-pointer list-none items-start justify-between gap-4 font-semibold text-xs sm:text-sm text-left select-none">
+            <span class="flex-1 leading-snug">Q17. ¿El Kit distingue entre S.A. de C.V., S.A.P.I. de C.V., S. de R.L. de C.V., S.C. y Persona Física?</span>
+            <span class="shrink-0 font-mono text-amber-400 font-bold">+</span>
+          </summary>
+          <p class="mt-3 text-xs sm:text-sm text-slate-300 leading-relaxed border-t border-slate-800/80 pt-3 text-left">
+            Sí. Nuestro analizador léxico detecta el régimen societario e inyecta las disposiciones exactas: Ley del Mercado de Valores (Arts. 12–18) para <em>S.A.P.I.</em>, Libro Especial de Socios (Art. 73 LGSM) para <em>S. de R.L.</em>, y régimen de Personas Físicas (LISR Título IV) cuando el RFC es de 13 caracteres.
+          </p>
+        </details>
+        <details class="faq-sub rounded-xl border border-slate-800 bg-slate-950/60 p-4 transition-all">
+          <summary class="flex cursor-pointer list-none items-start justify-between gap-4 font-semibold text-xs sm:text-sm text-left select-none">
+            <span class="flex-1 leading-snug">Q18. ¿Qué pasa si al momento de comprar aún no tengo el nombre definitivo de mi Oficial de Privacidad o Vocales STPS?</span>
+            <span class="shrink-0 font-mono text-amber-400 font-bold">+</span>
+          </summary>
+          <p class="mt-3 text-xs sm:text-sm text-slate-300 leading-relaxed border-t border-slate-800/80 pt-3 text-left">
+            No detiene su descarga. El sistema coloca el marcador limpio <em>'Por designar en Acta Interna'</em> y le permite actualizar los nombres después o editarlos directamente sobre los archivos Word/HTML de su paquete <code>.ZIP</code>.
+          </p>
+        </details>
+      </div>
     </details>
-
-    <!-- Q4 -->
-    <details class="group rounded-xl border border-slate-800 bg-slate-900/50 p-5 transition-all duration-200 open:border-blue-500/50 open:bg-slate-900/80">
-      <summary class="flex cursor-pointer list-none items-center justify-between font-bold text-sm sm:text-base select-none">
-        <span>Q4. ¿De dónde se obtienen los datos corporativos y la telemetría técnica del dictamen?</span>
-        <span class="ml-4 flex h-6 w-6 shrink-0 items-center justify-center rounded-full border border-slate-700 text-xs font-mono transition-transform duration-200 group-open:rotate-45">+</span>
+    <details class="faq-cat rounded-2xl border border-slate-700/80 bg-slate-900/70 p-5 sm:p-6 shadow-lg">
+      <summary class="flex cursor-pointer list-none items-center justify-between gap-4 select-none">
+        <div class="flex items-center gap-3 text-left">
+          <span class="px-2.5 py-1 rounded-md text-xs font-mono font-bold bg-purple-500/15 text-purple-400 border border-purple-500/30 shrink-0">APARTADO 04</span>
+          <span class="font-extrabold text-sm sm:text-lg tracking-tight text-left">Proceso de Compra ($3,000 MXN), Descarga Instantánea y Ajustes Post-Compra (Q19 – Q24)</span>
+        </div>
+        <span class="flex h-7 w-7 shrink-0 items-center justify-center rounded-full border border-slate-600 text-xs font-mono">▼</span>
       </summary>
-      <p class="mt-3 text-xs sm:text-sm text-slate-300 leading-relaxed border-t border-slate-800/80 pt-3">
-        El sistema opera bajo una arquitectura de <strong>Única Fuente de Verdad (SSOT — Immutable Snapshot Pattern)</strong> que integra dos fuentes verificables: <strong>(1) Registros Públicos y Padrones Abiertos:</strong> Directorio Estadístico Nacional de Unidades Económicas (INEGI DENUE), catálogos sectoriales SCIAN y listas públicas de cumplimiento (Art. 69/69-B CFF, REPSE y directorios públicos); y <strong>(2) Telemetría OSINT No Intrusiva y Calibración Directa:</strong> inspección pasiva de cabeceras HTTP/TLS, presencia de avisos de privacidad web y los parámetros operativos confirmados por la propia empresa (número exacto de colaboradores y cuestionario técnico).
-      </p>
+      <div class="mt-5 space-y-3 border-t border-slate-800 pt-4">
+        <details class="faq-sub rounded-xl border border-slate-800 bg-slate-950/60 p-4 transition-all">
+          <summary class="flex cursor-pointer list-none items-start justify-between gap-4 font-semibold text-xs sm:text-sm text-left select-none">
+            <span class="flex-1 leading-snug">Q19. ¿El pago de $3,000.00 MXN (~$150 USD) es un pago único o una suscripción forzosa?</span>
+            <span class="shrink-0 font-mono text-purple-400 font-bold">+</span>
+          </summary>
+          <p class="mt-3 text-xs sm:text-sm text-slate-300 leading-relaxed border-t border-slate-800/80 pt-3 text-left">
+            <strong>Es un pago único por la emisión y descarga completa de su Kit de Blindaje 360°.</strong> No existen cargos recurrentes forzosos ni cobros ocultos.
+          </p>
+        </details>
+        <details class="faq-sub rounded-xl border border-slate-800 bg-slate-950/60 p-4 transition-all">
+          <summary class="flex cursor-pointer list-none items-start justify-between gap-4 font-semibold text-xs sm:text-sm text-left select-none">
+            <span class="flex-1 leading-snug">Q20. ¿Cuánto tiempo tarda en entregarse el paquete .ZIP una vez confirmado el pago en línea?</span>
+            <span class="shrink-0 font-mono text-purple-400 font-bold">+</span>
+          </summary>
+          <p class="mt-3 text-xs sm:text-sm text-slate-300 leading-relaxed border-t border-slate-800/80 pt-3 text-left">
+            <strong>La entrega es inmediata (menos de 5 segundos).</strong> En cuanto se confirma el pago, nuestro pool de compilación genera todos sus PDFs y contratos personalizados y habilita el botón de descarga directa en su pantalla.
+          </p>
+        </details>
+        <details class="faq-sub rounded-xl border border-slate-800 bg-slate-950/60 p-4 transition-all">
+          <summary class="flex cursor-pointer list-none items-start justify-between gap-4 font-semibold text-xs sm:text-sm text-left select-none">
+            <span class="flex-1 leading-snug">Q21. ¿Qué sucede si después de comprar quiero corregir el número de empleados o el nombre del Representante Legal?</span>
+            <span class="shrink-0 font-mono text-purple-400 font-bold">+</span>
+          </summary>
+          <p class="mt-3 text-xs sm:text-sm text-slate-300 leading-relaxed border-t border-slate-800/80 pt-3 text-left">
+            Una vez acreditado su RFC, usted puede actualizar los datos de su dossier en cualquier momento y <strong>volver a descargar su paquete <code>.ZIP</code> regenerado sin costo adicional</strong>.
+          </p>
+        </details>
+        <details class="faq-sub rounded-xl border border-slate-800 bg-slate-950/60 p-4 transition-all">
+          <summary class="flex cursor-pointer list-none items-start justify-between gap-4 font-semibold text-xs sm:text-sm text-left select-none">
+            <span class="flex-1 leading-snug">Q22. ¿Cómo cambia el estatus de mi Dictamen una vez que adquiero el Kit de Blindaje?</span>
+            <span class="shrink-0 font-mono text-purple-400 font-bold">+</span>
+          </summary>
+          <p class="mt-3 text-xs sm:text-sm text-slate-300 leading-relaxed border-t border-slate-800/80 pt-3 text-left">
+            Su expediente pasa a estado acreditado, desbloqueando el desglose completo de los 37 vectores, el cronograma 30-60-90 días y emitiendo sus 10 Certificados de Acreditación Normativa con sello SHA-256.
+          </p>
+        </details>
+        <details class="faq-sub rounded-xl border border-slate-800 bg-slate-950/60 p-4 transition-all">
+          <summary class="flex cursor-pointer list-none items-start justify-between gap-4 font-semibold text-xs sm:text-sm text-left select-none">
+            <span class="flex-1 leading-snug">Q23. ¿Qué pasa si mi empresa opera múltiples sucursales o centros de trabajo bajo el mismo RFC?</span>
+            <span class="shrink-0 font-mono text-purple-400 font-bold">+</span>
+          </summary>
+          <p class="mt-3 text-xs sm:text-sm text-slate-300 leading-relaxed border-t border-slate-800/80 pt-3 text-left">
+            Los instrumentos corporativos transversales (Contrato Marco Art. 69-B, Aviso de Privacidad LFPDPPP, Términos PROFECO Art. 76 Bis y Políticas Generales) amparan a toda la razón social bajo el mismo RFC, y las actas de centro de trabajo pueden replicarse en cada sucursal.
+          </p>
+        </details>
+        <details class="faq-sub rounded-xl border border-slate-800 bg-slate-950/60 p-4 transition-all">
+          <summary class="flex cursor-pointer list-none items-start justify-between gap-4 font-semibold text-xs sm:text-sm text-left select-none">
+            <span class="flex-1 leading-snug">Q24. ¿Cuál es la política de entrega digital y licencia de uso corporativo?</span>
+            <span class="shrink-0 font-mono text-purple-400 font-bold">+</span>
+          </summary>
+          <p class="mt-3 text-xs sm:text-sm text-slate-300 leading-relaxed border-t border-slate-800/80 pt-3 text-left">
+            Al tratarse de un expediente digital compilado y personalizado instantáneamente a la razón social y RFC del cliente, la descarga perfecciona la entrega definitiva otorgando una licencia perpetua de uso interno para la entidad auditada.
+          </p>
+        </details>
+      </div>
     </details>
-
-    <!-- Q5 -->
-    <details class="group rounded-xl border border-slate-800 bg-slate-900/50 p-5 transition-all duration-200 open:border-blue-500/50 open:bg-slate-900/80">
-      <summary class="flex cursor-pointer list-none items-center justify-between font-bold text-sm sm:text-base select-none">
-        <span>Q5. ¿Cuál es el beneficio de este sistema si nuestra empresa ya cuenta con contador o despacho jurídico?</span>
-        <span class="ml-4 flex h-6 w-6 shrink-0 items-center justify-center rounded-full border border-slate-700 text-xs font-mono transition-transform duration-200 group-open:rotate-45">+</span>
+    <details class="faq-cat rounded-2xl border border-slate-700/80 bg-slate-900/70 p-5 sm:p-6 shadow-lg">
+      <summary class="flex cursor-pointer list-none items-center justify-between gap-4 select-none">
+        <div class="flex items-center gap-3 text-left">
+          <span class="px-2.5 py-1 rounded-md text-xs font-mono font-bold bg-cyan-500/15 text-cyan-400 border border-cyan-500/30 shrink-0">APARTADO 05</span>
+          <span class="font-extrabold text-sm sm:text-lg tracking-tight text-left">Uso Práctico en Inspecciones STPS/SAT/IMSS, Licitaciones y Aliados Contables (Q25 – Q30)</span>
+        </div>
+        <span class="flex h-7 w-7 shrink-0 items-center justify-center rounded-full border border-slate-600 text-xs font-mono">▼</span>
       </summary>
-      <p class="mt-3 text-xs sm:text-sm text-slate-300 leading-relaxed border-t border-slate-800/80 pt-3">
-        Los despachos contables y legales tradicionales suelen trabajar en silos separados (el contador revisa impuestos, pero rara vez redacta las Actas de Inspección STPS NOM-019/030/035, el Documento de Seguridad LFPDPPP o los Términos de Comercio Electrónico PROFECO Art. 76 Bis). <strong>Mallen 360° no sustituye a su contador ni a su abogado: les entrega en minutos el expediente base completo</strong> (37 vectores cruzados en 6 dependencias + 7 instrumentos jurídicos parametrizados a su giro SCIAN listos para firma), ahorrándoles semanas de redacción manual y más del 95% en honorarios de consultoría externa.
-      </p>
-    </details>
-
-    <!-- Q6 -->
-    <details class="group rounded-xl border border-slate-800 bg-slate-900/50 p-5 transition-all duration-200 open:border-blue-500/50 open:bg-slate-900/80">
-      <summary class="flex cursor-pointer list-none items-center justify-between font-bold text-sm sm:text-base select-none">
-        <span>Q6. ¿Qué incluye exactamente la descarga inmediata del Kit de Blindaje Integral ($3,000.00 MXN)?</span>
-        <span class="ml-4 flex h-6 w-6 shrink-0 items-center justify-center rounded-full border border-slate-700 text-xs font-mono transition-transform duration-200 group-open:rotate-45">+</span>
-      </summary>
-      <p class="mt-3 text-xs sm:text-sm text-slate-300 leading-relaxed border-t border-slate-800/80 pt-3">
-        Al acreditarse la activación, usted descarga un archivo comprimido <code>.ZIP</code> sellado criptográficamente que contiene: <strong>(1) Dictamen Pericial Ejecutivo y Técnico Desbloqueado (PDF)</strong> con el desglose íntegro de los 37 vectores y el plan de acción 30-60-90 días; <strong>(2) 10 Certificados Digitales de Acreditación Normativa (PDF)</strong> con folio SHA-256 y URL de verificación pública; <strong>(3) 7 Instrumentos Jurídicos, Actas y Políticas Corporativas</strong> en formatos editables (Word-HTML y Markdown) personalizados con la razón social, RFC, domicilio, régimen societario y giro SCIAN de su empresa; y <strong>(4) Manifiesto Criptográfico de Raíz de Merkle</strong>.
-      </p>
-    </details>
-
-    <!-- Q7 -->
-    <details class="group rounded-xl border border-slate-800 bg-slate-900/50 p-5 transition-all duration-200 open:border-blue-500/50 open:bg-slate-900/80">
-      <summary class="flex cursor-pointer list-none items-center justify-between font-bold text-sm sm:text-base select-none">
-        <span>Q7. ¿Cómo adapta el motor los documentos según el número de empleados y el régimen societario (S.A., S.A.P.I., S. de R.L., Persona Física)?</span>
-        <span class="ml-4 flex h-6 w-6 shrink-0 items-center justify-center rounded-full border border-slate-700 text-xs font-mono transition-transform duration-200 group-open:rotate-45">+</span>
-      </summary>
-      <p class="mt-3 text-xs sm:text-sm text-slate-300 leading-relaxed border-t border-slate-800/80 pt-3">
-        El motor aplica reglas estrictas de umbrales legales: si su centro de trabajo tiene <strong>menos de 15 colaboradores</strong>, la Comisión Mixta NOM-019 se estructura en modalidad simplificada (1 representante patronal y 1 laboral) y en la NOM-035 solo se exige la Política Escrita y Guía I; si tiene <strong>de 16 a 50 colaboradores</strong>, activa la Guía II; y si supera los <strong>50 colaboradores</strong>, incorpora la Guía III de Entorno Organizacional. Asimismo, el analizador léxico distingue entre <em>S.A.P.I. de C.V.</em> (LMV), <em>S. de R.L. de C.V.</em>, <em>S.A. de C.V.</em> y <em>Personas Físicas con Actividad Empresarial</em> para adecuar las cláusulas societarias sin incluir obligaciones improcedentes.
-      </p>
-    </details>
-
-    <!-- Q8 -->
-    <details class="group rounded-xl border border-slate-800 bg-slate-900/50 p-5 transition-all duration-200 open:border-blue-500/50 open:bg-slate-900/80">
-      <summary class="flex cursor-pointer list-none items-center justify-between font-bold text-sm sm:text-base select-none">
-        <span>Q8. ¿Solicitan contraseñas del SAT (CIEC / e.firma) o información financiera confidencial?</span>
-        <span class="ml-4 flex h-6 w-6 shrink-0 items-center justify-center rounded-full border border-slate-700 text-xs font-mono transition-transform duration-200 group-open:rotate-45">+</span>
-      </summary>
-      <p class="mt-3 text-xs sm:text-sm text-slate-300 leading-relaxed border-t border-slate-800/80 pt-3">
-        <strong>Jamás.</strong> Por política de seguridad de grado bancario, <strong>FIRMA W16 MALLEN® nunca solicita su contraseña CIEC, archivos privados <code>.key</code> de su e.firma ni estados de cuenta bancarios</strong>. Toda la parametrización se realiza con datos registrales públicos y las variables operativas de calibración que usted decida proporcionar, resguardadas bajo cifrado en reposo conforme al Art. 19 de la LFPDPPP y el Art. 32 del GDPR.
-      </p>
-    </details>
-
-    <!-- Q9 -->
-    <details class="group rounded-xl border border-slate-800 bg-slate-900/50 p-5 transition-all duration-200 open:border-blue-500/50 open:bg-slate-900/80">
-      <summary class="flex cursor-pointer list-none items-center justify-between font-bold text-sm sm:text-base select-none">
-        <span>Q9. ¿Cómo ayudan estos certificados en licitaciones B2B y auditorías de clientes corporativos (Vendor Compliance)?</span>
-        <span class="ml-4 flex h-6 w-6 shrink-0 items-center justify-center rounded-full border border-slate-700 text-xs font-mono transition-transform duration-200 group-open:rotate-45">+</span>
-      </summary>
-      <p class="mt-3 text-xs sm:text-sm text-slate-300 leading-relaxed border-t border-slate-800/80 pt-3">
-        Cada certificado e instrumento del Kit cuenta con un enlace único de verificación en tiempo real (<code>https://mallen.lat/verify/SU_RFC</code>). Cuando su empresa participa en un proceso de alta de proveedor (Due Diligence B2B) ante corporativos nacionales o multinacionales, el área de compras o compliance de su cliente puede validar en línea que su organización cuenta con sus políticas STPS, protocolo de materialidad Art. 69-B, blindaje REPSE y Aviso de Privacidad LFPDPPP debidamente estructurados y vigentes.
-      </p>
-    </details>
-
-    <!-- Q10 -->
-    <details class="group rounded-xl border border-slate-800 bg-slate-900/50 p-5 transition-all duration-200 open:border-blue-500/50 open:bg-slate-900/80">
-      <summary class="flex cursor-pointer list-none items-center justify-between font-bold text-sm sm:text-base select-none">
-        <span>Q10. ¿Qué ocurre si detecto que el estrato de empleados del INEGI DENUE cambió recientemente en mi empresa?</span>
-        <span class="ml-4 flex h-6 w-6 shrink-0 items-center justify-center rounded-full border border-slate-700 text-xs font-mono transition-transform duration-200 group-open:rotate-45">+</span>
-      </summary>
-      <p class="mt-3 text-xs sm:text-sm text-slate-300 leading-relaxed border-t border-slate-800/80 pt-3">
-        Antes o después de adquirir su expediente, usted puede ajustar en tiempo real el número exacto de colaboradores, el nombre de su Representante Legal, su Oficial de Privacidad y el Coordinador de la Comisión Mixta SST directamente en la plataforma. Nuestro motor de <strong>Instantánea Inmutable (<code>SNAP-UUID</code>)</strong> congela inmediatamente su calibración exacta y regenera su Dictamen, sus 10 Certificados y sus 7 Contratos con paridad matemática al centavo sin costo adicional.
-      </p>
+      <div class="mt-5 space-y-3 border-t border-slate-800 pt-4">
+        <details class="faq-sub rounded-xl border border-slate-800 bg-slate-950/60 p-4 transition-all">
+          <summary class="flex cursor-pointer list-none items-start justify-between gap-4 font-semibold text-xs sm:text-sm text-left select-none">
+            <span class="flex-1 leading-snug">Q25. ¿Qué pasos físicos debo seguir en mi empresa una vez que descargo el archivo .ZIP?</span>
+            <span class="shrink-0 font-mono text-cyan-400 font-bold">+</span>
+          </summary>
+          <p class="mt-3 text-xs sm:text-sm text-slate-300 leading-relaxed border-t border-slate-800/80 pt-3 text-left">
+            Seguir el cronograma de 3 fases incluido en la Página 3 de su Dictamen: <strong>(1) Días 1–15:</strong> publicar en su web el Aviso de Privacidad y Términos Art. 76 Bis y recabar firmas de consentimiento biométrico; <strong>(2) Días 16–45:</strong> firmar el Acta NOM-019, Diagnóstico NOM-030 y Política NOM-035; <strong>(3) Días 46–90:</strong> integrar carpeta PIPC y Beneficiario Controlador.
+          </p>
+        </details>
+        <details class="faq-sub rounded-xl border border-slate-800 bg-slate-950/60 p-4 transition-all">
+          <summary class="flex cursor-pointer list-none items-start justify-between gap-4 font-semibold text-xs sm:text-sm text-left select-none">
+            <span class="flex-1 leading-snug">Q26. ¿Cuál es el beneficio de este sistema si mi empresa ya cuenta con contador o abogado externo?</span>
+            <span class="shrink-0 font-mono text-cyan-400 font-bold">+</span>
+          </summary>
+          <p class="mt-3 text-xs sm:text-sm text-slate-300 leading-relaxed border-t border-slate-800/80 pt-3 text-left">
+            <strong>Mallen 360° no sustituye a su contador ni a su abogado: les ahorra más de 60 horas de trabajo manual</strong> entregándoles los 37 vectores diagnosticados y los 7 instrumentos jurídicos listos para revisión y firma, reduciendo en más del 95% los costos de consultoría.
+          </p>
+        </details>
+        <details class="faq-sub rounded-xl border border-slate-800 bg-slate-950/60 p-4 transition-all">
+          <summary class="flex cursor-pointer list-none items-start justify-between gap-4 font-semibold text-xs sm:text-sm text-left select-none">
+            <span class="flex-1 leading-snug">Q27. ¿El Kit sustituye a las Unidades de Verificación Acreditadas (UVA) o Terceros Acreditados de Protección Civil?</span>
+            <span class="shrink-0 font-mono text-cyan-400 font-bold">+</span>
+          </summary>
+          <p class="mt-3 text-xs sm:text-sm text-slate-300 leading-relaxed border-t border-slate-800/80 pt-3 text-left">
+            El Kit le entrega el 100% de las actas constitutivas internas, políticas, brigadas, contratos y diagnósticos documentales que la ley permite emitir directamente al patrón, e identifica en qué casos específicos su giro requiere además un dictamen físico en sitio por perito o laboratorio acreditado.
+          </p>
+        </details>
+        <details class="faq-sub rounded-xl border border-slate-800 bg-slate-950/60 p-4 transition-all">
+          <summary class="flex cursor-pointer list-none items-start justify-between gap-4 font-semibold text-xs sm:text-sm text-left select-none">
+            <span class="flex-1 leading-snug">Q28. ¿Cómo me sirven los 10 Certificados para darme de alta como proveedor ante corporativos (Vendor Compliance)?</span>
+            <span class="shrink-0 font-mono text-cyan-400 font-bold">+</span>
+          </summary>
+          <p class="mt-3 text-xs sm:text-sm text-slate-300 leading-relaxed border-t border-slate-800/80 pt-3 text-left">
+            Puede anexar sus 10 Certificados sellados con SHA-256 y su enlace verificable <code>https://mallen.lat/verify/SU_RFC</code> directamente en carpetas de licitación o alta de proveedor B2B para acreditar su blindaje en STPS, SAT 69-B, IMSS/REPSE y LFPDPPP.
+          </p>
+        </details>
+        <details class="faq-sub rounded-xl border border-slate-800 bg-slate-950/60 p-4 transition-all">
+          <summary class="flex cursor-pointer list-none items-start justify-between gap-4 font-semibold text-xs sm:text-sm text-left select-none">
+            <span class="flex-1 leading-snug">Q29. ¿Por qué es crítico el vector de seguridad DNS (SPF / DMARC) que evalúa el sistema?</span>
+            <span class="shrink-0 font-mono text-cyan-400 font-bold">+</span>
+          </summary>
+          <p class="mt-3 text-xs sm:text-sm text-slate-300 leading-relaxed border-t border-slate-800/80 pt-3 text-left">
+            Porque si su dominio corporativo carece de políticas SPF y DMARC activas, terceros pueden suplantar su identidad por correo (<em>Phishing / BEC</em>) para defraudar a sus clientes o comprometer su facturación.
+          </p>
+        </details>
+        <details class="faq-sub rounded-xl border border-slate-800 bg-slate-950/60 p-4 transition-all">
+          <summary class="flex cursor-pointer list-none items-start justify-between gap-4 font-semibold text-xs sm:text-sm text-left select-none">
+            <span class="flex-1 leading-snug">Q30. ¿Cuentan con modalidad Marca Blanca (White-Label) para despachos contables y firmas jurídicas?</span>
+            <span class="shrink-0 font-mono text-cyan-400 font-bold">+</span>
+          </summary>
+          <p class="mt-3 text-xs sm:text-sm text-slate-300 leading-relaxed border-t border-slate-800/80 pt-3 text-left">
+            Sí. Los despachos contables y firmas legales aliadas pueden procesar lotes de clientes con checkpointing resiliente e imprimir su propia denominación de Despacho Auditor Aliado en los encabezados de los dictámenes y certificados.
+          </p>
+        </details>
+      </div>
     </details>
   </div>
 </section>
