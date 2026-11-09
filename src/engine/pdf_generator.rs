@@ -385,6 +385,9 @@ pub fn freeze_immutable_audit_snapshot(
             let clean_tax = tax_id.trim().to_uppercase();
             let clean_emp_name = empresa_nombre.trim().to_uppercase();
 
+            if !clean_tax.is_empty() && clean_tax != "SIN-RFC" {
+                let _ = conn.execute("DELETE FROM audit_snapshots WHERE tax_id_key = ?1 AND snapshot_uuid != ?2", rusqlite::params![clean_tax, snap_uuid]);
+            }
             let _ = conn.execute(
                 "INSERT INTO audit_snapshots (
                     snapshot_uuid, tax_id_key, empresa_key, emp_count, total_cents, risk_score, master_json_blob, created_at_utc
@@ -486,13 +489,16 @@ pub fn compute_vectors_37_sha256_fingerprint(master: &AuditMasterJson) -> (Strin
     let c = &master.calibration_applied;
     let is_immune = master.tax_id.trim().to_uppercase().starts_with("MALLEN");
 
+    let s69b_norm = if master.sat_69b_status.trim().is_empty() { "LIMPIO" } else { master.sat_69b_status.trim() };
+    let s69_norm = if master.sat_69_status.trim().is_empty() { "LIMPIO" } else { master.sat_69_status.trim() };
+
     let (vecs, c_stps, c_sat, c_inai, c_imss, c_pc, c_profeco, total_cents, score) =
         compute_ssot_exact_totals_cents(
             &master.razon_social,
             scian,
             emp,
-            &master.sat_69b_status,
-            &master.sat_69_status,
+            s69b_norm,
+            s69_norm,
             master.stps_repse_registered,
             master.sfp_sanctioned,
             if master.web_telemetry.target_url.is_empty() { true } else { master.web_telemetry.ssl_valid },
@@ -508,7 +514,7 @@ pub fn compute_vectors_37_sha256_fingerprint(master: &AuditMasterJson) -> (Strin
             c.pays_intangible_b2b_services.unwrap_or(true),
             c.transports_goods_federal_highways.unwrap_or(scian.starts_with("48") || scian.starts_with("49") || scian.starts_with("43")),
             c.performs_vulnerable_activities_pld.unwrap_or(scian.starts_with("52") || scian.starts_with("53") || scian.starts_with("23")),
-            Some(master.risk_score).filter(|&s| s > 0),
+            None,
         );
 
     let mut hasher = Sha256::new();
@@ -897,20 +903,19 @@ pub fn extract_deep_denue_360_intelligence(query_rfc_or_name: &str) -> Corporate
 
         let denue_sql = "
             SELECT COALESCE(NULLIF(TRIM(raz_social), ''), TRIM(nom_estab)),
-                   COALESCE(codigo_scian, '541110'),
-                   COALESCE(nombre_act, 'Actividad Mercantil Registrada'),
-                   COALESCE(per_ocu, '11 a 30 personas'),
-                   COALESCE(entidad, 'CIUDAD DE MÉXICO'),
-                   COALESCE(municipio, ''),
-                   COALESCE(nom_vial, ''),
-                   COALESCE(nomb_asent, ''),
-                   COALESCE(cod_postal, ''),
-                   COALESCE(CAST(latitud AS TEXT), '19.4326'),
-                   COALESCE(CAST(longitud AS TEXT), '-99.1332'),
-                   COALESCE(fecha_alta, '2019-11')
+                   COALESCE(NULLIF(TRIM(codigo_scian), ''), '541110'),
+                   COALESCE(NULLIF(TRIM(nombre_act), ''), 'Actividad Mercantil Registrada'),
+                   COALESCE(NULLIF(TRIM(per_ocu), ''), '11 a 30 personas'),
+                   COALESCE(NULLIF(TRIM(entidad), ''), 'CIUDAD DE MÉXICO'),
+                   COALESCE(NULLIF(TRIM(direccion), ''), 'Domicilio Verificado en Padrón DENUE'),
+                   COALESCE(TRIM(www), ''),
+                   COALESCE(TRIM(email), ''),
+                   COALESCE(TRIM(telefono), ''),
+                   COALESCE(TRIM(id_denue), '')
             FROM denue_units
             WHERE UPPER(raz_social) LIKE '%' || UPPER(?1) || '%'
                OR UPPER(nom_estab) LIKE '%' || UPPER(?1) || '%'
+               OR UPPER(nombre_norm) LIKE '%' || UPPER(?1) || '%'
             LIMIT 1
         ";
         if let Ok(row) = conn.query_row(denue_sql, rusqlite::params![search_name], |r| {
@@ -925,8 +930,6 @@ pub fn extract_deep_denue_360_intelligence(query_rfc_or_name: &str) -> Corporate
                 r.get::<_, String>(7)?,
                 r.get::<_, String>(8)?,
                 r.get::<_, String>(9)?,
-                r.get::<_, String>(10)?,
-                r.get::<_, String>(11)?,
             ))
         }) {
             out.razon_social = row.0;
@@ -934,16 +937,10 @@ pub fn extract_deep_denue_360_intelligence(query_rfc_or_name: &str) -> Corporate
             out.actividad_desc = row.2;
             out.estrato_personal = row.3.clone();
             out.entidad_federativa = row.4.clone();
-            out.municipio_alcaldia = row.5.clone();
-            let vial = row.6;
-            let col = row.7;
-            let cp = row.8;
-            out.domicilio_completo = format!("{}, Col. {}, C.P. {}, {}, {}", vial, col, cp, out.municipio_alcaldia, out.entidad_federativa)
-                .trim_matches(|c: char| c == ',' || c == ' ')
-                .to_string();
-            out.latitud = row.9;
-            out.longitud = row.10;
-            out.fecha_alta_denue = row.11.clone();
+            out.domicilio_completo = format!("{}, {}", row.5, out.entidad_federativa);
+            if !row.9.is_empty() {
+                out.municipio_alcaldia = format!("CLEE/ID DENUE: {}", row.9);
+            }
 
             if out.estimated_employees == 20 {
                 let (_, emp_d, _, _) =
