@@ -1213,7 +1213,7 @@ async fn test_http_form_bot_14_scenarios_with_real_db_companies() {
         "Cualquier intento de descargar un PDF con un session_uuid inexistente debe ser rechazado con 404 sin adivinar datos"
     );
     let empty_uuid_res = worker_inegi_engine::engine::pdf_generator::require_strict_snapshot_or_reject("   ");
-    assert_eq!(empty_uuid_res, Err("HTTP_400_EMPTY_SESSION_UUID"));
+    assert_eq!(empty_uuid_res.err(), Some("HTTP_400_EMPTY_SESSION_UUID"));
 
     // Escenario 64 (Prueba 3): 50 Variaciones de Calibración en Paralelo — Coherencia Criptográfica SHA-256 Bit a Bit de los 37 Vectores
     let mut parallel_tasks = Vec::with_capacity(50);
@@ -1270,5 +1270,48 @@ async fn test_http_form_bot_14_scenarios_with_real_db_companies() {
         task.await.expect("Ninguna de las 50 variaciones paralelas debe fallar");
     }
 
-    println!("✓ LOS 64 ESCENARIOS (INCLUYENDO URBVAN 258 EMPLEADOS, RECHAZO 404 A HUÉRFANOS Y 50 PRUEBAS DE COHERENCIA SHA-256 EN PARALELO) SUPERADOS AL 100%");
+
+    // Escenario 65: Resiliencia y Checkpointing en Lotes Masivos (`batch_jobs_progress`) — Corte en registro #4,300 y reanudación exacta
+    let batch_job_id = "BATCH-PARTNER-10K-2026";
+    worker_inegi_engine::engine::pdf_generator::save_batch_job_checkpoint(batch_job_id, 10_000, 4_300, "INTERRUPTED_NETWORK")
+        .expect("Debe guardar el checkpoint del lote en SQLite WAL");
+    let resume_idx = worker_inegi_engine::engine::pdf_generator::get_batch_job_resume_index(batch_job_id);
+    assert_eq!(
+        resume_idx, 4_300,
+        "Al reiniciar un lote interrumpido en el registro #4,300, debe reanudar exactamente en 4,300 sin repetir los anteriores"
+    );
+
+    // Escenario 66: Cola de Trabajos Asíncrona Acotada para Compilación Typst (Max 4 Workers simultáneos vía Semaphore + spawn_blocking)
+    assert_eq!(
+        worker_inegi_engine::engine::pdf_generator::typst_cpu_worker_pool().available_permits(),
+        4,
+        "El pool de CPU de Typst debe estar acotado a 4 compilaciones simultáneas por defecto"
+    );
+    let mut pool_tasks = Vec::with_capacity(16);
+    for _ in 0..16 {
+        let u_clone = snap_uuid.clone();
+        pool_tasks.push(tokio::spawn(async move {
+            worker_inegi_engine::engine::pdf_generator::render_typst_from_strict_snapshot_async(u_clone).await
+        }));
+    }
+    for pt in pool_tasks {
+        let doc_out = pt.await.unwrap().expect("El worker pool de Typst debe procesar toda la cola sin saturar la CPU");
+        assert!(doc_out.contains("258 colaboradores"));
+    }
+
+    // Escenario 67: Caché LRU en Memoria RAM para Perfiles de Riesgo SCIAN (Evaluación O(1) en nanosegundos)
+    let lru_first = worker_inegi_engine::engine::pdf_generator::get_or_compute_scian_math_lru(
+        "485111", 258, "LIMPIO", "LIMPIO", false, false, true, true, true, false,
+        true, true, false, true, false, true, true, true, false,
+    );
+    let t0 = std::time::Instant::now();
+    let lru_second = worker_inegi_engine::engine::pdf_generator::get_or_compute_scian_math_lru(
+        "485111", 258, "LIMPIO", "LIMPIO", false, false, true, true, true, false,
+        true, true, false, true, false, true, true, true, false,
+    );
+    let elapsed_ns = t0.elapsed().as_nanos();
+    assert_eq!(lru_first, lru_second, "La Caché LRU en RAM debe devolver exactamente la misma tupla matemática");
+    println!("✓ HIT DE CACHÉ LRU SCIAN EN RAM COMPLETADO EN {} NANOSEGUNDOS (Total Centavos: {})", elapsed_ns, lru_second.6);
+
+    println!("✓ LOS 67 ESCENARIOS DE TORTURA, INTEGRACIÓN, POOL TYPST, CACHÉ LRU SCIAN Y CHECKPOINTING (#4,300) SUPERADOS AL 100%");
 }

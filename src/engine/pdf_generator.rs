@@ -1,3 +1,4 @@
+use tokio::sync::Semaphore;
 //! Compilador Tipográfico Determinístico con Única Fuente de Verdad (SSOT),
 //! Caché Concurrente en Memoria (TTL 24h), Aritmética Exacta en Centavos (`u64`),
 //! Trazabilidad Estructurada JSON y Raíz de Merkle SHA-256 — FIRMA W16 MALLEN®.
@@ -29,6 +30,8 @@ pub struct SsotCacheEntry {
 }
 
 static SSOT_MEMORY_CACHE: OnceLock<RwLock<HashMap<String, SsotCacheEntry>>> = OnceLock::new();
+static TYPST_CPU_POOL_SEMAPHORE: OnceLock<Semaphore> = OnceLock::new();
+static SCIAN_MATH_LRU_CACHE: OnceLock<RwLock<HashMap<String, (u64, u64, u64, u64, u64, u64, u64, u32)>>> = OnceLock::new();
 
 pub struct CertificadoNorma {
     pub id: &'static str,
@@ -447,6 +450,153 @@ pub fn render_typst_from_strict_snapshot(snapshot_uuid: &str) -> Result<String, 
 
 /// Purga periódica de retención en `audit_snapshots` (TTL 30 días) + `PRAGMA wal_checkpoint(PASSIVE)`
 /// para evitar crecimiento infinito en disco durante campañas masivas.
+
+/// Devuelve el Semáforo del Pool de Workers de Compilación Typst (por defecto máximo 4 compilaciones
+/// pesadas simultáneas para proteger los núcleos de CPU y evitar OOM en ráfagas de 50 descargas).
+pub fn typst_cpu_worker_pool() -> &'static Semaphore {
+    TYPST_CPU_POOL_SEMAPHORE.get_or_init(|| {
+        let workers = std::env::var("MALLEN_TYPST_MAX_WORKERS")
+            .ok()
+            .and_then(|v| v.trim().parse::<usize>().ok())
+            .filter(|&n| (1..=32).contains(&n))
+            .unwrap_or(4);
+        Semaphore::new(workers)
+    })
+}
+
+/// Consulta o calcula con Caché LRU en Memoria RAM (capacidad acotada a 2,048 perfiles)
+/// los subtotales en centavos y score para una combinación `(scian, emp_count, bitmask_flags)` en nanosegundos.
+#[allow(clippy::too_many_arguments)]
+pub fn get_or_compute_scian_math_lru(
+    scian_str: &str,
+    emp_count: u32,
+    sat_69b_lbl: &str,
+    sat_69_lbl: &str,
+    repse_ok: bool,
+    sfp_alert: bool,
+    osint_ssl: bool,
+    osint_privacy: bool,
+    osint_arco: bool,
+    is_immune: bool,
+    cal_telework: bool,
+    cal_repse: bool,
+    cal_boilers: bool,
+    cal_forklifts: bool,
+    cal_chemicals: bool,
+    cal_biometrics: bool,
+    cal_b2b: bool,
+    cal_transport: bool,
+    cal_pld: bool,
+) -> (u64, u64, u64, u64, u64, u64, u64, u32) {
+    let flags_mask: u32 = (repse_ok as u32)
+        | ((sfp_alert as u32) << 1)
+        | ((osint_ssl as u32) << 2)
+        | ((osint_privacy as u32) << 3)
+        | ((osint_arco as u32) << 4)
+        | ((is_immune as u32) << 5)
+        | ((cal_telework as u32) << 6)
+        | ((cal_repse as u32) << 7)
+        | ((cal_boilers as u32) << 8)
+        | ((cal_forklifts as u32) << 9)
+        | ((cal_chemicals as u32) << 10)
+        | ((cal_biometrics as u32) << 11)
+        | ((cal_b2b as u32) << 12)
+        | ((cal_transport as u32) << 13)
+        | ((cal_pld as u32) << 14);
+
+    let lru_key = format!("{}|{}|{}|{}|{:x}", scian_str.trim(), emp_count.max(1), sat_69b_lbl, sat_69_lbl, flags_mask);
+    let cache_lock = SCIAN_MATH_LRU_CACHE.get_or_init(|| RwLock::new(HashMap::new()));
+
+    if let Ok(map) = cache_lock.read() {
+        if let Some(&cached_tuple) = map.get(&lru_key) {
+            return cached_tuple;
+        }
+    }
+
+    let (_, c_stps, c_sat, c_inai, c_imss, c_pc, c_profeco, total_cents, score) =
+        compute_ssot_exact_totals_cents(
+            "LRU_CANONICAL_ENTITY",
+            scian_str,
+            emp_count,
+            sat_69b_lbl,
+            sat_69_lbl,
+            repse_ok,
+            sfp_alert,
+            osint_ssl,
+            osint_privacy,
+            osint_arco,
+            is_immune,
+            cal_telework,
+            cal_repse,
+            cal_boilers,
+            cal_forklifts,
+            cal_chemicals,
+            cal_biometrics,
+            cal_b2b,
+            cal_transport,
+            cal_pld,
+            None,
+        );
+
+    let result_tuple = (c_stps, c_sat, c_inai, c_imss, c_pc, c_profeco, total_cents, score);
+    if let Ok(mut map) = cache_lock.write() {
+        if map.len() >= 2048 {
+            map.clear(); // Evicción rápida acotada en RAM
+        }
+        map.insert(lru_key, result_tuple);
+    }
+    result_tuple
+}
+
+/// Guarda el punto de control (Checkpoint) de un lote masivo (`partner_batch_scan` o campaña 10k)
+/// en la tabla `batch_jobs_progress` de SQLite WAL para reanudación exacta ante cortes de red o reinicios.
+pub fn save_batch_job_checkpoint(job_id: &str, total_items: usize, last_completed_index: usize, status: &str) -> Result<(), String> {
+    let db_path = std::env::var("MALLEN_DB_PATH").unwrap_or_else(|_| "data/mallen_prod.db".to_string());
+    let conn = rusqlite::Connection::open(&db_path).map_err(|e| e.to_string())?;
+    conn.execute_batch(
+        "PRAGMA journal_mode=WAL;
+         PRAGMA synchronous=NORMAL;
+         PRAGMA busy_timeout=5000;
+         CREATE TABLE IF NOT EXISTS batch_jobs_progress (
+             job_id TEXT PRIMARY KEY,
+             total_items INTEGER NOT NULL,
+             last_completed_index INTEGER NOT NULL,
+             status TEXT NOT NULL,
+             updated_at_utc TEXT DEFAULT (datetime('now'))
+         );",
+    )
+    .map_err(|e| e.to_string())?;
+
+    conn.execute(
+        "INSERT INTO batch_jobs_progress (job_id, total_items, last_completed_index, status, updated_at_utc)
+         VALUES (?1, ?2, ?3, ?4, datetime('now'))
+         ON CONFLICT(job_id) DO UPDATE SET
+            total_items = excluded.total_items,
+            last_completed_index = excluded.last_completed_index,
+            status = excluded.status,
+            updated_at_utc = datetime('now')",
+        rusqlite::params![job_id.trim(), total_items as i64, last_completed_index as i64, status],
+    )
+    .map_err(|e| e.to_string())?;
+    Ok(())
+}
+
+/// Recupera el índice exacto desde el cual debe reanudarse un lote interrumpido (`0` si es nuevo).
+pub fn get_batch_job_resume_index(job_id: &str) -> usize {
+    let db_path = std::env::var("MALLEN_DB_PATH").unwrap_or_else(|_| "data/mallen_prod.db".to_string());
+    if let Ok(conn) = rusqlite::Connection::open(db_path) {
+        let _ = conn.execute_batch("PRAGMA journal_mode=WAL; PRAGMA busy_timeout=5000;");
+        if let Ok(idx) = conn.query_row(
+            "SELECT last_completed_index FROM batch_jobs_progress WHERE job_id = ?1",
+            rusqlite::params![job_id.trim()],
+            |r| r.get::<_, i64>(0),
+        ) {
+            return idx.max(0) as usize;
+        }
+    }
+    0
+}
+
 pub fn prune_expired_audit_snapshots_30d() -> usize {
     let db_path = std::env::var("MALLEN_DB_PATH").unwrap_or_else(|_| "data/mallen_prod.db".to_string());
     if let Ok(conn) = rusqlite::Connection::open(db_path) {
@@ -466,6 +616,10 @@ pub fn prune_expired_audit_snapshots_30d() -> usize {
 /// Ejecuta el renderizado y compilación de Typst dentro de `tokio::task::spawn_blocking`
 /// para no bloquear jamás los hilos del reactor asíncrono de Tokio/Axum en producción.
 pub async fn render_typst_from_strict_snapshot_async(snapshot_uuid: String) -> Result<String, &'static str> {
+    let _cpu_permit = typst_cpu_worker_pool()
+        .acquire()
+        .await
+        .map_err(|_| "ERR_TYPST_WORKER_POOL_CLOSED")?;
     tokio::task::spawn_blocking(move || render_typst_from_strict_snapshot(&snapshot_uuid))
         .await
         .map_err(|_| "ERR_TOKIO_SPAWN_BLOCKING_JOIN")?
