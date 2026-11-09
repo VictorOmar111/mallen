@@ -1455,5 +1455,21 @@ async fn test_http_form_bot_14_scenarios_with_real_db_companies() {
     let daily_news = worker_inegi_engine::engine::pdf_generator::get_or_seed_regulatory_news();
     assert!(daily_news.len() >= 4, "El Radar Regulatorio Diario debe contar con al menos las 4 notas normativas clave");
 
-    println!("✓ LOS 75 ESCENARIOS DE INGENIERÍA DE DATOS 360°, ISN ESTATAL, GOLDEN MASTER TYPST, MERKLE GLOBAL Y RADAR REGULATORIO SUPERADOS AL 100%");
+
+    // Escenario 76: Verificación de Honestidad Estadística (Estrato Oficial INEGI vs Mediana Censal vs Calibrado Exacto + RFC CTE160824G29)
+    let rfc_unlinked = worker_inegi_engine::engine::pdf_generator::extract_deep_denue_360_intelligence("CTE160824G29");
+    assert_eq!(rfc_unlinked.headcount_source_type, "PARAMETRO_BASE_ESTADISTICO");
+    assert_eq!(rfc_unlinked.antiguedad_estimada_anios, 10, "De CTE160824G29 debe extraer el año 2016 (10 años de antigüedad en 2026)");
+    assert!(rfc_unlinked.vemp_methodology_note.contains("Mediana Censal"));
+
+    let denue_official = worker_inegi_engine::engine::pdf_generator::extract_deep_denue_360_intelligence("OPERADORA RESTAURANTERA CANCINO");
+    assert_eq!(denue_official.headcount_source_type, "ESTRATO_OFICIAL_INEGI");
+    assert!(denue_official.headcount_display_label.contains("Personal Ocupado INEGI (Estrato Oficial):"));
+
+    let calibrated_urbvan = worker_inegi_engine::engine::pdf_generator::extract_deep_denue_360_intelligence("URB180101BBB");
+    assert_eq!(calibrated_urbvan.headcount_source_type, "CALIBRADO_POR_USUARIO");
+    assert_eq!(calibrated_urbvan.estimated_employees, 258);
+    assert!(calibrated_urbvan.headcount_display_label.contains("258 colaboradores"));
+
+    println!("✓ LOS 76 ESCENARIOS (INCLUYENDO TRANSPARENCIA DE ESTRATO INEGI VS MEDIANA CENSAL Y 30 FAQS EN 5 APARTADOS) SUPERADOS AL 100%");
 }
