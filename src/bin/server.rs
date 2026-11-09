@@ -102,6 +102,8 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     let app = Router::new()
         .route("/api/i18n/jurisdictions", get(api_i18n_jurisdictions))
+        .route("/api/lookup", get(api_instant_rfc_lookup_360))
+        .route("/api/regulatory_news", get(api_daily_regulatory_news))
         .route("/api/sdui/tracker/:country", get(api_sdui_tracker_schema))
         .route("/api/sdui/tracker/:country/export_pdf", axum::routing::post(api_sdui_tracker_export_pdf))
         .route("/region/:country", get(handle_eu_region_portal))
@@ -1776,4 +1778,37 @@ pub async fn api_sdui_tracker_export_pdf(
         ).into_response(),
         Err(e) => (axum::http::StatusCode::INTERNAL_SERVER_ERROR, e).into_response(),
     }
+}
+
+
+#[derive(serde::Deserialize)]
+pub struct InstantLookupQuery {
+    pub q: Option<String>,
+    pub rfc: Option<String>,
+}
+
+/// Endpoint de Autocompletado Instantáneo 1-Clic (`GET /api/lookup?q=...`):
+/// Devuelve en milisegundos Razón Social, Giro SCIAN, Estrato/Empleados, Coordenadas GPS,
+/// Conteo de Sucursales, Antigüedad en DENUE, Tasa de ISN Estatal y Ley Local de Protección Civil.
+pub async fn api_instant_rfc_lookup_360(
+    axum::extract::Query(params): axum::extract::Query<InstantLookupQuery>,
+) -> axum::Json<worker_inegi_engine::engine::pdf_generator::CorporateEnrichment360> {
+    let query_str = params.q.or(params.rfc).unwrap_or_default();
+    let enriched = tokio::task::spawn_blocking(move || {
+        worker_inegi_engine::engine::pdf_generator::extract_deep_denue_360_intelligence(&query_str)
+    })
+    .await
+    .unwrap_or_default();
+    axum::Json(enriched)
+}
+
+/// Endpoint del Radar Regulatorio Diario (`GET /api/regulatory_news`):
+/// Sirve las actualizaciones normativas del DOF, STPS, SAT, IMSS y SABG vinculadas a los 37 vectores.
+pub async fn api_daily_regulatory_news() -> axum::Json<Vec<serde_json::Value>> {
+    let news = tokio::task::spawn_blocking(|| {
+        worker_inegi_engine::engine::pdf_generator::get_or_seed_regulatory_news()
+    })
+    .await
+    .unwrap_or_default();
+    axum::Json(news)
 }

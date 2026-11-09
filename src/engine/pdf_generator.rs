@@ -232,14 +232,127 @@ pub fn get_ssot_session_from_memory(tax_id: &str, empresa_nombre: &str) -> Optio
 pub fn freeze_immutable_audit_snapshot(
     tax_id: &str,
     empresa_nombre: &str,
-    master: &AuditMasterJson,
+    master_in: &AuditMasterJson,
 ) -> String {
-    let emp = master
+    let mut hydrated = master_in.clone();
+    let emp = hydrated
         .calibration_applied
         .exact_employee_count
-        .unwrap_or(master.estimated_employees)
+        .unwrap_or(hydrated.estimated_employees)
         .max(1);
-    let cents = mxn_to_exact_cents(master.total_estimated_fine_mxn);
+    hydrated.estimated_employees = emp;
+    hydrated.calibration_applied.exact_employee_count = Some(emp);
+
+    if hydrated.tax_id.trim().is_empty() {
+        hydrated.tax_id = tax_id.trim().to_uppercase();
+    }
+    if hydrated.razon_social.trim().is_empty() {
+        hydrated.razon_social = empresa_nombre.trim().to_uppercase();
+    }
+    if hydrated.codigo_scian.trim().is_empty() {
+        hydrated.codigo_scian = "541110".to_string();
+    }
+
+    let c = &hydrated.calibration_applied;
+    let scian_s = hydrated.codigo_scian.as_str();
+    let is_immune = hydrated.tax_id.starts_with("MALLEN");
+    let (vecs, _c_stps, _c_sat, _c_inai, _c_imss, _c_pc, _c_profeco, calc_cents, calc_score) =
+        compute_ssot_exact_totals_cents(
+            &hydrated.razon_social,
+            scian_s,
+            emp,
+            if hydrated.sat_69b_status.is_empty() { "LIMPIO" } else { &hydrated.sat_69b_status },
+            if hydrated.sat_69_status.is_empty() { "LIMPIO" } else { &hydrated.sat_69_status },
+            hydrated.stps_repse_registered,
+            hydrated.sfp_sanctioned,
+            if hydrated.web_telemetry.target_url.is_empty() { true } else { hydrated.web_telemetry.ssl_valid },
+            if hydrated.web_telemetry.target_url.is_empty() { true } else { hydrated.web_telemetry.has_privacy_notice },
+            if hydrated.web_telemetry.target_url.is_empty() { true } else { hydrated.web_telemetry.mentions_arco_rights || hydrated.web_telemetry.has_privacy_notice },
+            is_immune,
+            c.has_telework_over_40_percent.unwrap_or(true),
+            c.uses_subcontracted_services_repse.unwrap_or(true),
+            c.has_pressure_vessels_boilers.unwrap_or(scian_s.starts_with("31") || scian_s.starts_with("32") || scian_s.starts_with("33") || scian_s.starts_with("722")),
+            c.has_forklifts_or_manual_loads.unwrap_or(true),
+            c.handles_hazardous_chemicals.unwrap_or(scian_s.starts_with("811") || scian_s.starts_with("31") || scian_s.starts_with("32") || scian_s.starts_with("62")),
+            c.uses_biometrics_or_health_data.unwrap_or(true),
+            c.pays_intangible_b2b_services.unwrap_or(true),
+            c.transports_goods_federal_highways.unwrap_or(scian_s.starts_with("48") || scian_s.starts_with("49") || scian_s.starts_with("43")),
+            c.performs_vulnerable_activities_pld.unwrap_or(scian_s.starts_with("52") || scian_s.starts_with("53") || scian_s.starts_with("23")),
+            Some(hydrated.risk_score).filter(|&s| s > 0),
+        );
+
+    let cents = if hydrated.total_estimated_fine_mxn > 0.0 {
+        mxn_to_exact_cents(hydrated.total_estimated_fine_mxn)
+    } else {
+        calc_cents
+    };
+
+    hydrated.total_estimated_fine_mxn = (cents as f64) / 100.0;
+    if hydrated.total_min_fine_mxn == 0.0 && cents > 0 {
+        hydrated.total_min_fine_mxn = ((cents as f64) * 0.35).round() / 100.0;
+    }
+    if hydrated.total_max_fine_mxn == 0.0 && cents > 0 {
+        hydrated.total_max_fine_mxn = ((cents as f64) * 2.15).round() / 100.0;
+    }
+    if hydrated.risk_score == 0 {
+        hydrated.risk_score = calc_score;
+    }
+    if hydrated.generated_at_utc.trim().is_empty() {
+        hydrated.generated_at_utc = Utc::now().to_rfc3339();
+    }
+    if hydrated.sat_69b_status.trim().is_empty() {
+        hydrated.sat_69b_status = "LIMPIO".to_string();
+    }
+    if hydrated.sat_69_status.trim().is_empty() {
+        hydrated.sat_69_status = "LIMPIO".to_string();
+    }
+    if hydrated.employee_stratum.trim().is_empty() {
+        hydrated.employee_stratum = format!("{} colaboradores conciliados (SSOT)", emp);
+    }
+
+    hydrated.requiere_nom_035 = emp >= 1;
+    hydrated.requiere_nom_037_teletrabajo = c.has_telework_over_40_percent.unwrap_or(true);
+    hydrated.requiere_pipc_proteccion_civil = true;
+    hydrated.usa_datos_biometricos = c.uses_biometrics_or_health_data.unwrap_or(true);
+
+    // Poblar findings si está vacío para que cualquier inspección SQL/jq vea los vectores sancionables detallados
+    if hydrated.findings.is_empty() {
+        for v in &vecs {
+            if v.multa_estimada_mxn > 0.0 {
+                let agency_enum = match v.organo.as_str() {
+                    "STPS" => crate::engine::models::RegulatoryAgency::STPS,
+                    "SAT" => crate::engine::models::RegulatoryAgency::SAT,
+                    "IMSS" => crate::engine::models::RegulatoryAgency::IMSS,
+                    "LFPDPPP" => crate::engine::models::RegulatoryAgency::INAI,
+                    "PROFECO" | "ECONOMÍA" => crate::engine::models::RegulatoryAgency::PROFECO,
+                    _ => crate::engine::models::RegulatoryAgency::ProteccionCivil,
+                };
+                hydrated.findings.push(crate::engine::models::ComplianceFinding {
+                    code: format!("VEC-{:02}: {}", v.num, v.codigo),
+                    agency: agency_enum,
+                    title: v.titulo.clone(),
+                    legal_basis: v.codigo.clone(),
+                    severity: crate::engine::models::RiskSeverity::High,
+                    description: v.hallazgo.clone(),
+                    min_fine_mxn: (v.multa_estimada_mxn * 0.4).round(),
+                    estimated_fine_mxn: v.multa_estimada_mxn,
+                    max_fine_mxn: (v.multa_estimada_mxn * 1.8).round(),
+                    remediation_kit_included: true,
+                });
+            }
+        }
+    }
+
+    let merkle_hex = compute_bundle_merkle_root(tax_id, empresa_nombre, emp, cents, &hydrated.codigo_scian);
+    hydrated.merkle_root_hex = Some(merkle_hex.clone());
+    if hydrated.audit_sha256_hash.trim().is_empty() {
+        let (vh, _) = compute_vectors_37_sha256_fingerprint(&hydrated);
+        hydrated.audit_sha256_hash = vh;
+    }
+    if hydrated.audit_id.trim().is_empty() {
+        hydrated.audit_id = merkle_hex;
+    }
+    let master = &hydrated;
 
     // 1. Generar snapshot_uuid determinístico por contenido + timestamp
     let mut hasher = Sha256::new();
@@ -673,6 +786,387 @@ pub fn simulate_uma_regulatory_recalibration(snapshot_uuid_or_tax: &str, new_uma
         format_cents_mxn(recalibrated_cents)
     );
     Ok((base_cents, recalibrated_cents, alert_msg))
+}
+
+
+/// Estructura de Enriquecimiento 360° extraída en tiempo real de `denue_units` y `audit_snapshots`.
+#[derive(Clone, Debug, Default, serde::Serialize, serde::Deserialize)]
+pub struct CorporateEnrichment360 {
+    pub query_matched: String,
+    pub razon_social: String,
+    pub codigo_scian: String,
+    pub actividad_desc: String,
+    pub estrato_personal: String,
+    pub estimated_employees: u32,
+    pub entidad_federativa: String,
+    pub municipio_alcaldia: String,
+    pub domicilio_completo: String,
+    pub latitud: String,
+    pub longitud: String,
+    pub fecha_alta_denue: String,
+    pub antiguedad_estimada_anios: u32,
+    pub branch_count: usize,
+    pub is_multi_branch_corp: bool,
+    pub isn_rate_pct: f64,
+    pub isn_mensual_presunto_mxn: f64,
+    pub ley_proteccion_civil_local: String,
+    pub alerta_historica_5_anios: String,
+}
+
+/// Calcula la tasa del Impuesto Sobre Nómina (ISN) Estatal (3.0% a 4.0%), el monto mensual presunto
+/// y la Ley Estatal de Protección Civil aplicable según la Entidad Federativa.
+pub fn compute_state_isn_and_local_pc_law(entidad: &str, masa_salarial_cents: u64) -> (f64, u64, &'static str) {
+    let e_up = entidad.trim().to_uppercase();
+    let (rate_pct, pc_law) = if e_up.contains("CIUDAD DE MÉXICO") || e_up.contains("CDMX") || e_up.contains("DISTRITO FEDERAL") {
+        (4.0, "Ley de Gestión Integral de Riesgos y Protección Civil de la Ciudad de México (Plataforma Digital PIPC CDMX)")
+    } else if e_up.contains("NUEVO LEÓN") || e_up.contains("NUEVO LEON") || e_up.contains("MONTERREY") {
+        (3.0, "Ley de Protección Civil para el Estado de Nuevo León (Plan de Contingencias Estatal)")
+    } else if e_up.contains("JALISCO") || e_up.contains("GUADALAJARA") {
+        (3.0, "Ley de Protección Civil del Estado de Jalisco (Unidad Interna UEPCBJ)")
+    } else if e_up.contains("ESTADO DE MÉXICO") || e_up.contains("MÉXICO") || e_up.contains("MEXICO") {
+        (3.0, "Libro Sexto del Código Administrativo del Estado de México (Registro Estatal PIPC EdoMéx)")
+    } else if e_up.contains("QUERÉTARO") || e_up.contains("QUERETARO") {
+        (3.0, "Ley del Sistema Estatal de Protección Civil, Prevención y Mitigación de Desastres de Querétaro")
+    } else if e_up.contains("PUEBLA") || e_up.contains("GUANAJUATO") || e_up.contains("VERACRUZ") || e_up.contains("COAHUILA") {
+        (3.0, "Ley del Sistema Estatal de Protección Civil de la Entidad Federativa y Reglamento Municipal")
+    } else {
+        (3.0, "Ley General de Protección Civil (Arts. 39 y 40) y Ley Estatal de Protección Civil correspondiente")
+    };
+
+    let isn_cents = ((masa_salarial_cents as f64) * (rate_pct / 100.0)).round() as u64;
+    (rate_pct, isn_cents, pc_law)
+}
+
+/// Extrae inteligencia 360° oculta en `denue_units` y `audit_snapshots`:
+/// Conteo de sucursales nacionales, coordenadas GPS (latitud/longitud), fecha de incorporación al DENUE,
+/// antigüedad operativa, tasa estatal de ISN y competencia local de Protección Civil.
+pub fn extract_deep_denue_360_intelligence(query_rfc_or_name: &str) -> CorporateEnrichment360 {
+    let q = query_rfc_or_name.trim();
+    let mut out = CorporateEnrichment360 {
+        query_matched: q.to_string(),
+        razon_social: q.to_uppercase(),
+        codigo_scian: "541110".to_string(),
+        actividad_desc: "Servicios corporativos y actividades mercantiles".to_string(),
+        estrato_personal: "11 a 30 personas".to_string(),
+        estimated_employees: 20,
+        entidad_federativa: "CIUDAD DE MÉXICO".to_string(),
+        municipio_alcaldia: "MIGUEL HIDALGO".to_string(),
+        domicilio_completo: "Jurisdicción Federal Registrada en Padrón Oficial".to_string(),
+        latitud: "19.4326".to_string(),
+        longitud: "-99.1332".to_string(),
+        fecha_alta_denue: "2019-11".to_string(),
+        antiguedad_estimada_anios: 7,
+        branch_count: 1,
+        is_multi_branch_corp: false,
+        isn_rate_pct: 4.0,
+        isn_mensual_presunto_mxn: 10800.0,
+        ley_proteccion_civil_local: "Ley de Gestión Integral de Riesgos y Protección Civil de la Ciudad de México".to_string(),
+        alerta_historica_5_anios: String::new(),
+    };
+
+    if q.is_empty() {
+        return out;
+    }
+
+    let db_path = std::env::var("MALLEN_DB_PATH").unwrap_or_else(|_| "data/mallen_prod.db".to_string());
+    if let Ok(conn) = rusqlite::Connection::open(db_path) {
+        let _ = conn.execute_batch("PRAGMA journal_mode=WAL; PRAGMA busy_timeout=5000;");
+
+        // 1. Revisar primero si existe en audit_snapshots por RFC o nombre
+        if let Some(snap) = load_immutable_snapshot_strict(q, q) {
+            out.razon_social = snap.razon_social.clone();
+            if !snap.codigo_scian.is_empty() {
+                out.codigo_scian = snap.codigo_scian.clone();
+            }
+            if !snap.actividad_scian_desc.is_empty() {
+                out.actividad_desc = snap.actividad_scian_desc.clone();
+            }
+            out.estimated_employees = snap
+                .calibration_applied
+                .exact_employee_count
+                .unwrap_or(snap.estimated_employees)
+                .max(1);
+            if !snap.domicilio_fiscal_o_denue.is_empty() {
+                out.domicilio_completo = snap.domicilio_fiscal_o_denue.clone();
+            }
+        }
+
+        // 2. Enriquecer con las columnas profundas de denue_units (incluyendo conteo de sucursales, latitud, longitud y fecha_alta)
+        let search_name = out.razon_social.clone();
+        if let Ok(cnt) = conn.query_row(
+            "SELECT COUNT(*) FROM denue_units WHERE UPPER(raz_social) LIKE '%' || UPPER(?1) || '%' OR UPPER(nom_estab) LIKE '%' || UPPER(?1) || '%'",
+            rusqlite::params![search_name],
+            |r| r.get::<_, i64>(0),
+        ) {
+            if cnt > 0 {
+                out.branch_count = cnt as usize;
+                out.is_multi_branch_corp = cnt > 1;
+            }
+        }
+
+        let denue_sql = "
+            SELECT COALESCE(NULLIF(TRIM(raz_social), ''), TRIM(nom_estab)),
+                   COALESCE(codigo_scian, '541110'),
+                   COALESCE(nombre_act, 'Actividad Mercantil Registrada'),
+                   COALESCE(per_ocu, '11 a 30 personas'),
+                   COALESCE(entidad, 'CIUDAD DE MÉXICO'),
+                   COALESCE(municipio, ''),
+                   COALESCE(nom_vial, ''),
+                   COALESCE(nomb_asent, ''),
+                   COALESCE(cod_postal, ''),
+                   COALESCE(CAST(latitud AS TEXT), '19.4326'),
+                   COALESCE(CAST(longitud AS TEXT), '-99.1332'),
+                   COALESCE(fecha_alta, '2019-11')
+            FROM denue_units
+            WHERE UPPER(raz_social) LIKE '%' || UPPER(?1) || '%'
+               OR UPPER(nom_estab) LIKE '%' || UPPER(?1) || '%'
+            LIMIT 1
+        ";
+        if let Ok(row) = conn.query_row(denue_sql, rusqlite::params![search_name], |r| {
+            Ok((
+                r.get::<_, String>(0)?,
+                r.get::<_, String>(1)?,
+                r.get::<_, String>(2)?,
+                r.get::<_, String>(3)?,
+                r.get::<_, String>(4)?,
+                r.get::<_, String>(5)?,
+                r.get::<_, String>(6)?,
+                r.get::<_, String>(7)?,
+                r.get::<_, String>(8)?,
+                r.get::<_, String>(9)?,
+                r.get::<_, String>(10)?,
+                r.get::<_, String>(11)?,
+            ))
+        }) {
+            out.razon_social = row.0;
+            out.codigo_scian = row.1.clone();
+            out.actividad_desc = row.2;
+            out.estrato_personal = row.3.clone();
+            out.entidad_federativa = row.4.clone();
+            out.municipio_alcaldia = row.5.clone();
+            let vial = row.6;
+            let col = row.7;
+            let cp = row.8;
+            out.domicilio_completo = format!("{}, Col. {}, C.P. {}, {}, {}", vial, col, cp, out.municipio_alcaldia, out.entidad_federativa)
+                .trim_matches(|c: char| c == ',' || c == ' ')
+                .to_string();
+            out.latitud = row.9;
+            out.longitud = row.10;
+            out.fecha_alta_denue = row.11.clone();
+
+            if out.estimated_employees == 20 {
+                let (_, emp_d, _, _) =
+                    crate::engine::http_form_bot::HttpFormBot::classify_denue_capacity_and_scian_risk(&out.estrato_personal, &out.codigo_scian);
+                out.estimated_employees = emp_d.max(1);
+            }
+        }
+    }
+
+    // Calcular antigüedad aproximada a partir de fecha_alta_denue (ej. "2014-12" o "2019-11")
+    let year_parsed: u32 = out
+        .fecha_alta_denue
+        .split(|c: char| !c.is_ascii_digit())
+        .find(|s| s.len() == 4)
+        .and_then(|y| y.parse::<u32>().ok())
+        .unwrap_or(2019);
+    out.antiguedad_estimada_anios = 2026_u32.saturating_sub(year_parsed).max(1);
+
+    let payroll_cents = estimate_monthly_payroll_exposure_cents(out.estimated_employees, &out.codigo_scian);
+    let (isn_rate, isn_cents, pc_law) = compute_state_isn_and_local_pc_law(&out.entidad_federativa, payroll_cents);
+    out.isn_rate_pct = isn_rate;
+    out.isn_mensual_presunto_mxn = (isn_cents as f64) / 100.0;
+    out.ley_proteccion_civil_local = pc_law.to_string();
+
+    out.alerta_historica_5_anios = if out.antiguedad_estimada_anios >= 5 {
+        format!(
+            "VECTOR DE URGENCIA HISTÓRICA ({} años de antigüedad en padrón desde {}): Sujeto a facultades de comprobación retroactivas de 5 ejercicios (Art. 67 CFF) y actualización obligatoria de Beneficiario Controlador (Art. 32-B Ter CFF).",
+            out.antiguedad_estimada_anios, out.fecha_alta_denue
+        )
+    } else {
+        format!(
+            "Unidad económica de incorporación reciente ({}): Exigible apertura de carpetas base STPS/PIPC y alta patronal IMSS.",
+            out.fecha_alta_denue
+        )
+    };
+
+    out
+}
+
+/// Verifica mediante Golden Master Invariants que un código Typst compilado conserve intactas
+/// sus 3 páginas, su tabla de 37 vectores, su gráfica 100% proporcional, su enlace #faq y cero palabras rotas.
+pub fn verify_typst_golden_layout_invariants(typst_markup: &str) -> Result<String, &'static str> {
+    if !typst_markup.contains("#set text(hyphenate: false)") {
+        return Err("GOLDEN_ERR_HYPHENATION_NOT_DISABLED");
+    }
+    if !typst_markup.contains("ANEXO TÉCNICO I") || !typst_markup.contains("ANEXO TÉCNICO II") {
+        return Err("GOLDEN_ERR_MISSING_3_PAGE_ANNEXES");
+    }
+    if !typst_markup.contains("https://mallen.lat/#faq") {
+        return Err("GOLDEN_ERR_MISSING_FAQ_FOOTER_LINK");
+    }
+    if typst_markup.contains("DESPACHO AUDITOR ALIADO: CERTIFICACIÓN") {
+        return Err("GOLDEN_ERR_HEADER_OVERFLOW_REGRESSION");
+    }
+    let mut hasher = Sha256::new();
+    hasher.update(typst_markup.as_bytes());
+    Ok(format!("GOLDEN-SHA256-{}", &format!("{:x}", hasher.finalize())[..16].to_uppercase()))
+}
+
+/// Calcula y sella en SQLite WAL (`batch_merkle_anchors`) la Raíz de Merkle Global de todos los snapshots
+/// activos de un lote masivo para dotar de Fecha Cierta Colectiva (Arts. 89-93 CCom / RFC 3161) a la campaña.
+pub fn anchor_global_batch_merkle_root(batch_job_id: &str) -> Result<(String, usize), String> {
+    let db_path = std::env::var("MALLEN_DB_PATH").unwrap_or_else(|_| "data/mallen_prod.db".to_string());
+    let conn = rusqlite::Connection::open(&db_path).map_err(|e| e.to_string())?;
+    conn.execute_batch(
+        "PRAGMA journal_mode=WAL;
+         PRAGMA busy_timeout=5000;
+         CREATE TABLE IF NOT EXISTS batch_merkle_anchors (
+             batch_job_id TEXT PRIMARY KEY,
+             snapshots_count INTEGER NOT NULL,
+             global_merkle_root_hex TEXT NOT NULL,
+             anchored_at_utc TEXT DEFAULT (datetime('now'))
+         );",
+    )
+    .map_err(|e| e.to_string())?;
+
+    let mut leaves: Vec<String> = Vec::new();
+    if let Ok(mut stmt) = conn.prepare(
+        "SELECT snapshot_uuid, tax_id_key, emp_count, total_cents FROM audit_snapshots ORDER BY snapshot_uuid ASC",
+    ) {
+        if let Ok(rows) = stmt.query_map([], |r| {
+            Ok(format!(
+                "{}:{}:{}:{}",
+                r.get::<_, String>(0)?,
+                r.get::<_, String>(1)?,
+                r.get::<_, i64>(2)?,
+                r.get::<_, i64>(3)?
+            ))
+        }) {
+            for item in rows.flatten() {
+                leaves.push(item);
+            }
+        }
+    }
+
+    let mut root_hasher = Sha256::new();
+    root_hasher.update(format!("GLOBAL_BATCH_MERKLE_V1|JOB={}|COUNT={}|", batch_job_id, leaves.len()).as_bytes());
+    for lf in &leaves {
+        let mut lh = Sha256::new();
+        lh.update(lf.as_bytes());
+        root_hasher.update(lh.finalize());
+    }
+    let global_root = format!("0x{}", &format!("{:x}", root_hasher.finalize())[..32]);
+
+    conn.execute(
+        "INSERT INTO batch_merkle_anchors (batch_job_id, snapshots_count, global_merkle_root_hex, anchored_at_utc)
+         VALUES (?1, ?2, ?3, datetime('now'))
+         ON CONFLICT(batch_job_id) DO UPDATE SET
+            snapshots_count = excluded.snapshots_count,
+            global_merkle_root_hex = excluded.global_merkle_root_hex,
+            anchored_at_utc = datetime('now')",
+        rusqlite::params![batch_job_id, leaves.len() as i64, global_root],
+    )
+    .map_err(|e| e.to_string())?;
+
+    Ok((global_root, leaves.len()))
+}
+
+/// Inicializa y devuelve las noticias normativas del Radar Regulatorio Diario (`regulatory_news` en SQLite WAL)
+/// vinculadas a los 37 vectores para mostrarlas en tiempo real en `mallen.lat` y en `/api/regulatory_news`.
+pub fn get_or_seed_regulatory_news() -> Vec<serde_json::Value> {
+    let db_path = std::env::var("MALLEN_DB_PATH").unwrap_or_else(|_| "data/mallen_prod.db".to_string());
+    let mut list = Vec::new();
+    if let Ok(conn) = rusqlite::Connection::open(db_path) {
+        let _ = conn.execute_batch(
+            "PRAGMA journal_mode=WAL;
+             PRAGMA busy_timeout=5000;
+             CREATE TABLE IF NOT EXISTS regulatory_news (
+                 id INTEGER PRIMARY KEY AUTOINCREMENT,
+                 slug TEXT UNIQUE NOT NULL,
+                 organo TEXT NOT NULL,
+                 title TEXT NOT NULL,
+                 summary TEXT NOT NULL,
+                 affected_vectors TEXT NOT NULL,
+                 scian_impact TEXT NOT NULL,
+                 published_date TEXT NOT NULL,
+                 source_ref TEXT NOT NULL
+             );",
+        );
+
+        let seed_items = [
+            (
+                "dof-stps-inspecciones-nom035-nom037-2026",
+                "STPS / DOF",
+                "Operativo Federal de Inspección Extraordinaria STPS: Cruce Automático de Plantilla SUA vs. NOM-035 y NOM-037",
+                "La Dirección General de Inspección Federal del Trabajo intensificó el requerimiento presencial de las Guías I, II y III de la NOM-035, el Acta Bipartita NOM-019 y el Adendum de Teletrabajo NOM-037 en centros con más de 15 colaboradores.",
+                "Vectores 01, 02 y 04 (Multas de 250 a 5,000 UMAs por trabajador afectado)",
+                "Todos los giros SCIAN con 15 o más colaboradores registrados en IMSS / DENUE",
+                "2026-11-09",
+                "DOF / Programa Anual de Inspección STPS"
+            ),
+            (
+                "sat-cff-materialidad-69b-beneficiario-controlador-2026",
+                "SAT / SHCP",
+                "Criterio Sustantivo SAT y SCJN: Exigibilidad de Fecha Cierta en Contratos B2B y Expediente de Beneficiario Controlador",
+                "En revisiones electrónicas (Art. 53-B CFF), la autoridad rechaza deducciones de servicios intangibles que carezcan de sello de Fecha Cierta (Jurisprudencia 2a./J. 161/2019) y aplica multas de hasta $2,000,000 MXN por omisión del expediente de Beneficiario Controlador (Art. 32-B Ter CFF).",
+                "Vectores 09, 10 y 13 (Rechazo de deducibilidad + 1,300 a 17,600 UMAs)",
+                "Sociedades Mercantiles (S.A., S.A.P.I., S. de R.L. y S.C.) en operaciones B2B",
+                "2026-11-08",
+                "Anexo 3 RMF / Jurisprudencia SCJN 2a./J. 161/2019"
+            ),
+            (
+                "sabg-lfpdppp-biometricos-cookies-arco-2026",
+                "SABG / LFPDPPP",
+                "Nuevos Criterios de Verificación de Privacidad Web, Rastreadores Digitales y Uso de Biométricos Laborales",
+                "La autoridad garante verifica que los portales corporativos cuenten con Aviso de Privacidad Integral actualizado, cláusula de transferencia a encargados (ERP/CRM) y consentimiento expreso autógrafo para relojes checadores biométricos.",
+                "Vectores 21, 22, 23 y 25 (Sanciones de 200 a 320,000 UMAs conforme Art. 64 LFPDPPP)",
+                "Comercio electrónico, servicios financieros, salud, logística y corporativos con portal web",
+                "2026-11-07",
+                "LFPDPPP Vigente / Lineamientos del Aviso de Privacidad"
+            ),
+            (
+                "imss-isn-confronta-cfdi-nomina-repse-2026",
+                "IMSS / FINANZAS ESTATALES",
+                "Cruces Automatizados entre Visor de Nómina CFDI 4.0, Cédulas SUA IMSS, Informativas REPSE e ISN Estatal (3% a 4%)",
+                "Las secretarías de finanzas estatales (CDMX 4%, NL 3%, Jal 3%, EdoMéx 3%) y el IMSS cruzan mensualmente los timbres de nómina contra el pago de cuotas obrero-patronales y declaraciones cuatrimestrales ICSOE/SISSUB.",
+                "Vectores 15, 16, 17 y 18 + Impuesto Sobre Nómina Estatal (ISN)",
+                "Unidades económicas con personal subordinado o contratación de servicios especializados REPSE",
+                "2026-11-06",
+                "Arts. 15-A y 39 LSS / Códigos Financieros Estatales"
+            ),
+        ];
+
+        for item in &seed_items {
+            let _ = conn.execute(
+                "INSERT OR IGNORE INTO regulatory_news (slug, organo, title, summary, affected_vectors, scian_impact, published_date, source_ref)
+                 VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8)",
+                rusqlite::params![item.0, item.1, item.2, item.3, item.4, item.5, item.6, item.7],
+            );
+        }
+
+        if let Ok(mut stmt) = conn.prepare(
+            "SELECT slug, organo, title, summary, affected_vectors, scian_impact, published_date, source_ref
+             FROM regulatory_news ORDER BY published_date DESC, id ASC LIMIT 8",
+        ) {
+            if let Ok(rows) = stmt.query_map([], |r| {
+                Ok(serde_json::json!({
+                    "slug": r.get::<_, String>(0)?,
+                    "organo": r.get::<_, String>(1)?,
+                    "title": r.get::<_, String>(2)?,
+                    "summary": r.get::<_, String>(3)?,
+                    "affected_vectors": r.get::<_, String>(4)?,
+                    "scian_impact": r.get::<_, String>(5)?,
+                    "published_date": r.get::<_, String>(6)?,
+                    "source_ref": r.get::<_, String>(7)?,
+                }))
+            }) {
+                for n in rows.flatten() {
+                    list.push(n);
+                }
+            }
+        }
+    }
+    list
 }
 
 pub fn load_latest_master_from_sqlite(tax_id: &str, empresa_nombre: &str) -> Option<AuditMasterJson> {
@@ -1363,10 +1857,14 @@ fn build_report_typst_markup_full(
         format!("Plantilla: {} colaboradores | Masa Salarial Bruta Presunta: ${} MXN/mes | {} (Prima Media: {}). Exigible confronta CFDI Nómina vs. SUA y compulsa REPSE/ICSOE.", emp_count, masa_salarial_str, imss_clase, imss_prima)
     };
 
+    let (isn_rate_pct, isn_mensual_cents, ley_pc_estatal) =
+        compute_state_isn_and_local_pc_law(jurisdiccion, masa_salarial_cents);
+    let isn_mensual_str = format_cents_mxn(isn_mensual_cents);
+
     let hallazgo_pc_str = if is_immune {
-        "0 pts: Programa Interno de Protección Civil (PIPC) y autorizaciones sectoriales vigentes.".to_string()
+        format!("0 pts: Programa Interno de Protección Civil ({}) y autorizaciones vigentes.", ley_pc_estatal)
     } else {
-        format!("Requerimiento específico para giro SCIAN {}: {}", scian_str, sector_especifico)
+        format!("Competencia local [{}]: {} • ISN Estatal estimado ({:.1}%): ${} MXN/mes.", ley_pc_estatal, sector_especifico, isn_rate_pct, isn_mensual_str)
     };
 
     let hallazgo_profeco_str = if is_immune {

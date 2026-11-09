@@ -614,6 +614,122 @@
       <!-- Pie de Página Institucional Criptográfico FIRMA W16 MALLEN® -->
     
 
+
+<!-- RADAR REGULATORIO DIARIO (DOF / SAT / STPS / IMSS / SABG) + ENRIQUECIMIENTO 360° -->
+<section id="radar-regulatorio" class="max-w-6xl mx-auto px-4 sm:px-6 pt-8 pb-6">
+  <div class="rounded-2xl border border-slate-800 bg-slate-900/50 p-6 sm:p-8">
+    <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-6">
+      <div>
+        <span class="inline-block px-3 py-1 rounded-full text-xs font-mono uppercase tracking-widest bg-amber-500/10 text-amber-400 border border-amber-500/20 mb-2">
+          RADAR REGULATORIO DIARIO • MONITOR DOF &amp; INTELIGENCIA 360°
+        </span>
+        <h3 class="text-xl sm:text-2xl font-extrabold tracking-tight">
+          Actualizaciones Normativas de la Jornada y Enriquecimiento Corporativo Instantáneo
+        </h3>
+        <p class="text-xs sm:text-sm text-slate-400 mt-1">
+          Consulte en 1 clic la ficha 360° de su empresa (Sucursales, GPS, Antigüedad, ISN Estatal y Ley PIPC Local) y revise los últimos criterios publicados por las autoridades.
+        </p>
+      </div>
+    </div>
+
+    <!-- Buscador Instantáneo 1-Clic (/api/lookup) -->
+    <div class="mb-6 p-4 rounded-xl border border-blue-500/30 bg-slate-950/70">
+      <div class="flex flex-col sm:flex-row gap-3 items-stretch sm:items-center">
+        <input id="lookup-360-input" type="text" placeholder="Ingrese Razón Social o RFC para Autocompletado 360° (ej. STEREN, CANCINO, URBVAN)..."
+               class="flex-1 rounded-lg border border-slate-700 bg-slate-900 px-4 py-2.5 text-xs sm:text-sm font-mono text-white focus:border-blue-500 focus:outline-none" />
+        <button type="button" onclick="window.runInstantLookup360()"
+                class="w16-action-btn px-5 py-2.5 rounded-lg font-bold text-xs sm:text-sm bg-blue-600 hover:bg-blue-500 text-white cursor-pointer shrink-0">
+          Autocompletar Ficha 360° &rarr;
+        </button>
+      </div>
+      <div id="lookup-360-result" class="hidden mt-4 pt-4 border-t border-slate-800 grid grid-cols-1 md:grid-cols-3 gap-3 text-xs font-mono"></div>
+    </div>
+
+    <!-- Tarjetas Dinámicas del Radar Regulatorio Diario -->
+    <div id="radar-news-grid" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <div class="p-4 rounded-xl border border-slate-800 bg-slate-950/60">
+        <div class="flex items-center justify-between text-[11px] font-mono text-amber-400 mb-1">
+          <span>STPS / DOF • OPERATIVO FEDERAL</span>
+          <span>VECTORES 01, 02 y 04</span>
+        </div>
+        <h4 class="font-bold text-sm mb-1">Cruce Automático de Plantilla SUA vs. NOM-035, NOM-019 y Teletrabajo NOM-037</h4>
+        <p class="text-xs text-slate-400 leading-relaxed">Inspección extraordinaria en centros con 15 o más colaboradores verificando Guías Psicosociales, Actas Bipartitas y Adendum de Teletrabajo.</p>
+      </div>
+      <div class="p-4 rounded-xl border border-slate-800 bg-slate-950/60">
+        <div class="flex items-center justify-between text-[11px] font-mono text-red-400 mb-1">
+          <span>SAT / SCJN • ART. 69-B Y 32-B TER CFF</span>
+          <span>VECTORES 09, 10 y 13</span>
+        </div>
+        <h4 class="font-bold text-sm mb-1">Exigibilidad de Fecha Cierta en Contratos B2B y Expediente de Beneficiario Controlador</h4>
+        <p class="text-xs text-slate-400 leading-relaxed">Rechazo de deducciones en servicios sin Fecha Cierta (SCJN 2a./J. 161/2019) y multas por falta de expediente actualizado de Beneficiario Controlador.</p>
+      </div>
+    </div>
+  </div>
+</section>
+<script>
+window.runInstantLookup360 = async function() {
+  var inp = document.getElementById('lookup-360-input');
+  var box = document.getElementById('lookup-360-result');
+  if (!inp || !box || !inp.value.trim()) return;
+  box.classList.remove('hidden');
+  box.innerHTML = '<div class="col-span-3 text-blue-400">Consultando padrón indexado en RAM y enriquecimiento 360°...</div>';
+  try {
+    var res = await fetch('/api/lookup?q=' + encodeURIComponent(inp.value.trim()));
+    var d = await res.json();
+    var branchBadge = d.is_multi_branch_corp
+      ? '<span class="text-emerald-400 font-bold">CORPORATIVO MULTI-SUCURSAL (' + d.branch_count + ' unidades detectadas)</span>'
+      : '<span>Unidad Económica Única (' + d.branch_count + ' establecimiento)</span>';
+    box.innerHTML =
+      '<div class="p-3 rounded-lg border border-slate-800 bg-slate-900/80">' +
+        '<div class="text-slate-400 text-[10px]">RAZÓN SOCIAL Y GIRO SCIAN</div>' +
+        '<div class="font-bold text-sm mt-0.5">' + d.razon_social + '</div>' +
+        '<div class="text-blue-400 mt-1">SCIAN ' + d.codigo_scian + ' • ' + d.estimated_employees + ' colaboradores</div>' +
+        '<div class="mt-1 text-[11px]">' + branchBadge + '</div>' +
+      '</div>' +
+      '<div class="p-3 rounded-lg border border-slate-800 bg-slate-900/80">' +
+        '<div class="text-slate-400 text-[10px]">GEOLOCALIZACIÓN GPS, ISN ESTATAL Y PIPC</div>' +
+        '<div class="font-bold mt-0.5">' + d.entidad_federativa + ' (' + d.municipio_alcaldia + ')</div>' +
+        '<div class="text-amber-400 mt-1">ISN Estatal (' + d.isn_rate_pct.toFixed(1) + '%): $' + d.isn_mensual_presunto_mxn.toLocaleString('en-US', {minimumFractionDigits:2}) + ' MXN/mes</div>' +
+        '<div class="text-[11px] text-slate-400 mt-1">GPS: ' + d.latitud + ', ' + d.longitud + '</div>' +
+      '</div>' +
+      '<div class="p-3 rounded-lg border border-slate-800 bg-slate-900/80">' +
+        '<div class="text-slate-400 text-[10px]">ANTIGÜEDAD Y LEY LOCAL APLICABLE</div>' +
+        '<div class="font-bold text-emerald-400 mt-0.5">Alta Padrón: ' + d.fecha_alta_denue + ' (~' + d.antiguedad_estimada_anios + ' años)</div>' +
+        '<div class="text-[11px] text-slate-300 mt-1">' + d.ley_proteccion_civil_local + '</div>' +
+      '</div>';
+    // Si existe el slider del Simulador In Situ, sincronizarlo automáticamente con los empleados detectados
+    var sbxSlider = document.getElementById('sbx-emp-slider');
+    if (sbxSlider && d.estimated_employees) {
+      sbxSlider.value = Math.min(500, d.estimated_employees);
+      if (window.updateMallenSandbox) window.updateMallenSandbox();
+    }
+  } catch (e) {
+    box.innerHTML = '<div class="col-span-3 text-red-400">Error al consultar /api/lookup</div>';
+  }
+};
+// Cargar dinámicamente las 4 noticias del Radar Regulatorio Diario al iniciar
+(async function() {
+  try {
+    var r = await fetch('/api/regulatory_news');
+    var items = await r.json();
+    var grid = document.getElementById('radar-news-grid');
+    if (grid && items && items.length > 0) {
+      grid.innerHTML = items.map(function(n) {
+        return '<div class="p-4 rounded-xl border border-slate-800 bg-slate-950/60 hover:border-blue-500/40 transition-all">' +
+          '<div class="flex items-center justify-between text-[11px] font-mono text-blue-400 mb-1">' +
+            '<span>' + n.organo + ' • ' + n.published_date + '</span>' +
+            '<span class="text-amber-400">' + n.affected_vectors.split('(')[0] + '</span>' +
+          '</div>' +
+          '<h4 class="font-bold text-sm mb-1">' + n.title + '</h4>' +
+          '<p class="text-xs text-slate-400 leading-relaxed mb-2">' + n.summary + '</p>' +
+          '<div class="text-[11px] font-mono text-emerald-400">Impacto SCIAN: ' + n.scian_impact + '</div>' +
+        '</div>';
+      }).join('');
+    }
+  } catch (_) {}
+})();
+</script>
+
 <!-- MÓDULO INTERACTIVO DE SIMULACIÓN DE INSPECCIÓN Y MITIGACIÓN IN SITU -->
 <section id="simulador-insitu" class="max-w-6xl mx-auto px-4 sm:px-6 pt-12 pb-6">
   <div class="rounded-2xl border border-slate-800 bg-slate-900/60 p-6 sm:p-8 shadow-xl">

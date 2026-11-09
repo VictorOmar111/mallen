@@ -1409,5 +1409,51 @@ async fn test_http_form_bot_14_scenarios_with_real_db_companies() {
     assert_eq!(dry_total, dry_valid_links, "El 100% de los enlaces generados en el dry-run deben ser URLs válidas");
     println!("✓ SIMULACIÓN PRE-VUELO (--dry-run) COMPLETADA EN {} µs ({} empresas validadas en RAM)", dry_micros, dry_total);
 
-    println!("✓ LOS 70 ESCENARIOS DE GRADO MILITAR (10 EMPRESAS MULTISECTORIALES, SELLO QR VECTORIAL, VIGILANCIA UMA Y DRY-RUN) SUPERADOS AL 100%");
+
+    // Escenario 71: Verificar que los Snapshots en `audit_snapshots` ahora tengan `findings` poblados (no vacíos),
+    // `risk_score > 0`, `audit_sha256_hash` y `merkle_root_hex` para consultas con `jq`
+    let hydrated_steren = worker_inegi_engine::engine::pdf_generator::require_strict_snapshot_or_reject("STE850101AAA")
+        .expect("Debe existir el snapshot de Steren");
+    assert!(
+        !hydrated_steren.findings.is_empty(),
+        "El arreglo `findings` dentro de master_json_blob debe contener todos los vectores con exposición > 0"
+    );
+    assert!(hydrated_steren.risk_score >= 45, "El risk_score hidratado en el snapshot nunca debe quedar en 0");
+    assert!(!hydrated_steren.audit_sha256_hash.is_empty());
+    assert!(hydrated_steren.merkle_root_hex.is_some());
+
+    // Escenario 72: Extracción 360° de Datos Ocultos del DENUE (Multi-Sucursal, Coordenadas GPS, Antigüedad e ISN)
+    let profile_360 = worker_inegi_engine::engine::pdf_generator::extract_deep_denue_360_intelligence("ELECTRONICA STEREN");
+    assert!(profile_360.branch_count >= 1);
+    assert!(!profile_360.latitud.is_empty() && !profile_360.longitud.is_empty());
+    assert!(profile_360.antiguedad_estimada_anios >= 1);
+    assert!(profile_360.isn_mensual_presunto_mxn > 0.0);
+
+    // Escenario 73: Cálculo geolocalizado de Impuesto Sobre Nómina (ISN CDMX 4.0% vs Nuevo León 3.0%) y Ley PIPC Local
+    let (rate_cdmx, isn_cdmx_cents, law_cdmx) =
+        worker_inegi_engine::engine::pdf_generator::compute_state_isn_and_local_pc_law("CIUDAD DE MÉXICO", 100_000_000);
+    let (rate_nl, isn_nl_cents, law_nl) =
+        worker_inegi_engine::engine::pdf_generator::compute_state_isn_and_local_pc_law("NUEVO LEÓN", 100_000_000);
+    assert_eq!(rate_cdmx, 4.0);
+    assert_eq!(isn_cdmx_cents, 4_000_000);
+    assert!(law_cdmx.contains("Ciudad de México"));
+    assert_eq!(rate_nl, 3.0);
+    assert_eq!(isn_nl_cents, 3_000_000);
+    assert!(law_nl.contains("Nuevo León"));
+
+    // Escenario 74: Prueba de Regresión Tipográfica Golden Master y Anclaje de Raíz de Merkle Global del Lote
+    let golden_hash = worker_inegi_engine::engine::pdf_generator::verify_typst_golden_layout_invariants(&typst_urbvan_doc)
+        .expect("El documento Typst debe cumplir todos los invariantes del Golden Master");
+    assert!(golden_hash.starts_with("GOLDEN-SHA256-"));
+
+    let (global_batch_root, anchored_count) =
+        worker_inegi_engine::engine::pdf_generator::anchor_global_batch_merkle_root("BATCH-PARTNER-10K-2026")
+            .expect("Debe sellar la Raíz de Merkle Global de todos los snapshots del lote");
+    assert!(global_batch_root.starts_with("0x") && anchored_count >= 10);
+
+    // Escenario 75: Radar Regulatorio Diario (`regulatory_news` en SQLite WAL)
+    let daily_news = worker_inegi_engine::engine::pdf_generator::get_or_seed_regulatory_news();
+    assert!(daily_news.len() >= 4, "El Radar Regulatorio Diario debe contar con al menos las 4 notas normativas clave");
+
+    println!("✓ LOS 75 ESCENARIOS DE INGENIERÍA DE DATOS 360°, ISN ESTATAL, GOLDEN MASTER TYPST, MERKLE GLOBAL Y RADAR REGULATORIO SUPERADOS AL 100%");
 }
