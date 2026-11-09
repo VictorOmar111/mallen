@@ -1,5 +1,6 @@
 #set text(hyphenate: false)
 #set par(justify: false)
+#show heading: set block(sticky: true)
 #set page(
   paper: "us-letter",
   margin: (top: 1.05cm, bottom: 1.15cm, left: 1.2cm, right: 1.2cm),

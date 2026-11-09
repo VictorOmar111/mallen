@@ -613,6 +613,105 @@
   <!-- Pie de Página Institucional con nuestro propio Sello Blindaje Mallen (Efecto Bumerán) -->
       <!-- Pie de Página Institucional Criptográfico FIRMA W16 MALLEN® -->
     
+
+<!-- MÓDULO INTERACTIVO DE SIMULACIÓN DE INSPECCIÓN Y MITIGACIÓN IN SITU -->
+<section id="simulador-insitu" class="max-w-6xl mx-auto px-4 sm:px-6 pt-12 pb-6">
+  <div class="rounded-2xl border border-slate-800 bg-slate-900/60 p-6 sm:p-8 shadow-xl">
+    <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-6 border-b border-slate-800 pb-5">
+      <div>
+        <span class="inline-block px-3 py-1 rounded-full text-xs font-mono uppercase tracking-widest bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 mb-2">
+          INTERACTIVE RISK SANDBOX • SIMULADOR DE INSPECCIÓN IN SITU
+        </span>
+        <h3 class="text-xl sm:text-2xl font-extrabold tracking-tight">
+          Calculadora Interactiva de Sensibilidad y Mitigación Patrimonial
+        </h3>
+        <p class="text-xs sm:text-sm text-slate-400 mt-1">
+          Ajuste el tamaño de su plantilla y active los instrumentos del Kit para simular en tiempo real cómo desciende su exposición ante una inspección federal.
+        </p>
+      </div>
+      <div class="text-right shrink-0">
+        <div class="text-xs font-mono uppercase text-slate-400">Exposición Residual Simulada</div>
+        <div id="sbx-total-fine" class="text-2xl sm:text-3xl font-black font-mono text-red-400">$1,245,958.00 MXN</div>
+        <div class="text-xs font-mono mt-1">
+          Índice de Riesgo: <span id="sbx-risk-score" class="font-bold text-amber-400">74/100</span>
+          • Ahorro Kit ($3,000 MXN): <span id="sbx-roi-pct" class="font-bold text-emerald-400">99.7%</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-center">
+      <div class="lg:col-span-5 space-y-4">
+        <div class="p-4 rounded-xl border border-slate-800 bg-slate-950/60">
+          <div class="flex justify-between text-xs font-mono mb-2">
+            <span>PLANTILLA OPERATIVA (COLABORADORES):</span>
+            <span id="sbx-emp-label" class="font-bold text-blue-400 text-sm">45 colaboradores</span>
+          </div>
+          <input id="sbx-emp-slider" type="range" min="1" max="500" value="45"
+                 class="w-full accent-blue-500 cursor-pointer" oninput="window.updateMallenSandbox()" />
+          <div class="flex justify-between text-[11px] font-mono text-slate-400 mt-1">
+            <span>1 (Micro)</span>
+            <span>15 (Umbral NOM-019)</span>
+            <span>50 (Umbral NOM-035 III)</span>
+            <span>258 (Corp)</span>
+            <span>500+</span>
+          </div>
+        </div>
+        <div id="sbx-threshold-note" class="text-xs font-mono p-3 rounded-lg border border-blue-500/20 bg-blue-500/5 text-slate-300">
+          Obligación activa: Guías I y II NOM-035 + Comisión Mixta Bipartita NOM-019 + Confronta SUA/CFDI.
+        </div>
+      </div>
+
+      <div class="lg:col-span-7 grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
+        <label class="flex items-start gap-3 p-3 rounded-xl border border-slate-800 bg-slate-950/50 cursor-pointer hover:border-blue-500/40">
+          <input type="checkbox" class="sbx-check mt-0.5 accent-emerald-500" data-weight="0.30" onchange="window.updateMallenSandbox()" />
+          <span><strong>Blindaje STPS (NOM-035, 037, 019, 030)</strong><br><span class="text-slate-400">Desactiva multas laborales por trabajador (-30% VEMP)</span></span>
+        </label>
+        <label class="flex items-start gap-3 p-3 rounded-xl border border-slate-800 bg-slate-950/50 cursor-pointer hover:border-blue-500/40">
+          <input type="checkbox" class="sbx-check mt-0.5 accent-emerald-500" data-weight="0.25" onchange="window.updateMallenSandbox()" />
+          <span><strong>Contrato Marco Fecha Cierta (SAT Art. 69-B)</strong><br><span class="text-slate-400">Acredita materialidad fiscal SCJN y Beneficiario (-25% VEMP)</span></span>
+        </label>
+        <label class="flex items-start gap-3 p-3 rounded-xl border border-slate-800 bg-slate-950/50 cursor-pointer hover:border-blue-500/40">
+          <input type="checkbox" class="sbx-check mt-0.5 accent-emerald-500" data-weight="0.20" onchange="window.updateMallenSandbox()" />
+          <span><strong>Conciliación IMSS SUA, SBC y REPSE</strong><br><span class="text-slate-400">Previene capitales constitutivos y multas 32-D (-20% VEMP)</span></span>
+        </label>
+        <label class="flex items-start gap-3 p-3 rounded-xl border border-slate-800 bg-slate-950/50 cursor-pointer hover:border-blue-500/40">
+          <input type="checkbox" class="sbx-check mt-0.5 accent-emerald-500" data-weight="0.25" onchange="window.updateMallenSandbox()" />
+          <span><strong>Aviso LFPDPPP (SABG), Biométricos, PIPC y PROFECO</strong><br><span class="text-slate-400">Blinda privacidad web, Art. 76 BIS y Protección Civil (-25% VEMP)</span></span>
+        </label>
+      </div>
+    </div>
+  </div>
+</section>
+<script>
+window.updateMallenSandbox = function() {
+  var slider = document.getElementById('sbx-emp-slider');
+  if (!slider) return;
+  var emp = parseInt(slider.value || '45', 10);
+  document.getElementById('sbx-emp-label').textContent = emp + (emp === 1 ? ' colaborador' : ' colaboradores');
+  var baseFine = 310000 + (emp * 12450);
+  var checks = document.querySelectorAll('.sbx-check');
+  var mitigatedRatio = 0;
+  for (var i = 0; i < checks.length; i++) {
+    if (checks[i].checked) mitigatedRatio += parseFloat(checks[i].getAttribute('data-weight') || '0');
+  }
+  if (mitigatedRatio > 0.999) mitigatedRatio = 1.0;
+  var residual = Math.max(0, Math.round(baseFine * (1.0 - mitigatedRatio)));
+  var score = residual === 0 ? 0 : Math.min(99, Math.max(18, Math.round((45 + Math.min(48, emp / 6)) * (1.0 - mitigatedRatio * 0.85))));
+  var fineEl = document.getElementById('sbx-total-fine');
+  fineEl.textContent = '$' + residual.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2}) + ' MXN';
+  fineEl.className = residual === 0 ? 'text-2xl sm:text-3xl font-black font-mono text-emerald-400' : 'text-2xl sm:text-3xl font-black font-mono text-red-400';
+  document.getElementById('sbx-risk-score').textContent = score + '/100';
+  var noteEl = document.getElementById('sbx-threshold-note');
+  if (emp > 50) {
+    noteEl.textContent = 'Escala Corporativa (>50 colaboradores): Exigible NOM-035 Guías I y III (Entorno Organizacional) + Comisión Mixta NOM-019 Completa + Auditoría SUA/REPSE.';
+  } else if (emp >= 15) {
+    noteEl.textContent = 'Escala PyME (15 a 50 colaboradores): Exigible NOM-035 Guías I y II + Acta Bipartita NOM-019 + Diagnóstico NOM-030.';
+  } else {
+    noteEl.textContent = 'Escala Micro (<15 colaboradores): Modalidad Simplificada STPS (Política Escrita Guía I NOM-035 y Representante Simplificado NOM-019).';
+  }
+};
+</script>
+
 <!-- SECCIÓN DE PREGUNTAS FRECUENTES, ALCANCE METODOLÓGICO Y BLINDAJE PERICIAL (#faq) -->
 <section id="faq" class="max-w-6xl mx-auto px-4 sm:px-6 py-14 border-t border-slate-800/60">
   <div class="text-center max-w-3xl mx-auto mb-10">

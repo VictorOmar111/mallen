@@ -1392,5 +1392,22 @@ async fn test_http_form_bot_14_scenarios_with_real_db_companies() {
     }
     println!("==========================================================================================================\n");
 
-    println!("✓ LOS 68 ESCENARIOS (INCLUYENDO AUDITORÍA MULTISECTORIAL DE 10 EMPRESAS REALES Y ENLACE #faq EN PDF) SUPERADOS AL 100%");
+
+    // Escenario 69: Sello QR Vectorial Nativo en Typst (0 KB imagen) + Motor de Vigilancia Regulatoria Continua (Recalibración UMA 2027)
+    let qr_svg_typst = worker_inegi_engine::engine::pdf_generator::render_vector_qr_seal_typst("0x659b4a8d717289c7");
+    assert!(qr_svg_typst.contains("#grid(columns: (2.1pt,) * 9"));
+
+    let (base_2026_cents, recalib_2027_cents, uma_alert) =
+        worker_inegi_engine::engine::pdf_generator::simulate_uma_regulatory_recalibration("URB180101BBB", 118.80)
+            .expect("Debe recalibrar el snapshot de Urbvan ante incremento de la UMA");
+    assert!(recalib_2027_cents > base_2026_cents, "Al subir la UMA de $113.14 a $118.80, el umbral de exposición debe escalar proporcionalmente");
+    assert!(uma_alert.contains("ALERTA DE VIGILANCIA NORMATIVA CONTINUA"));
+
+    // Escenario 70: Simulador de Carga Pre-Vuelo (`--dry-run`) en Memoria RAM sobre registros reales del DENUE
+    let (dry_total, dry_valid_links, _dry_dead_filtered, dry_micros) =
+        HttpFormBot::validate_batch_dry_run_in_memory(25);
+    assert_eq!(dry_total, dry_valid_links, "El 100% de los enlaces generados en el dry-run deben ser URLs válidas");
+    println!("✓ SIMULACIÓN PRE-VUELO (--dry-run) COMPLETADA EN {} µs ({} empresas validadas en RAM)", dry_micros, dry_total);
+
+    println!("✓ LOS 70 ESCENARIOS DE GRADO MILITAR (10 EMPRESAS MULTISECTORIALES, SELLO QR VECTORIAL, VIGILANCIA UMA Y DRY-RUN) SUPERADOS AL 100%");
 }

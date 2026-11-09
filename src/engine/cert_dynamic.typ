@@ -1,5 +1,6 @@
 #set text(hyphenate: false)
 #set par(justify: false)
+#show heading: set block(sticky: true)
 #set page(
   paper: "a4",
   margin: (x: 1.2cm, top: 1.1cm, bottom: 1.1cm),
@@ -146,12 +147,20 @@
     ],
     [
       #rect(width: 100%, fill: rgb("#ffffff"), stroke: 0.4pt + rgb("#94a3b8"), inset: 4pt, radius: 2pt)[
-        #align(left)[
-          #text(size: 5.8pt, weight: "bold", fill: rgb("#0f172a"))[VERIFICACIÓN PÚBLICA INMUTABLE]\
-          #text(size: 5.4pt, fill: rgb("#475569"))[Emisión UTC: {{FECHA_EMISION}}]\
-          #text(font: ("Liberation Mono", "DejaVu Sans Mono"), size: 5.4pt, fill: rgb("#475569"))[Hash: #raw("{{AUDIT_HASH}}")]\
-          #text(font: ("Liberation Mono", "DejaVu Sans Mono"), size: 5.4pt, weight: "bold", fill: rgb("#2563eb"))[https://mallen.lat/verify/{{REF_TAX}}]
-        ]
+        #grid(
+          columns: (auto, 1fr),
+          column-gutter: 5pt,
+          align: horizon,
+          [{{VECTOR_QR_SEAL}}],
+          [
+            #align(left)[
+              #text(size: 5.6pt, weight: "bold", fill: rgb("#0f172a"))[VERIFICACIÓN QR INMUTABLE]\
+              #text(size: 5.2pt, fill: rgb("#475569"))[UTC: {{FECHA_EMISION}}]\
+              #text(font: ("Liberation Mono", "DejaVu Sans Mono"), size: 5.0pt, fill: rgb("#475569"))[#raw("{{AUDIT_HASH}}")]\
+              #text(font: ("Liberation Mono", "DejaVu Sans Mono"), size: 5.1pt, weight: "bold", fill: rgb("#2563eb"))[mallen.lat/verify/{{REF_TAX}}]
+            ]
+          ]
+        )
       ]
     ]
   )
