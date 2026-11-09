@@ -20,7 +20,7 @@
     #v(0.08cm)
     #grid(
       columns: (1fr, auto),
-      align(left)[#text(size: 5.9pt, fill: rgb("#64748b"))[Dictamen Preventivo de Cumplimiento Técnico-Documental (Arts. 89–93 Código de Comercio). Verificación pública: https://mallen.lat/verify/{{EMPRESA_TAX_ID}}]],
+      align(left)[#text(size: 5.9pt, fill: rgb("#64748b"))[Dictamen Preventivo de Cumplimiento Técnico-Documental (Arts. 89–93 Código de Comercio). Verificación pública: https://mallen.lat/#faq • https://mallen.lat/verify/{{EMPRESA_TAX_ID}}]],
       align(right)[#text(size: 6.3pt, weight: "bold", fill: rgb("#0f172a"))[Página #counter(page).display("1 de 1", both: true)]]
     )
   ]

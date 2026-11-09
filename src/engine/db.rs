@@ -75,7 +75,14 @@ impl DbState {
         // 2. Tabla de Sesiones de Auditoría y Personalización Jurídica (Sincronía 100% Web <-> PDF <-> ZIP)
         sqlx::query(
             r#"
-            CREATE TABLE IF NOT EXISTS audit_snapshots (
+            CREATE TABLE IF NOT EXISTS batch_jobs_progress (
+                    job_id TEXT PRIMARY KEY,
+                    total_items INTEGER NOT NULL,
+                    last_completed_index INTEGER NOT NULL,
+                    status TEXT NOT NULL,
+                    updated_at_utc TEXT DEFAULT (datetime('now'))
+                );
+                CREATE TABLE IF NOT EXISTS audit_snapshots (
                     snapshot_uuid TEXT PRIMARY KEY,
                     tax_id_key TEXT NOT NULL,
                     empresa_key TEXT NOT NULL,

@@ -1,7 +1,7 @@
 use tokio::sync::Semaphore;
-//! Compilador Tipográfico Determinístico con Única Fuente de Verdad (SSOT),
-//! Caché Concurrente en Memoria (TTL 24h), Aritmética Exacta en Centavos (`u64`),
-//! Trazabilidad Estructurada JSON y Raíz de Merkle SHA-256 — FIRMA W16 MALLEN®.
+// Compilador Tipográfico Determinístico con Única Fuente de Verdad (SSOT),
+// Caché Concurrente en Memoria (TTL 24h), Aritmética Exacta en Centavos (`u64`),
+// Trazabilidad Estructurada JSON y Raíz de Merkle SHA-256 — FIRMA W16 MALLEN®.
 
 use crate::engine::accountant::AccountantProfile;
 use crate::engine::models::{AuditMasterJson, EmpresaB2B, LegalDossierInput};

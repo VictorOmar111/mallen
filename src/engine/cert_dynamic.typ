@@ -24,7 +24,7 @@
     #grid(
       columns: (1.2fr, 1fr),
       align(left)[#text(size: 6.5pt, fill: rgb("#475569"))[Folio Criptográfico: #text(font: ("Liberation Mono", "DejaVu Sans Mono"), weight: "bold", fill: rgb("#0f172a"))[{{NORMA_FOLIO_PREFIX}}-{{REF_TAX}}] • Giro SCIAN: #text(weight: "bold")[{{EMPRESA_SCIAN_CODE}}]]],
-      align(right)[#text(size: 6.5pt, fill: rgb("#475569"))[Verificación Merkle L2: #text(font: ("Liberation Mono", "DejaVu Sans Mono"), weight: "bold", fill: rgb("#0f172a"))[mallen.lat/verify/{{REF_TAX}}]]]
+      align(right)[#text(size: 6.5pt, fill: rgb("#475569"))[Verificación: #text(font: ("Liberation Mono", "DejaVu Sans Mono"), weight: "bold", fill: rgb("#0f172a"))[mallen.lat/verify/{{REF_TAX}}] • #text(weight: "bold")[mallen.lat/#faq]]]
     )
   ]
 )

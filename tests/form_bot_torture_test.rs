@@ -1313,5 +1313,84 @@ async fn test_http_form_bot_14_scenarios_with_real_db_companies() {
     assert_eq!(lru_first, lru_second, "La Caché LRU en RAM debe devolver exactamente la misma tupla matemática");
     println!("✓ HIT DE CACHÉ LRU SCIAN EN RAM COMPLETADO EN {} NANOSEGUNDOS (Total Centavos: {})", elapsed_ns, lru_second.6);
 
-    println!("✓ LOS 67 ESCENARIOS DE TORTURA, INTEGRACIÓN, POOL TYPST, CACHÉ LRU SCIAN Y CHECKPOINTING (#4,300) SUPERADOS AL 100%");
+
+    // Escenario 68: Prueba Integral con Logs de Medición Detallados para 10 Tipos Diferentes de Empresas (RFC, Dominio, SCIAN, Empleados y Régimen)
+    println!("\n==========================================================================================================");
+    println!("=== AUDITORÍA DE CALIBRACIÓN Y PARIDAD EN 10 PERFILES EMPRESARIALES MULTISECTORIALES (SSOT SNAP-UUID) ===");
+    println!("==========================================================================================================");
+    let ten_profiles: [(&str, &str, &str, &str, u32, bool); 10] = [
+        ("STE850101AAA", "ELECTRONICA STEREN S.A. DE C.V.", "https://www.steren.com.mx", "434222", 180, true),
+        ("URB180101BBB", "CORPORATIVO URBVAN S.A.P.I. DE C.V.", "https://www.urbvan.com", "485111", 258, true),
+        ("CAN140505CCC", "OPERADORA RESTAURANTERA CANCINO S. DE R.L. DE C.V.", "https://www.archipizza.com.mx", "722511", 42, false),
+        ("MED200202DDD", "CLINICA ESPECIALIZADA SANTA FE S.C.", "https://www.clinicasantafe.mx", "621111", 19, true),
+        ("FIN190909EEE", "FINTECH CAPITAL DIGITAL S.A.P.I. DE C.V.", "https://www.fintechcapital.mx", "522320", 85, true),
+        ("IND111111FFF", "MANUFACTURAS METALMECANICAS DEL NORTE S.A. DE C.V.", "https://www.metalmecanicanorte.mx", "332310", 320, false),
+        ("CON150303GGG", "DESARROLLO E INGENIERIA CIVIL ESTRUCTURAL S.A. DE C.V.", "https://www.ingenieriacivil.mx", "236221", 64, false),
+        ("LOG170707HHH", "AUTOTRANSPORTES Y LOGISTICA TRANSFRONTERIZA S.A. DE C.V.", "https://www.logisticatrans.mx", "484129", 115, true),
+        ("ECO210808III", "COMERCIALIZADORA E-COMMERCE MODA MX S. DE R.L. DE C.V.", "https://www.modamx.shop", "463211", 14, true),
+        ("PER880412JJ9", "ING. ROBERTO MARTINEZ SOLIS (PERSONA FISICA)", "https://www.consultoriamartinez.mx", "541610", 6, false),
+    ];
+
+    for (idx, (rfc, razon, dom_url, scian, emp_exact, has_priv)) in ten_profiles.iter().enumerate() {
+        let t_start = std::time::Instant::now();
+        let mut m = worker_inegi_engine::engine::models::AuditMasterJson::default();
+        m.tax_id = (*rfc).to_string();
+        m.razon_social = (*razon).to_string();
+        m.codigo_scian = (*scian).to_string();
+        m.actividad_scian_desc = format!("{} - Actividad Sectorial Evaluada", scian);
+        m.estimated_employees = *emp_exact;
+        m.calibration_applied.exact_employee_count = Some(*emp_exact);
+        m.web_telemetry.target_url = (*dom_url).to_string();
+        m.web_telemetry.ssl_valid = true;
+        m.web_telemetry.has_privacy_notice = *has_priv;
+        m.web_telemetry.mentions_arco_rights = *has_priv;
+
+        // 1. Calcular huella criptográfica SHA-256 y centavos exactos en la capa Web
+        let (hash_web, total_cents_web) =
+            worker_inegi_engine::engine::pdf_generator::compute_vectors_37_sha256_fingerprint(&m);
+        m.total_estimated_fine_mxn = (total_cents_web as f64) / 100.0;
+
+        // 2. Congelar Snapshot Inmutable en SQLite WAL (`audit_snapshots`)
+        let snap_id = worker_inegi_engine::engine::pdf_generator::freeze_immutable_audit_snapshot(rfc, razon, &m);
+
+        // 3. Renderizar Dictamen Typst desde el Snapshot estricto y verificar paridad 1:1
+        let typst_out = worker_inegi_engine::engine::pdf_generator::render_typst_from_strict_snapshot(&snap_id)
+            .expect("Debe renderizar el Dictamen desde el Snapshot Inmutable");
+        let loaded_m = worker_inegi_engine::engine::pdf_generator::require_strict_snapshot_or_reject(&snap_id).unwrap();
+        let (hash_pdf, total_cents_pdf) =
+            worker_inegi_engine::engine::pdf_generator::compute_vectors_37_sha256_fingerprint(&loaded_m);
+
+        let (regimen_lbl, _) = worker_inegi_engine::engine::pdf_generator::analyze_corporate_entity_regime(razon, rfc);
+        let payroll_cents = worker_inegi_engine::engine::pdf_generator::estimate_monthly_payroll_exposure_cents(*emp_exact, scian);
+        let elapsed_us = t_start.elapsed().as_micros();
+
+        assert_eq!(hash_web, hash_pdf, "Coherencia SHA-256 Web == PDF falló en empresa #{}", idx + 1);
+        assert_eq!(total_cents_web, total_cents_pdf, "Paridad de centavos Web == PDF falló en empresa #{}", idx + 1);
+        assert!(
+            typst_out.contains(&format!("{} colaboradores", emp_exact)),
+            "El PDF Typst de {} debe contener exactamente '{} colaboradores'",
+            razon,
+            emp_exact
+        );
+        assert!(
+            typst_out.contains("https://mallen.lat/#faq"),
+            "El pie de página del PDF debe incluir el enlace https://mallen.lat/#faq"
+        );
+
+        println!(
+            "  [{:02}/10] RFC: {:<13} | SCIAN: {} | Emp: {:>3} | Régimen: {:<44} | Nómina/Mes: ${:>12} | Exposición VEMP: ${:>13} | SNAP: {} | {} µs",
+            idx + 1,
+            rfc,
+            scian,
+            emp_exact,
+            &regimen_lbl[..regimen_lbl.len().min(44)],
+            worker_inegi_engine::engine::pdf_generator::format_cents_mxn(payroll_cents),
+            worker_inegi_engine::engine::pdf_generator::format_cents_mxn(total_cents_pdf),
+            snap_id,
+            elapsed_us
+        );
+    }
+    println!("==========================================================================================================\n");
+
+    println!("✓ LOS 68 ESCENARIOS (INCLUYENDO AUDITORÍA MULTISECTORIAL DE 10 EMPRESAS REALES Y ENLACE #faq EN PDF) SUPERADOS AL 100%");
 }
