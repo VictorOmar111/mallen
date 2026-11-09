@@ -365,6 +365,7 @@ impl HttpFormBot {
             let _ = conn.execute_batch(
                 "PRAGMA journal_mode=WAL;
                  PRAGMA synchronous=NORMAL;
+                 PRAGMA busy_timeout=5000;
                  CREATE TABLE IF NOT EXISTS prospect_logs (
                      id INTEGER PRIMARY KEY AUTOINCREMENT,
                      empresa_nombre TEXT NOT NULL,
@@ -598,6 +599,7 @@ impl HttpFormBot {
             let _ = conn.execute_batch(
                 "PRAGMA journal_mode=WAL;
                  PRAGMA synchronous=NORMAL;
+                 PRAGMA busy_timeout=5000;
                  CREATE TABLE IF NOT EXISTS prospect_logs (
                      id INTEGER PRIMARY KEY AUTOINCREMENT,
                      empresa_nombre TEXT NOT NULL,
@@ -1572,6 +1574,7 @@ impl HttpFormBot {
             let _ = conn.execute_batch(
                 "PRAGMA journal_mode=WAL;
                  PRAGMA synchronous=NORMAL;
+                 PRAGMA busy_timeout=5000;
                  PRAGMA temp_store=MEMORY;
                  PRAGMA cache_size=-32000;
                  CREATE TABLE IF NOT EXISTS prospect_logs (

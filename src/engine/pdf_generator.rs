@@ -259,6 +259,7 @@ pub fn freeze_immutable_audit_snapshot(
             let _ = conn.execute_batch(
                 "PRAGMA journal_mode=WAL;
                  PRAGMA synchronous=NORMAL;
+                 PRAGMA busy_timeout=5000;
                  CREATE TABLE IF NOT EXISTS audit_snapshots (
                      snapshot_uuid TEXT PRIMARY KEY,
                      tax_id_key TEXT NOT NULL,
@@ -270,7 +271,8 @@ pub fn freeze_immutable_audit_snapshot(
                      created_at_utc TEXT DEFAULT (datetime('now'))
                  );
                  CREATE INDEX IF NOT EXISTS idx_snapshots_tax ON audit_snapshots(tax_id_key);
-                 CREATE INDEX IF NOT EXISTS idx_snapshots_emp ON audit_snapshots(empresa_key);",
+                 CREATE INDEX IF NOT EXISTS idx_snapshots_emp ON audit_snapshots(empresa_key);
+                 CREATE INDEX IF NOT EXISTS idx_audit_snapshots_tax_uuid ON audit_snapshots(tax_id_key, snapshot_uuid);",
             );
 
             let clean_tax = tax_id.trim().to_uppercase();
@@ -406,7 +408,7 @@ pub fn compute_vectors_37_sha256_fingerprint(master: &AuditMasterJson) -> (Strin
     hasher.update(format!("ORG|STPS={}|SAT={}|INAI={}|IMSS={}|PC={}|PROFECO={}|", c_stps, c_sat, c_inai, c_imss, c_pc, c_profeco).as_bytes());
     for v in &vecs {
         let vc = mxn_to_exact_cents(v.multa_estimada_mxn);
-        hasher.update(format!("V{}={}:{};", v.id, v.organo, vc).as_bytes());
+        hasher.update(format!("V{}={}:{};", v.num, v.organo, vc).as_bytes());
     }
     (format!("0x{:x}", hasher.finalize()), total_cents)
 }
@@ -429,17 +431,42 @@ pub fn render_typst_from_strict_snapshot(snapshot_uuid: &str) -> Result<String, 
         .unwrap_or_else(|| "CIUDAD DE MÉXICO".to_string());
     emp_b2b.estimated_fine_mxn = master.total_estimated_fine_mxn;
     emp_b2b.risk_score = master.risk_score;
-    emp_b2b.audit_hash = master.cryptographic_hash.clone();
-
-    let osint = OsintResult {
-        ssl_valido: master.web_telemetry.ssl_valid,
-        aviso_privacidad: master.web_telemetry.has_privacy_notice,
-        terminos_condiciones: true,
-        http_status: master.web_telemetry.http_status.max(200),
-        tracker_detectado: false,
+    emp_b2b.audit_hash = if master.audit_id.trim().is_empty() {
+        compute_bundle_merkle_root(&master.tax_id, &master.razon_social, master.estimated_employees.max(1), mxn_to_exact_cents(master.total_estimated_fine_mxn), &master.codigo_scian)
+    } else {
+        master.audit_id.clone()
     };
 
+    let osint = crate::engine::osint_scanner::scan_company_web("");
+
     Ok(build_report_typst_markup_full(&emp_b2b, &osint, Some(&master), false, false))
+}
+
+
+/// Purga periódica de retención en `audit_snapshots` (TTL 30 días) + `PRAGMA wal_checkpoint(PASSIVE)`
+/// para evitar crecimiento infinito en disco durante campañas masivas.
+pub fn prune_expired_audit_snapshots_30d() -> usize {
+    let db_path = std::env::var("MALLEN_DB_PATH").unwrap_or_else(|_| "data/mallen_prod.db".to_string());
+    if let Ok(conn) = rusqlite::Connection::open(db_path) {
+        let _ = conn.execute_batch("PRAGMA journal_mode=WAL; PRAGMA busy_timeout=5000;");
+        let deleted = conn
+            .execute(
+                "DELETE FROM audit_snapshots WHERE created_at_utc < datetime('now', '-30 days')",
+                [],
+            )
+            .unwrap_or(0);
+        let _ = conn.execute_batch("PRAGMA wal_checkpoint(PASSIVE);");
+        return deleted;
+    }
+    0
+}
+
+/// Ejecuta el renderizado y compilación de Typst dentro de `tokio::task::spawn_blocking`
+/// para no bloquear jamás los hilos del reactor asíncrono de Tokio/Axum en producción.
+pub async fn render_typst_from_strict_snapshot_async(snapshot_uuid: String) -> Result<String, &'static str> {
+    tokio::task::spawn_blocking(move || render_typst_from_strict_snapshot(&snapshot_uuid))
+        .await
+        .map_err(|_| "ERR_TOKIO_SPAWN_BLOCKING_JOIN")?
 }
 
 pub fn load_latest_master_from_sqlite(tax_id: &str, empresa_nombre: &str) -> Option<AuditMasterJson> {

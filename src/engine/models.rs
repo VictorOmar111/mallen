@@ -39,7 +39,7 @@ pub enum CanalContacto {
     SinContactoUtil,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize, Default)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct EvaluacionObjetivo {
     pub id_empresa: String,
     pub canal_optimo: CanalContacto,
@@ -47,7 +47,7 @@ pub struct EvaluacionObjetivo {
     pub requiere_bypass: bool,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize, Default)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ResultadoAuditoria {
     pub id_empresa: String,
     pub estado_riesgo: String,
@@ -99,7 +99,7 @@ pub struct LegalDossierInput {
 }
 
 /// Desglose matemático exacto por cada una de las 6 dependencias para sincronizar 1:1 la Web y la tabla del PDF.
-#[derive(Debug, Clone, Serialize, Deserialize, Default)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct AgencyFineBreakdown {
     pub stps_fine_mxn: f64,
     pub sat_fine_mxn: f64,
@@ -115,7 +115,7 @@ pub struct AgencyFineBreakdown {
     pub profeco_points: u32,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize, Default)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ScanRequest {
     pub tax_id: String,
     pub domain: Option<String>,
@@ -127,7 +127,7 @@ pub struct ScanRequest {
 }
 
 /// Cuestionario de Certeza Pericial (12 bloques de riesgo + Ficha `LegalDossierInput` embebida con `#[serde(default)]`).
-#[derive(Debug, Clone, Serialize, Deserialize, Default)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct CalibrationAnswers {
     pub exact_employee_count: Option<u32>,
     pub has_telework_over_40_percent: Option<bool>,
@@ -189,7 +189,7 @@ pub enum RiskSeverity {
     CriticalClosure,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize, Default)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct RegulatoryFinding {
     pub code: String,
     pub agency: RegulatoryAgency,
@@ -206,7 +206,7 @@ pub struct RegulatoryFinding {
     pub verified_by_osint: bool,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize, Default)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct UmaCalculator {
     pub uma_daily_mxn: f64,
     pub fiscal_year: u16,
@@ -250,7 +250,7 @@ impl UmaCalculator {
     }
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize, Default)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct LegalAcceptanceMetadata {
     pub accepted_at_utc: String,
     pub client_ip: String,
@@ -261,7 +261,7 @@ pub struct LegalAcceptanceMetadata {
     pub three_d_secure_status: Option<String>,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize, Default)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct WebOsintTelemetry {
     pub target_url: String,
     pub http_status: u16,

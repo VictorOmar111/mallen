@@ -75,7 +75,18 @@ impl DbState {
         // 2. Tabla de Sesiones de Auditoría y Personalización Jurídica (Sincronía 100% Web <-> PDF <-> ZIP)
         sqlx::query(
             r#"
-            CREATE TABLE IF NOT EXISTS audit_sessions (
+            CREATE TABLE IF NOT EXISTS audit_snapshots (
+                    snapshot_uuid TEXT PRIMARY KEY,
+                    tax_id_key TEXT NOT NULL,
+                    empresa_key TEXT NOT NULL,
+                    emp_count INTEGER NOT NULL,
+                    total_cents INTEGER NOT NULL,
+                    risk_score INTEGER NOT NULL,
+                    master_json_blob TEXT NOT NULL,
+                    created_at_utc TEXT DEFAULT (datetime('now'))
+                );
+                CREATE INDEX IF NOT EXISTS idx_audit_snapshots_tax_uuid ON audit_snapshots(tax_id_key, snapshot_uuid);
+                CREATE TABLE IF NOT EXISTS audit_sessions (
                 tax_id TEXT PRIMARY KEY,
                 master_json TEXT NOT NULL,
                 is_accredited INTEGER NOT NULL DEFAULT 0,
