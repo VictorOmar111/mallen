@@ -667,7 +667,14 @@
   </div>
 </section>
 <script>
-window.runInstantLookup360 = async function() {
+window.runInstantLookup360 = async function(skipTopSync) {
+  var topRfcInput = document.getElementById('tax_id') || document.querySelector('input[placeholder*="RFC"]');
+  var inp360 = document.getElementById('lookup-360-input');
+  if (!skipTopSync && topRfcInput && inp360 && inp360.value.trim()) {
+    topRfcInput.value = inp360.value.trim().toUpperCase();
+    localStorage.setItem('mallen_active_rfc', inp360.value.trim().toUpperCase());
+    document.cookie = 'mallen_active_rfc=' + encodeURIComponent(inp360.value.trim().toUpperCase()) + '; path=/; max-age=86400; SameSite=Lax';
+  }
   var inp = document.getElementById('lookup-360-input');
   var box = document.getElementById('lookup-360-result');
   if (!inp || !box || !inp.value.trim()) return;
@@ -1244,5 +1251,34 @@ window.updateMallenSandbox = function(customEmp) {
 
     <script src="/js/i18n_engine.js?v=2026.140" defer></script>
     <script src="/js/i18n_regions_connect.js" defer></script>
+
+<script id="w16-unified-osint-360-bridge">
+(function() {
+  // Interceptar fetch a /api/scan para que cada vez que el usuario ejecute el Motor de Diagnóstico OSINT,
+  // se actualice automáticamente la Ficha 360° inferior, el Simulador In Situ y el token de sesión persistente
+  var origFetch = window.fetch;
+  window.fetch = async function(input, init) {
+    var urlStr = typeof input === 'string' ? input : (input && input.url ? input.url : '');
+    var response = await origFetch.apply(this, arguments);
+    try {
+      if (urlStr.indexOf('/api/scan') !== -1 && init && init.body) {
+        var reqBody = JSON.parse(init.body);
+        var qTax = (reqBody.tax_id || '').trim();
+        if (qTax) {
+          localStorage.setItem('mallen_active_rfc', qTax);
+          document.cookie = 'mallen_active_rfc=' + encodeURIComponent(qTax) + '; path=/; max-age=86400; SameSite=Lax';
+          var lookupInput = document.getElementById('lookup-360-input');
+          if (lookupInput) {
+            lookupInput.value = qTax;
+            if (window.runInstantLookup360) setTimeout(function() { window.runInstantLookup360(true); }, 50);
+          }
+        }
+      }
+    } catch (_) {}
+    return response;
+  };
+})();
+</script>
+
 </body>
 </html>
