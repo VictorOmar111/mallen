@@ -873,6 +873,8 @@ pub struct CorporateEnrichment360 {
     pub is_multi_branch_corp: bool,
     pub isn_rate_pct: f64,
     pub isn_mensual_presunto_mxn: f64,
+    pub exact_vemp_fine_mxn: f64,
+    pub exact_risk_score: u32,
     pub ley_proteccion_civil_local: String,
     pub alerta_historica_5_anios: String,
 }
@@ -942,6 +944,8 @@ pub fn extract_deep_denue_360_intelligence(query_rfc_or_name: &str) -> Corporate
         is_multi_branch_corp: false,
         isn_rate_pct: 3.0,
         isn_mensual_presunto_mxn: 0.0,
+        exact_vemp_fine_mxn: 0.0,
+        exact_risk_score: 0,
         ley_proteccion_civil_local: "Ley General de Protección Civil (Arts. 39 y 40) y legislación estatal aplicable".to_string(),
         alerta_historica_5_anios: String::new(),
     };
@@ -966,7 +970,7 @@ pub fn extract_deep_denue_360_intelligence(query_rfc_or_name: &str) -> Corporate
     if let Ok(conn) = rusqlite::Connection::open(db_path) {
         let _ = conn.execute_batch("PRAGMA journal_mode=WAL; PRAGMA synchronous=NORMAL; PRAGMA busy_timeout=5000;");
 
-        // 1. Verificar si existe un Snapshot Inmutable explícito para este RFC o Razón Social
+        // 1. Verificar primero si existe un Snapshot Inmutable explícito para este RFC o Razón Social
         if let Some(snap) = load_immutable_snapshot_strict(&q_up, &resolved_company_name) {
             let emp_snap = snap
                 .calibration_applied
@@ -975,8 +979,12 @@ pub fn extract_deep_denue_360_intelligence(query_rfc_or_name: &str) -> Corporate
             if emp_snap > 0 && !snap.razon_social.trim().is_empty() {
                 out.razon_social = snap.razon_social.clone();
                 resolved_company_name = snap.razon_social.clone();
-                out.codigo_scian = snap.codigo_scian.clone();
-                out.actividad_desc = snap.actividad_scian_desc.clone();
+                out.codigo_scian = if snap.codigo_scian.trim().is_empty() { "541110".to_string() } else { snap.codigo_scian.clone() };
+                out.actividad_desc = if snap.actividad_scian_desc.trim().is_empty() {
+                    format!("{} - Actividad Corporativa Registrada", out.codigo_scian)
+                } else {
+                    snap.actividad_scian_desc.clone()
+                };
                 out.estimated_employees = emp_snap;
                 out.estrato_personal = format!("{} colaboradores (Nómina Conciliada en Snapshot)", emp_snap);
                 out.headcount_source_type = "CALIBRADO_POR_USUARIO".to_string();
@@ -990,13 +998,15 @@ pub fn extract_deep_denue_360_intelligence(query_rfc_or_name: &str) -> Corporate
                         out.entidad_federativa = ent.trim().to_uppercase();
                     }
                 }
+                let (_, snap_cents) = compute_vectors_37_sha256_fingerprint(&snap);
+                out.exact_vemp_fine_mxn = (snap_cents as f64) / 100.0;
+                out.exact_risk_score = snap.risk_score.max(45);
                 out.branch_count = 1;
                 has_calibrated_snapshot = true;
             }
         }
 
-        // 2. Si el usuario ingresó un RFC y no tenía snapshot calibrado, resolver su Razón Social
-        //    cruzando contra las tablas de padrones que tienen RFC (excluyendo registros de prueba o vacíos)
+        // 2. Si el usuario ingresó un RFC y no tenía snapshot calibrado, resolver dinámicamente su Razón Social
         if looks_like_rfc && resolved_company_name.is_empty() {
             for rfc_sql in [
                 "SELECT razon_social FROM stps_repse WHERE UPPER(rfc) = ?1 LIMIT 1",
@@ -1017,20 +1027,17 @@ pub fn extract_deep_denue_360_intelligence(query_rfc_or_name: &str) -> Corporate
             }
         }
 
-        // 3. Si tenemos un nombre de empresa o marca (`resolved_company_name`), buscar en `denue_units`
-        //    usando primero el índice ultrarrápido `denue_fts` (o `LIMIT 100`) para tardar < 3ms y nunca causar 504 Timeout
-        let clean_token = resolved_company_name
-            .replace("S.A. DE C.V.", "")
-            .replace("S.A.B. DE C.V.", "")
-            .replace("S.A.P.I. DE C.V.", "")
-            .replace("S. DE R.L. DE C.V.", "")
-            .replace("DISTRIBUIDORA E IMPORTADORA", "")
-            .trim()
-            .to_string();
+        // 3. Consultar `denue_fts` (solo si NO tenía ya un snapshot calibrado, evitando cualquier escaneo innecesario y manteniendo latencia < 400µs)
+        if !has_calibrated_snapshot && !resolved_company_name.is_empty() {
+            let clean_token = resolved_company_name
+                .replace("S.A. DE C.V.", "")
+                .replace("S.A.B. DE C.V.", "")
+                .replace("S.A.P.I. DE C.V.", "")
+                .replace("S. DE R.L. DE C.V.", "")
+                .replace("DISTRIBUIDORA E IMPORTADORA", "")
+                .trim()
+                .to_string();
 
-        if !clean_token.is_empty() {
-            let mut branch_rows: Vec<(String, String, String, String, String, String, String)> = Vec::new();
-            // Crear término seguro para FTS5 (solo palabras alfanuméricas)
             let fts_query: String = clean_token
                 .split(|c: char| !c.is_alphanumeric())
                 .filter(|w| w.len() >= 3)
@@ -1039,7 +1046,9 @@ pub fn extract_deep_denue_360_intelligence(query_rfc_or_name: &str) -> Corporate
                 .collect::<Vec<_>>()
                 .join(" AND ");
 
+            let mut branch_rows: Vec<(String, String, String, String, String, String, String)> = Vec::new();
             if !fts_query.is_empty() {
+                // Ordenar priorizando filas donde raz_social o nom_estab contenga el token buscado
                 let fts_sql = "
                     SELECT COALESCE(NULLIF(TRIM(u.raz_social), ''), TRIM(u.nom_estab)),
                            COALESCE(NULLIF(TRIM(u.codigo_scian), ''), '541110'),
@@ -1051,44 +1060,11 @@ pub fn extract_deep_denue_360_intelligence(query_rfc_or_name: &str) -> Corporate
                     FROM denue_fts f
                     JOIN denue_units u ON u.rowid = f.rowid
                     WHERE denue_fts MATCH ?1
+                    ORDER BY CASE WHEN UPPER(u.raz_social) LIKE '%' || UPPER(?2) || '%' THEN 0 ELSE 1 END
                     LIMIT 100
                 ";
                 if let Ok(mut stmt) = conn.prepare(fts_sql) {
-                    if let Ok(rows) = stmt.query_map(rusqlite::params![fts_query], |r| {
-                        Ok((
-                            r.get::<_, String>(0)?,
-                            r.get::<_, String>(1)?,
-                            r.get::<_, String>(2)?,
-                            r.get::<_, String>(3)?,
-                            r.get::<_, String>(4)?,
-                            r.get::<_, String>(5)?,
-                            r.get::<_, String>(6)?,
-                        ))
-                    }) {
-                        for item in rows.flatten() {
-                            branch_rows.push(item);
-                        }
-                    }
-                }
-            }
-
-            // Fallback acotado con LIMIT 50 solo si FTS5 no devolvió resultados
-            if branch_rows.is_empty() {
-                let like_sql = "
-                    SELECT COALESCE(NULLIF(TRIM(raz_social), ''), TRIM(nom_estab)),
-                           COALESCE(NULLIF(TRIM(codigo_scian), ''), '541110'),
-                           COALESCE(NULLIF(TRIM(nombre_act), ''), 'Actividad Registrada en DENUE'),
-                           COALESCE(NULLIF(TRIM(per_ocu), ''), ''),
-                           COALESCE(NULLIF(TRIM(entidad), ''), 'MÉXICO'),
-                           COALESCE(NULLIF(TRIM(direccion), ''), ''),
-                           COALESCE(TRIM(id_denue), '')
-                    FROM denue_units
-                    WHERE UPPER(raz_social) LIKE '%' || UPPER(?1) || '%'
-                       OR UPPER(nom_estab) LIKE '%' || UPPER(?1) || '%'
-                    LIMIT 50
-                ";
-                if let Ok(mut stmt) = conn.prepare(like_sql) {
-                    if let Ok(rows) = stmt.query_map(rusqlite::params![clean_token], |r| {
+                    if let Ok(rows) = stmt.query_map(rusqlite::params![fts_query, clean_token], |r| {
                         Ok((
                             r.get::<_, String>(0)?,
                             r.get::<_, String>(1)?,
@@ -1112,11 +1088,9 @@ pub fn extract_deep_denue_360_intelligence(query_rfc_or_name: &str) -> Corporate
                 out.is_multi_branch_corp = total_branches > 1;
 
                 let first = &branch_rows[0];
-                if !has_calibrated_snapshot {
-                    out.razon_social = first.0.clone();
-                    out.codigo_scian = first.1.clone();
-                    out.actividad_desc = first.2.clone();
-                }
+                out.razon_social = first.0.clone();
+                out.codigo_scian = first.1.clone();
+                out.actividad_desc = first.2.clone();
                 out.entidad_federativa = first.4.clone();
                 if !first.5.is_empty() {
                     out.domicilio_completo = format!("{}, {}", first.5, out.entidad_federativa);
@@ -1131,47 +1105,71 @@ pub fn extract_deep_denue_360_intelligence(query_rfc_or_name: &str) -> Corporate
                     out.antiguedad_estimada_anios = 6;
                 }
 
-                if !has_calibrated_snapshot {
-                    let mut dynamic_emp_sum: u32 = 0;
-                    let mut has_open_251_stratum = false;
-                    for b in &branch_rows {
-                        if b.3.contains("251") {
-                            has_open_251_stratum = true;
-                        }
-                        let (_, branch_median, _, _) =
-                            crate::engine::http_form_bot::HttpFormBot::classify_denue_capacity_and_scian_risk(&b.3, &b.1);
-                        dynamic_emp_sum = dynamic_emp_sum.saturating_add(branch_median);
+                let mut dynamic_emp_sum: u32 = 0;
+                let mut has_open_251_stratum = false;
+                for b in &branch_rows {
+                    if b.3.contains("251") {
+                        has_open_251_stratum = true;
                     }
+                    let (_, branch_median, _, _) =
+                        crate::engine::http_form_bot::HttpFormBot::classify_denue_capacity_and_scian_risk(&b.3, &b.1);
+                    dynamic_emp_sum = dynamic_emp_sum.saturating_add(branch_median);
+                }
 
-                    out.estrato_personal = first.3.clone();
-                    out.estimated_employees = dynamic_emp_sum.max(1);
-                    out.headcount_source_type = "ESTRATO_OFICIAL_INEGI".to_string();
+                out.estrato_personal = first.3.clone();
+                out.estimated_employees = dynamic_emp_sum.max(1);
+                out.headcount_source_type = "ESTRATO_OFICIAL_INEGI".to_string();
 
-                    if has_open_251_stratum {
-                        out.headcount_display_label = format!(
-                            "Personal Ocupado INEGI (Estrato Oficial): {} (Más de {} colaboradores en {} unidades muestreadas)",
-                            out.estrato_personal, out.estimated_employees, total_branches
-                        );
-                        out.vemp_methodology_note = format!(
-                            "Cálculo VEMP dinámico sobre cota mínima censal (+{} colaboradores en {} establecimientos DENUE — Calibrable sin límite)",
-                            out.estimated_employees, total_branches
-                        );
-                    } else if total_branches > 1 {
-                        out.headcount_display_label = format!(
-                            "Personal Ocupado INEGI (Estrato Oficial): {} ({} sucursales en DENUE: ~{} colaboradores acumulados)",
-                            out.estrato_personal, total_branches, out.estimated_employees
-                        );
-                        out.vemp_methodology_note = format!(
-                            "Exposición calculada sumando la Mediana Censal de las {} unidades registradas en DENUE ({} pers.)",
-                            total_branches, out.estimated_employees
-                        );
-                    } else {
-                        out.headcount_display_label = format!("Personal Ocupado INEGI (Estrato Oficial): {}", out.estrato_personal);
-                        out.vemp_methodology_note = format!(
-                            "Exposición calculada mediante Mediana Estadística Censal del Estrato ({} pers.)",
-                            out.estimated_employees
-                        );
-                    }
+                let (_, _, _, _, _, _, _, denue_cents, denue_score) = compute_ssot_exact_totals_cents(
+                    &out.razon_social,
+                    &out.codigo_scian,
+                    out.estimated_employees,
+                    "LIMPIO",
+                    "LIMPIO",
+                    false,
+                    false,
+                    true,
+                    true,
+                    true,
+                    false,
+                    true,
+                    true,
+                    false,
+                    true,
+                    false,
+                    true,
+                    true,
+                    false,
+                    false,
+                    None,
+                );
+                out.exact_vemp_fine_mxn = (denue_cents as f64) / 100.0;
+                out.exact_risk_score = denue_score;
+
+                if has_open_251_stratum {
+                    out.headcount_display_label = format!(
+                        "Personal Ocupado INEGI (Estrato Oficial): {} (Más de {} colaboradores en {} unidades muestreadas)",
+                        out.estrato_personal, out.estimated_employees, total_branches
+                    );
+                    out.vemp_methodology_note = format!(
+                        "Cálculo VEMP dinámico sobre cota mínima censal (+{} colaboradores en {} establecimientos DENUE — Calibrable sin límite)",
+                        out.estimated_employees, total_branches
+                    );
+                } else if total_branches > 1 {
+                    out.headcount_display_label = format!(
+                        "Personal Ocupado INEGI (Estrato Oficial): {} ({} sucursales en DENUE: ~{} colaboradores acumulados)",
+                        out.estrato_personal, total_branches, out.estimated_employees
+                    );
+                    out.vemp_methodology_note = format!(
+                        "Exposición calculada sumando la Mediana Censal de las {} unidades registradas en DENUE ({} pers.)",
+                        total_branches, out.estimated_employees
+                    );
+                } else {
+                    out.headcount_display_label = format!("Personal Ocupado INEGI (Estrato Oficial): {}", out.estrato_personal);
+                    out.vemp_methodology_note = format!(
+                        "Exposición calculada mediante Mediana Estadística Censal del Estrato ({} pers.)",
+                        out.estimated_employees
+                    );
                 }
             }
         }

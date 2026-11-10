@@ -831,7 +831,11 @@ window.updateMallenSandbox = function(customEmp) {
   slider.value = emp;
   if (exactInput && parseInt(exactInput.value, 10) !== emp) exactInput.value = emp;
   document.getElementById('sbx-emp-label').textContent = emp.toLocaleString('en-US') + (emp === 1 ? ' colaborador' : ' colaboradores');
-  var baseFine = 310000 + (emp * 12450);
+  var baseFine = (window.__MALLEN_OFFICIAL_VEMP_BASE && window.__MALLEN_OFFICIAL_EMP_BASE === emp)
+    ? window.__MALLEN_OFFICIAL_VEMP_BASE
+    : (window.__MALLEN_OFFICIAL_VEMP_BASE && window.__MALLEN_OFFICIAL_EMP_BASE > 0
+        ? (window.__MALLEN_OFFICIAL_VEMP_BASE * (0.65 + 0.35 * (emp / window.__MALLEN_OFFICIAL_EMP_BASE)))
+        : (310000 + (emp * 12450)));
   var checks = document.querySelectorAll('.sbx-check');
   var mitigatedRatio = 0;
   for (var i = 0; i < checks.length; i++) {
