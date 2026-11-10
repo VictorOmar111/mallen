@@ -10,3 +10,6 @@ data/*.csv
 !/kits_blindaje/.gitkeep
 /dictamenes_pdf/*
 .env
+
+.aider*
+

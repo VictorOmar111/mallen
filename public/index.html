@@ -691,7 +691,15 @@ window.runInstantLookup360 = async function() {
       '<div class="p-3.5 rounded-lg border border-slate-800 bg-slate-900/80 text-left">' +
         '<div class="text-slate-400 text-[10px] uppercase tracking-wider">JURISDICCIÓN, ISN ESTATAL Y REGISTRO</div>' +
         '<div class="font-bold mt-1">' + d.entidad_federativa + ' (' + d.municipio_alcaldia + ')</div>' +
-        '<div class="text-amber-400 mt-1">ISN Estatal (' + d.isn_rate_pct.toFixed(1) + '% sobre Mediana): $' + d.isn_mensual_presunto_mxn.toLocaleString('en-US', {minimumFractionDigits:2}) + ' MXN/mes</div>' +
+        (function() {
+          if (d.headcount_source_type === 'PENDIENTE_CALIBRACION_CORPORATIVA' || !d.estimated_employees) {
+            return '<div class="text-amber-400 mt-1">ISN Estatal (Tasa ' + d.isn_rate_pct.toFixed(1) + '% — Pendiente calibrar nómina)</div>';
+          }
+          var basisLbl = d.headcount_source_type === 'CALIBRADO_POR_USUARIO'
+            ? 'sobre Nómina Conciliada'
+            : (d.headcount_source_type === 'PADRON_GRANDES_CONTRIBUYENTES' ? 'sobre Plantilla Corporativa' : 'sobre Mediana Censal INEGI');
+          return '<div class="text-amber-400 mt-1">ISN Estatal (' + d.isn_rate_pct.toFixed(1) + '% ' + basisLbl + '): $' + d.isn_mensual_presunto_mxn.toLocaleString('en-US', {minimumFractionDigits:2}) + ' MXN/mes</div>';
+        })() +
         '<div class="text-[11px] text-slate-400 mt-1">' + gpsLine + '</div>' +
       '</div>' +
       '<div class="p-3.5 rounded-lg border border-slate-800 bg-slate-900/80 text-left">' +

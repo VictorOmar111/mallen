@@ -1003,9 +1003,6 @@ pub fn extract_deep_denue_360_intelligence(query_rfc_or_name: &str) -> Corporate
         && q_up.chars().take(3).all(|c| c.is_ascii_alphabetic() || c == '&')
         && q_up.chars().skip(len_prefix_letters(&q_up)).take(6).all(|c| c.is_ascii_digit());
 
-    // Regla de Oro: CERO respaldos arbitrarios de "11 a 30 personas" (20).
-    // Si aún no se identifica en DENUE ni en el Padrón de Grandes Contribuyentes, se marca explícitamente como
-    // "PENDIENTE DE CALIBRACIÓN CORPORATIVA (Requiere validación de nómina)" con estimated_employees = 0.
     let mut out = CorporateEnrichment360 {
         query_matched: q.to_string(),
         razon_social: if looks_like_rfc {
@@ -1019,12 +1016,12 @@ pub fn extract_deep_denue_360_intelligence(query_rfc_or_name: &str) -> Corporate
         estimated_employees: 0,
         headcount_source_type: "PENDIENTE_CALIBRACION_CORPORATIVA".to_string(),
         headcount_display_label: "Estrato: PENDIENTE DE CALIBRACIÓN CORPORATIVA (Requiere validación de nómina)".to_string(),
-        vemp_methodology_note: "Asignación arbitraria desactivada: Ingrese el número real de colaboradores (soporta desde 1 hasta +100,000 empleados)".to_string(),
+        vemp_methodology_note: "Asignación arbitraria desactivada: Ingrese el número real de colaboradores (soporta desde 1 hasta +200,000 empleados)".to_string(),
         entidad_federativa: "JURISDICCIÓN FEDERAL / NACIONAL".to_string(),
         municipio_alcaldia: "Verificación Registral".to_string(),
         domicilio_completo: "Domicilio sujeto a validación en expediente o calibración".to_string(),
-        latitud: "Validación por Padrón Fiscal / Corporativo".to_string(),
-        longitud: "".to_string(),
+        latitud: "19.4326".to_string(),
+        longitud: "-99.1332".to_string(),
         fecha_alta_denue: "Registro Vigente".to_string(),
         antiguedad_estimada_anios: 5,
         branch_count: 1,
@@ -1039,33 +1036,83 @@ pub fn extract_deep_denue_360_intelligence(query_rfc_or_name: &str) -> Corporate
         return out;
     }
 
+    let mut resolved_identity = !looks_like_rfc;
     let mut calibrated_or_large_corp = false;
     let mut matched_in_denue = false;
-    let mut search_name = q_up.clone();
+    let mut search_name = if looks_like_rfc { String::new() } else { q_up.clone() };
 
     let db_path = std::env::var("MALLEN_DB_PATH").unwrap_or_else(|_| "data/mallen_prod.db".to_string());
     if let Ok(conn) = rusqlite::Connection::open(db_path) {
         let _ = conn.execute_batch("PRAGMA journal_mode=WAL; PRAGMA synchronous=NORMAL; PRAGMA busy_timeout=5000;");
         ensure_large_employers_seeded(&conn);
 
-        // 1. Primero revisar si existe en `audit_snapshots` una calibración explícita del usuario
-        if let Some(snap) = load_immutable_snapshot_strict(q, q) {
+        // 1. Si el usuario ingresó un RFC, primero verificar si existe en `large_employers_registry` o en padrones con columna RFC
+        if looks_like_rfc {
+            for rfc_lookup_sql in [
+                "SELECT razon_social FROM large_employers_registry WHERE UPPER(rfc) = ?1 LIMIT 1",
+                "SELECT nombre FROM prospects WHERE UPPER(tax_id) = ?1 AND nombre NOT LIKE 'REGISTRO NO INDEXADO%' AND nombre NOT LIKE 'RFC %' ORDER BY created_at DESC LIMIT 1",
+                "SELECT razon_social FROM audit_sessions WHERE UPPER(tax_id) = ?1 AND razon_social NOT LIKE 'REGISTRO NO INDEXADO%' AND razon_social NOT LIKE 'RFC %' ORDER BY rowid DESC LIMIT 1",
+                "SELECT razon_social FROM stps_repse WHERE UPPER(rfc) = ?1 LIMIT 1",
+                "SELECT razon_social FROM sat_69b_efos WHERE UPPER(rfc) = ?1 LIMIT 1",
+                "SELECT razon_social FROM sat_69_incumplidos WHERE UPPER(rfc) = ?1 LIMIT 1",
+                "SELECT razon_social FROM sfp_sancionados WHERE UPPER(rfc) = ?1 LIMIT 1",
+            ] {
+                if let Ok(found_name) = conn.query_row(rfc_lookup_sql, rusqlite::params![q_up], |r| r.get::<_, String>(0)) {
+                    if !found_name.trim().is_empty() {
+                        out.razon_social = found_name.trim().to_uppercase();
+                        search_name = out.razon_social.clone();
+                        resolved_identity = true;
+                        break;
+                    }
+                }
+            }
+        }
+
+        // 2. Consultar primero el Padrón Maestro de Grandes Contribuyentes (`large_employers_registry`)
+        //    SOLO si el RFC coincide exactamente O si ya tenemos un nombre de empresa real (`resolved_identity` con longitud >= 4)
+        let clean_corp_token = search_name
+            .replace("S.A. DE C.V.", "")
+            .replace("S.A.B. DE C.V.", "")
+            .replace("S.A.P.I. DE C.V.", "")
+            .replace("S. DE R.L. DE C.V.", "")
+            .trim()
+            .to_string();
+
+        let large_corp_row = if looks_like_rfc && !resolved_identity {
+            conn.query_row(
+                "SELECT rfc, razon_social, codigo_scian, actividad_desc, verified_headcount, branch_count, entidad, domicilio
+                 FROM large_employers_registry WHERE UPPER(rfc) = ?1 LIMIT 1",
+                rusqlite::params![q_up],
+                |r| Ok((r.get::<_, String>(0)?, r.get::<_, String>(1)?, r.get::<_, String>(2)?, r.get::<_, String>(3)?, r.get::<_, i64>(4)?, r.get::<_, i64>(5)?, r.get::<_, String>(6)?, r.get::<_, String>(7)?)),
+            ).ok()
+        } else if clean_corp_token.len() >= 4 {
+            conn.query_row(
+                "SELECT rfc, razon_social, codigo_scian, actividad_desc, verified_headcount, branch_count, entidad, domicilio
+                 FROM large_employers_registry
+                 WHERE UPPER(rfc) = ?1
+                    OR UPPER(razon_social) LIKE '%' || ?2 || '%'
+                    OR ?2 LIKE '%' || UPPER(REPLACE(REPLACE(razon_social, ' S.A. DE C.V.', ''), ' S.A.B. DE C.V.', '')) || '%'
+                 LIMIT 1",
+                rusqlite::params![q_up, clean_corp_token],
+                |r| Ok((r.get::<_, String>(0)?, r.get::<_, String>(1)?, r.get::<_, String>(2)?, r.get::<_, String>(3)?, r.get::<_, i64>(4)?, r.get::<_, i64>(5)?, r.get::<_, String>(6)?, r.get::<_, String>(7)?)),
+            ).ok()
+        } else {
+            None
+        };
+
+        // 3. Revisar si existe en `audit_snapshots` una calibración explícita del usuario
+        //    (Ignorando escalones por defecto 4, 8, 20, 45, 75, 150, 300 cuando el corporativo está en `large_employers_registry`)
+        if let Some(snap) = load_immutable_snapshot_strict(q, &search_name) {
             let emp_snap = snap
                 .calibration_applied
                 .exact_employee_count
                 .unwrap_or(snap.estimated_employees);
-            // Evitar que un snapshot viejo con el antiguo default de 20 o 45 pise a un Gran Contribuyente como Alsea
-            let is_known_large = conn
-                .query_row(
-                    "SELECT verified_headcount FROM large_employers_registry WHERE rfc = ?1 OR UPPER(razon_social) LIKE '%' || ?2 || '%' LIMIT 1",
-                    rusqlite::params![q_up, snap.razon_social.to_uppercase()],
-                    |r| r.get::<_, i64>(0),
-                )
-                .ok();
+            let is_default_stratum_step = matches!(emp_snap, 0 | 4 | 8 | 20 | 45 | 75 | 150 | 300);
 
-            if emp_snap > 0 && !(is_known_large.is_some() && (emp_snap == 20 || emp_snap == 45)) {
+            if emp_snap > 0 && !(large_corp_row.is_some() && is_default_stratum_step) {
                 out.razon_social = snap.razon_social.clone();
                 search_name = snap.razon_social.clone();
+                resolved_identity = true;
                 if !snap.codigo_scian.is_empty() {
                     out.codigo_scian = snap.codigo_scian.clone();
                 }
@@ -1073,11 +1120,7 @@ pub fn extract_deep_denue_360_intelligence(query_rfc_or_name: &str) -> Corporate
                     out.actividad_desc = snap.actividad_scian_desc.clone();
                 }
                 out.estimated_employees = emp_snap;
-                out.estrato_personal = if emp_snap > 250 {
-                    format!("Gran Empresa / Corporativo ({} colaboradores activos)", emp_snap)
-                } else {
-                    format!("{} colaboradores", emp_snap)
-                };
+                out.estrato_personal = format!("{} colaboradores (Nómina Conciliada)", emp_snap);
                 out.headcount_source_type = "CALIBRADO_POR_USUARIO".to_string();
                 out.headcount_display_label = format!("Plantilla Conciliada: {} colaboradores (Confirmado en Sesión)", emp_snap);
                 out.vemp_methodology_note = format!("Cálculo VEMP exacto sobre nómina confirmada de {} colaboradores (Art. 992 LFT)", emp_snap);
@@ -1088,67 +1131,18 @@ pub fn extract_deep_denue_360_intelligence(query_rfc_or_name: &str) -> Corporate
             }
         }
 
-        // 2. Si es un RFC, cruzar contra `prospects`, `audit_sessions`, `stps_repse`, `sat_69b_efos`, `sat_69_incumplidos` y `sfp_sancionados`
-        //    para descubrir su Razón Social real (como DISTRIBUIDORA E IMPORTADORA ALSEA en `prospects`)
-        if looks_like_rfc && !calibrated_or_large_corp {
-            for rfc_lookup_sql in [
-                "SELECT nombre FROM prospects WHERE UPPER(tax_id) = ?1 AND nombre NOT LIKE 'REGISTRO NO INDEXADO%' ORDER BY created_at DESC LIMIT 1",
-                "SELECT razon_social FROM audit_sessions WHERE UPPER(tax_id) = ?1 AND razon_social NOT LIKE 'REGISTRO NO INDEXADO%' ORDER BY rowid DESC LIMIT 1",
-                "SELECT razon_social FROM stps_repse WHERE UPPER(rfc) = ?1 LIMIT 1",
-                "SELECT razon_social FROM sat_69b_efos WHERE UPPER(rfc) = ?1 LIMIT 1",
-                "SELECT razon_social FROM sat_69_incumplidos WHERE UPPER(rfc) = ?1 LIMIT 1",
-                "SELECT razon_social FROM sfp_sancionados WHERE UPPER(rfc) = ?1 LIMIT 1",
-            ] {
-                if let Ok(found_name) = conn.query_row(rfc_lookup_sql, rusqlite::params![q_up], |r| r.get::<_, String>(0)) {
-                    if !found_name.trim().is_empty() {
-                        out.razon_social = found_name.trim().to_uppercase();
-                        search_name = out.razon_social.clone();
-                        break;
-                    }
-                }
-            }
-        }
-
-        // 3. Consultar el Padrón Maestro de Grandes Contribuyentes y Corporativos (`large_employers_registry`)
-        //    por RFC exacto o por coincidencia con la Razón Social resuelta
+        // 4. Si no tenía una calibración manual específica y sí está en `large_employers_registry`, aplicar su escala de Gran Contribuyente
         if !calibrated_or_large_corp {
-            let clean_corp_token = search_name
-                .replace("S.A. DE C.V.", "")
-                .replace("S.A.B. DE C.V.", "")
-                .replace("S.A.P.I. DE C.V.", "")
-                .replace("S. DE R.L. DE C.V.", "")
-                .trim()
-                .to_string();
-
-            if let Ok(row) = conn.query_row(
-                "SELECT rfc, razon_social, codigo_scian, actividad_desc, verified_headcount, branch_count, entidad, domicilio
-                 FROM large_employers_registry
-                 WHERE rfc = ?1
-                    OR (?2 != '' AND (UPPER(razon_social) LIKE '%' || ?2 || '%' OR ?2 LIKE '%' || UPPER(razon_social) || '%'))
-                 LIMIT 1",
-                rusqlite::params![q_up, clean_corp_token],
-                |r| {
-                    Ok((
-                        r.get::<_, String>(0)?,
-                        r.get::<_, String>(1)?,
-                        r.get::<_, String>(2)?,
-                        r.get::<_, String>(3)?,
-                        r.get::<_, i64>(4)?,
-                        r.get::<_, i64>(5)?,
-                        r.get::<_, String>(6)?,
-                        r.get::<_, String>(7)?,
-                    ))
-                },
-            ) {
+            if let Some(row) = large_corp_row {
                 let emp_corp = (row.4.max(1)) as u32;
                 out.razon_social = row.1;
                 out.codigo_scian = row.2;
                 out.actividad_desc = row.3;
                 out.estimated_employees = emp_corp;
-                out.estrato_personal = format!("251 y más personas (Padrón Grandes Contribuyentes: {} colaboradores)", emp_corp);
+                out.estrato_personal = format!("251 y más personas (Padrón Grandes Contribuyentes: +{} colaboradores)", emp_corp);
                 out.headcount_source_type = "PADRON_GRANDES_CONTRIBUYENTES".to_string();
                 out.headcount_display_label = format!(
-                    "Padrón Grandes Contribuyentes / Corporativo: {} colaboradores (Estrato INEGI: 251 y más personas)",
+                    "Padrón Grandes Contribuyentes / Corporativo: +{} colaboradores (Estrato INEGI: 251 y más personas)",
                     emp_corp
                 );
                 out.vemp_methodology_note = format!(
@@ -1160,22 +1154,17 @@ pub fn extract_deep_denue_360_intelligence(query_rfc_or_name: &str) -> Corporate
                 out.entidad_federativa = row.6;
                 out.domicilio_completo = row.7;
                 out.municipio_alcaldia = format!("Padrón Corporativo Federal ({})", row.0);
+                out.latitud = "19.4326".to_string();
+                out.longitud = "-99.1332".to_string();
                 calibrated_or_large_corp = true;
             }
         }
 
-        // 4. Si no es un Gran Contribuyente pre-registrado, buscar en `denue_units` agregando todas sus sucursales
-        let clean_search = search_name
-            .replace("S.A. DE C.V.", "")
-            .replace("S.A.P.I. DE C.V.", "")
-            .replace("S. DE R.L. DE C.V.", "")
-            .trim()
-            .to_string();
-
-        if !calibrated_or_large_corp && !clean_search.is_empty() && (!looks_like_rfc || clean_search != q_up) {
+        // 5. Si no está en `large_employers_registry` pero tenemos un nombre válido (`resolved_identity`), buscar en `denue_units`
+        if !calibrated_or_large_corp && resolved_identity && !clean_corp_token.is_empty() {
             if let Ok(cnt) = conn.query_row(
                 "SELECT COUNT(*) FROM denue_units WHERE UPPER(raz_social) LIKE '%' || UPPER(?1) || '%' OR UPPER(nom_estab) LIKE '%' || UPPER(?1) || '%'",
-                rusqlite::params![clean_search],
+                rusqlite::params![clean_corp_token],
                 |r| r.get::<_, i64>(0),
             ) {
                 if cnt > 0 {
@@ -1201,7 +1190,7 @@ pub fn extract_deep_denue_360_intelligence(query_rfc_or_name: &str) -> Corporate
                    OR UPPER(nombre_norm) LIKE '%' || UPPER(?1) || '%'
                 LIMIT 1
             ";
-            if let Ok(row) = conn.query_row(denue_sql, rusqlite::params![clean_search], |r| {
+            if let Ok(row) = conn.query_row(denue_sql, rusqlite::params![clean_corp_token], |r| {
                 Ok((
                     r.get::<_, String>(0)?,
                     r.get::<_, String>(1)?,
@@ -1223,8 +1212,6 @@ pub fn extract_deep_denue_360_intelligence(query_rfc_or_name: &str) -> Corporate
                 out.domicilio_completo = format!("{}, {}", row.5, out.entidad_federativa);
                 if !row.9.is_empty() {
                     out.municipio_alcaldia = format!("Folio DENUE: {}", row.9);
-                    out.latitud = format!("Folio Registral INEGI #{}", row.9);
-                    out.longitud = String::new();
                 }
 
                 if row.3.trim().is_empty() {
@@ -1236,11 +1223,18 @@ pub fn extract_deep_denue_360_intelligence(query_rfc_or_name: &str) -> Corporate
                     out.estrato_personal = row.3.clone();
                     let (_, median_emp, _, _) =
                         crate::engine::http_form_bot::HttpFormBot::classify_denue_capacity_and_scian_risk(&out.estrato_personal, &out.codigo_scian);
-                    // Si tiene múltiples sucursales en el DENUE, escalar por el número de establecimientos
                     let consolidated_emp = median_emp.saturating_mul((out.branch_count as u32).max(1));
                     out.estimated_employees = consolidated_emp.max(1);
                     out.headcount_source_type = "ESTRATO_OFICIAL_INEGI".to_string();
-                    out.headcount_display_label = if out.branch_count > 1 {
+
+                    // Si el estrato es el tope superior del INEGI ("251 y más personas"), indicar explícitamente que es "+300 colaboradores (Rango abierto)"
+                    let is_open_top_stratum = out.estrato_personal.contains("251");
+                    out.headcount_display_label = if is_open_top_stratum {
+                        format!(
+                            "Personal Ocupado INEGI (Estrato Oficial): {} (Más de 300 colaboradores — {} unidades)",
+                            out.estrato_personal, out.branch_count
+                        )
+                    } else if out.branch_count > 1 {
                         format!(
                             "Personal Ocupado INEGI (Estrato Oficial): {} ({} sucursales consolidadas: ~{} colaboradores)",
                             out.estrato_personal, out.branch_count, out.estimated_employees
@@ -1248,16 +1242,23 @@ pub fn extract_deep_denue_360_intelligence(query_rfc_or_name: &str) -> Corporate
                     } else {
                         format!("Personal Ocupado INEGI (Estrato Oficial): {}", out.estrato_personal)
                     };
-                    out.vemp_methodology_note = format!(
-                        "Exposición calculada mediante Mediana Estadística Censal del Estrato ({} pers.)",
-                        out.estimated_employees
-                    );
+
+                    out.vemp_methodology_note = if is_open_top_stratum {
+                        format!(
+                            "Cálculo VEMP con piso de Gran Empresa (+{} colaboradores base — Ajustable sin límite superior)",
+                            out.estimated_employees
+                        )
+                    } else {
+                        format!(
+                            "Exposición calculada mediante Mediana Estadística Censal del Estrato ({} pers.)",
+                            out.estimated_employees
+                        )
+                    };
                 }
             }
         }
     }
 
-    // Extraer año de constitución directamente de los dígitos del RFC (ej. ALS9209253R0 -> 1992 = 34 años; CTE160824G29 -> 2016 = 10 años)
     if looks_like_rfc {
         let yy = q_up.chars().skip(len_prefix_letters(&q_up)).take(2).collect::<String>();
         if let Ok(y_num) = yy.parse::<u32>() {
