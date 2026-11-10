@@ -1559,7 +1559,7 @@ async fn test_http_form_bot_14_scenarios_with_real_db_companies() {
     ];
 
     // Añadir dinámicamente las primeras 2 empresas reales de `denue_units` cargadas al inicio del test
-    for (idx_r, (r_name, r_scian, _r_url)) in real_companies.iter().take(2).enumerate() {
+    for (idx_r, (r_name, r_scian)) in real_companies.iter().take(2).enumerate() {
         let dyn_rfc = format!("DEN{:02}1010RR{}", idx_r + 1, idx_r + 1);
         f1_matrix.push((
             dyn_rfc,
@@ -1666,7 +1666,7 @@ async fn test_http_form_bot_14_scenarios_with_real_db_companies() {
             rfc
         );
         assert!(
-            kit_docs[0].markdown_content.contains(&emp_cnt.to_string()),
+            kit_docs[0].content.contains(&emp_cnt.to_string()),
             "El Acta NOM-019 dentro del Kit ZIP debe reflejar exactamente los {} colaboradores",
             emp_cnt
         );
@@ -1697,5 +1697,133 @@ async fn test_http_form_bot_14_scenarios_with_real_db_companies() {
     );
     println!("╚═══════════════════════════════════════════════════════════════════╩══════════╩══════════╩══════════╩══════════╩══════════════════════╝\n");
 
-    println!("✓ LOS 80 ESCENARIOS DE GRADO FÓRMULA 1 (PARIDAD CUÁDRUPLE WEB ⇄ PRE-DICTAMEN ⇄ CHECKOUT ⇄ ZIP EN 12 NUEVAS EMPRESAS) SUPERADOS AL 100%");
+
+    // =========================================================================
+    // ESCENARIO 81: AUDITORÍA MASIVA SOBRE 100 EMPRESAS REALES ALEATORIAS DE `denue_units`
+    // (CERO HARDCODES — FLUJO COMPLETO FORMBOT ⇄ LOOKUP ⇄ SNAPSHOT ⇄ PDF/KIT)
+    // =========================================================================
+    let mut random_100_denue: Vec<(String, String, String, String, String)> = Vec::with_capacity(100);
+    if let Ok(mut stmt100) = conn.prepare(
+        "SELECT COALESCE(NULLIF(TRIM(raz_social), ''), TRIM(nom_estab)) AS nombre,
+                COALESCE(NULLIF(TRIM(codigo_scian), ''), '541110') AS scian,
+                COALESCE(NULLIF(TRIM(nombre_act), ''), 'Actividad DENUE') AS act_desc,
+                COALESCE(NULLIF(TRIM(per_ocu), ''), '11 a 30 personas') AS estrato,
+                COALESCE(NULLIF(TRIM(entidad), ''), 'MÉXICO') AS entidad
+         FROM denue_units
+         WHERE LENGTH(COALESCE(NULLIF(TRIM(raz_social), ''), TRIM(nom_estab))) >= 5
+         ORDER BY RANDOM()
+         LIMIT 100",
+    ) {
+        if let Ok(rows) = stmt100.query_map([], |r| {
+            Ok((
+                r.get::<_, String>(0)?,
+                r.get::<_, String>(1)?,
+                r.get::<_, String>(2)?,
+                r.get::<_, String>(3)?,
+                r.get::<_, String>(4)?,
+            ))
+        }) {
+            for item in rows.flatten() {
+                random_100_denue.push(item);
+            }
+        }
+    }
+
+    assert_eq!(
+        random_100_denue.len(),
+        100,
+        "Debe extraer exactamente 100 empresas reales aleatorias desde denue_units en data/mallen_prod.db"
+    );
+
+    println!("\n╔══════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════╗");
+    println!("║ AUDITORÍA F1 SOBRE 100 EMPRESAS REALES ALEATORIAS EXTRAÍDAS EN VIVO DE `denue_units` (0% HARDCODE — MUESTRA DE 15/100)   ║");
+    println!("╠═════╦══════════════════════════════════════════╦════════╦═══════════════════════╦═══════╦══════════════════╦═════════════╣");
+    println!("║ #   ║ RAZÓN SOCIAL / ESTABLECIMIENTO REAL      ║ SCIAN  ║ ESTRATO OFICIAL INEGI ║ MED.  ║ EXPOSICIÓN VEMP  ║ LATENCIA F1 ║");
+    println!("╠═════╬══════════════════════════════════════════╬════════╬═══════════════════════╬═══════╬══════════════════╬═════════════╣");
+
+    let t_batch_100 = std::time::Instant::now();
+    let mut sum_100_us = 0u128;
+
+    for (idx100, (real_name, real_scian, real_act, real_estrato, real_ent)) in random_100_denue.iter().enumerate() {
+        let t_item = std::time::Instant::now();
+
+        // 1. Verificar que el FormBot genere un link de checkout válido para el nombre real del DENUE
+        let link = HttpFormBot::build_and_validate_checkout_link(real_name, None)
+            .expect("El FormBot debe generar un link válido para cualquiera de las 100 empresas reales del DENUE");
+        assert!(link.starts_with("https://mallen.lat/checkout?ref="));
+
+        // 2. Clasificar estrato real del INEGI y obtener su mediana estadística censal
+        let (_stratum_lbl, median_emp, _base_fine, _tier_price) =
+            HttpFormBot::classify_denue_capacity_and_scian_risk(real_estrato, real_scian);
+        assert!(median_emp >= 1);
+
+        // 3. Calcular huella criptográfica SHA-256 y centavos exactos de los 37 vectores
+        let mut m_real = worker_inegi_engine::engine::models::AuditMasterJson::default();
+        let synthetic_id = format!("DYN100-{:03}", idx100 + 1);
+        m_real.tax_id = synthetic_id.clone();
+        m_real.razon_social = real_name.clone();
+        m_real.codigo_scian = real_scian.clone();
+        m_real.actividad_scian_desc = real_act.clone();
+        m_real.estimated_employees = median_emp;
+        m_real.calibration_applied.exact_employee_count = Some(median_emp);
+        m_real.calibration_applied.dossier.entidad_jurisdiccion = Some(real_ent.clone());
+
+        let (sha_web, cents_web) =
+            worker_inegi_engine::engine::pdf_generator::compute_vectors_37_sha256_fingerprint(&m_real);
+        m_real.total_estimated_fine_mxn = (cents_web as f64) / 100.0;
+
+        // 4. Congelar Snapshot y verificar que el generador recupere exactamente los mismos centavos y el mismo hash
+        let snap_100 = worker_inegi_engine::engine::pdf_generator::freeze_immutable_audit_snapshot(
+            &synthetic_id,
+            real_name,
+            &m_real,
+        );
+        let rec_100 = worker_inegi_engine::engine::pdf_generator::require_strict_snapshot_or_reject(&snap_100)
+            .expect("Debe recuperar el snapshot de la empresa real del DENUE");
+        let (sha_pdf, cents_pdf) =
+            worker_inegi_engine::engine::pdf_generator::compute_vectors_37_sha256_fingerprint(&rec_100);
+
+        assert_eq!(sha_web, sha_pdf, "Discrepancia SHA-256 en empresa real #{}: {}", idx100 + 1, real_name);
+        assert_eq!(cents_web, cents_pdf, "Discrepancia de centavos en empresa real #{}: {}", idx100 + 1, real_name);
+        assert!(cents_pdf > 0, "Toda empresa real con omisiones debe arrojar exposición > 0");
+
+        // En las primeras 5 empresas reales aleatorias, compilar también el documento Typst completo y verificar que contenga el monto exacto y el QR 13x13
+        if idx100 < 5 {
+            let doc_100 = worker_inegi_engine::engine::pdf_generator::render_typst_from_strict_snapshot(&snap_100)
+                .expect("Debe renderizar el Dictamen Typst de la empresa real del DENUE");
+            let vemp_str = worker_inegi_engine::engine::pdf_generator::format_cents_mxn(cents_pdf);
+            assert!(doc_100.contains(&vemp_str));
+            assert!(doc_100.contains("#grid(columns: (1.85pt,) * 13"));
+        }
+
+        let item_us = t_item.elapsed().as_micros();
+        sum_100_us += item_us;
+
+        // Imprimir una muestra representativa de 15 de las 100 empresas reales aleatorias en la tabla F1
+        if idx100 < 15 {
+            let n_clip: String = real_name.chars().take(40).collect();
+            let e_clip: String = real_estrato.chars().take(21).collect();
+            println!(
+                "║ {:03} ║ {:<40} ║ {:<6} ║ {:<21} ║ {:>5} ║ ${:>15} ║ {:>8} µs ║",
+                idx100 + 1,
+                n_clip,
+                &real_scian[..real_scian.len().min(6)],
+                e_clip,
+                median_emp,
+                worker_inegi_engine::engine::pdf_generator::format_cents_mxn(cents_pdf),
+                item_us
+            );
+        }
+    }
+
+    let total_batch_ms = t_batch_100.elapsed().as_millis();
+    println!("╠═════╩══════════════════════════════════════════╩════════╩═══════════════════════╩═══════╩══════════════════╩═════════════╣");
+    println!(
+        "║ RESUMEN DE LAS 100 EMPRESAS REALES ALEATORIAS DEL DENUE: 100/100 PARIDAD EXACTA | PROM: {:>5} µs/emp | TOTAL: {:>5} ms ║",
+        sum_100_us / 100,
+        total_batch_ms
+    );
+    println!("╚══════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════╝\n");
+
+    println!("✓ LOS 81 ESCENARIOS (INCLUYENDO 100 EMPRESAS REALES ALEATORIAS DE `denue_units` Y TELEMETRÍA F1) SUPERADOS AL 100%");
 }
