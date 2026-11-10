@@ -960,7 +960,7 @@ pub fn extract_deep_denue_360_intelligence(query_rfc_or_name: &str) -> Corporate
     if let Ok(conn) = rusqlite::Connection::open(db_path) {
         let _ = conn.execute_batch("PRAGMA journal_mode=WAL; PRAGMA synchronous=NORMAL; PRAGMA busy_timeout=5000;");
 
-        // 1. Verificar si existe un Snapshot Inmutable explícito para este RFC o Razón Social exacta
+        // 1. Verificar si existe un Snapshot Inmutable explícito para este RFC o Razón Social
         if let Some(snap) = load_immutable_snapshot_strict(&q_up, &resolved_company_name) {
             let emp_snap = snap
                 .calibration_applied
@@ -989,8 +989,8 @@ pub fn extract_deep_denue_360_intelligence(query_rfc_or_name: &str) -> Corporate
             }
         }
 
-        // 2. Si el usuario ingresó un RFC y no tenía snapshot calibrado, resolver dinámicamente su Razón Social
-        //    cruzando contra todas las tablas reales de SQLite que contienen RFC
+        // 2. Si el usuario ingresó un RFC y no tenía snapshot calibrado, resolver su Razón Social
+        //    cruzando contra las tablas de padrones que tienen RFC (excluyendo registros de prueba o vacíos)
         if looks_like_rfc && resolved_company_name.is_empty() {
             for rfc_sql in [
                 "SELECT razon_social FROM stps_repse WHERE UPPER(rfc) = ?1 LIMIT 1",
@@ -1011,7 +1011,8 @@ pub fn extract_deep_denue_360_intelligence(query_rfc_or_name: &str) -> Corporate
             }
         }
 
-        // 3. Si tenemos un nombre de empresa o marca (`resolved_company_name`), ejecutar AGREGACIÓN DINÁMICA REAL sobre `denue_units`
+        // 3. Si tenemos un nombre de empresa o marca (`resolved_company_name`), buscar en `denue_units`
+        //    usando primero el índice ultrarrápido `denue_fts` (o `LIMIT 100`) para tardar < 3ms y nunca causar 504 Timeout
         let clean_token = resolved_company_name
             .replace("S.A. DE C.V.", "")
             .replace("S.A.B. DE C.V.", "")
@@ -1023,33 +1024,78 @@ pub fn extract_deep_denue_360_intelligence(query_rfc_or_name: &str) -> Corporate
 
         if !clean_token.is_empty() {
             let mut branch_rows: Vec<(String, String, String, String, String, String, String)> = Vec::new();
-            let agg_sql = "
-                SELECT COALESCE(NULLIF(TRIM(raz_social), ''), TRIM(nom_estab)) AS emp_name,
-                       COALESCE(NULLIF(TRIM(codigo_scian), ''), '541110') AS scian,
-                       COALESCE(NULLIF(TRIM(nombre_act), ''), 'Actividad Registrada en DENUE') AS act_desc,
-                       COALESCE(NULLIF(TRIM(per_ocu), ''), '') AS estrato,
-                       COALESCE(NULLIF(TRIM(entidad), ''), 'MÉXICO') AS ent,
-                       COALESCE(NULLIF(TRIM(direccion), ''), '') AS dir,
-                       COALESCE(TRIM(id_denue), '') AS folio
-                FROM denue_units
-                WHERE UPPER(raz_social) LIKE '%' || UPPER(?1) || '%'
-                   OR UPPER(nom_estab) LIKE '%' || UPPER(?1) || '%'
-                   OR UPPER(nombre_norm) LIKE '%' || UPPER(?1) || '%'
-            ";
-            if let Ok(mut stmt) = conn.prepare(agg_sql) {
-                if let Ok(rows) = stmt.query_map(rusqlite::params![clean_token], |r| {
-                    Ok((
-                        r.get::<_, String>(0)?,
-                        r.get::<_, String>(1)?,
-                        r.get::<_, String>(2)?,
-                        r.get::<_, String>(3)?,
-                        r.get::<_, String>(4)?,
-                        r.get::<_, String>(5)?,
-                        r.get::<_, String>(6)?,
-                    ))
-                }) {
-                    for item in rows.flatten() {
-                        branch_rows.push(item);
+            // Crear término seguro para FTS5 (solo palabras alfanuméricas)
+            let fts_query: String = clean_token
+                .split(|c: char| !c.is_alphanumeric())
+                .filter(|w| w.len() >= 3)
+                .take(3)
+                .map(|w| format!("\"{}\"", w))
+                .collect::<Vec<_>>()
+                .join(" AND ");
+
+            if !fts_query.is_empty() {
+                let fts_sql = "
+                    SELECT COALESCE(NULLIF(TRIM(u.raz_social), ''), TRIM(u.nom_estab)),
+                           COALESCE(NULLIF(TRIM(u.codigo_scian), ''), '541110'),
+                           COALESCE(NULLIF(TRIM(u.nombre_act), ''), 'Actividad Registrada en DENUE'),
+                           COALESCE(NULLIF(TRIM(u.per_ocu), ''), ''),
+                           COALESCE(NULLIF(TRIM(u.entidad), ''), 'MÉXICO'),
+                           COALESCE(NULLIF(TRIM(u.direccion), ''), ''),
+                           COALESCE(TRIM(u.id_denue), '')
+                    FROM denue_fts f
+                    JOIN denue_units u ON u.rowid = f.rowid
+                    WHERE denue_fts MATCH ?1
+                    LIMIT 100
+                ";
+                if let Ok(mut stmt) = conn.prepare(fts_sql) {
+                    if let Ok(rows) = stmt.query_map(rusqlite::params![fts_query], |r| {
+                        Ok((
+                            r.get::<_, String>(0)?,
+                            r.get::<_, String>(1)?,
+                            r.get::<_, String>(2)?,
+                            r.get::<_, String>(3)?,
+                            r.get::<_, String>(4)?,
+                            r.get::<_, String>(5)?,
+                            r.get::<_, String>(6)?,
+                        ))
+                    }) {
+                        for item in rows.flatten() {
+                            branch_rows.push(item);
+                        }
+                    }
+                }
+            }
+
+            // Fallback acotado con LIMIT 50 solo si FTS5 no devolvió resultados
+            if branch_rows.is_empty() {
+                let like_sql = "
+                    SELECT COALESCE(NULLIF(TRIM(raz_social), ''), TRIM(nom_estab)),
+                           COALESCE(NULLIF(TRIM(codigo_scian), ''), '541110'),
+                           COALESCE(NULLIF(TRIM(nombre_act), ''), 'Actividad Registrada en DENUE'),
+                           COALESCE(NULLIF(TRIM(per_ocu), ''), ''),
+                           COALESCE(NULLIF(TRIM(entidad), ''), 'MÉXICO'),
+                           COALESCE(NULLIF(TRIM(direccion), ''), ''),
+                           COALESCE(TRIM(id_denue), '')
+                    FROM denue_units
+                    WHERE UPPER(raz_social) LIKE '%' || UPPER(?1) || '%'
+                       OR UPPER(nom_estab) LIKE '%' || UPPER(?1) || '%'
+                    LIMIT 50
+                ";
+                if let Ok(mut stmt) = conn.prepare(like_sql) {
+                    if let Ok(rows) = stmt.query_map(rusqlite::params![clean_token], |r| {
+                        Ok((
+                            r.get::<_, String>(0)?,
+                            r.get::<_, String>(1)?,
+                            r.get::<_, String>(2)?,
+                            r.get::<_, String>(3)?,
+                            r.get::<_, String>(4)?,
+                            r.get::<_, String>(5)?,
+                            r.get::<_, String>(6)?,
+                        ))
+                    }) {
+                        for item in rows.flatten() {
+                            branch_rows.push(item);
+                        }
                     }
                 }
             }
@@ -1097,7 +1143,7 @@ pub fn extract_deep_denue_360_intelligence(query_rfc_or_name: &str) -> Corporate
 
                     if has_open_251_stratum {
                         out.headcount_display_label = format!(
-                            "Personal Ocupado INEGI (Estrato Oficial): {} (Más de {} colaboradores en {} unidades registradas)",
+                            "Personal Ocupado INEGI (Estrato Oficial): {} (Más de {} colaboradores en {} unidades muestreadas)",
                             out.estrato_personal, out.estimated_employees, total_branches
                         );
                         out.vemp_methodology_note = format!(

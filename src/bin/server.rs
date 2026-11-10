@@ -869,7 +869,12 @@ async fn get_merkle_proof_api(
         (
             m.razon_social,
             if is_acc { 0 } else { m.risk_score },
-            if is_acc { 0.0 } else { m.total_estimated_fine_mxn },
+            if is_acc {
+                0.0
+            } else {
+                let (_, exact_cents) = worker_inegi_engine::engine::pdf_generator::compute_vectors_37_sha256_fingerprint(&m);
+                (exact_cents as f64) / 100.0
+            },
         )
     } else {
         (format!("Entidad Auditada ({})", clean_ref), 85, 1_485_600.0)
@@ -1024,7 +1029,7 @@ async fn render_checkout_page_with_state(state: Arc<AppState>, raw_ref: String) 
 
     // Sincronizar monto exacto: si no hay sesión previa, calcular con la misma matriz de 39 NOMs
     let fine_mxn = match &session_opt {
-        Some((m, _)) if m.total_estimated_fine_mxn > 0.0 => m.total_estimated_fine_mxn,
+        Some((m, _)) => { let (_, c) = worker_inegi_engine::engine::pdf_generator::compute_vectors_37_sha256_fingerprint(m); (c as f64) / 100.0 },
         _ => {
             let findings = build_full_regulatory_findings(
                 "434222",

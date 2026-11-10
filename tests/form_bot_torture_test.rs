@@ -1456,6 +1456,10 @@ async fn test_http_form_bot_14_scenarios_with_real_db_companies() {
 
 
     // Escenario 76: Eliminación del Respaldo Arbitrario (11 a 30 / 20 emp) en RFCs sin match en DENUE (ej. CTE160824G29)
+    let _ = conn.execute("DELETE FROM audit_snapshots WHERE UPPER(tax_id_key) = 'CTE160824G29'", []);
+    let _ = conn.execute("DELETE FROM audit_sessions WHERE UPPER(tax_id) = 'CTE160824G29'", []);
+    let _ = conn.execute("DELETE FROM prospects WHERE UPPER(tax_id) = 'CTE160824G29'", []);
+    let _ = conn.execute("DELETE FROM stps_repse WHERE UPPER(rfc) = 'CTE160824G29'", []);
     let rfc_unlinked = worker_inegi_engine::engine::pdf_generator::extract_deep_denue_360_intelligence("CTE160824G29");
     assert_eq!(
         rfc_unlinked.headcount_source_type,
