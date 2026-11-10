@@ -1247,8 +1247,9 @@ pub fn process_batch_records_with_dlq_and_checkpoint(
     job_id: &str,
     records: &[(String, String, String, u32)],
 ) -> (usize, usize, String) {
-    let start_idx = get_batch_job_resume_index(job_id);
+    let raw_resume = get_batch_job_resume_index(job_id);
     let total = records.len();
+    let start_idx = if raw_resume >= total { 0 } else { raw_resume };
     let mut succeeded = 0usize;
     let mut isolated_errors = 0usize;
 
@@ -1878,7 +1879,7 @@ pub fn upgrade_or_recover_ssot_master(
                 .calibration_applied
                 .exact_employee_count
                 .unwrap_or(snap.estimated_employees);
-            if snap_emp != in_emp && (in_emp == 45 || in_emp == 20) && snap_emp > 0 {
+            if snap_emp > 0 && (in_emp == 45 || in_emp == 20 || m_in.razon_social.starts_with("REGISTRO NO INDEXADO")) {
                 return Some(snap.clone());
             }
         }
