@@ -869,12 +869,7 @@ async fn get_merkle_proof_api(
         (
             m.razon_social,
             if is_acc { 0 } else { m.risk_score },
-            if is_acc {
-                0.0
-            } else {
-                let (_, exact_cents) = worker_inegi_engine::engine::pdf_generator::compute_vectors_37_sha256_fingerprint(&m);
-                (exact_cents as f64) / 100.0
-            },
+            if is_acc { 0.0 } else { (precalc_exact_cents as f64) / 100.0 },
         )
     } else {
         (format!("Entidad Auditada ({})", clean_ref), 85, 1_485_600.0)

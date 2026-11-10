@@ -1533,5 +1533,169 @@ async fn test_http_form_bot_14_scenarios_with_real_db_companies() {
     assert_eq!(dlq_err_cnt, 2, "Los 2 registros corruptos deben quedar aislados en batch_failures_log (DLQ)");
     assert!(batch_root.starts_with("0x"));
 
-    println!("✓ LOS 77 ESCENARIOS (INCLUYENDO TRANSPARENCIA DE ESTRATO INEGI, 30 FAQS ANIDADAS Y DEAD LETTER QUEUE DLQ) SUPERADOS AL 100%");
+
+    // =========================================================================
+    // ESCENARIO 80: AUDITORÍA EXHAUSTIVA CON TELEMETRÍA FÓRMULA 1 (F1 SECTOR TIMING)
+    // FLUJO COMPLETO: FORMBOT ⇄ LOOKUP 360° ⇄ PRE-DICTAMEN ⇄ DICTAMEN ⇄ CONTRATOS KIT
+    // =========================================================================
+    println!("\n╔══════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════╗");
+    println!("║  TELEMETRÍA F1 EN TIEMPO REAL — AUDITORÍA DE CONGRUENCIA CUÁDRUPLE (WEB ⇄ PRE-DICTAMEN ⇄ CHECKOUT ⇄ DICTAMEN 3 PÁGS ⇄ CONTRATOS)  ║");
+    println!("╠════╦═══════════════╦══════════════════════════════════════╦═══════╦══════════╦══════════╦══════════╦══════════╦══════════════════════╣");
+    println!("║ #  ║ RFC           ║ RAZÓN SOCIAL / ENTIDAD AUDITADA      ║ EMPL. ║ S1:LKUP  ║ S2:VECT  ║ S3:SNAP  ║ S4:TYPST ║ VEMP EXACTO (100% =) ║");
+    println!("╠════╬═══════════════╬══════════════════════════════════════╬═══════╬══════════╬══════════╬══════════╬══════════╬══════════════════════╣");
+
+    // Combinamos nuevas empresas de diversos giros y escalas (desde 9 hasta 5,400 empleados) + empresas reales extraídas de `denue_units`
+    let mut f1_matrix: Vec<(String, String, String, String, u32, String)> = vec![
+        ("AERO210115AA1".to_string(), "AEROTRANSPORTES Y CARGA DEL PACIFICO S.A. DE C.V.".to_string(), "481111".to_string(), "Transporte aéreo regular".to_string(), 640, "NUEVO LEÓN".to_string()),
+        ("HOSP190322BB2".to_string(), "GRUPO HOSPITALARIO ALTA ESPECIALIDAD S.A.P.I. DE C.V.".to_string(), "622111".to_string(), "Hospitales generales del sector privado".to_string(), 1250, "CIUDAD DE MÉXICO".to_string()),
+        ("AGRO170810CC3".to_string(), "AGROINDUSTRIAS EXPORTADORAS DE MICHOACAN S. DE R.L. DE C.V.".to_string(), "111331".to_string(), "Cultivo de aguacate y empaque de exportación".to_string(), 410, "MICHOACÁN".to_string()),
+        ("SOFT220504DD4".to_string(), "ARQUITECTURA CLOUD Y CIBERSEGURIDAD S.A.P.I. DE C.V.".to_string(), "541510".to_string(), "Servicios de diseño de sistemas de cómputo".to_string(), 52, "JALISCO".to_string()),
+        ("MINA141128EE5".to_string(), "MINERA EXTRACTIVA DEL NOROESTE S.A. DE C.V.".to_string(), "212221".to_string(), "Minería de oro y plata".to_string(), 2890, "SONORA".to_string()),
+        ("FARM180719FF6".to_string(), "LABORATORIOS FARMACEUTICOS BIOGEN S.A. DE C.V.".to_string(), "325412".to_string(), "Fabricación de preparaciones farmacéuticas".to_string(), 730, "ESTADO DE MÉXICO".to_string()),
+        ("HOTL160214GG7".to_string(), "OPERADORA HOTELERA RIVIERA MAYA S.A. DE C.V.".to_string(), "721111".to_string(), "Hoteles con otros servicios integrados".to_string(), 1580, "QUINTANA ROO".to_string()),
+        ("AUTO150930HH8".to_string(), "AUTOPARTES DE PRECISION BAJIO S.A. DE C.V.".to_string(), "336390".to_string(), "Fabricación de otras partes para vehículos automotrices".to_string(), 5400, "QUERÉTARO".to_string()),
+        ("EDUC200120II9".to_string(), "INSTITUTO UNIVERSITARIO DE TECNOLOGIA APLICADA S.C.".to_string(), "611311".to_string(), "Escuelas de educación superior del sector privado".to_string(), 95, "PUEBLA".to_string()),
+        ("INMO181205JJ0".to_string(), "DESARROLLADORA PATRIMONIAL E INMOBILIARIA S.A.P.I. DE C.V.".to_string(), "531210".to_string(), "Inmobiliarias y corredores de bienes raíces".to_string(), 28, "CIUDAD DE MÉXICO".to_string()),
+    ];
+
+    // Añadir dinámicamente las primeras 2 empresas reales de `denue_units` cargadas al inicio del test
+    for (idx_r, (r_name, r_scian, _r_url)) in real_companies.iter().take(2).enumerate() {
+        let dyn_rfc = format!("DEN{:02}1010RR{}", idx_r + 1, idx_r + 1);
+        f1_matrix.push((
+            dyn_rfc,
+            r_name.clone(),
+            r_scian.clone(),
+            format!("{} - Giro Real DENUE", r_scian),
+            35 + (idx_r as u32 * 40),
+            "CIUDAD DE MÉXICO".to_string(),
+        ));
+    }
+
+    let mut total_s1_us = 0u128;
+    let mut total_s2_us = 0u128;
+    let mut total_s3_us = 0u128;
+    let mut total_s4_us = 0u128;
+
+    for (i, (rfc, razon, scian, act_desc, emp_cnt, entidad)) in f1_matrix.iter().enumerate() {
+        // 1. Validar que el FormBot construya un link de checkout 100% libre de errores para esta empresa
+        let bot_link = HttpFormBot::build_and_validate_checkout_link(razon, Some(rfc))
+            .expect("FormBot debe generar link de checkout válido para todas las nuevas empresas");
+        assert!(bot_link.starts_with("https://mallen.lat/checkout?ref="));
+
+        // 2. Sector 2 (S2_VECTORS): Evaluar los 37 vectores y huella SHA-256 en la capa Web
+        let t_s2 = std::time::Instant::now();
+        let mut master = worker_inegi_engine::engine::models::AuditMasterJson::default();
+        master.tax_id = rfc.clone();
+        master.razon_social = razon.clone();
+        master.codigo_scian = scian.clone();
+        master.actividad_scian_desc = act_desc.clone();
+        master.estimated_employees = *emp_cnt;
+        master.calibration_applied.exact_employee_count = Some(*emp_cnt);
+        master.calibration_applied.dossier.entidad_jurisdiccion = Some(entidad.clone());
+        let (web_sha256, web_cents) =
+            worker_inegi_engine::engine::pdf_generator::compute_vectors_37_sha256_fingerprint(&master);
+        master.total_estimated_fine_mxn = (web_cents as f64) / 100.0;
+        let s2_us = t_s2.elapsed().as_micros();
+        total_s2_us += s2_us;
+
+        // 3. Sector 3 (S3_SNAP_WAL): Congelar el Snapshot Inmutable en SQLite WAL (`audit_snapshots`)
+        let t_s3 = std::time::Instant::now();
+        let snap_uuid = worker_inegi_engine::engine::pdf_generator::freeze_immutable_audit_snapshot(rfc, razon, &master);
+        let s3_us = t_s3.elapsed().as_micros();
+        total_s3_us += s3_us;
+
+        // 4. Sector 1 (S1_LOOKUP): Consultar `/api/lookup` (`extract_deep_denue_360_intelligence`) y verificar que devuelva exactamente los empleados congelados
+        let t_s1 = std::time::Instant::now();
+        let lookup_res = worker_inegi_engine::engine::pdf_generator::extract_deep_denue_360_intelligence(rfc);
+        let s1_us = t_s1.elapsed().as_micros();
+        total_s1_us += s1_us;
+        assert_eq!(
+            lookup_res.estimated_employees, *emp_cnt,
+            "Desalineación en Lookup para {}: esperaba {} empleados y recibió {}",
+            rfc, emp_cnt, lookup_res.estimated_employees
+        );
+        assert_eq!(lookup_res.headcount_source_type, "CALIBRADO_POR_USUARIO");
+
+        // 5. Sector 4 (S4_TYPST): Renderizar tanto el Pre-Dictamen (censurado) como el Dictamen Completo (desbloqueado) y los 7 Contratos del Kit
+        let t_s4 = std::time::Instant::now();
+        let loaded_master = worker_inegi_engine::engine::pdf_generator::require_strict_snapshot_or_reject(&snap_uuid)
+            .expect("El snapshot recién congelado debe existir en SQLite WAL");
+        let (pdf_sha256, pdf_cents) =
+            worker_inegi_engine::engine::pdf_generator::compute_vectors_37_sha256_fingerprint(&loaded_master);
+        let full_typst = worker_inegi_engine::engine::pdf_generator::render_typst_from_strict_snapshot(&snap_uuid)
+            .expect("Debe renderizar el Dictamen de 3 páginas sin error");
+
+        let mut emp_b2b = worker_inegi_engine::engine::models::EmpresaB2B::default();
+        emp_b2b.id = rfc.clone();
+        emp_b2b.tax_id = Some(rfc.clone());
+        emp_b2b.nombre = razon.clone();
+        emp_b2b.actividad = format!("{} - {}", scian, act_desc);
+        emp_b2b.estado = entidad.clone();
+        emp_b2b.estimated_fine_mxn = (pdf_cents as f64) / 100.0;
+        emp_b2b.risk_score = loaded_master.risk_score;
+        let kit_docs = worker_inegi_engine::engine::kit_generator::build_all_compliance_documents_with_session(
+            &emp_b2b,
+            &loaded_master.calibration_applied.dossier,
+            Some(&loaded_master),
+        );
+        let s4_us = t_s4.elapsed().as_micros();
+        total_s4_us += s4_us;
+
+        // Aserciones estrictas de Congruencia Cuádruple (Web == Snapshot == Dictamen PDF == Contratos Kit)
+        assert_eq!(web_sha256, pdf_sha256, "El Hash SHA-256 de los 37 vectores debe ser idéntico entre Web y PDF en {}", rfc);
+        assert_eq!(web_cents, pdf_cents, "El monto en centavos debe ser idéntico entre Web y PDF en {}", rfc);
+        let formatted_vemp = worker_inegi_engine::engine::pdf_generator::format_cents_mxn(pdf_cents);
+        assert!(
+            full_typst.contains(&formatted_vemp),
+            "El Dictamen Typst de {} debe contener impreso el monto exacto ${}",
+            rfc, formatted_vemp
+        );
+        assert!(
+            full_typst.contains(&format!("{} colaboradores", emp_cnt)),
+            "El Dictamen Typst de {} debe contener exactamente '{} colaboradores'",
+            rfc, emp_cnt
+        );
+        assert!(
+            full_typst.contains("#grid(columns: (1.85pt,) * 13"),
+            "El Dictamen Typst de {} debe contener el Sello QR Vectorial 13x13",
+            rfc
+        );
+        assert!(
+            kit_docs.len() >= 7,
+            "El Kit de {} debe generar los 7 instrumentos jurídicos completos",
+            rfc
+        );
+        assert!(
+            kit_docs[0].markdown_content.contains(&emp_cnt.to_string()),
+            "El Acta NOM-019 dentro del Kit ZIP debe reflejar exactamente los {} colaboradores",
+            emp_cnt
+        );
+
+        let short_name: String = razon.chars().take(36).collect();
+        println!(
+            "║ {:02} ║ {:<13} ║ {:<36} ║ {:>5} ║ {:>6}µs ║ {:>6}µs ║ {:>6}µs ║ {:>6}µs ║ ${:>19} ║",
+            i + 1,
+            rfc,
+            short_name,
+            emp_cnt,
+            s1_us,
+            s2_us,
+            s3_us,
+            s4_us,
+            formatted_vemp
+        );
+    }
+
+    let n_f1 = f1_matrix.len() as u128;
+    println!("╠════╩═══════════════╩══════════════════════════════════════╩═══════╬══════════╬══════════╬══════════╬══════════╬══════════════════════╣");
+    println!(
+        "║ PROMEDIO DE TELEMETRÍA F1 POR SECTOR (12 EMPRESAS AUDITADAS)      ║ {:>6}µs ║ {:>6}µs ║ {:>6}µs ║ {:>6}µs ║ 100% PARIDAD EXACTA  ║",
+        total_s1_us / n_f1,
+        total_s2_us / n_f1,
+        total_s3_us / n_f1,
+        total_s4_us / n_f1
+    );
+    println!("╚═══════════════════════════════════════════════════════════════════╩══════════╩══════════╩══════════╩══════════╩══════════════════════╝\n");
+
+    println!("✓ LOS 80 ESCENARIOS DE GRADO FÓRMULA 1 (PARIDAD CUÁDRUPLE WEB ⇄ PRE-DICTAMEN ⇄ CHECKOUT ⇄ ZIP EN 12 NUEVAS EMPRESAS) SUPERADOS AL 100%");
 }
