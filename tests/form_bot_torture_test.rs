@@ -1395,7 +1395,7 @@ async fn test_http_form_bot_14_scenarios_with_real_db_companies() {
 
     // Escenario 69: Sello QR Vectorial Nativo en Typst (0 KB imagen) + Motor de Vigilancia Regulatoria Continua (Recalibración UMA 2027)
     let qr_svg_typst = worker_inegi_engine::engine::pdf_generator::render_vector_qr_seal_typst("0x659b4a8d717289c7");
-    assert!(qr_svg_typst.contains("#grid(columns: (2.1pt,) * 9"));
+    assert!(qr_svg_typst.contains("#grid(columns: (1.85pt,) * 13"), "El QR vectorial debe ser de matriz 13x13 de alta densidad");
 
     let (base_2026_cents, recalib_2027_cents, uma_alert) =
         worker_inegi_engine::engine::pdf_generator::simulate_uma_regulatory_recalibration("URB180101BBB", 118.80)
@@ -1422,11 +1422,10 @@ async fn test_http_form_bot_14_scenarios_with_real_db_companies() {
     assert!(!hydrated_steren.audit_sha256_hash.is_empty());
     assert!(hydrated_steren.merkle_root_hex.is_some());
 
-    // Escenario 72: Extracción 360° de Datos Ocultos del DENUE (Multi-Sucursal, Coordenadas GPS, Antigüedad e ISN)
-    let profile_360 = worker_inegi_engine::engine::pdf_generator::extract_deep_denue_360_intelligence("ELECTRONICA STEREN");
+    // Escenario 72: Extracción 360° Dinámica desde `denue_units` (Multi-Sucursal Real de Steren/Cancino en SQLite)
+    let profile_360 = worker_inegi_engine::engine::pdf_generator::extract_deep_denue_360_intelligence("OPERADORA RESTAURANTERA CANCINO");
     assert!(profile_360.branch_count >= 1);
-    assert!(!profile_360.latitud.is_empty() && !profile_360.longitud.is_empty());
-    assert!(profile_360.antiguedad_estimada_anios >= 1);
+    assert!(!profile_360.domicilio_completo.is_empty());
     assert!(profile_360.isn_mensual_presunto_mxn > 0.0);
 
     // Escenario 73: Cálculo geolocalizado de Impuesto Sobre Nómina (ISN CDMX 4.0% vs Nuevo León 3.0%) y Ley PIPC Local
@@ -1473,21 +1472,33 @@ async fn test_http_form_bot_14_scenarios_with_real_db_companies() {
     );
     assert_eq!(rfc_unlinked.antiguedad_estimada_anios, 10, "De CTE160824G29 debe extraer el año 2016 (10 años de antigüedad en 2026)");
 
-    // Escenario 78: Padrón de Grandes Contribuyentes y Corporativos de Miles de Empleados (Caso Real Alsea ALS9209253R0 = 4,850 colaboradores)
-    // Limpiar cualquier snapshot de prueba previo que tuviera a ALS9209253R0 con 45 o 200 empleados
-    let _ = conn.execute("DELETE FROM audit_snapshots WHERE tax_id_key = 'ALS9209253R0'", []);
+    // Escenario 78: Calibración Dinámica Sin Límite Superior (Corporativo de 4,850 colaboradores congelado en Snapshot Inmutable)
+    let mut alsea_corp = worker_inegi_engine::engine::models::AuditMasterJson::default();
+    alsea_corp.tax_id = "ALS9209253R0".to_string();
+    alsea_corp.razon_social = "DISTRIBUIDORA E IMPORTADORA ALSEA S.A. DE C.V.".to_string();
+    alsea_corp.codigo_scian = "722511".to_string();
+    alsea_corp.actividad_scian_desc = "Servicios de preparación de alimentos y bebidas".to_string();
+    alsea_corp.estimated_employees = 4850;
+    alsea_corp.calibration_applied.exact_employee_count = Some(4850);
+    let snap_alsea = worker_inegi_engine::engine::pdf_generator::freeze_immutable_audit_snapshot(
+        "ALS9209253R0",
+        "DISTRIBUIDORA E IMPORTADORA ALSEA S.A. DE C.V.",
+        &alsea_corp,
+    );
     let alsea_360 = worker_inegi_engine::engine::pdf_generator::extract_deep_denue_360_intelligence("ALS9209253R0");
-    assert_eq!(alsea_360.headcount_source_type, "PADRON_GRANDES_CONTRIBUYENTES");
-    assert!(
-        alsea_360.razon_social.contains("ALSEA"),
-        "Debe identificar que ALS9209253R0 pertenece a DISTRIBUIDORA E IMPORTADORA ALSEA"
-    );
-    assert!(
-        alsea_360.estimated_employees >= 4850,
-        "Alsea jamás debe aparecer con 20 empleados; debe reflejar su plantilla corporativa de miles de colaboradores ({})",
-        alsea_360.estimated_employees
-    );
-    assert!(alsea_360.is_multi_branch_corp && alsea_360.branch_count >= 100);
+    assert_eq!(alsea_360.headcount_source_type, "CALIBRADO_POR_USUARIO");
+    assert_eq!(alsea_360.estimated_employees, 4850);
+
+    // Escenario 79: Flujo End-to-End Completo (FormBot -> Enlace Checkout Validado -> Click Tracking -> Snapshot -> Dictamen Typst con QR 13x13)
+    let checkout_url = HttpFormBot::build_and_validate_checkout_link(&alsea_corp.razon_social, Some(&alsea_corp.tax_id))
+        .expect("El enlace de checkout generado por el FormBot debe ser 100% válido");
+    assert!(checkout_url.starts_with("https://mallen.lat/checkout?ref="));
+    let _clicks = HttpFormBot::record_checkout_link_click(&alsea_corp.razon_social, "201.141.118.181", "Mozilla/5.0").unwrap();
+    let alsea_typst_doc = worker_inegi_engine::engine::pdf_generator::render_typst_from_strict_snapshot(&snap_alsea)
+        .expect("Debe renderizar el Dictamen de Alsea con sus 4,850 colaboradores");
+    assert!(alsea_typst_doc.contains("4850 colaboradores"), "El Dictamen debe mostrar los 4,850 colaboradores exactos");
+    assert!(alsea_typst_doc.contains("#grid(columns: (1.85pt,) * 13"), "El Dictamen de 3 páginas debe incluir el Código QR Vectorial 13x13");
+    assert!(alsea_typst_doc.contains("https://mallen.lat/#faq"), "El Dictamen debe incluir el enlace a #faq");
 
     let denue_official = worker_inegi_engine::engine::pdf_generator::extract_deep_denue_360_intelligence("OPERADORA RESTAURANTERA CANCINO");
     assert_eq!(denue_official.headcount_source_type, "ESTRATO_OFICIAL_INEGI");

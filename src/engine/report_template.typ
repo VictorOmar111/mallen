@@ -75,7 +75,7 @@
     ],
     align(right + horizon)[
       #box(fill: rgb("#1e293b"), stroke: 0.6pt + rgb("#34d399"), radius: 4pt, inset: 5.5pt)[
-        #text(size: 5.9pt, fill: rgb("#94a3b8"))[FOLIO CRIPTOGRÁFICO SHA-256]
+        #text(size: 5.9pt, fill: rgb("#94a3b8"))[SELLO QR & FOLIO SHA-256]
         #linebreak()
         #text(size: 7.1pt, weight: "bold", fill: rgb("#34d399"))[{{AUDIT_HASH}}]
         #linebreak()
@@ -365,7 +365,7 @@ Dictamen pericial compilado específicamente para *"{{EMPRESA_NOMBRE}}"* (`{{EMP
     columns: (1fr, auto),
     gutter: 10pt,
     [
-      #text(size: 6.7pt, weight: "bold", fill: rgb("#34d399"))[CERTIFICACIÓN CRIPTOGRÁFICA DE INTEGRIDAD Y ALCANCE METODOLÓGICO (ARTS. 89–93 CÓDIGO DE COMERCIO)]
+      #text(size: 6.7pt, weight: "bold", fill: rgb("#34d399"))[SELLO QR DE VERIFICACIÓN INMUTABLE • CERTIFICACIÓN CRIPTOGRÁFICA DE INTEGRIDAD Y ALCANCE METODOLÓGICO (ARTS. 89–93 CÓDIGO DE COMERCIO)]
       #linebreak()
       #text(size: 5.9pt, fill: rgb("#e2e8f0"))[
         El presente Dictamen Pericial y sus Anexos I y II han sido compilados por *{{AUDITOR_NOMBRE}}* (Estándar: `{{AUDITOR_CEDULA}}` | Nodo: `{{AUDITOR_DC5}}`). La huella criptográfica `{{AUDIT_HASH}}` garantiza la inalterabilidad del expediente. Los vectores clasificados como *"EXENTO SCIAN"* o *"BLINDADO"* reflejan una contingencia de \$0.00 MXN para el giro evaluado.
@@ -373,7 +373,7 @@ Dictamen pericial compilado específicamente para *"{{EMPRESA_NOMBRE}}"* (`{{EMP
     ],
     align(right + horizon)[
       #box(fill: rgb("#065f46"), stroke: 0.6pt + rgb("#34d399"), radius: 3pt, inset: 5pt)[
-        #text(size: 5.8pt, fill: rgb("#a7f3d0"))[EXPEDIENTE COMPLETO + CFDI 4.0]
+        #text(size: 5.8pt, fill: rgb("#a7f3d0"))[VERIFICACIÓN QR + EXPEDIENTE .ZIP]
         #linebreak()
         #text(size: 7.4pt, weight: "bold", fill: rgb("#ffffff"))[\$ {{ACTIVATION_PRICE}} MXN]
       ]
