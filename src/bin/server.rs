@@ -869,7 +869,7 @@ async fn get_merkle_proof_api(
         (
             m.razon_social,
             if is_acc { 0 } else { m.risk_score },
-            if is_acc { 0.0 } else { (precalc_exact_cents as f64) / 100.0 },
+            if is_acc { 0.0 } else { m.total_estimated_fine_mxn },
         )
     } else {
         (format!("Entidad Auditada ({})", clean_ref), 85, 1_485_600.0)
