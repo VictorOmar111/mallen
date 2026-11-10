@@ -253,6 +253,28 @@ pub fn freeze_immutable_audit_snapshot(
     empresa_nombre: &str,
     master_in: &AuditMasterJson,
 ) -> String {
+    // Escudo Anti-Degradación SSOT:
+    // Si una petición sin datos (ej. POST /api/scan sin dominio que armó "REGISTRO NO INDEXADO...")
+    // intenta guardar un estado degradado cuando en `audit_snapshots` YA existe un Snapshot válido para este RFC,
+    // preservar intacto el Snapshot válido existente.
+    let in_name_up = master_in.razon_social.trim().to_uppercase();
+    if in_name_up.starts_with("REGISTRO NO INDEXADO") || in_name_up.starts_with("RFC ") || master_in.total_estimated_fine_mxn == 0.0 {
+        if let Some(existing_valid) = load_immutable_snapshot_strict(tax_id, "") {
+            let ex_name = existing_valid.razon_social.trim().to_uppercase();
+            let ex_emp = existing_valid.calibration_applied.exact_employee_count.unwrap_or(existing_valid.estimated_employees);
+            if ex_emp > 0 && !ex_name.starts_with("REGISTRO NO INDEXADO") && !ex_name.starts_with("RFC ") {
+                let ex_cents = mxn_to_exact_cents(existing_valid.total_estimated_fine_mxn);
+                let mut h = Sha256::new();
+                h.update(tax_id.trim().to_uppercase().as_bytes());
+                h.update(b"|");
+                h.update(ex_name.as_bytes());
+                h.update(b"|");
+                h.update(ex_emp.to_le_bytes());
+                h.update(ex_cents.to_le_bytes());
+                return format!("SNAP-{}", &format!("{:x}", h.finalize())[..16].to_uppercase());
+            }
+        }
+    }
     let mut hydrated = master_in.clone();
     let emp = hydrated
         .calibration_applied
