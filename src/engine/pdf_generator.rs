@@ -404,6 +404,12 @@ pub fn freeze_immutable_audit_snapshot(
             let clean_tax = tax_id.trim().to_uppercase();
             let clean_emp_name = empresa_nombre.trim().to_uppercase();
 
+            // Protección de Idempotencia en Búsquedas Repetidas:
+            // Si ya existe un snapshot calibrado para este RFC o Empresa con empleados reales,
+            // impedir que una consulta exploratoria sin calibración (0 empleados o placeholder) lo degrade.
+            if hydrated.razon_social.starts_with("RFC ") && emp <= 1 {
+                return snap_uuid;
+            }
             if !clean_tax.is_empty() && clean_tax != "SIN-RFC" {
                 let _ = conn.execute("DELETE FROM audit_snapshots WHERE tax_id_key = ?1 AND snapshot_uuid != ?2", rusqlite::params![clean_tax, snap_uuid]);
             }

@@ -10,7 +10,7 @@
       #grid(
         columns: (1fr, auto),
         align(left)[#text(size: 6.3pt, weight: "bold", fill: rgb("#0f172a"))[FIRMA W16 MALLEN® • EXPEDIENTE CORPORATIVO DE CUMPLIMIENTO INTEGRAL • {{EMPRESA_TAX_ID}}]],
-        align(right)[#text(size: 6.3pt, fill: rgb("#475569"))[SELLO CRIPTOGRÁFICO SHA-256: {{AUDIT_HASH}}]]
+        align(right)[#text(size: 6.3pt, fill: rgb("#475569"))[SELLO CRIPTOGRÁFICO SHA-256: {{AUDIT_HASH}} ] #v(2pt) #box[{{VECTOR_QR_SEAL}}]]
       )
       #v(-0.15cm)
       #line(length: 100%, stroke: 0.4pt + rgb("#cbd5e1"))

@@ -1825,5 +1825,38 @@ async fn test_http_form_bot_14_scenarios_with_real_db_companies() {
     );
     println!("╚══════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════╝\n");
 
-    println!("✓ LOS 81 ESCENARIOS (INCLUYENDO 100 EMPRESAS REALES ALEATORIAS DE `denue_units` Y TELEMETRÍA F1) SUPERADOS AL 100%");
+
+    // =========================================================================
+    // ESCENARIO 82: PRUEBA DE IDEMPOTENCIA EN BÚSQUEDAS REPETIDAS (10 CONSULTAS SEGUIDAS)
+    // Garantiza que buscar 10 veces la misma empresa (por RFC, por nombre, con espacios o minúsculas)
+    // arroje siempre exactamente el mismo conteo de empleados, el mismo giro SCIAN y la misma exposición.
+    // =========================================================================
+    let base_lookup = worker_inegi_engine::engine::pdf_generator::extract_deep_denue_360_intelligence("AERO210115AA1");
+    assert_eq!(base_lookup.estimated_employees, 640);
+    for rep in 0..10 {
+        let query_variant = match rep % 4 {
+            0 => "AERO210115AA1",
+            1 => "  aero210115aa1  ",
+            2 => "AEROTRANSPORTES Y CARGA DEL PACIFICO S.A. DE C.V.",
+            _ => "aerotransportes y carga del pacifico s.a. de c.v.",
+        };
+        let rep_res = worker_inegi_engine::engine::pdf_generator::extract_deep_denue_360_intelligence(query_variant);
+        assert_eq!(
+            rep_res.estimated_employees, 640,
+            "En la búsqueda repetida #{} con '{}' el número de empleados no debe cambiar jamás",
+            rep + 1, query_variant
+        );
+        assert_eq!(rep_res.codigo_scian, "481111");
+        assert_eq!(rep_res.isn_mensual_presunto_mxn, base_lookup.isn_mensual_presunto_mxn);
+    }
+
+    // Y verificar que buscar 5 veces seguidas un RFC no indexado (CTE160824G29) después de haber buscado corporativos
+    // jamás se contamine con la empresa anterior:
+    for _ in 0..5 {
+        let unlinked_rep = worker_inegi_engine::engine::pdf_generator::extract_deep_denue_360_intelligence("CTE160824G29");
+        assert_eq!(unlinked_rep.estimated_employees, 0);
+        assert_eq!(unlinked_rep.headcount_source_type, "PENDIENTE_CALIBRACION_CORPORATIVA");
+    }
+
+    println!("✓ LOS 82 ESCENARIOS (INCLUYENDO 100 EMPRESAS REALES DEL DENUE, TELEMETRÍA F1 E IDEMPOTENCIA EN BÚSQUEDAS REPETIDAS) SUPERADOS AL 100%");
 }
