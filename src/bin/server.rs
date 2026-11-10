@@ -1110,7 +1110,7 @@ async fn render_checkout_page_with_state(state: Arc<AppState>, raw_ref: String) 
         <div class="flex justify-between items-center mb-6 pb-4 border-b border-white/15">
             <div>
                 <span class="text-xs font-bold text-blue-400 block uppercase">FIRMA W16 MALLEN® • PASARELA CORPORATIVA 3D SECURE</span>
-                <span class="text-[10px] text-slate-500">Instrumentación Jurídica Personalizada + Pago 3D Secure + Timbrado CFDI 4.0</span>
+                <span class="text-[10px] text-slate-500">Instrumentación Jurídica Personalizada + Pago 3D Secure + Sellado Criptográfico SHA-256</span>
             </div>
             <a href="/" class="text-[10px] text-slate-400 hover:text-white transition">Volver al Portal</a>
         </div>
@@ -1122,7 +1122,7 @@ async fn render_checkout_page_with_state(state: Arc<AppState>, raw_ref: String) 
                 <span class="text-[10px] text-slate-400 block mt-1">Los datos públicos detectados por su RFC y sitio web se pre-cargan automáticamente abajo. Los campos que deje en blanco (como los datos de un proveedor específico para el Contrato Art. 69-B o los firmantes internos) se generarán con líneas jurídicas formales de llenado (____________________) para que pueda reutilizar sus contratos con múltiples proveedores.</span>
             </div>
             <div class="text-right shrink-0">
-                <span class="text-xl font-extrabold text-white">$5,940.00</span>
+                <span class="text-xl font-extrabold text-white">$3,000.00</span>
                 <span class="text-[10px] text-slate-500 block">MXN (IVA Incluido)</span>
             </div>
         </div>
@@ -1239,7 +1239,7 @@ async fn render_checkout_page_with_state(state: Arc<AppState>, raw_ref: String) 
 
         <div id="paymentSuccessBox" class="hidden mt-5 bg-emerald-950/40 border border-emerald-500/50 rounded-xl p-5 text-center space-y-3">
             <span class="text-emerald-400 font-bold text-sm block">PAGO 3D SECURE AUTORIZADO Y EXPEDIENTE COMPILADO</span>
-            <p class="text-slate-300 text-[11px]">Su expediente de 18 documentos en PDF y Word junto con su factura XML CFDI 4.0 está listo.</p>
+            <p class="text-slate-300 text-[11px]">Su expediente completo de 18 documentos (Dictamen Ejecutivo/Técnico de 3 páginas, 10 Certificados SHA-256 y 7 Instrumentos Jurídicos en formato editable Word/Markdown + Manifiesto Merkle) está listo para descarga inmediata.</p>
             <a href="/download/zip/{ref_code}" class="inline-block w-full bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-3.5 rounded-xl uppercase">
                 Descargar Paquete Corporativo ZIP ({ref_code})
             </a>

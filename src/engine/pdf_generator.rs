@@ -217,16 +217,27 @@ pub fn store_ssot_session_in_memory(tax_id: &str, empresa_nombre: &str, master: 
 
 /// Consulta la Caché SSOT en Memoria (TTL 24h) sin tocar el disco.
 pub fn get_ssot_session_from_memory(tax_id: &str, empresa_nombre: &str) -> Option<SsotCacheEntry> {
-    let ttl = Duration::from_secs(24 * 3600);
     let cache_lock = SSOT_MEMORY_CACHE.get_or_init(|| RwLock::new(HashMap::new()));
-    if let Ok(map) = cache_lock.read() {
-        for key in [tax_id.trim().to_uppercase(), empresa_nombre.trim().to_uppercase()] {
-            if !key.is_empty() {
-                if let Some(entry) = map.get(&key) {
-                    if entry.stored_at.elapsed() < ttl {
-                        return Some(entry.clone());
-                    }
-                }
+    let map = cache_lock.read().ok()?;
+    let ttl = Duration::from_secs(24 * 3600);
+
+    let k1 = tax_id.trim().to_uppercase();
+    let k2 = empresa_nombre.trim().to_uppercase();
+    let k1_is_rfc = (k1.len() == 12 || k1.len() == 13)
+        && k1.chars().take(3).all(|c| c.is_ascii_alphabetic() || c == '&')
+        && k1.chars().skip(k1.chars().take_while(|c| c.is_ascii_alphabetic() || *c == '&').count().clamp(3, 4)).take(6).all(|c| c.is_ascii_digit());
+
+    if !k1.is_empty() {
+        if let Some(entry) = map.get(&k1) {
+            if entry.stored_at.elapsed() < ttl {
+                return Some(entry.clone());
+            }
+        }
+    }
+    if !k1_is_rfc && !k2.is_empty() {
+        if let Some(entry) = map.get(&k2) {
+            if entry.stored_at.elapsed() < ttl {
+                return Some(entry.clone());
             }
         }
     }
@@ -433,35 +444,58 @@ pub fn freeze_immutable_audit_snapshot(
 pub fn load_immutable_snapshot_strict(key_or_uuid: &str, empresa_nombre: &str) -> Option<AuditMasterJson> {
     let k1 = key_or_uuid.trim().to_uppercase();
     let k2 = empresa_nombre.trim().to_uppercase();
+    if k1.is_empty() && k2.is_empty() {
+        return None;
+    }
 
-    // 1. Primero revisar en la tabla inmutable `audit_snapshots` el último snapshot congelado
+    let k1_is_rfc = (k1.len() == 12 || k1.len() == 13)
+        && k1.chars().take(3).all(|c| c.is_ascii_alphabetic() || c == '&')
+        && k1.chars().skip(k1.chars().take_while(|c| c.is_ascii_alphabetic() || *c == '&').count().clamp(3, 4)).take(6).all(|c| c.is_ascii_digit());
+
     let db_path = std::env::var("MALLEN_DB_PATH").unwrap_or_else(|_| "data/mallen_prod.db".to_string());
     if let Ok(conn) = rusqlite::Connection::open(db_path) {
         let _ = conn.execute_batch("PRAGMA journal_mode=WAL; PRAGMA busy_timeout=5000;");
-        if let Ok(mut stmt) = conn.prepare(
-            "SELECT master_json_blob
-             FROM audit_snapshots
-             WHERE snapshot_uuid = ?1
-                OR tax_id_key = ?1
-                OR (empresa_key != '' AND empresa_key = ?2)
-                OR (empresa_key != '' AND empresa_key = ?1)
-             ORDER BY created_at_utc DESC, rowid DESC
-             LIMIT 1",
-        ) {
-            if let Ok(blob) = stmt.query_row(rusqlite::params![k1, k2], |r| r.get::<_, String>(0)) {
-                if let Ok(parsed) = serde_json::from_str::<AuditMasterJson>(&blob) {
-                    store_ssot_session_in_memory(key_or_uuid, empresa_nombre, &parsed);
-                    return Some(parsed);
+
+        if k1.starts_with("SNAP-") || k1_is_rfc {
+            if let Ok(mut stmt) = conn.prepare(
+                "SELECT master_json_blob
+                 FROM audit_snapshots
+                 WHERE snapshot_uuid = ?1 OR (tax_id_key != '' AND UPPER(tax_id_key) = ?1)
+                 ORDER BY created_at_utc DESC, rowid DESC
+                 LIMIT 1",
+            ) {
+                if let Ok(blob) = stmt.query_row(rusqlite::params![k1], |r| r.get::<_, String>(0)) {
+                    if let Ok(parsed) = serde_json::from_str::<AuditMasterJson>(&blob) {
+                        return Some(parsed);
+                    }
+                }
+            }
+            return None;
+        }
+
+        let name_target = if !k2.is_empty() { &k2 } else { &k1 };
+        if !name_target.is_empty() {
+            if let Ok(mut stmt) = conn.prepare(
+                "SELECT master_json_blob
+                 FROM audit_snapshots
+                 WHERE empresa_key != '' AND UPPER(empresa_key) = ?1
+                 ORDER BY created_at_utc DESC, rowid DESC
+                 LIMIT 1",
+            ) {
+                if let Ok(blob) = stmt.query_row(rusqlite::params![name_target], |r| r.get::<_, String>(0)) {
+                    if let Ok(parsed) = serde_json::from_str::<AuditMasterJson>(&blob) {
+                        return Some(parsed);
+                    }
                 }
             }
         }
     }
 
-    // 2. Si no está en `audit_snapshots`, revisar Caché SSOT en RAM
-    if let Some(cached) = get_ssot_session_from_memory(key_or_uuid, empresa_nombre) {
-        return Some(cached.master);
+    if !k1_is_rfc {
+        if let Some(cached) = get_ssot_session_from_memory(key_or_uuid, empresa_nombre) {
+            return Some(cached.master);
+        }
     }
-
     None
 }
 
@@ -748,26 +782,42 @@ pub async fn render_typst_from_strict_snapshot_async(snapshot_uuid: String) -> R
 /// Al ser 100% vectorial (`#grid` de celdas geométricas), tiene nitidez infinita al 1000% de zoom y pesa 0 KB de imagen.
 pub fn render_vector_qr_seal_typst(audit_hash: &str) -> String {
     let mut hasher = Sha256::new();
+    hasher.update(b"W16_MALLEN_QR_V2|");
     hasher.update(audit_hash.trim().as_bytes());
     let digest = hasher.finalize();
 
-    let mut cells = String::with_capacity(1024);
-    for r in 0..9usize {
-        for c in 0..9usize {
-            // Esquinas de posicionamiento tipo Finder Pattern (3x3 bordes)
-            let is_corner = (r < 3 && c < 3) || (r < 3 && c >= 6) || (r >= 6 && c < 3);
-            let bit_idx = (r * 9 + c) % 32;
-            let bit_on = (digest[bit_idx] & (1 << ((r + c) % 8))) != 0;
-            let fill_hex = if is_corner || bit_on { "#0f172a" } else { "#ffffff" };
+    let n = 13usize;
+    let mut cells = String::with_capacity(3200);
+    for r in 0..n {
+        for c in 0..n {
+            let in_top_left = r < 5 && c < 5;
+            let in_top_right = r < 5 && c >= (n - 5);
+            let in_bottom_left = r >= (n - 5) && c < 5;
+
+            let is_dark = if in_top_left {
+                r == 0 || r == 4 || c == 0 || c == 4 || (r == 2 && c == 2)
+            } else if in_top_right {
+                let lc = c - (n - 5);
+                r == 0 || r == 4 || lc == 0 || lc == 4 || (r == 2 && lc == 2)
+            } else if in_bottom_left {
+                let lr = r - (n - 5);
+                lr == 0 || lr == 4 || c == 0 || c == 4 || (lr == 2 && c == 2)
+            } else {
+                let bit_pos = (r * n + c) % 256;
+                let byte_val = digest[bit_pos / 8];
+                ((byte_val >> (bit_pos % 8)) & 1) == 1
+            };
+
+            let fill_hex = if is_dark { "#0f172a" } else { "#ffffff" };
             cells.push_str(&format!(
-                "#rect(width: 2.1pt, height: 2.1pt, fill: rgb(\"{}\"), stroke: none),",
+                "#rect(width: 1.85pt, height: 1.85pt, fill: rgb(\"{}\"), stroke: none),",
                 fill_hex
             ));
         }
     }
 
     format!(
-        "#box(stroke: 0.4pt + rgb(\"#94a3b8\"), inset: 1.5pt, radius: 1.5pt, fill: white)[#grid(columns: (2.1pt,) * 9, row-gutter: 0pt, column-gutter: 0pt, {})]",
+        "#box(stroke: 0.45pt + rgb(\"#64748b\"), inset: 2pt, radius: 1.5pt, fill: white)[#grid(columns: (1.85pt,) * 13, row-gutter: 0pt, column-gutter: 0pt, {})]",
         cells
     )
 }
@@ -850,151 +900,9 @@ pub fn compute_state_isn_and_local_pc_law(entidad: &str, masa_salarial_cents: u6
 /// antigüedad operativa, tasa estatal de ISN y competencia local de Protección Civil.
 /// Registra o actualiza un Gran Contribuyente / Corporativo en el Padrón Maestro (`large_employers_registry`)
 /// permitiendo plantillas de miles o cientos de miles de colaboradores sin límite superior.
-pub fn upsert_large_employer_registry(
-    rfc: &str,
-    razon_social: &str,
-    codigo_scian: &str,
-    actividad_desc: &str,
-    verified_headcount: u32,
-    branch_count: usize,
-    entidad: &str,
-    domicilio: &str,
-) -> Result<(), String> {
-    let db_path = std::env::var("MALLEN_DB_PATH").unwrap_or_else(|_| "data/mallen_prod.db".to_string());
-    let conn = rusqlite::Connection::open(&db_path).map_err(|e| e.to_string())?;
-    conn.execute_batch(
-        "PRAGMA journal_mode=WAL;
-         PRAGMA synchronous=NORMAL;
-         PRAGMA busy_timeout=5000;
-         CREATE TABLE IF NOT EXISTS large_employers_registry (
-             rfc TEXT PRIMARY KEY,
-             razon_social TEXT NOT NULL,
-             codigo_scian TEXT NOT NULL,
-             actividad_desc TEXT NOT NULL,
-             verified_headcount INTEGER NOT NULL,
-             branch_count INTEGER NOT NULL,
-             entidad TEXT NOT NULL,
-             domicilio TEXT NOT NULL,
-             updated_at_utc TEXT DEFAULT (datetime('now'))
-         );
-         CREATE INDEX IF NOT EXISTS idx_large_emp_name ON large_employers_registry(razon_social);",
-    )
-    .map_err(|e| e.to_string())?;
 
-    conn.execute(
-        "INSERT INTO large_employers_registry (rfc, razon_social, codigo_scian, actividad_desc, verified_headcount, branch_count, entidad, domicilio, updated_at_utc)
-         VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, datetime('now'))
-         ON CONFLICT(rfc) DO UPDATE SET
-            razon_social = excluded.razon_social,
-            codigo_scian = excluded.codigo_scian,
-            actividad_desc = excluded.actividad_desc,
-            verified_headcount = excluded.verified_headcount,
-            branch_count = excluded.branch_count,
-            entidad = excluded.entidad,
-            domicilio = excluded.domicilio,
-            updated_at_utc = datetime('now')",
-        rusqlite::params![
-            rfc.trim().to_uppercase(),
-            razon_social.trim().to_uppercase(),
-            codigo_scian.trim(),
-            actividad_desc.trim(),
-            verified_headcount as i64,
-            branch_count.max(1) as i64,
-            entidad.trim(),
-            domicilio.trim()
-        ],
-    )
-    .map_err(|e| e.to_string())?;
-    Ok(())
-}
 
-fn ensure_large_employers_seeded(conn: &rusqlite::Connection) {
-    let _ = conn.execute_batch(
-        "CREATE TABLE IF NOT EXISTS large_employers_registry (
-             rfc TEXT PRIMARY KEY,
-             razon_social TEXT NOT NULL,
-             codigo_scian TEXT NOT NULL,
-             actividad_desc TEXT NOT NULL,
-             verified_headcount INTEGER NOT NULL,
-             branch_count INTEGER NOT NULL,
-             entidad TEXT NOT NULL,
-             domicilio TEXT NOT NULL,
-             updated_at_utc TEXT DEFAULT (datetime('now'))
-         );
-         CREATE INDEX IF NOT EXISTS idx_large_emp_name ON large_employers_registry(razon_social);",
-    );
 
-    let seeds: [(&str, &str, &str, &str, i64, i64, &str, &str); 6] = [
-        (
-            "ALS9209253R0",
-            "DISTRIBUIDORA E IMPORTADORA ALSEA S.A. DE C.V.",
-            "488511",
-            "Distribución, importación, cadena de suministro alimentaria y operación logística multi-restaurante (Grupo Alsea)",
-            4850,
-            2200,
-            "CIUDAD DE MÉXICO",
-            "AV. REVOLUCIÓN 1267, PISO 21, COL. LOS ALPES, ÁLVARO OBREGÓN, C.P. 01040, CIUDAD DE MÉXICO"
-        ),
-        (
-            "STE850101AAA",
-            "ELECTRONICA STEREN S.A. DE C.V.",
-            "434222",
-            "Comercio al por mayor y menor de equipo electrónico, telecomunicaciones y componentes",
-            1850,
-            400,
-            "CIUDAD DE MÉXICO",
-            "BIÓLOGO MAXIMINO MARTÍNEZ 3408, COL. SAN SALVADOR XOCHIMANCA, AZCAPOTZALCO, CIUDAD DE MÉXICO"
-        ),
-        (
-            "BIM011108DJ5",
-            "GRUPO BIMBO S.A.B. DE C.V.",
-            "311811",
-            "Elaboración industrial y distribución masiva de productos de panificación y alimentos",
-            68000,
-            150,
-            "CIUDAD DE MÉXICO",
-            "PROLONGACIÓN PASEO DE LA REFORMA 1000, COL. PEÑA BLANCA SANTA FE, ÁLVARO OBREGÓN, CIUDAD DE MÉXICO"
-        ),
-        (
-            "TMM720509346",
-            "TIENDAS SORIANA S.A. DE C.V.",
-            "462111",
-            "Comercio al por menor en supermercados e hipermercados a escala nacional",
-            84000,
-            800,
-            "NUEVO LEÓN",
-            "ALEJANDRO DE RODAS 3102-A, COL. CUMBRES 8° SECTOR, MONTERREY, NUEVO LEÓN"
-        ),
-        (
-            "NWM9709244W4",
-            "NUEVA WAL-MART DE MEXICO S. DE R.L. DE C.V.",
-            "462111",
-            "Comercio minorista en autoservicios, centros de distribución y comercio electrónico",
-            195000,
-            2800,
-            "CIUDAD DE MÉXICO",
-            "NEXTENGO 78, COL. SANTA CRUZ ACAYUCAN, AZCAPOTZALCO, CIUDAD DE MÉXICO"
-        ),
-        (
-            "COP920428Q20",
-            "COPPEL S.A. DE C.V.",
-            "462210",
-            "Comercio en tiendas departamentales, logística nacional y servicios financieros",
-            115000,
-            1700,
-            "SINALOA",
-            "REPÚBLICA 2855 PTE, COL. RECURSOS HIDRÁULICOS, CULIACÁN, SINALOA"
-        ),
-    ];
-
-    for s in &seeds {
-        let _ = conn.execute(
-            "INSERT OR IGNORE INTO large_employers_registry (rfc, razon_social, codigo_scian, actividad_desc, verified_headcount, branch_count, entidad, domicilio)
-             VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8)",
-            rusqlite::params![s.0, s.1, s.2, s.3, s.4, s.5, s.6, s.7],
-        );
-    }
-}
 
 pub fn extract_deep_denue_360_intelligence(query_rfc_or_name: &str) -> CorporateEnrichment360 {
     let q = query_rfc_or_name.trim();
@@ -1006,29 +914,29 @@ pub fn extract_deep_denue_360_intelligence(query_rfc_or_name: &str) -> Corporate
     let mut out = CorporateEnrichment360 {
         query_matched: q.to_string(),
         razon_social: if looks_like_rfc {
-            format!("RFC {} (Pendiente vincular Razón Social o Calibración)", q_up)
+            format!("RFC {} (Sin coincidencia previa en padrón — Calibre Razón Social y Nómina)", q_up)
         } else {
             q_up.clone()
         },
-        codigo_scian: "541110".to_string(),
-        actividad_desc: "Actividad Corporativa sujeta a validación de Giro SCIAN".to_string(),
+        codigo_scian: String::new(),
+        actividad_desc: "Pendiente de vinculación con giro SCIAN o calibración directa".to_string(),
         estrato_personal: "PENDIENTE DE CALIBRACIÓN CORPORATIVA (Requiere validación de nómina)".to_string(),
         estimated_employees: 0,
         headcount_source_type: "PENDIENTE_CALIBRACION_CORPORATIVA".to_string(),
         headcount_display_label: "Estrato: PENDIENTE DE CALIBRACIÓN CORPORATIVA (Requiere validación de nómina)".to_string(),
-        vemp_methodology_note: "Asignación arbitraria desactivada: Ingrese el número real de colaboradores (soporta desde 1 hasta +200,000 empleados)".to_string(),
-        entidad_federativa: "JURISDICCIÓN FEDERAL / NACIONAL".to_string(),
-        municipio_alcaldia: "Verificación Registral".to_string(),
-        domicilio_completo: "Domicilio sujeto a validación en expediente o calibración".to_string(),
-        latitud: "19.4326".to_string(),
-        longitud: "-99.1332".to_string(),
-        fecha_alta_denue: "Registro Vigente".to_string(),
-        antiguedad_estimada_anios: 5,
-        branch_count: 1,
+        vemp_methodology_note: "Sin asignación arbitraria: ingrese el número real de colaboradores (sin límite superior)".to_string(),
+        entidad_federativa: "PENDIENTE DE JURISDICCIÓN".to_string(),
+        municipio_alcaldia: "Sin Folio DENUE vinculado".to_string(),
+        domicilio_completo: "Domicilio sujeto a vinculación por Razón Social en DENUE o captura en expediente".to_string(),
+        latitud: String::new(),
+        longitud: String::new(),
+        fecha_alta_denue: String::new(),
+        antiguedad_estimada_anios: 0,
+        branch_count: 0,
         is_multi_branch_corp: false,
         isn_rate_pct: 3.0,
         isn_mensual_presunto_mxn: 0.0,
-        ley_proteccion_civil_local: "Ley General de Protección Civil (Arts. 39 y 40) y Ley Estatal aplicable".to_string(),
+        ley_proteccion_civil_local: "Ley General de Protección Civil (Arts. 39 y 40) y legislación estatal aplicable".to_string(),
         alerta_historica_5_anios: String::new(),
     };
 
@@ -1036,239 +944,185 @@ pub fn extract_deep_denue_360_intelligence(query_rfc_or_name: &str) -> Corporate
         return out;
     }
 
-    let mut resolved_identity = !looks_like_rfc;
-    let mut calibrated_or_large_corp = false;
-    let mut matched_in_denue = false;
-    let mut search_name = if looks_like_rfc { String::new() } else { q_up.clone() };
+    if looks_like_rfc {
+        let yy = q_up.chars().skip(len_prefix_letters(&q_up)).take(2).collect::<String>();
+        if let Ok(y_num) = yy.parse::<u32>() {
+            let full_year = if y_num <= 26 { 2000 + y_num } else { 1900 + y_num };
+            out.fecha_alta_denue = format!("{}-Constitución RFC {}", full_year, q_up);
+            out.antiguedad_estimada_anios = 2026_u32.saturating_sub(full_year).max(1);
+        }
+    }
+
+    let mut resolved_company_name = if looks_like_rfc { String::new() } else { q_up.clone() };
+    let mut has_calibrated_snapshot = false;
 
     let db_path = std::env::var("MALLEN_DB_PATH").unwrap_or_else(|_| "data/mallen_prod.db".to_string());
     if let Ok(conn) = rusqlite::Connection::open(db_path) {
         let _ = conn.execute_batch("PRAGMA journal_mode=WAL; PRAGMA synchronous=NORMAL; PRAGMA busy_timeout=5000;");
-        ensure_large_employers_seeded(&conn);
 
-        // 1. Si el usuario ingresó un RFC, primero verificar si existe en `large_employers_registry` o en padrones con columna RFC
-        if looks_like_rfc {
-            for rfc_lookup_sql in [
-                "SELECT razon_social FROM large_employers_registry WHERE UPPER(rfc) = ?1 LIMIT 1",
-                "SELECT nombre FROM prospects WHERE UPPER(tax_id) = ?1 AND nombre NOT LIKE 'REGISTRO NO INDEXADO%' AND nombre NOT LIKE 'RFC %' ORDER BY created_at DESC LIMIT 1",
-                "SELECT razon_social FROM audit_sessions WHERE UPPER(tax_id) = ?1 AND razon_social NOT LIKE 'REGISTRO NO INDEXADO%' AND razon_social NOT LIKE 'RFC %' ORDER BY rowid DESC LIMIT 1",
+        // 1. Verificar si existe un Snapshot Inmutable explícito para este RFC o Razón Social exacta
+        if let Some(snap) = load_immutable_snapshot_strict(&q_up, &resolved_company_name) {
+            let emp_snap = snap
+                .calibration_applied
+                .exact_employee_count
+                .unwrap_or(snap.estimated_employees);
+            if emp_snap > 0 && !snap.razon_social.trim().is_empty() {
+                out.razon_social = snap.razon_social.clone();
+                resolved_company_name = snap.razon_social.clone();
+                out.codigo_scian = snap.codigo_scian.clone();
+                out.actividad_desc = snap.actividad_scian_desc.clone();
+                out.estimated_employees = emp_snap;
+                out.estrato_personal = format!("{} colaboradores (Nómina Conciliada en Snapshot)", emp_snap);
+                out.headcount_source_type = "CALIBRADO_POR_USUARIO".to_string();
+                out.headcount_display_label = format!("Plantilla Conciliada: {} colaboradores (Confirmado en Sesión)", emp_snap);
+                out.vemp_methodology_note = format!("Cálculo VEMP exacto sobre nómina confirmada de {} colaboradores (Art. 992 LFT)", emp_snap);
+                if !snap.domicilio_fiscal_o_denue.trim().is_empty() {
+                    out.domicilio_completo = snap.domicilio_fiscal_o_denue.clone();
+                }
+                if let Some(ref ent) = snap.calibration_applied.dossier.entidad_jurisdiccion {
+                    if !ent.trim().is_empty() {
+                        out.entidad_federativa = ent.trim().to_uppercase();
+                    }
+                }
+                out.branch_count = 1;
+                has_calibrated_snapshot = true;
+            }
+        }
+
+        // 2. Si el usuario ingresó un RFC y no tenía snapshot calibrado, resolver dinámicamente su Razón Social
+        //    cruzando contra todas las tablas reales de SQLite que contienen RFC
+        if looks_like_rfc && resolved_company_name.is_empty() {
+            for rfc_sql in [
                 "SELECT razon_social FROM stps_repse WHERE UPPER(rfc) = ?1 LIMIT 1",
                 "SELECT razon_social FROM sat_69b_efos WHERE UPPER(rfc) = ?1 LIMIT 1",
                 "SELECT razon_social FROM sat_69_incumplidos WHERE UPPER(rfc) = ?1 LIMIT 1",
                 "SELECT razon_social FROM sfp_sancionados WHERE UPPER(rfc) = ?1 LIMIT 1",
+                "SELECT razon_social FROM audit_sessions WHERE UPPER(tax_id) = ?1 AND razon_social NOT LIKE 'REGISTRO NO INDEXADO%' AND razon_social NOT LIKE 'RFC %' ORDER BY rowid DESC LIMIT 1",
+                "SELECT nombre FROM prospects WHERE UPPER(tax_id) = ?1 AND nombre NOT LIKE 'REGISTRO NO INDEXADO%' AND nombre NOT LIKE 'RFC %' ORDER BY created_at DESC LIMIT 1",
             ] {
-                if let Ok(found_name) = conn.query_row(rfc_lookup_sql, rusqlite::params![q_up], |r| r.get::<_, String>(0)) {
-                    if !found_name.trim().is_empty() {
-                        out.razon_social = found_name.trim().to_uppercase();
-                        search_name = out.razon_social.clone();
-                        resolved_identity = true;
+                if let Ok(found_name) = conn.query_row(rfc_sql, rusqlite::params![q_up], |r| r.get::<_, String>(0)) {
+                    let clean_found = found_name.trim().to_uppercase();
+                    if !clean_found.is_empty() {
+                        out.razon_social = clean_found.clone();
+                        resolved_company_name = clean_found;
                         break;
                     }
                 }
             }
         }
 
-        // 2. Consultar primero el Padrón Maestro de Grandes Contribuyentes (`large_employers_registry`)
-        //    SOLO si el RFC coincide exactamente O si ya tenemos un nombre de empresa real (`resolved_identity` con longitud >= 4)
-        let clean_corp_token = search_name
+        // 3. Si tenemos un nombre de empresa o marca (`resolved_company_name`), ejecutar AGREGACIÓN DINÁMICA REAL sobre `denue_units`
+        let clean_token = resolved_company_name
             .replace("S.A. DE C.V.", "")
             .replace("S.A.B. DE C.V.", "")
             .replace("S.A.P.I. DE C.V.", "")
             .replace("S. DE R.L. DE C.V.", "")
+            .replace("DISTRIBUIDORA E IMPORTADORA", "")
             .trim()
             .to_string();
 
-        let large_corp_row = if looks_like_rfc && !resolved_identity {
-            conn.query_row(
-                "SELECT rfc, razon_social, codigo_scian, actividad_desc, verified_headcount, branch_count, entidad, domicilio
-                 FROM large_employers_registry WHERE UPPER(rfc) = ?1 LIMIT 1",
-                rusqlite::params![q_up],
-                |r| Ok((r.get::<_, String>(0)?, r.get::<_, String>(1)?, r.get::<_, String>(2)?, r.get::<_, String>(3)?, r.get::<_, i64>(4)?, r.get::<_, i64>(5)?, r.get::<_, String>(6)?, r.get::<_, String>(7)?)),
-            ).ok()
-        } else if clean_corp_token.len() >= 4 {
-            conn.query_row(
-                "SELECT rfc, razon_social, codigo_scian, actividad_desc, verified_headcount, branch_count, entidad, domicilio
-                 FROM large_employers_registry
-                 WHERE UPPER(rfc) = ?1
-                    OR UPPER(razon_social) LIKE '%' || ?2 || '%'
-                    OR ?2 LIKE '%' || UPPER(REPLACE(REPLACE(razon_social, ' S.A. DE C.V.', ''), ' S.A.B. DE C.V.', '')) || '%'
-                 LIMIT 1",
-                rusqlite::params![q_up, clean_corp_token],
-                |r| Ok((r.get::<_, String>(0)?, r.get::<_, String>(1)?, r.get::<_, String>(2)?, r.get::<_, String>(3)?, r.get::<_, i64>(4)?, r.get::<_, i64>(5)?, r.get::<_, String>(6)?, r.get::<_, String>(7)?)),
-            ).ok()
-        } else {
-            None
-        };
-
-        // 3. Revisar si existe en `audit_snapshots` una calibración explícita del usuario
-        //    (Ignorando escalones por defecto 4, 8, 20, 45, 75, 150, 300 cuando el corporativo está en `large_employers_registry`)
-        if let Some(snap) = load_immutable_snapshot_strict(q, &search_name) {
-            let emp_snap = snap
-                .calibration_applied
-                .exact_employee_count
-                .unwrap_or(snap.estimated_employees);
-            let is_default_stratum_step = matches!(emp_snap, 0 | 4 | 8 | 20 | 45 | 75 | 150 | 300);
-
-            if emp_snap > 0 && !(large_corp_row.is_some() && is_default_stratum_step) {
-                out.razon_social = snap.razon_social.clone();
-                search_name = snap.razon_social.clone();
-                resolved_identity = true;
-                if !snap.codigo_scian.is_empty() {
-                    out.codigo_scian = snap.codigo_scian.clone();
-                }
-                if !snap.actividad_scian_desc.is_empty() {
-                    out.actividad_desc = snap.actividad_scian_desc.clone();
-                }
-                out.estimated_employees = emp_snap;
-                out.estrato_personal = format!("{} colaboradores (Nómina Conciliada)", emp_snap);
-                out.headcount_source_type = "CALIBRADO_POR_USUARIO".to_string();
-                out.headcount_display_label = format!("Plantilla Conciliada: {} colaboradores (Confirmado en Sesión)", emp_snap);
-                out.vemp_methodology_note = format!("Cálculo VEMP exacto sobre nómina confirmada de {} colaboradores (Art. 992 LFT)", emp_snap);
-                calibrated_or_large_corp = true;
-                if !snap.domicilio_fiscal_o_denue.is_empty() {
-                    out.domicilio_completo = snap.domicilio_fiscal_o_denue.clone();
-                }
-            }
-        }
-
-        // 4. Si no tenía una calibración manual específica y sí está en `large_employers_registry`, aplicar su escala de Gran Contribuyente
-        if !calibrated_or_large_corp {
-            if let Some(row) = large_corp_row {
-                let emp_corp = (row.4.max(1)) as u32;
-                out.razon_social = row.1;
-                out.codigo_scian = row.2;
-                out.actividad_desc = row.3;
-                out.estimated_employees = emp_corp;
-                out.estrato_personal = format!("251 y más personas (Padrón Grandes Contribuyentes: +{} colaboradores)", emp_corp);
-                out.headcount_source_type = "PADRON_GRANDES_CONTRIBUYENTES".to_string();
-                out.headcount_display_label = format!(
-                    "Padrón Grandes Contribuyentes / Corporativo: +{} colaboradores (Estrato INEGI: 251 y más personas)",
-                    emp_corp
-                );
-                out.vemp_methodology_note = format!(
-                    "Cálculo VEMP de Escala Corporativa sobre {} colaboradores registrados ({} centros operativos)",
-                    emp_corp, row.5
-                );
-                out.branch_count = row.5.max(1) as usize;
-                out.is_multi_branch_corp = out.branch_count > 1;
-                out.entidad_federativa = row.6;
-                out.domicilio_completo = row.7;
-                out.municipio_alcaldia = format!("Padrón Corporativo Federal ({})", row.0);
-                out.latitud = "19.4326".to_string();
-                out.longitud = "-99.1332".to_string();
-                calibrated_or_large_corp = true;
-            }
-        }
-
-        // 5. Si no está en `large_employers_registry` pero tenemos un nombre válido (`resolved_identity`), buscar en `denue_units`
-        if !calibrated_or_large_corp && resolved_identity && !clean_corp_token.is_empty() {
-            if let Ok(cnt) = conn.query_row(
-                "SELECT COUNT(*) FROM denue_units WHERE UPPER(raz_social) LIKE '%' || UPPER(?1) || '%' OR UPPER(nom_estab) LIKE '%' || UPPER(?1) || '%'",
-                rusqlite::params![clean_corp_token],
-                |r| r.get::<_, i64>(0),
-            ) {
-                if cnt > 0 {
-                    out.branch_count = cnt as usize;
-                    out.is_multi_branch_corp = cnt > 1;
-                }
-            }
-
-            let denue_sql = "
-                SELECT COALESCE(NULLIF(TRIM(raz_social), ''), TRIM(nom_estab)),
-                       COALESCE(NULLIF(TRIM(codigo_scian), ''), '541110'),
-                       COALESCE(NULLIF(TRIM(nombre_act), ''), 'Actividad Mercantil Registrada'),
-                       COALESCE(NULLIF(TRIM(per_ocu), ''), ''),
-                       COALESCE(NULLIF(TRIM(entidad), ''), 'CIUDAD DE MÉXICO'),
-                       COALESCE(NULLIF(TRIM(direccion), ''), 'Domicilio Verificado en Padrón DENUE'),
-                       COALESCE(TRIM(www), ''),
-                       COALESCE(TRIM(email), ''),
-                       COALESCE(TRIM(telefono), ''),
-                       COALESCE(TRIM(id_denue), '')
+        if !clean_token.is_empty() {
+            let mut branch_rows: Vec<(String, String, String, String, String, String, String)> = Vec::new();
+            let agg_sql = "
+                SELECT COALESCE(NULLIF(TRIM(raz_social), ''), TRIM(nom_estab)) AS emp_name,
+                       COALESCE(NULLIF(TRIM(codigo_scian), ''), '541110') AS scian,
+                       COALESCE(NULLIF(TRIM(nombre_act), ''), 'Actividad Registrada en DENUE') AS act_desc,
+                       COALESCE(NULLIF(TRIM(per_ocu), ''), '') AS estrato,
+                       COALESCE(NULLIF(TRIM(entidad), ''), 'MÉXICO') AS ent,
+                       COALESCE(NULLIF(TRIM(direccion), ''), '') AS dir,
+                       COALESCE(TRIM(id_denue), '') AS folio
                 FROM denue_units
                 WHERE UPPER(raz_social) LIKE '%' || UPPER(?1) || '%'
                    OR UPPER(nom_estab) LIKE '%' || UPPER(?1) || '%'
                    OR UPPER(nombre_norm) LIKE '%' || UPPER(?1) || '%'
-                LIMIT 1
             ";
-            if let Ok(row) = conn.query_row(denue_sql, rusqlite::params![clean_corp_token], |r| {
-                Ok((
-                    r.get::<_, String>(0)?,
-                    r.get::<_, String>(1)?,
-                    r.get::<_, String>(2)?,
-                    r.get::<_, String>(3)?,
-                    r.get::<_, String>(4)?,
-                    r.get::<_, String>(5)?,
-                    r.get::<_, String>(6)?,
-                    r.get::<_, String>(7)?,
-                    r.get::<_, String>(8)?,
-                    r.get::<_, String>(9)?,
-                ))
-            }) {
-                matched_in_denue = true;
-                out.razon_social = row.0;
-                out.codigo_scian = row.1.clone();
-                out.actividad_desc = row.2;
-                out.entidad_federativa = if row.4.trim().is_empty() { "MÉXICO".to_string() } else { row.4.clone() };
-                out.domicilio_completo = format!("{}, {}", row.5, out.entidad_federativa);
-                if !row.9.is_empty() {
-                    out.municipio_alcaldia = format!("Folio DENUE: {}", row.9);
+            if let Ok(mut stmt) = conn.prepare(agg_sql) {
+                if let Ok(rows) = stmt.query_map(rusqlite::params![clean_token], |r| {
+                    Ok((
+                        r.get::<_, String>(0)?,
+                        r.get::<_, String>(1)?,
+                        r.get::<_, String>(2)?,
+                        r.get::<_, String>(3)?,
+                        r.get::<_, String>(4)?,
+                        r.get::<_, String>(5)?,
+                        r.get::<_, String>(6)?,
+                    ))
+                }) {
+                    for item in rows.flatten() {
+                        branch_rows.push(item);
+                    }
+                }
+            }
+
+            if !branch_rows.is_empty() {
+                let total_branches = branch_rows.len();
+                out.branch_count = total_branches;
+                out.is_multi_branch_corp = total_branches > 1;
+
+                let first = &branch_rows[0];
+                if !has_calibrated_snapshot {
+                    out.razon_social = first.0.clone();
+                    out.codigo_scian = first.1.clone();
+                    out.actividad_desc = first.2.clone();
+                }
+                out.entidad_federativa = first.4.clone();
+                if !first.5.is_empty() {
+                    out.domicilio_completo = format!("{}, {}", first.5, out.entidad_federativa);
+                }
+                if !first.6.is_empty() {
+                    out.municipio_alcaldia = format!("Folio INEGI DENUE: {}", first.6);
+                    out.latitud = format!("ID DENUE #{}", first.6);
+                    out.longitud = out.entidad_federativa.clone();
+                }
+                if out.fecha_alta_denue.is_empty() {
+                    out.fecha_alta_denue = "Padrón INEGI DENUE Vigente".to_string();
+                    out.antiguedad_estimada_anios = 6;
                 }
 
-                if row.3.trim().is_empty() {
-                    out.estrato_personal = "PENDIENTE DE CALIBRACIÓN CORPORATIVA (Requiere validación de nómina)".to_string();
-                    out.estimated_employees = 0;
-                    out.headcount_source_type = "PENDIENTE_CALIBRACION_CORPORATIVA".to_string();
-                    out.headcount_display_label = "Estrato: PENDIENTE DE CALIBRACIÓN CORPORATIVA (Requiere validación de nómina)".to_string();
-                } else {
-                    out.estrato_personal = row.3.clone();
-                    let (_, median_emp, _, _) =
-                        crate::engine::http_form_bot::HttpFormBot::classify_denue_capacity_and_scian_risk(&out.estrato_personal, &out.codigo_scian);
-                    let consolidated_emp = median_emp.saturating_mul((out.branch_count as u32).max(1));
-                    out.estimated_employees = consolidated_emp.max(1);
+                if !has_calibrated_snapshot {
+                    let mut dynamic_emp_sum: u32 = 0;
+                    let mut has_open_251_stratum = false;
+                    for b in &branch_rows {
+                        if b.3.contains("251") {
+                            has_open_251_stratum = true;
+                        }
+                        let (_, branch_median, _, _) =
+                            crate::engine::http_form_bot::HttpFormBot::classify_denue_capacity_and_scian_risk(&b.3, &b.1);
+                        dynamic_emp_sum = dynamic_emp_sum.saturating_add(branch_median);
+                    }
+
+                    out.estrato_personal = first.3.clone();
+                    out.estimated_employees = dynamic_emp_sum.max(1);
                     out.headcount_source_type = "ESTRATO_OFICIAL_INEGI".to_string();
 
-                    // Si el estrato es el tope superior del INEGI ("251 y más personas"), indicar explícitamente que es "+300 colaboradores (Rango abierto)"
-                    let is_open_top_stratum = out.estrato_personal.contains("251");
-                    out.headcount_display_label = if is_open_top_stratum {
-                        format!(
-                            "Personal Ocupado INEGI (Estrato Oficial): {} (Más de 300 colaboradores — {} unidades)",
-                            out.estrato_personal, out.branch_count
-                        )
-                    } else if out.branch_count > 1 {
-                        format!(
-                            "Personal Ocupado INEGI (Estrato Oficial): {} ({} sucursales consolidadas: ~{} colaboradores)",
-                            out.estrato_personal, out.branch_count, out.estimated_employees
-                        )
+                    if has_open_251_stratum {
+                        out.headcount_display_label = format!(
+                            "Personal Ocupado INEGI (Estrato Oficial): {} (Más de {} colaboradores en {} unidades registradas)",
+                            out.estrato_personal, out.estimated_employees, total_branches
+                        );
+                        out.vemp_methodology_note = format!(
+                            "Cálculo VEMP dinámico sobre cota mínima censal (+{} colaboradores en {} establecimientos DENUE — Calibrable sin límite)",
+                            out.estimated_employees, total_branches
+                        );
+                    } else if total_branches > 1 {
+                        out.headcount_display_label = format!(
+                            "Personal Ocupado INEGI (Estrato Oficial): {} ({} sucursales en DENUE: ~{} colaboradores acumulados)",
+                            out.estrato_personal, total_branches, out.estimated_employees
+                        );
+                        out.vemp_methodology_note = format!(
+                            "Exposición calculada sumando la Mediana Censal de las {} unidades registradas en DENUE ({} pers.)",
+                            total_branches, out.estimated_employees
+                        );
                     } else {
-                        format!("Personal Ocupado INEGI (Estrato Oficial): {}", out.estrato_personal)
-                    };
-
-                    out.vemp_methodology_note = if is_open_top_stratum {
-                        format!(
-                            "Cálculo VEMP con piso de Gran Empresa (+{} colaboradores base — Ajustable sin límite superior)",
-                            out.estimated_employees
-                        )
-                    } else {
-                        format!(
+                        out.headcount_display_label = format!("Personal Ocupado INEGI (Estrato Oficial): {}", out.estrato_personal);
+                        out.vemp_methodology_note = format!(
                             "Exposición calculada mediante Mediana Estadística Censal del Estrato ({} pers.)",
                             out.estimated_employees
-                        )
-                    };
+                        );
+                    }
                 }
             }
         }
-    }
-
-    if looks_like_rfc {
-        let yy = q_up.chars().skip(len_prefix_letters(&q_up)).take(2).collect::<String>();
-        if let Ok(y_num) = yy.parse::<u32>() {
-            let full_year = if y_num <= 26 { 2000 + y_num } else { 1900 + y_num };
-            out.fecha_alta_denue = format!("{} (Constitución RFC {})", full_year, q_up);
-            out.antiguedad_estimada_anios = 2026_u32.saturating_sub(full_year).max(1);
-        }
-    } else if matched_in_denue || calibrated_or_large_corp {
-        out.fecha_alta_denue = "Censo Económico INEGI / Padrón Federal Vigente".to_string();
-        out.antiguedad_estimada_anios = 10;
     }
 
     let payroll_cents = if out.estimated_employees == 0 {
@@ -1286,11 +1140,13 @@ pub fn extract_deep_denue_360_intelligence(query_rfc_or_name: &str) -> Corporate
             "VECTOR DE URGENCIA HISTÓRICA ({} años de antigüedad — {}): Sujeto a facultades de comprobación de 5 ejercicios (Art. 67 CFF) y actualización de Beneficiario Controlador (Art. 32-B Ter CFF).",
             out.antiguedad_estimada_anios, out.fecha_alta_denue
         )
-    } else {
+    } else if out.antiguedad_estimada_anios > 0 {
         format!(
             "Entidad de constitución reciente ({} — ~{} años): Exigible integración de carpetas base STPS/PIPC y alta patronal IMSS.",
             out.fecha_alta_denue, out.antiguedad_estimada_anios
         )
+    } else {
+        "Pendiente de calibrar antigüedad registral o ingresar RFC con homoclave.".to_string()
     };
 
     out
