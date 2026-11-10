@@ -701,7 +701,15 @@ window.runInstantLookup360 = async function() {
       '</div>';
     var sbxSlider = document.getElementById('sbx-emp-slider');
     if (sbxSlider && d.estimated_employees) {
-      sbxSlider.value = Math.min(500, d.estimated_employees);
+      if (d.estimated_employees > 0) {
+        if (d.estimated_employees > parseInt(sbxSlider.max || '5000', 10)) {
+          sbxSlider.max = String(d.estimated_employees);
+        }
+        sbxSlider.value = d.estimated_employees;
+        var exactInput = document.getElementById('sbx-emp-exact-input');
+        if (exactInput) exactInput.value = d.estimated_employees;
+        if (window.updateMallenSandbox) window.updateMallenSandbox(d.estimated_employees);
+      }
       if (window.updateMallenSandbox) window.updateMallenSandbox();
     }
   } catch (e) {
@@ -759,12 +767,17 @@ window.runInstantLookup360 = async function() {
     <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-center">
       <div class="lg:col-span-5 space-y-4">
         <div class="p-4 rounded-xl border border-slate-800 bg-slate-950/60">
-          <div class="flex justify-between text-xs font-mono mb-2">
-            <span>PLANTILLA OPERATIVA (COLABORADORES):</span>
-            <span id="sbx-emp-label" class="font-bold text-blue-400 text-sm">45 colaboradores</span>
+          <div class="flex items-center justify-between gap-2 text-xs font-mono mb-2">
+            <span>PLANTILLA OPERATIVA (SIN LÍMITE):</span>
+            <div class="flex items-center gap-2">
+              <input id="sbx-emp-exact-input" type="number" min="1" max="2000000" value="45"
+                     class="w-28 rounded border border-slate-700 bg-slate-900 px-2 py-1 text-right font-bold text-blue-400 text-xs focus:border-blue-500 focus:outline-none"
+                     oninput="window.updateMallenSandbox(parseInt(this.value || '1', 10))" />
+              <span id="sbx-emp-label" class="font-bold text-blue-400 text-xs">colaboradores</span>
+            </div>
           </div>
-          <input id="sbx-emp-slider" type="range" min="1" max="500" value="45"
-                 class="w-full accent-blue-500 cursor-pointer" oninput="window.updateMallenSandbox()" />
+          <input id="sbx-emp-slider" type="range" min="1" max="5000" value="45"
+                 class="w-full accent-blue-500 cursor-pointer" oninput="document.getElementById('sbx-emp-exact-input').value=this.value; window.updateMallenSandbox(parseInt(this.value, 10))" />
           <div class="flex justify-between text-[11px] font-mono text-slate-400 mt-1">
             <span>1 (Micro)</span>
             <span>15 (Umbral NOM-019)</span>
@@ -800,11 +813,16 @@ window.runInstantLookup360 = async function() {
   </div>
 </section>
 <script>
-window.updateMallenSandbox = function() {
+window.updateMallenSandbox = function(customEmp) {
   var slider = document.getElementById('sbx-emp-slider');
+  var exactInput = document.getElementById('sbx-emp-exact-input');
   if (!slider) return;
-  var emp = parseInt(slider.value || '45', 10);
-  document.getElementById('sbx-emp-label').textContent = emp + (emp === 1 ? ' colaborador' : ' colaboradores');
+  var emp = customEmp ? parseInt(customEmp, 10) : parseInt((exactInput && exactInput.value) || slider.value || '45', 10);
+  if (isNaN(emp) || emp < 1) emp = 1;
+  if (emp > parseInt(slider.max || '5000', 10)) slider.max = String(emp);
+  slider.value = emp;
+  if (exactInput && parseInt(exactInput.value, 10) !== emp) exactInput.value = emp;
+  document.getElementById('sbx-emp-label').textContent = emp.toLocaleString('en-US') + (emp === 1 ? ' colaborador' : ' colaboradores');
   var baseFine = 310000 + (emp * 12450);
   var checks = document.querySelectorAll('.sbx-check');
   var mitigatedRatio = 0;

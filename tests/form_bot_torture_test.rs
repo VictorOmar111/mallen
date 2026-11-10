@@ -1456,11 +1456,38 @@ async fn test_http_form_bot_14_scenarios_with_real_db_companies() {
     assert!(daily_news.len() >= 4, "El Radar Regulatorio Diario debe contar con al menos las 4 notas normativas clave");
 
 
-    // Escenario 76: Verificación de Honestidad Estadística (Estrato Oficial INEGI vs Mediana Censal vs Calibrado Exacto + RFC CTE160824G29)
+    // Escenario 76: Eliminación del Respaldo Arbitrario (11 a 30 / 20 emp) en RFCs sin match en DENUE (ej. CTE160824G29)
     let rfc_unlinked = worker_inegi_engine::engine::pdf_generator::extract_deep_denue_360_intelligence("CTE160824G29");
-    assert_eq!(rfc_unlinked.headcount_source_type, "PARAMETRO_BASE_ESTADISTICO");
+    assert_eq!(
+        rfc_unlinked.headcount_source_type,
+        "PENDIENTE_CALIBRACION_CORPORATIVA",
+        "Un RFC sin match en DENUE jamás debe inventar '11 a 30 personas'"
+    );
+    assert_eq!(
+        rfc_unlinked.estrato_personal,
+        "PENDIENTE DE CALIBRACIÓN CORPORATIVA (Requiere validación de nómina)"
+    );
+    assert_eq!(
+        rfc_unlinked.estimated_employees, 0,
+        "No debe asignar 20 empleados por defecto cuando requiere calibración corporativa"
+    );
     assert_eq!(rfc_unlinked.antiguedad_estimada_anios, 10, "De CTE160824G29 debe extraer el año 2016 (10 años de antigüedad en 2026)");
-    assert!(rfc_unlinked.vemp_methodology_note.contains("Mediana Censal"));
+
+    // Escenario 78: Padrón de Grandes Contribuyentes y Corporativos de Miles de Empleados (Caso Real Alsea ALS9209253R0 = 4,850 colaboradores)
+    // Limpiar cualquier snapshot de prueba previo que tuviera a ALS9209253R0 con 45 o 200 empleados
+    let _ = conn.execute("DELETE FROM audit_snapshots WHERE tax_id_key = 'ALS9209253R0'", []);
+    let alsea_360 = worker_inegi_engine::engine::pdf_generator::extract_deep_denue_360_intelligence("ALS9209253R0");
+    assert_eq!(alsea_360.headcount_source_type, "PADRON_GRANDES_CONTRIBUYENTES");
+    assert!(
+        alsea_360.razon_social.contains("ALSEA"),
+        "Debe identificar que ALS9209253R0 pertenece a DISTRIBUIDORA E IMPORTADORA ALSEA"
+    );
+    assert!(
+        alsea_360.estimated_employees >= 4850,
+        "Alsea jamás debe aparecer con 20 empleados; debe reflejar su plantilla corporativa de miles de colaboradores ({})",
+        alsea_360.estimated_employees
+    );
+    assert!(alsea_360.is_multi_branch_corp && alsea_360.branch_count >= 100);
 
     let denue_official = worker_inegi_engine::engine::pdf_generator::extract_deep_denue_360_intelligence("OPERADORA RESTAURANTERA CANCINO");
     assert_eq!(denue_official.headcount_source_type, "ESTRATO_OFICIAL_INEGI");
