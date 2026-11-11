@@ -507,16 +507,18 @@ async fn handle_live_scan(
     let is_mallen = master_report.tax_id.starts_with("MALLEN");
     let _ = state.db.save_audit_session(&master_report.tax_id, &master_report, is_mallen).await;
         // Sincronización Final Unificada antes de responder en POST /api/scan:
-    if !is_immune && (master_report.total_estimated_fine_mxn == 0.0 || master_report.razon_social.starts_with("REGISTRO NO INDEXADO")) {
-        let user_gave_emp = req.calibration.as_ref().and_then(|c| c.exact_employee_count).is_some();
-        if let Some(snap_m) = worker_inegi_engine::engine::pdf_generator::load_immutable_snapshot_strict(&clean_tax, "") {
+    let tax_key = master_report.tax_id.trim().to_uppercase();
+    let is_immune_local = tax_key.starts_with("MALLEN");
+    if !is_immune_local && (master_report.total_estimated_fine_mxn == 0.0 || master_report.razon_social.starts_with("REGISTRO NO INDEXADO")) {
+        let user_gave_emp = req.calibration.exact_employee_count.is_some();
+        if let Some(snap_m) = worker_inegi_engine::engine::pdf_generator::load_immutable_snapshot_strict(&tax_key, "") {
             let snap_emp = snap_m.calibration_applied.exact_employee_count.unwrap_or(snap_m.estimated_employees);
             if !user_gave_emp && snap_emp > 0 && !snap_m.razon_social.starts_with("REGISTRO NO INDEXADO") {
                 master_report = snap_m;
-                let _ = state.db.save_audit_session(&clean_tax, &master_report, false).await;
+                let _ = state.db.save_audit_session(&tax_key, &master_report, false).await;
             }
         } else {
-            let intel = worker_inegi_engine::engine::pdf_generator::extract_deep_denue_360_intelligence(&clean_tax);
+            let intel = worker_inegi_engine::engine::pdf_generator::extract_deep_denue_360_intelligence(&tax_key);
             if intel.estimated_employees > 0 && !intel.razon_social.starts_with("RFC ") {
                 master_report.razon_social = intel.razon_social.clone();
                 if !intel.codigo_scian.is_empty() {
@@ -530,11 +532,11 @@ async fn handle_live_scan(
                 }
                 master_report.total_estimated_fine_mxn = intel.exact_vemp_fine_mxn;
                 master_report.risk_score = intel.exact_risk_score.max(65);
-                let _ = worker_inegi_engine::engine::pdf_generator::freeze_immutable_audit_snapshot(&clean_tax, &master_report.razon_social, &master_report);
-                if let Some(hydrated_snap) = worker_inegi_engine::engine::pdf_generator::load_immutable_snapshot_strict(&clean_tax, &master_report.razon_social) {
+                let _ = worker_inegi_engine::engine::pdf_generator::freeze_immutable_audit_snapshot(&tax_key, &master_report.razon_social, &master_report);
+                if let Some(hydrated_snap) = worker_inegi_engine::engine::pdf_generator::load_immutable_snapshot_strict(&tax_key, &master_report.razon_social) {
                     master_report = hydrated_snap;
                 }
-                let _ = state.db.save_audit_session(&clean_tax, &master_report, false).await;
+                let _ = state.db.save_audit_session(&tax_key, &master_report, false).await;
             }
         }
     }
