@@ -2675,8 +2675,10 @@ pub fn generate_exit_intent_micro_pdf_with_session(
 
     if !out_cmd.status.success() {
         let stderr_msg = String::from_utf8_lossy(&out_cmd.stderr);
-        eprintln!("TYPST MICRO-PDF COMPILE ERROR: {}", stderr_msg);
-        return Err(format!("Fallo al compilar el Micro-Dictamen de rescate: {}", stderr_msg).into());
+        let short_err: String = stderr_msg.lines().take(4).collect::<Vec<_>>().join(" | ");
+        eprintln!("[TYPST-DIAG] {}", short_err);
+        let compact_err: String = stderr_msg.lines().take(3).collect::<Vec<_>>().join(" | ");
+        return Err(format!("Fallo al compilar el Micro-Dictamen: {}", compact_err).into());
     }
 
     Ok(fs::read(output_path)?)

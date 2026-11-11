@@ -1482,8 +1482,8 @@ async fn test_http_form_bot_14_scenarios_with_real_db_companies() {
     alsea_corp.razon_social = "DISTRIBUIDORA E IMPORTADORA ALSEA S.A. DE C.V.".to_string();
     alsea_corp.codigo_scian = "722511".to_string();
     alsea_corp.actividad_scian_desc = "Servicios de preparación de alimentos y bebidas".to_string();
-    alsea_corp.estimated_employees = 4850;
-    alsea_corp.calibration_applied.exact_employee_count = Some(4850);
+    alsea_corp.estimated_employees = 4860;
+    alsea_corp.calibration_applied.exact_employee_count = Some(4860);
     let snap_alsea = worker_inegi_engine::engine::pdf_generator::freeze_immutable_audit_snapshot(
         "ALS9209253R0",
         "DISTRIBUIDORA E IMPORTADORA ALSEA S.A. DE C.V.",
@@ -1491,7 +1491,7 @@ async fn test_http_form_bot_14_scenarios_with_real_db_companies() {
     );
     let alsea_360 = worker_inegi_engine::engine::pdf_generator::extract_deep_denue_360_intelligence("ALS9209253R0");
     assert_eq!(alsea_360.headcount_source_type, "CALIBRADO_POR_USUARIO");
-    assert_eq!(alsea_360.estimated_employees, 4850);
+    assert_eq!(alsea_360.estimated_employees, 4860);
 
     // Escenario 79: Flujo End-to-End Completo (FormBot -> Enlace Checkout Validado -> Click Tracking -> Snapshot -> Dictamen Typst con QR 13x13)
     let checkout_url = HttpFormBot::build_and_validate_checkout_link(&alsea_corp.razon_social, Some(&alsea_corp.tax_id))
@@ -1500,7 +1500,7 @@ async fn test_http_form_bot_14_scenarios_with_real_db_companies() {
     let _clicks = HttpFormBot::record_checkout_link_click(&alsea_corp.razon_social, "201.141.118.181", "Mozilla/5.0").unwrap();
     let alsea_typst_doc = worker_inegi_engine::engine::pdf_generator::render_typst_from_strict_snapshot(&snap_alsea)
         .expect("Debe renderizar el Dictamen de Alsea con sus 4,850 colaboradores");
-    assert!(alsea_typst_doc.contains("4850 colaboradores"), "El Dictamen debe mostrar los 4,850 colaboradores exactos");
+    assert!(alsea_typst_doc.contains("4860 colaboradores"), "El Dictamen debe mostrar los 4,850 colaboradores exactos");
     assert!(alsea_typst_doc.contains("#grid(columns: (1.85pt,) * 13"), "El Dictamen de 3 páginas debe incluir el Código QR Vectorial 13x13");
     assert!(alsea_typst_doc.contains("https://mallen.lat/#faq"), "El Dictamen debe incluir el enlace a #faq");
 
