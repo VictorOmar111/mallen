@@ -838,7 +838,7 @@ pub fn render_vector_qr_seal_typst(audit_hash: &str) -> String {
 
             let fill_hex = if is_dark { "#0f172a" } else { "#ffffff" };
             cells.push_str(&format!(
-                "#rect(width: 1.85pt, height: 1.85pt, fill: rgb(\"{}\"), stroke: none),",
+                "rect(width: 1.85pt, height: 1.85pt, fill: rgb(\"{}\"), stroke: none),",
                 fill_hex
             ));
         }
@@ -2675,9 +2675,8 @@ pub fn generate_exit_intent_micro_pdf_with_session(
 
     if !out_cmd.status.success() {
         let stderr_msg = String::from_utf8_lossy(&out_cmd.stderr);
-        let short_err: String = stderr_msg.lines().take(4).collect::<Vec<_>>().join(" | ");
-        eprintln!("[TYPST-DIAG] {}", short_err);
-        let compact_err: String = stderr_msg.lines().take(3).collect::<Vec<_>>().join(" | ");
+        
+        let compact_err: String = stderr_msg.chars().take(140).collect();
         return Err(format!("Fallo al compilar el Micro-Dictamen: {}", compact_err).into());
     }
 
