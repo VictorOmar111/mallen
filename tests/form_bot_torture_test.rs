@@ -1858,5 +1858,23 @@ async fn test_http_form_bot_14_scenarios_with_real_db_companies() {
         assert_eq!(unlinked_rep.headcount_source_type, "PENDIENTE_CALIBRACION_CORPORATIVA");
     }
 
+
+    // Verificación de Compilación Binaria Real con `/usr/local/bin/typst` (Previene "Fallo al compilar el Micro-Dictamen de rescate")
+    let mut emp_alsea_pdf = worker_inegi_engine::engine::models::EmpresaB2B::default();
+    emp_alsea_pdf.id = "ALS9209253R0".to_string();
+    emp_alsea_pdf.tax_id = Some("ALS9209253R0".to_string());
+    emp_alsea_pdf.nombre = "DISTRIBUIDORA E IMPORTADORA ALSEA S.A. DE C.V.".to_string();
+    emp_alsea_pdf.actividad = "722511 - Servicios de preparación de alimentos y bebidas".to_string();
+    let osint_dummy = worker_inegi_engine::engine::models::OsintReport::default();
+    let pdf_bytes = worker_inegi_engine::engine::pdf_generator::generate_micro_audit_pdf(
+        &emp_alsea_pdf,
+        &osint_dummy,
+        "/tmp/test_alsea_micro_binary.pdf",
+        Some(&alsea_corp),
+        false,
+    )
+    .expect("La compilación binaria real con /usr/local/bin/typst debe generar el PDF sin error");
+    assert!(pdf_bytes.len() > 5000 && pdf_bytes.starts_with(b"%PDF-"), "El archivo compilado debe ser un PDF binario válido");
+
     println!("✓ LOS 82 ESCENARIOS (INCLUYENDO 100 EMPRESAS REALES DEL DENUE, TELEMETRÍA F1 E IDEMPOTENCIA EN BÚSQUEDAS REPETIDAS) SUPERADOS AL 100%");
 }

@@ -506,18 +506,51 @@ async fn handle_live_scan(
 
     let is_mallen = master_report.tax_id.starts_with("MALLEN");
     let _ = state.db.save_audit_session(&master_report.tax_id, &master_report, is_mallen).await;
-        // Sincronización Final Unificada antes de responder en POST /api/scan:
+        // Sincronización Final Unificada 1:1:1:1 antes de responder en POST /api/scan:
+    // Garantiza que el Motor de Diagnóstico OSINT, la Ficha 360°, el Simulador In Situ y /checkout
+    // tengan SIEMPRE exactamente el mismo número de empleados, el mismo giro SCIAN, el mismo Score y el mismo VEMP al centavo.
     let tax_key = master_report.tax_id.trim().to_uppercase();
     let is_immune_local = tax_key.starts_with("MALLEN");
-    if !is_immune_local && (master_report.total_estimated_fine_mxn == 0.0 || master_report.razon_social.starts_with("REGISTRO NO INDEXADO")) {
-        let user_gave_emp = req.calibration.exact_employee_count.is_some();
-        if let Some(snap_m) = worker_inegi_engine::engine::pdf_generator::load_immutable_snapshot_strict(&tax_key, "") {
+    if !is_immune_local {
+        let user_explicit_emp = req.calibration.exact_employee_count.filter(|&e| e > 0);
+
+        if let Some(custom_emp) = user_explicit_emp {
+            // Caso 1: El usuario ingresó o ajustó explícitamente el número de empleados -> Actualizar Snapshot Inmutable
+            let intel = worker_inegi_engine::engine::pdf_generator::extract_deep_denue_360_intelligence(&tax_key);
+            if (master_report.razon_social.starts_with("REGISTRO NO INDEXADO") || master_report.razon_social == tax_key)
+                && !intel.razon_social.starts_with("RFC ")
+            {
+                master_report.razon_social = intel.razon_social.clone();
+            }
+            if (master_report.codigo_scian == "541610" || master_report.codigo_scian == "541110") && !intel.codigo_scian.is_empty() {
+                master_report.codigo_scian = intel.codigo_scian.clone();
+                master_report.actividad_scian_desc = intel.actividad_desc.clone();
+            }
+            master_report.estimated_employees = custom_emp;
+            master_report.calibration_applied.exact_employee_count = Some(custom_emp);
+            master_report.total_estimated_fine_mxn = 0.0;
+            master_report.risk_score = 0;
+            master_report.findings.clear();
+            let _ = worker_inegi_engine::engine::pdf_generator::freeze_immutable_audit_snapshot(&tax_key, &master_report.razon_social, &master_report);
+            if let Some(hydrated) = worker_inegi_engine::engine::pdf_generator::load_immutable_snapshot_strict(&tax_key, &master_report.razon_social) {
+                master_report = hydrated;
+            }
+            let _ = state.db.save_audit_session(&tax_key, &master_report, false).await;
+        } else if let Some(snap_m) = worker_inegi_engine::engine::pdf_generator::load_immutable_snapshot_strict(&tax_key, "") {
+            // Caso 2: Existe un Snapshot Inmutable previo (ej. Alsea 4,860 emp o Arquitectura Cloud 52 emp) -> Heredarlo al 100%
             let snap_emp = snap_m.calibration_applied.exact_employee_count.unwrap_or(snap_m.estimated_employees);
-            if !user_gave_emp && snap_emp > 0 && !snap_m.razon_social.starts_with("REGISTRO NO INDEXADO") {
+            if snap_emp > 0 && !snap_m.razon_social.starts_with("REGISTRO NO INDEXADO") && !snap_m.razon_social.starts_with("RFC ") {
+                let preserved_telemetry = master_report.web_telemetry.clone();
                 master_report = snap_m;
+                if !preserved_telemetry.target_url.is_empty() {
+                    master_report.web_telemetry = preserved_telemetry;
+                }
+                let (_, exact_cents) = worker_inegi_engine::engine::pdf_generator::compute_vectors_37_sha256_fingerprint(&master_report);
+                master_report.total_estimated_fine_mxn = (exact_cents as f64) / 100.0;
                 let _ = state.db.save_audit_session(&tax_key, &master_report, false).await;
             }
         } else {
+            // Caso 3: No tenía Snapshot previo -> Consultar Ficha 360° del DENUE y congelar Snapshot si existe en padrón
             let intel = worker_inegi_engine::engine::pdf_generator::extract_deep_denue_360_intelligence(&tax_key);
             if intel.estimated_employees > 0 && !intel.razon_social.starts_with("RFC ") {
                 master_report.razon_social = intel.razon_social.clone();
@@ -526,12 +559,11 @@ async fn handle_live_scan(
                     master_report.actividad_scian_desc = intel.actividad_desc.clone();
                 }
                 master_report.domicilio_fiscal_o_denue = intel.domicilio_completo.clone();
-                if !user_gave_emp {
-                    master_report.estimated_employees = intel.estimated_employees;
-                    master_report.calibration_applied.exact_employee_count = Some(intel.estimated_employees);
-                }
-                master_report.total_estimated_fine_mxn = intel.exact_vemp_fine_mxn;
-                master_report.risk_score = intel.exact_risk_score.max(65);
+                master_report.estimated_employees = intel.estimated_employees;
+                master_report.calibration_applied.exact_employee_count = Some(intel.estimated_employees);
+                master_report.total_estimated_fine_mxn = 0.0;
+                master_report.risk_score = 0;
+                master_report.findings.clear();
                 let _ = worker_inegi_engine::engine::pdf_generator::freeze_immutable_audit_snapshot(&tax_key, &master_report.razon_social, &master_report);
                 if let Some(hydrated_snap) = worker_inegi_engine::engine::pdf_generator::load_immutable_snapshot_strict(&tax_key, &master_report.razon_social) {
                     master_report = hydrated_snap;

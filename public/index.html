@@ -837,6 +837,8 @@ window.updateMallenSandbox = function(customEmp) {
   if (emp > parseInt(slider.max || '5000', 10)) slider.max = String(emp);
   slider.value = emp;
   if (exactInput && parseInt(exactInput.value, 10) !== emp) exactInput.value = emp;
+  var topEmpInput = document.getElementById('cal_exact_employees');
+  if (topEmpInput && customEmp) topEmpInput.value = emp;
   document.getElementById('sbx-emp-label').textContent = emp.toLocaleString('en-US') + (emp === 1 ? ' colaborador' : ' colaboradores');
   var baseFine = (window.__MALLEN_OFFICIAL_VEMP_BASE && window.__MALLEN_OFFICIAL_EMP_BASE === emp)
     ? window.__MALLEN_OFFICIAL_VEMP_BASE

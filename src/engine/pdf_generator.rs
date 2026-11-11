@@ -2411,7 +2411,7 @@ pub fn generate_pdf_report_with_session(
         build_report_typst_markup_full(empresa, osint, master_opt, is_accredited, false);
     fs::write(&typst_source_path, &typst_content)?;
 
-    let status = Command::new("typst")
+    let status = Command::new(if std::path::Path::new("/usr/local/bin/typst").exists() { "/usr/local/bin/typst" } else { "typst" }).env("PATH", "/usr/local/bin:/usr/bin:/bin").env("XDG_CACHE_HOME", "/tmp/mallen_typst_cache")
         .arg("compile")
         .arg(&typst_source_path)
         .arg(output_path)
@@ -2615,7 +2615,7 @@ pub fn generate_pdf_report_with_session(
         let cert_content = normalize_typst_dollars(&raw_cert);
         fs::write(&cert_typ_path, cert_content)?;
 
-        let _ = Command::new("typst")
+        let _ = Command::new(if std::path::Path::new("/usr/local/bin/typst").exists() { "/usr/local/bin/typst" } else { "typst" }).env("PATH", "/usr/local/bin:/usr/bin:/bin").env("XDG_CACHE_HOME", "/tmp/mallen_typst_cache")
             .arg("compile")
             .arg(&cert_typ_path)
             .arg(&cert_pdf_path)
@@ -2657,7 +2657,7 @@ pub fn generate_exit_intent_micro_pdf_with_session(
         build_report_typst_markup_full(empresa, osint, master_opt_in, is_accredited, true);
     fs::write(&typst_source_path, &typst_content)?;
 
-    let status = Command::new("typst")
+    let status = Command::new(if std::path::Path::new("/usr/local/bin/typst").exists() { "/usr/local/bin/typst" } else { "typst" }).env("PATH", "/usr/local/bin:/usr/bin:/bin").env("XDG_CACHE_HOME", "/tmp/mallen_typst_cache")
         .arg("compile")
         .arg(&typst_source_path)
         .arg(output_path)
