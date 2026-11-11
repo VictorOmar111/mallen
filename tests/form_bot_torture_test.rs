@@ -1712,7 +1712,7 @@ async fn test_http_form_bot_14_scenarios_with_real_db_companies() {
          FROM denue_units
          WHERE LENGTH(COALESCE(NULLIF(TRIM(raz_social), ''), TRIM(nom_estab))) >= 5
          ORDER BY RANDOM()
-         LIMIT 100",
+         LIMIT 250",
     ) {
         if let Ok(rows) = stmt100.query_map([], |r| {
             Ok((
@@ -1731,12 +1731,12 @@ async fn test_http_form_bot_14_scenarios_with_real_db_companies() {
 
     assert_eq!(
         random_100_denue.len(),
-        100,
+        250,
         "Debe extraer exactamente 100 empresas reales aleatorias desde denue_units en data/mallen_prod.db"
     );
 
     println!("\n╔══════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════╗");
-    println!("║ AUDITORÍA F1 SOBRE 100 EMPRESAS REALES ALEATORIAS EXTRAÍDAS EN VIVO DE `denue_units` (0% HARDCODE — MUESTRA DE 15/100)   ║");
+    println!("║ AUDITORÍA F1 SOBRE 100 EMPRESAS REALES ALEATORIAS EXTRAÍDAS EN VIVO DE `denue_units` (0% HARDCODE — MUESTRA DE 25/250)   ║");
     println!("╠═════╦══════════════════════════════════════════╦════════╦═══════════════════════╦═══════╦══════════════════╦═════════════╣");
     println!("║ #   ║ RAZÓN SOCIAL / ESTABLECIMIENTO REAL      ║ SCIAN  ║ ESTRATO OFICIAL INEGI ║ MED.  ║ EXPOSICIÓN VEMP  ║ LATENCIA F1 ║");
     println!("╠═════╬══════════════════════════════════════════╬════════╬═══════════════════════╬═══════╬══════════════════╬═════════════╣");
@@ -1800,7 +1800,7 @@ async fn test_http_form_bot_14_scenarios_with_real_db_companies() {
         sum_100_us += item_us;
 
         // Imprimir una muestra representativa de 15 de las 100 empresas reales aleatorias en la tabla F1
-        if idx100 < 15 {
+        if idx100 < 25 {
             let n_clip: String = real_name.chars().take(40).collect();
             let e_clip: String = real_estrato.chars().take(21).collect();
             println!(
@@ -1819,8 +1819,8 @@ async fn test_http_form_bot_14_scenarios_with_real_db_companies() {
     let total_batch_ms = t_batch_100.elapsed().as_millis();
     println!("╠═════╩══════════════════════════════════════════╩════════╩═══════════════════════╩═══════╩══════════════════╩═════════════╣");
     println!(
-        "║ RESUMEN DE LAS 100 EMPRESAS REALES ALEATORIAS DEL DENUE: 100/100 PARIDAD EXACTA | PROM: {:>5} µs/emp | TOTAL: {:>5} ms ║",
-        sum_100_us / 100,
+        "║ RESUMEN DE LAS 100 EMPRESAS REALES ALEATORIAS DEL DENUE: 250/250 PARIDAD EXACTA | PROM: {:>5} µs/emp | TOTAL: {:>5} ms ║",
+        sum_100_us / 250,
         total_batch_ms
     );
     println!("╚══════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════╝\n");
@@ -1875,6 +1875,33 @@ async fn test_http_form_bot_14_scenarios_with_real_db_companies() {
     )
     .expect("La compilación binaria real con /usr/local/bin/typst debe generar el PDF sin error");
     assert!(pdf_bytes.len() > 5000 && pdf_bytes.starts_with(b"%PDF-"), "El archivo compilado debe ser un PDF binario válido");
+
+    // Además, compilar el PDF binario real de 3 empresas aleatorias extraídas de `denue_units` para certificar 0 errores Typst con nombres reales
+    for (idx_bin, (r_nom, r_sc, r_act, r_est, r_ent)) in random_100_denue.iter().take(3).enumerate() {
+        let mut emp_rand_pdf = worker_inegi_engine::engine::models::EmpresaB2B::default();
+        emp_rand_pdf.id = format!("DYN100-{:03}", idx_bin + 1);
+        emp_rand_pdf.tax_id = Some(emp_rand_pdf.id.clone());
+        emp_rand_pdf.nombre = r_nom.clone();
+        emp_rand_pdf.actividad = format!("{} - {}", r_sc, r_act);
+        emp_rand_pdf.estado = r_ent.clone();
+        let (_, med_r, _, _) = HttpFormBot::classify_denue_capacity_and_scian_risk(r_est, r_sc);
+        let mut m_rand_pdf = worker_inegi_engine::engine::models::AuditMasterJson::default();
+        m_rand_pdf.tax_id = emp_rand_pdf.id.clone();
+        m_rand_pdf.razon_social = r_nom.clone();
+        m_rand_pdf.codigo_scian = r_sc.clone();
+        m_rand_pdf.estimated_employees = med_r;
+        m_rand_pdf.calibration_applied.exact_employee_count = Some(med_r);
+        let out_p = format!("/tmp/test_random_denue_{}.pdf", idx_bin + 1);
+        let rand_pdf_bytes = worker_inegi_engine::engine::pdf_generator::generate_exit_intent_micro_pdf_with_session(
+            &emp_rand_pdf,
+            &osint_dummy,
+            Some(&m_rand_pdf),
+            false,
+            &out_p,
+        )
+        .expect("Toda empresa aleatoria real de denue_units debe compilar su PDF binario sin errores");
+        assert!(rand_pdf_bytes.starts_with(b"%PDF-") && rand_pdf_bytes.len() > 5000);
+    }
 
     println!("✓ LOS 82 ESCENARIOS (INCLUYENDO 100 EMPRESAS REALES DEL DENUE, TELEMETRÍA F1 E IDEMPOTENCIA EN BÚSQUEDAS REPETIDAS) SUPERADOS AL 100%");
 }

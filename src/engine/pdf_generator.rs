@@ -2206,7 +2206,7 @@ fn build_report_typst_markup_full(
     let hallazgo_pc_str = if is_immune {
         format!("0 pts: Programa Interno de Protección Civil ({}) y autorizaciones vigentes.", ley_pc_estatal)
     } else {
-        format!("Competencia local [{}]: {} • ISN Estatal estimado ({:.1}%): \${} MXN/mes.", ley_pc_estatal, sector_especifico, isn_rate_pct, isn_mensual_str)
+        format!("Competencia local [{}]: {} • ISN Estatal estimado ({:.1}%): \\${} MXN/mes.", ley_pc_estatal, sector_especifico, isn_rate_pct, isn_mensual_str)
     };
 
     let hallazgo_profeco_str = if is_immune {
