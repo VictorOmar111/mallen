@@ -2657,16 +2657,26 @@ pub fn generate_exit_intent_micro_pdf_with_session(
         build_report_typst_markup_full(empresa, osint, master_opt_in, is_accredited, true);
     fs::write(&typst_source_path, &typst_content)?;
 
-    let status = Command::new(if std::path::Path::new("/usr/local/bin/typst").exists() { "/usr/local/bin/typst" } else { "typst" }).env("PATH", "/usr/local/bin:/usr/bin:/bin").env("XDG_CACHE_HOME", "/tmp/mallen_typst_cache")
+    let _ = fs::create_dir_all("/tmp/mallen_typst_cache");
+    if let Some(parent_dir) = std::path::Path::new(output_path).parent() {
+        if !parent_dir.as_os_str().is_empty() {
+            let _ = fs::create_dir_all(parent_dir);
+        }
+    }
+    let out_cmd = Command::new(if std::path::Path::new("/usr/local/bin/typst").exists() { "/usr/local/bin/typst" } else { "typst" })
+        .env("PATH", "/usr/local/bin:/usr/bin:/bin")
+        .env("XDG_CACHE_HOME", "/tmp/mallen_typst_cache")
         .arg("compile")
         .arg(&typst_source_path)
         .arg(output_path)
-        .status()?;
+        .output()?;
 
     let _ = fs::remove_file(&typst_source_path);
 
-    if !status.success() {
-        return Err("Fallo al compilar el Micro-Dictamen de rescate".into());
+    if !out_cmd.status.success() {
+        let stderr_msg = String::from_utf8_lossy(&out_cmd.stderr);
+        eprintln!("TYPST MICRO-PDF COMPILE ERROR: {}", stderr_msg);
+        return Err(format!("Fallo al compilar el Micro-Dictamen de rescate: {}", stderr_msg).into());
     }
 
     Ok(fs::read(output_path)?)

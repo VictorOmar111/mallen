@@ -1865,8 +1865,8 @@ async fn test_http_form_bot_14_scenarios_with_real_db_companies() {
     emp_alsea_pdf.tax_id = Some("ALS9209253R0".to_string());
     emp_alsea_pdf.nombre = "DISTRIBUIDORA E IMPORTADORA ALSEA S.A. DE C.V.".to_string();
     emp_alsea_pdf.actividad = "722511 - Servicios de preparación de alimentos y bebidas".to_string();
-    let osint_dummy = worker_inegi_engine::engine::models::OsintReport::default();
-    let pdf_bytes = worker_inegi_engine::engine::pdf_generator::generate_micro_audit_pdf(
+    let osint_dummy = worker_inegi_engine::engine::models::OsintFindings::default();
+    let pdf_bytes = worker_inegi_engine::engine::pdf_generator::generate_exit_intent_micro_pdf_with_session(
         &emp_alsea_pdf,
         &osint_dummy,
         "/tmp/test_alsea_micro_binary.pdf",
