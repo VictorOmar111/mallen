@@ -1252,31 +1252,214 @@ window.updateMallenSandbox = function(customEmp) {
     <script src="/js/i18n_engine.js?v=2026.140" defer></script>
     <script src="/js/i18n_regions_connect.js" defer></script>
 
+
+
+
 <script id="w16-unified-osint-360-bridge">
 (function() {
-  // Interceptar fetch a /api/scan para que cada vez que el usuario ejecute el Motor de Diagnóstico OSINT,
-  // se actualice automáticamente la Ficha 360° inferior, el Simulador In Situ y el token de sesión persistente
+  if (window.__W16_OMNI_BRIDGE_ACTIVE) return;
+  window.__W16_OMNI_BRIDGE_ACTIVE = true;
+
+  function findMainRfcInput() {
+    return document.getElementById('tax_id')
+        || document.getElementById('rfc-input')
+        || document.getElementById('scan-rfc')
+        || document.querySelector('input[placeholder*="RFC"]:not(#lookup-360-input)');
+  }
+
+  function findMainScanButton() {
+    var btns = document.querySelectorAll('button');
+    for (var i = 0; i < btns.length; i++) {
+      var t = (btns[i].textContent || '').toUpperCase();
+      if (t.indexOf('EJECUTAR DIAGN') !== -1 || t.indexOf('AUDITAR') !== -1 || t.indexOf('DIAGNÓSTICO PERICIAL') !== -1) {
+        if (btns[i].id !== 'lookup-360-btn') return btns[i];
+      }
+    }
+    return null;
+  }
+
+  // Sincronizador central de estado SSOT en el navegador
+  window.applyUnifiedSsotToAllPanels = function(rfcOrQuery, razonSocial, scianCode, scianDesc, domicilio, entidad, empCount, vempFineMxn, riskScore) {
+    if (vempFineMxn && vempFineMxn > 0) {
+      window.__MALLEN_OFFICIAL_VEMP_BASE = vempFineMxn;
+    }
+    if (empCount && empCount > 0) {
+      window.__MALLEN_OFFICIAL_EMP_BASE = empCount;
+    }
+    if (riskScore && riskScore > 0) {
+      window.__MALLEN_OFFICIAL_SCORE_BASE = riskScore;
+    }
+
+    // 1. Pre-llenar los campos del formulario de Calibración y Dossier Superior
+    var pairs = [
+      ['cal_exact_employees', empCount > 0 ? empCount : ''],
+      ['dos_razon_social', (razonSocial && !razonSocial.startsWith('RFC ') && !razonSocial.startsWith('REGISTRO NO INDEXADO')) ? razonSocial : ''],
+      ['dos_scian', scianCode ? (scianCode + (scianDesc ? (' - ' + scianDesc) : '')) : ''],
+      ['dos_domicilio', (domicilio && !domicilio.startsWith('Domicilio sujeto')) ? domicilio : ''],
+      ['dos_entidad', (entidad && !entidad.startsWith('PENDIENTE')) ? entidad : '']
+    ];
+    for (var i = 0; i < pairs.length; i++) {
+      var el = document.getElementById(pairs[i][0]);
+      if (el && pairs[i][1] !== '') el.value = pairs[i][1];
+    }
+
+    // 2. Sincronizar el Simulador In Situ con el número exacto de empleados y el VEMP oficial
+    var sbxSlider = document.getElementById('sbx-emp-slider');
+    var exactInput = document.getElementById('sbx-emp-exact-input');
+    if (sbxSlider && empCount > 0) {
+      if (empCount > parseInt(sbxSlider.max || '5000', 10)) {
+        sbxSlider.max = String(empCount);
+      }
+      sbxSlider.value = empCount;
+      if (exactInput) exactInput.value = empCount;
+      if (window.updateMallenSandbox) window.updateMallenSandbox(empCount);
+    }
+  };
+
+  // Interceptor bidireccional de window.fetch
   var origFetch = window.fetch;
   window.fetch = async function(input, init) {
     var urlStr = typeof input === 'string' ? input : (input && input.url ? input.url : '');
     var response = await origFetch.apply(this, arguments);
+
     try {
-      if (urlStr.indexOf('/api/scan') !== -1 && init && init.body) {
-        var reqBody = JSON.parse(init.body);
-        var qTax = (reqBody.tax_id || '').trim();
-        if (qTax) {
-          localStorage.setItem('mallen_active_rfc', qTax);
-          document.cookie = 'mallen_active_rfc=' + encodeURIComponent(qTax) + '; path=/; max-age=86400; SameSite=Lax';
-          var lookupInput = document.getElementById('lookup-360-input');
-          if (lookupInput) {
-            lookupInput.value = qTax;
-            if (window.runInstantLookup360) setTimeout(function() { window.runInstantLookup360(true); }, 50);
+      // Dirección A -> B: Cuando termina POST /api/scan (Diagnóstico OSINT Principal)
+      if (urlStr.indexOf('/api/scan') !== -1 && urlStr.indexOf('/api/micro_scan') === -1) {
+        var cloned = response.clone();
+        cloned.json().then(function(scanData) {
+          if (!scanData) return;
+          var qTax = (scanData.tax_id || '').trim().toUpperCase();
+          if (qTax) {
+            localStorage.setItem('mallen_active_rfc', qTax);
+            document.cookie = 'mallen_active_rfc=' + encodeURIComponent(qTax) + '; path=/; max-age=86400; SameSite=Lax';
           }
-        }
+          var emp = (scanData.calibration_applied && scanData.calibration_applied.exact_employee_count)
+                    || scanData.estimated_employees || 0;
+          window.applyUnifiedSsotToAllPanels(
+            qTax,
+            scanData.razon_social || '',
+            scanData.codigo_scian || '',
+            scanData.actividad_scian_desc || '',
+            scanData.domicilio_fiscal_o_denue || '',
+            (scanData.calibration_applied && scanData.calibration_applied.dossier && scanData.calibration_applied.dossier.entidad_jurisdiccion) || '',
+            emp,
+            scanData.total_estimated_fine_mxn || 0,
+            scanData.risk_score || 0
+          );
+
+          // Actualizar automáticamente la Ficha 360° de abajo sin causar bucle
+          var lookupInp = document.getElementById('lookup-360-input');
+          if (lookupInp && qTax) {
+            lookupInp.value = qTax;
+            if (window.runInstantLookup360 && !window.__SKIP_NEXT_360_TRIGGER) {
+              window.__SKIP_NEXT_SCAN_TRIGGER = true;
+              window.runInstantLookup360(true);
+            }
+          }
+        }).catch(function() {});
       }
     } catch (_) {}
+
     return response;
   };
+
+  // Redefinir runInstantLookup360 para que también dispare el Diagnóstico OSINT de arriba cuando el usuario busca desde abajo
+  var prevLookupFn = window.runInstantLookup360;
+  window.runInstantLookup360 = async function(skipTopScanTrigger) {
+    var inp = document.getElementById('lookup-360-input');
+    var box = document.getElementById('lookup-360-result');
+    if (!inp || !box || !inp.value.trim()) return;
+    var qVal = inp.value.trim().toUpperCase();
+
+    // Sincronizar con el input de RFC superior
+    var mainRfc = findMainRfcInput();
+    if (mainRfc) mainRfc.value = qVal;
+    localStorage.setItem('mallen_active_rfc', qVal);
+    document.cookie = 'mallen_active_rfc=' + encodeURIComponent(qVal) + '; path=/; max-age=86400; SameSite=Lax';
+
+    box.classList.remove('hidden');
+    box.innerHTML = '<div class="col-span-3 text-blue-400 py-2">Verificando registros públicos y sincronizando expediente 360°...</div>';
+
+    try {
+      var res = await origFetch('/api/lookup?q=' + encodeURIComponent(qVal));
+      var d = await res.json();
+      var branchBadge = d.is_multi_branch_corp
+        ? '<span class="text-emerald-400 font-bold">CORPORATIVO MULTI-SUCURSAL (' + d.branch_count + ' establecimientos en padrón)</span>'
+        : '<span class="text-slate-300">Establecimiento en Padrón (' + (d.branch_count || 1) + ' unidad registrada)</span>';
+      var gpsLine = d.longitud ? ('Registro/Ubicación: ' + d.latitud + ' • ' + d.longitud) : (d.latitud || 'Verificación Federal');
+      var isnBlock = (function() {
+        if (d.headcount_source_type === 'PENDIENTE_CALIBRACION_CORPORATIVA' || !d.estimated_employees) {
+          return '<div class="text-amber-400 mt-1">ISN Estatal (Tasa ' + d.isn_rate_pct.toFixed(1) + '% — Pendiente calibrar nómina)</div>';
+        }
+        var basisLbl = d.headcount_source_type === 'CALIBRADO_POR_USUARIO'
+          ? 'sobre Nómina Conciliada'
+          : (d.headcount_source_type === 'PADRON_GRANDES_CONTRIBUYENTES' ? 'sobre Plantilla Corporativa' : 'sobre Mediana Censal INEGI');
+        return '<div class="text-amber-400 mt-1">ISN Estatal (' + d.isn_rate_pct.toFixed(1) + '% ' + basisLbl + '): $' + d.isn_mensual_presunto_mxn.toLocaleString('en-US', {minimumFractionDigits:2}) + ' MXN/mes</div>' +
+               (d.exact_vemp_fine_mxn > 0 ? '<div class="text-red-400 font-bold mt-1">Exposición VEMP (37 Vectores): $' + d.exact_vemp_fine_mxn.toLocaleString('en-US', {minimumFractionDigits:2}) + ' MXN (Score: ' + d.exact_risk_score + '/100)</div>' : '');
+      })();
+
+      box.innerHTML =
+        '<div class="p-3.5 rounded-lg border border-slate-800 bg-slate-900/80 text-left">' +
+          '<div class="text-slate-400 text-[10px] uppercase tracking-wider">ENTIDAD, GIRO SCIAN Y ESTRATO OFICIAL</div>' +
+          '<div class="font-bold text-sm mt-1">' + d.razon_social + '</div>' +
+          '<div class="text-blue-400 mt-1 font-bold">' + (d.codigo_scian ? ('SCIAN ' + d.codigo_scian + ' • ') : '') + (d.headcount_display_label || ('Estrato INEGI: ' + d.estrato_personal)) + '</div>' +
+          '<div class="text-[11px] text-amber-400/90 mt-1">' + (d.vemp_methodology_note || '') + '</div>' +
+          '<div class="mt-1.5 text-[11px]">' + branchBadge + '</div>' +
+        '</div>' +
+        '<div class="p-3.5 rounded-lg border border-slate-800 bg-slate-900/80 text-left">' +
+          '<div class="text-slate-400 text-[10px] uppercase tracking-wider">JURISDICCIÓN, ISN ESTATAL Y EXPOSICIÓN VEMP</div>' +
+          '<div class="font-bold mt-1">' + d.entidad_federativa + ' (' + d.municipio_alcaldia + ')</div>' +
+          isnBlock +
+          '<div class="text-[11px] text-slate-400 mt-1">' + gpsLine + '</div>' +
+        '</div>' +
+        '<div class="p-3.5 rounded-lg border border-slate-800 bg-slate-900/80 text-left">' +
+          '<div class="text-slate-400 text-[10px] uppercase tracking-wider">ANTIGÜEDAD Y MARCO DE PROTECCIÓN CIVIL</div>' +
+          '<div class="font-bold text-emerald-400 mt-1">Referencia Registral: ' + (d.fecha_alta_denue || 'Padrón Federal') + (d.antiguedad_estimada_anios ? (' (~' + d.antiguedad_estimada_anios + ' años)') : '') + '</div>' +
+          '<div class="text-[11px] text-slate-300 mt-1 leading-relaxed">' + d.ley_proteccion_civil_local + '</div>' +
+        '</div>';
+
+      // Aplicar a todos los paneles (Dossier superior + Simulador In Situ)
+      window.applyUnifiedSsotToAllPanels(
+        qVal,
+        d.razon_social,
+        d.codigo_scian,
+        d.actividad_desc,
+        d.domicilio_completo,
+        d.entidad_federativa,
+        d.estimated_employees,
+        d.exact_vemp_fine_mxn,
+        d.exact_risk_score
+      );
+
+      // Si el usuario inició la búsqueda desde la Ficha 360° (abajo), disparar también el botón del Diagnóstico Principal arriba
+      if (!skipTopScanTrigger && !window.__SKIP_NEXT_SCAN_TRIGGER) {
+        var scanBtn = findMainScanButton();
+        if (scanBtn) {
+          window.__SKIP_NEXT_360_TRIGGER = true;
+          setTimeout(function() {
+            scanBtn.click();
+            setTimeout(function() { window.__SKIP_NEXT_360_TRIGGER = false; }, 800);
+          }, 60);
+        }
+      }
+      window.__SKIP_NEXT_SCAN_TRIGGER = false;
+    } catch (e) {
+      box.innerHTML = '<div class="col-span-3 text-red-400">No fue posible completar la consulta en este momento.</div>';
+    }
+  };
+
+  // Permitir presionar Enter en #lookup-360-input para ejecutar inmediatamente
+  document.addEventListener('DOMContentLoaded', function() {
+    var inp360 = document.getElementById('lookup-360-input');
+    if (inp360) {
+      inp360.addEventListener('keydown', function(ev) {
+        if (ev.key === 'Enter') {
+          ev.preventDefault();
+          window.runInstantLookup360(false);
+        }
+      });
+    }
+  });
 })();
 </script>
 

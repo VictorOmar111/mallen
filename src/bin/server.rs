@@ -1540,7 +1540,13 @@ async fn handle_payment_webhook(
 
 async fn handle_index() -> impl IntoResponse {
     match fs::read_to_string("public/index.html") {
-        Ok(content) => Html(content).into_response(),
+        Ok(content) => (
+            [
+                (axum::http::header::CACHE_CONTROL, "no-store, no-cache, must-revalidate, max-age=0"),
+                (axum::http::header::PRAGMA, "no-cache"),
+            ],
+            Html(content),
+        ).into_response(),
         Err(_) => (
             StatusCode::INTERNAL_SERVER_ERROR,
             "Error al cargar el portal de peritaje",
