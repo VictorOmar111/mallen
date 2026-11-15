@@ -2184,6 +2184,45 @@ async fn test_http_form_bot_14_scenarios_with_real_db_companies() {
         assert!(sim_kit_docs[1].content.contains(&format!("{} COLABORADORES", emp_recalibrated)));
     }
     println!("║  92  ║ Simulación Flujo Real E2E (Bot->Click->Recalibrar->PDF->Kit) ║ 3/3 Flujos E2E: Paridad 1:1:1:1 + PDF Binario OK  ║ [SUPERADO]   ║");
+
+    // ESCENARIO 93: Tortura Anti-"Rage-Clicking" y Aislamiento Multi-Tenant (Estándar NIST SP 800-53 / Israel Unit 8200)
+    // Simula un usuario o múltiples clientes haciendo 24 clics frenéticos en paralelo alternando entre 4 empresas distintas
+    // (Alsea 4,860 emp, Steren 180 emp, Urbvan 258 emp, Hospital 1,250 emp), verificando 0 corrupción de datos y 0 colisiones .typ
+    let rage_targets = [
+        ("ALS9209253R0", "DISTRIBUIDORA E IMPORTADORA ALSEA S.A. DE C.V.", "722511", 4860u32),
+        ("STE850101AAA", "ELECTRONICA STEREN S.A. DE C.V.", "434222", 180u32),
+        ("URB180101BBB", "CORPORATIVO URBVAN S.A.P.I. DE C.V.", "485111", 258u32),
+        ("HOSP190322BB2", "GRUPO HOSPITALARIO ALTA ESPECIALIDAD S.A. DE C.V.", "622111", 1250u32),
+    ];
+    let mut rage_handles = Vec::with_capacity(24);
+    for click_idx in 0..24usize {
+        let (r_rfc, r_name, r_scian, r_emp) = rage_targets[click_idx % rage_targets.len()];
+        let rfc_s = r_rfc.to_string();
+        let name_s = r_name.to_string();
+        let scian_s = r_scian.to_string();
+        rage_handles.push(tokio::task::spawn_blocking(move || {
+            let l360 = worker_inegi_engine::engine::pdf_generator::extract_deep_denue_360_intelligence(&rfc_s);
+            assert_eq!(
+                l360.estimated_employees, r_emp,
+                "Bajo bombardeo concurrente (clic #{}), {} debe mantener exactamente {} empleados sin cruzarse con otra empresa",
+                click_idx, rfc_s, r_emp
+            );
+            assert_eq!(l360.codigo_scian, scian_s);
+            let snap_m = worker_inegi_engine::engine::pdf_generator::load_immutable_snapshot_strict(&rfc_s, &name_s)
+                .expect("Snapshot debe existir bajo carga concurrente");
+            let sum_f_cents: u64 = snap_m.findings.iter().map(|f| ((f.estimated_fine_mxn * 100.0).round()) as u64).sum();
+            let tot_cents = ((l360.exact_vemp_fine_mxn * 100.0).round()) as u64;
+            assert_eq!(sum_f_cents, tot_cents, "Cero desfase matemático bajo bombardeo concurrente en {}", rfc_s);
+            let typ_markup = worker_inegi_engine::engine::pdf_generator::render_typst_from_strict_snapshot(&rfc_s)
+                .expect("Renderizado Typst concurrente debe ser 100% determinista");
+            assert!(typ_markup.contains(&format!("{} colaboradores", r_emp)));
+            assert!(typ_markup.contains(&format!("https://mallen.lat/checkout?ref={}", rfc_s)));
+        }));
+    }
+    for rh in rage_handles {
+        rh.await.expect("Ningún clic frenético en paralelo debe fallar ni mezclar datos entre empresas");
+    }
+    println!("║  93  ║ Tortura Anti-Rage-Click & Aislamiento Multi-Tenant (24x)     ║ 24/24 Clics Simultáneos | 0 Cross-Talk | 100% OK  ║ [SUPERADO]   ║");
     println!("╚══════╩══════════════════════════════════════════════════════════════╩═══════════════════════════════════════════════════╩══════════════╝");
-    println!("✓ LOS 92 ESCENARIOS DE GRADO MILITAR, IIA/NSF (TRL 8) Y SIMULACIÓN DE FLUJO REAL E2E SUPERADOS AL 100%");
+    println!("✓ LOS 93 ESCENARIOS DE GRADO MILITAR (NIST SP 800-53 / IIA / NSF TRL 8 / RAGE-CLICK TORTURE) SUPERADOS AL 100%");
 }

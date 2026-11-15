@@ -258,7 +258,8 @@ pub fn freeze_immutable_audit_snapshot(
     // intenta guardar un estado degradado cuando en `audit_snapshots` YA existe un Snapshot válido para este RFC,
     // preservar intacto el Snapshot válido existente.
     let in_name_up = master_in.razon_social.trim().to_uppercase();
-    if in_name_up.starts_with("REGISTRO NO INDEXADO") || in_name_up.starts_with("RFC ") || master_in.total_estimated_fine_mxn == 0.0 {
+    let in_emp_check = master_in.calibration_applied.exact_employee_count.unwrap_or(master_in.estimated_employees);
+    if in_name_up.starts_with("REGISTRO NO INDEXADO") || in_name_up.starts_with("RFC ") || in_emp_check == 0 {
         if let Some(existing_valid) = load_immutable_snapshot_strict(tax_id, "") {
             let ex_name = existing_valid.razon_social.trim().to_uppercase();
             let ex_emp = existing_valid.calibration_applied.exact_employee_count.unwrap_or(existing_valid.estimated_employees);
