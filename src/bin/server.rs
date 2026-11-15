@@ -579,7 +579,7 @@ async fn handle_live_scan(
         &master_report.tax_id,
         &master_report.web_telemetry.target_url,
         master_report.web_telemetry.http_status,
-        "{"server":"mallen-osint-probe","tls_verified":true}",
+        r#"{"server":"mallen-osint-probe","tls_verified":true}"#,
         &format!("DOM_SNAPSHOT_SHA256::{}::SCIAN_{}", master_report.audit_sha256_hash, master_report.codigo_scian),
     );
     let _surv = worker_inegi_engine::engine::pdf_generator::evaluate_nsf_continuous_surveillance(
