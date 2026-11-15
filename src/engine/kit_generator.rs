@@ -58,7 +58,7 @@ pub fn build_all_compliance_documents_with_dossier(
     build_all_compliance_documents_with_session(empresa, dossier, None)
 }
 
-pub fn build_all_compliance_documents_with_session(
+fn build_base_compliance_documents_inner(
     empresa: &EmpresaB2B,
     dossier: &LegalDossierInput,
     master_opt_in: Option<&AuditMasterJson>,
@@ -689,4 +689,516 @@ pub fn generate_compliance_kit_with_session(
     }
 
     Ok(kit_dir)
+}
+
+
+pub struct ScianTaxonomicProfile {
+    pub sector_code: String,
+    pub sector_title: &'static str,
+    pub imss_class: &'static str,
+    pub imss_prime_pct: &'static str,
+    pub primary_noms: &'static str,
+    pub sector_agency_focus: &'static str,
+    pub excluded_irrelevant_clauses: &'static str,
+    pub requires_food_cofepris_nom251: bool,
+    pub requires_clinical_rpbi_nom087: bool,
+    pub requires_pld_lfpiorpi: bool,
+    pub requires_sct_carta_porte: bool,
+    pub requires_industrial_hazmat: bool,
+}
+
+pub fn classify_scian_32_taxonomic_profile(scian_raw: &str) -> ScianTaxonomicProfile {
+    let sc: String = scian_raw.chars().filter(|c| c.is_ascii_digit()).collect();
+    let s = sc.as_str();
+
+    if s.starts_with("722") || s.starts_with("3118") {
+        return ScianTaxonomicProfile {
+            sector_code: sc.clone(),
+            sector_title: "Preparación de Alimentos, Bebidas y Restaurantes (SCIAN 722)",
+            imss_class: "Clase III (Riesgo Medio — Art. 196 RACERF)",
+            imss_prime_pct: "2.59840%",
+            primary_noms: "NOM-251-SSA1-2009 (Higiene Alimentos), NOM-002-STPS-2010 (Gas LP/Campanas), NOM-033-STPS-2015 (Cisternas/Trampas de Grasa), NOM-022-STPS-2015 (Estática) y NOM-035-STPS-2018",
+            sector_agency_focus: "COFEPRIS (Aviso DIGIPRIS y Temperaturas), Protección Civil Local (Aforo y Gas) y STPS (Turnos y Cargas)",
+            excluded_irrelevant_clauses: "Excluye NOM-023-STPS (Minería Subterránea), NOM-031-STPS (Obra Civil) y LFPIORPI Financiero",
+            requires_food_cofepris_nom251: true,
+            requires_clinical_rpbi_nom087: false,
+            requires_pld_lfpiorpi: false,
+            requires_sct_carta_porte: false,
+            requires_industrial_hazmat: false,
+        };
+    }
+    if s.starts_with("481") {
+        return ScianTaxonomicProfile {
+            sector_code: sc.clone(),
+            sector_title: "Transporte Aéreo y Operaciones Aeronáuticas (SCIAN 481)",
+            imss_class: "Clase IV (Riesgo Alto — Art. 196 RACERF)",
+            imss_prime_pct: "4.65325%",
+            primary_noms: "NOM-005-STPS-1998 (Turbosina/Combustibles), NOM-011-STPS-2001 (Ruido en Plataforma), NOM-017-STPS-2008 (EPP Aeronáutico) y Ley de Aviación Civil (AFAC)",
+            sector_agency_focus: "SICT / AFAC, SAT Complemento Carta Porte 3.1 Aéreo y STPS Jornada de Tripulaciones",
+            excluded_irrelevant_clauses: "Excluye NOM-251-SSA1 de cocinas comerciales y NOM-003-STPS agrícola",
+            requires_food_cofepris_nom251: false,
+            requires_clinical_rpbi_nom087: false,
+            requires_pld_lfpiorpi: false,
+            requires_sct_carta_porte: true,
+            requires_industrial_hazmat: true,
+        };
+    }
+    if s.starts_with("4885") {
+        return ScianTaxonomicProfile {
+            sector_code: sc.clone(),
+            sector_title: "Servicios de Agencias Aduanales y Logística de Comercio Exterior (SCIAN 4885)",
+            imss_class: "Clase II / III (Operación Logística y Despacho Aduanero — Art. 196 RACERF)",
+            imss_prime_pct: "1.13065% - 2.59840%",
+            primary_noms: "NOM-006-STPS-2014 (Manejo de Carga en Recinto), NOM-035-STPS-2018, NOM-037-STPS-2023 y Arts. 59 / 162 Ley Aduanera (Expediente Electrónico de Pedimentos)",
+            sector_agency_focus: "ANAM / SAT Comercio Exterior (Anexo 22 RGCE y Carta Porte 3.1), LFPIORPI Art. 17 Fracc. XIV (Comercio Exterior) y STPS",
+            excluded_irrelevant_clauses: "Excluye NOM-251-SSA1 de preparación de alimentos y trampas de grasa",
+            requires_food_cofepris_nom251: false,
+            requires_clinical_rpbi_nom087: false,
+            requires_pld_lfpiorpi: true,
+            requires_sct_carta_porte: true,
+            requires_industrial_hazmat: false,
+        };
+    }
+    if s.starts_with("5411") || s.starts_with("5412") || s.starts_with("5415") || s.starts_with("5416") {
+        return ScianTaxonomicProfile {
+            sector_code: sc.clone(),
+            sector_title: "Servicios Profesionales, Jurídicos, Contables, Arquitectura Cloud y Consultoría (SCIAN 541)",
+            imss_class: "Clase I (Riesgo Ordinario de Vida — Art. 196 RACERF)",
+            imss_prime_pct: "0.54355%",
+            primary_noms: "NOM-037-STPS-2023 (Teletrabajo y Desconexión Digital), NOM-035-STPS-2018 (Riesgo Psicosocial), NOM-025-STPS-2008 (Iluminación en Oficinas) y Art. 163 LFPPI (Secreto Industrial)",
+            sector_agency_focus: "SAT Art. 69-B y 5-A CFF (Materialidad de Intangibles y Fecha Cierta), LFPDPPP (Encargados Cloud Art. 36) y LFPIORPI Art. 17 Fracc. XI",
+            excluded_irrelevant_clauses: "Suprime al 100% COFEPRIS NOM-251, trampas de grasa, calderas NOM-020 y manejo de sustancias químicas peligrosas NOM-005",
+            requires_food_cofepris_nom251: false,
+            requires_clinical_rpbi_nom087: false,
+            requires_pld_lfpiorpi: true,
+            requires_sct_carta_porte: false,
+            requires_industrial_hazmat: false,
+        };
+    }
+
+    let prefix2 = if s.len() >= 2 { &s[0..2] } else { "54" };
+    match prefix2 {
+        "11" => ScianTaxonomicProfile {
+            sector_code: sc.clone(),
+            sector_title: "Sector 11 — Agricultura, Cría y Explotación de Animales, Aprovechamiento Forestal, Pesca y Caza",
+            imss_class: "Clase III / IV (Campo, Agroindustria y Maquinaria Agrícola — Art. 196 RACERF)",
+            imss_prime_pct: "2.59840% - 4.65325%",
+            primary_noms: "NOM-003-STPS-2023 (Insumos Fitosanitarios/Plaguicidas), NOM-007-STPS-2000 (Maquinaria Agrícola), NOM-008-STPS-2013 y NOM-036-1-STPS-2018",
+            sector_agency_focus: "SADER / SENASICA, STPS Trabajo del Campo (Art. 279-284 LFT), CONAGUA y SEMARNAT",
+            excluded_irrelevant_clauses: "Excluye NOM-023-STPS (Minería) y cláusulas de software B2B",
+            requires_food_cofepris_nom251: true,
+            requires_clinical_rpbi_nom087: false,
+            requires_pld_lfpiorpi: false,
+            requires_sct_carta_porte: true,
+            requires_industrial_hazmat: true,
+        },
+        "21" => ScianTaxonomicProfile {
+            sector_code: sc.clone(),
+            sector_title: "Sector 21 — Minería y Extracción de Minerales Metálicos y No Metálicos",
+            imss_class: "Clase V (Riesgo Máximo — Industria Extractiva — Art. 196 RACERF)",
+            imss_prime_pct: "7.58875%",
+            primary_noms: "NOM-023-STPS-2012 (Minas Subterráneas y a Cielo Abierto), NOM-032-STPS-2008, NOM-010-STPS-2014, NOM-011-STPS-2001 y NOM-024-STPS-2001",
+            sector_agency_focus: "STPS Inspección Federal Extractiva, SEMARNAT / PROFEPA (MIA y Residuos Mineros), SEDENA y Ley de Minería",
+            excluded_irrelevant_clauses: "Excluye COFEPRIS minorista y teletrabajo operativo en tajo",
+            requires_food_cofepris_nom251: false,
+            requires_clinical_rpbi_nom087: false,
+            requires_pld_lfpiorpi: true,
+            requires_sct_carta_porte: true,
+            requires_industrial_hazmat: true,
+        },
+        "22" => ScianTaxonomicProfile {
+            sector_code: sc.clone(),
+            sector_title: "Sector 22 — Generación, Transmisión y Distribución de Energía Eléctrica, Agua y Gas",
+            imss_class: "Clase IV / V (Infraestructura Energética y Fluidos — Art. 196 RACERF)",
+            imss_prime_pct: "4.65325% - 7.58875%",
+            primary_noms: "NOM-029-STPS-2011 (Instalaciones Eléctricas), NOM-020-STPS-2011 (Recipientes Sujetos a Presión), NOM-009-STPS-2011 y NOM-022-STPS-2015",
+            sector_agency_focus: "CRE / ASEA / CENACE, Protección Civil de Alto Riesgo y STPS",
+            excluded_irrelevant_clauses: "Excluye COFEPRIS de alimentos",
+            requires_food_cofepris_nom251: false,
+            requires_clinical_rpbi_nom087: false,
+            requires_pld_lfpiorpi: false,
+            requires_sct_carta_porte: true,
+            requires_industrial_hazmat: true,
+        },
+        "23" => ScianTaxonomicProfile {
+            sector_code: sc.clone(),
+            sector_title: "Sector 23 — Construcción, Edificación e Ingeniería Civil",
+            imss_class: "Clase V (Riesgo Máximo — Construcción y Obra Civil — Art. 196 RACERF)",
+            imss_prime_pct: "7.58875%",
+            primary_noms: "NOM-031-STPS-2011 (Construcción), NOM-009-STPS-2011 (Altura), NOM-027-STPS-2008 (Soldadura), NOM-033-STPS-2015 y Registro SIROC IMSS",
+            sector_agency_focus: "IMSS SIROC (Art. 15 Fracc. VI LSS), STPS REPSE / ICSOE / SISSUB y LFPIORPI Art. 17 Fracc. V (Inmobiliario)",
+            excluded_irrelevant_clauses: "Excluye COFEPRIS de restaurantes",
+            requires_food_cofepris_nom251: false,
+            requires_clinical_rpbi_nom087: false,
+            requires_pld_lfpiorpi: true,
+            requires_sct_carta_porte: true,
+            requires_industrial_hazmat: true,
+        },
+        "31" | "32" | "33" => ScianTaxonomicProfile {
+            sector_code: sc.clone(),
+            sector_title: "Sectores 31–33 — Industrias Manufactureras, Transformación, Automotriz y Metalmecánica",
+            imss_class: "Clase III / IV (Planta Industrial y Manufactura — Art. 196 RACERF)",
+            imss_prime_pct: "2.59840% - 4.65325%",
+            primary_noms: "NOM-004-STPS-1999 (Maquinaria), NOM-020-STPS-2011 (Calderas/Compresores), NOM-018-STPS-2015 (SGA Químicos), NOM-005-STPS-1998 y NOM-011-STPS-2001",
+            sector_agency_focus: "STPS Inspección Industrial, SEMARNAT (COA y Residuos Peligrosos LGPGIR) y SAT Carta Porte 3.1",
+            excluded_irrelevant_clauses: "Acota NOM-037 exclusivamente a personal corporativo fuera de línea de producción",
+            requires_food_cofepris_nom251: s.starts_with("311") || s.starts_with("312"),
+            requires_clinical_rpbi_nom087: s.starts_with("3254"),
+            requires_pld_lfpiorpi: false,
+            requires_sct_carta_porte: true,
+            requires_industrial_hazmat: true,
+        },
+        "43" => ScianTaxonomicProfile {
+            sector_code: sc.clone(),
+            sector_title: "Sector 43 — Comercio al por Mayor, Distribución Mayorista y Centros de Abasto",
+            imss_class: "Clase II / III (Almacenaje, Montacargas y Distribución — Art. 196 RACERF)",
+            imss_prime_pct: "1.13065% - 2.59840%",
+            primary_noms: "NOM-006-STPS-2014 (Montacargas y Almacenes), NOM-036-1-STPS-2018 (Cargas Manuales), NOM-002-STPS-2010 y NOM-051-SCFI/SSA1",
+            sector_agency_focus: "SAT Complemento Carta Porte 3.1, PROFECO Metrología/Etiquetado y STPS Almacenes",
+            excluded_irrelevant_clauses: "Excluye NOM-023-STPS y NOM-031-STPS",
+            requires_food_cofepris_nom251: s.starts_with("431"),
+            requires_clinical_rpbi_nom087: false,
+            requires_pld_lfpiorpi: false,
+            requires_sct_carta_porte: true,
+            requires_industrial_hazmat: false,
+        },
+        "46" => ScianTaxonomicProfile {
+            sector_code: sc.clone(),
+            sector_title: "Sector 46 — Comercio al por Menor, Tiendas de Abarrotes, Departamentales y E-Commerce",
+            imss_class: "Clase I / II (Establecimientos Comerciales Minoristas — Art. 196 RACERF)",
+            imss_prime_pct: "1.13065%",
+            primary_noms: "NOM-001-STPS-2008, NOM-002-STPS-2010 (Extintores y Rutas de Evacuación), NOM-036-1-STPS-2018 (Estiba en Anaqueles) y NOM-035-STPS-2018",
+            sector_agency_focus: "PROFECO (Art. 7 BIS Exhibición de Precios Totales, Art. 76 BIS E-Commerce y NOM-051) y Protección Civil Municipal",
+            excluded_irrelevant_clauses: "Suprime calderas industriales NOM-020, minería NOM-023 y obra civil NOM-031",
+            requires_food_cofepris_nom251: s.starts_with("461") || s.starts_with("462"),
+            requires_clinical_rpbi_nom087: s.starts_with("4641"),
+            requires_pld_lfpiorpi: s.starts_with("4681") || s.starts_with("4652"),
+            requires_sct_carta_porte: false,
+            requires_industrial_hazmat: false,
+        },
+        "48" | "49" => ScianTaxonomicProfile {
+            sector_code: sc.clone(),
+            sector_title: "Sectores 48–49 — Transporte, Correo, Paquetería y Almacenamiento Logístico",
+            imss_class: "Clase IV (Autotransporte, Pasajeros y Carga — Art. 196 RACERF)",
+            imss_prime_pct: "4.65325%",
+            primary_noms: "NOM-087-SCT-2-2017 (Bitácora de Horas de Conducción y Pausas), NOM-068-SCT-2-2014 (Físico-Mecánica), NOM-012-SCT-2-2017 y NOM-006-STPS-2014",
+            sector_agency_focus: "SICT / Guardia Nacional Tramos Federales, SAT Complemento Carta Porte 3.1 y STPS Operadores",
+            excluded_irrelevant_clauses: "Excluye COFEPRIS de cocinas",
+            requires_food_cofepris_nom251: false,
+            requires_clinical_rpbi_nom087: false,
+            requires_pld_lfpiorpi: s.starts_with("4842") || s.starts_with("4885"),
+            requires_sct_carta_porte: true,
+            requires_industrial_hazmat: false,
+        },
+        "51" => ScianTaxonomicProfile {
+            sector_code: sc.clone(),
+            sector_title: "Sector 51 — Información en Medios Masivos, Telecomunicaciones, SaaS y Procesamiento de Datos",
+            imss_class: "Clase I (Tecnologías de la Información y Medios — Art. 196 RACERF)",
+            imss_prime_pct: "0.54355%",
+            primary_noms: "NOM-037-STPS-2023 (Teletrabajo), NOM-035-STPS-2018, NOM-022-STPS-2015 (Tierras Físicas en Centros de Datos) y NOM-151-SCFI-2016",
+            sector_agency_focus: "LFPDPPP / SABG (Cifrado TLS, Cookies y Transferencias Cloud Art. 36), IFT y PROFECO Digital Art. 76 BIS",
+            excluded_irrelevant_clauses: "Suprime COFEPRIS alimentario, calderas y manejo de químicos pesados",
+            requires_food_cofepris_nom251: false,
+            requires_clinical_rpbi_nom087: false,
+            requires_pld_lfpiorpi: false,
+            requires_sct_carta_porte: false,
+            requires_industrial_hazmat: false,
+        },
+        "52" => ScianTaxonomicProfile {
+            sector_code: sc.clone(),
+            sector_title: "Sector 52 — Servicios Financieros, Seguros, SOFOM, Fintech y Mutuo",
+            imss_class: "Clase I (Instituciones Financieras y Corporativos — Art. 196 RACERF)",
+            imss_prime_pct: "0.54355%",
+            primary_noms: "LFPIORPI Art. 17 Fracc. IV (Expediente KYC/PLD y Avisos UIF), NOM-035-STPS-2018, NOM-037-STPS-2023 y Art. 32-B Ter CFF (Beneficiario Controlador)",
+            sector_agency_focus: "CNBV / UIF / SHCP (Prevención de Lavado de Dinero), CONDUSEF y LFPDPPP Datos Patrimoniales/Financieros",
+            excluded_irrelevant_clauses: "Suprime COFEPRIS, SICT Carta Porte y calderas industriales",
+            requires_food_cofepris_nom251: false,
+            requires_clinical_rpbi_nom087: false,
+            requires_pld_lfpiorpi: true,
+            requires_sct_carta_porte: false,
+            requires_industrial_hazmat: false,
+        },
+        "53" => ScianTaxonomicProfile {
+            sector_code: sc.clone(),
+            sector_title: "Sector 53 — Servicios Inmobiliarios, Arrendamiento de Bienes Muebles e Intangibles",
+            imss_class: "Clase I / II (Administración Inmobiliaria y Arrendamiento — Art. 196 RACERF)",
+            imss_prime_pct: "0.54355% - 1.13065%",
+            primary_noms: "LFPIORPI Art. 17 Fracc. V y XV (Arrendamiento y Transmisión de Inmuebles), NOM-001-STPS-2008, NOM-002-STPS-2010 y NOM-071-SCFI",
+            sector_agency_focus: "SHCP / UIF (Avisos Antilavado en Arrendamiento > 1,605 UMAs), SAT Art. 69-B y Protección Civil de Inmuebles",
+            excluded_irrelevant_clauses: "Suprime COFEPRIS alimentario y autotransporte federal",
+            requires_food_cofepris_nom251: false,
+            requires_clinical_rpbi_nom087: false,
+            requires_pld_lfpiorpi: true,
+            requires_sct_carta_porte: false,
+            requires_industrial_hazmat: false,
+        },
+        "55" | "56" => ScianTaxonomicProfile {
+            sector_code: sc.clone(),
+            sector_title: "Sectores 55–56 — Corporativos Holding y Servicios de Apoyo a los Negocios / Limpieza / Seguridad (REPSE)",
+            imss_class: "Clase I a III según especialidad operativa (Art. 196 RACERF)",
+            imss_prime_pct: "1.13065% - 2.59840%",
+            primary_noms: "Arts. 13 a 15 LFT (Padrón REPSE STPS), Informativas Cuatrimestrales ICSOE (IMSS) y SISSUB (INFONAVIT), NOM-017-STPS-2008 y NOM-035-STPS-2018",
+            sector_agency_focus: "STPS Padrón REPSE, IMSS/INFONAVIT (Responsabilidad Solidaria Art. 15-A LSS) y SAT Art. 27 Fracc. V LISR",
+            excluded_irrelevant_clauses: "Excluye COFEPRIS de alimentos salvo comedores industriales",
+            requires_food_cofepris_nom251: false,
+            requires_clinical_rpbi_nom087: false,
+            requires_pld_lfpiorpi: s.starts_with("55"),
+            requires_sct_carta_porte: false,
+            requires_industrial_hazmat: s.starts_with("562"),
+        },
+        "61" => ScianTaxonomicProfile {
+            sector_code: sc.clone(),
+            sector_title: "Sector 61 — Servicios Educativos, Colegios, Universidades y Capacitación",
+            imss_class: "Clase I (Instituciones Educativas — Art. 196 RACERF)",
+            imss_prime_pct: "0.54355%",
+            primary_noms: "Acuerdo SEP/PROFECO de Servicios Educativos Particulares, PIPC Escolar con Simulacros, NOM-002-STPS-2010 y LFPDPPP Datos de Menores",
+            sector_agency_focus: "SEP (RVOE), PROFECO (Colegiaturas y Contratos de Adhesión), LFPDPPP y Protección Civil Estatal",
+            excluded_irrelevant_clauses: "Suprime Carta Porte, calderas y LFPIORPI",
+            requires_food_cofepris_nom251: false,
+            requires_clinical_rpbi_nom087: false,
+            requires_pld_lfpiorpi: false,
+            requires_sct_carta_porte: false,
+            requires_industrial_hazmat: false,
+        },
+        "62" => ScianTaxonomicProfile {
+            sector_code: sc.clone(),
+            sector_title: "Sector 62 — Servicios de Salud, Hospitales, Clínicas, Consultorios y Laboratorios",
+            imss_class: "Clase II / III (Servicios Médicos y Hospitalarios — Art. 196 RACERF)",
+            imss_prime_pct: "1.13065% - 2.59840%",
+            primary_noms: "NOM-087-SEMARNAT-SSA1-2002 (Residuos Peligrosos Biológico-Infecciosos RPBI), NOM-004-SSA3-2012 (Expediente Clínico), NOM-016-SSA3-2012 y NOM-012-STPS-2012",
+            sector_agency_focus: "COFEPRIS (Licencia Sanitaria y Responsable Sanitario), LFPDPPP Art. 9 (Datos Sensibles de Salud) y SEMARNAT RPBI",
+            excluded_irrelevant_clauses: "Excluye Carta Porte de carga general y LFPIORPI",
+            requires_food_cofepris_nom251: s.starts_with("622"),
+            requires_clinical_rpbi_nom087: true,
+            requires_pld_lfpiorpi: false,
+            requires_sct_carta_porte: false,
+            requires_industrial_hazmat: true,
+        },
+        "71" | "72" => ScianTaxonomicProfile {
+            sector_code: sc.clone(),
+            sector_title: "Sectores 71–72 — Hotelería, Alojamiento Temporal, Esparcimiento, Cultura y Deporte",
+            imss_class: "Clase II / III (Hotelería y Centros de Espectáculos — Art. 196 RACERF)",
+            imss_prime_pct: "2.59840%",
+            primary_noms: "Registro Nacional de Turismo (RNT SECTUR), NOM-06-TUR, NOM-002-STPS-2010, NOM-020-STPS-2011 (Calderas de Hotel) y NOM-251-SSA1-2009",
+            sector_agency_focus: "SECTUR, PROFECO (Reservaciones y Tarifas Totales Art. 7 BIS), Protección Civil de Aforo Masivo y COFEPRIS",
+            excluded_irrelevant_clauses: "Excluye minería y manufactura pesada",
+            requires_food_cofepris_nom251: true,
+            requires_clinical_rpbi_nom087: false,
+            requires_pld_lfpiorpi: s.starts_with("7132"),
+            requires_sct_carta_porte: false,
+            requires_industrial_hazmat: false,
+        },
+        "81" => ScianTaxonomicProfile {
+            sector_code: sc.clone(),
+            sector_title: "Sector 81 — Otros Servicios (Talleres Mecánicos, Mantenimiento, Lavanderías y Asociaciones)",
+            imss_class: "Clase II / III (Talleres de Reparación y Servicios Técnicos — Art. 196 RACERF)",
+            imss_prime_pct: "2.59840%",
+            primary_noms: "NOM-005-STPS-1998 (Solventes, Aceites e Inflamables), NOM-018-STPS-2015 (Hojas SGA), NOM-027-STPS-2008 (Soldadura) y NOM-160-SCFI",
+            sector_agency_focus: "PROFECO (Registro de Contrato de Adhesión RRPAC y Garantía de 90 Días Art. 77 LFPC), SEMARNAT Aceites Usados y STPS",
+            excluded_irrelevant_clauses: "Suprime COFEPRIS alimentario",
+            requires_food_cofepris_nom251: false,
+            requires_clinical_rpbi_nom087: false,
+            requires_pld_lfpiorpi: s.starts_with("813"),
+            requires_sct_carta_porte: false,
+            requires_industrial_hazmat: s.starts_with("811"),
+        },
+        _ => ScianTaxonomicProfile {
+            sector_code: sc.clone(),
+            sector_title: "Actividad Corporativa, Comercial y de Servicios (Marco Federal General)",
+            imss_class: "Clase I / II según actividad preponderante (Art. 196 RACERF)",
+            imss_prime_pct: "0.54355% - 1.13065%",
+            primary_noms: "NOM-001-STPS-2008, NOM-002-STPS-2010, NOM-019-STPS-2011, NOM-030-STPS-2009, NOM-035-STPS-2018 y NOM-037-STPS-2023",
+            sector_agency_focus: "STPS, SAT (Art. 69-B y CFDI 4.0), IMSS/INFONAVIT, LFPDPPP (SABG) y PROFECO",
+            excluded_irrelevant_clauses: "Excluye supuestos sectoriales de alta peligrosidad no aplicables",
+            requires_food_cofepris_nom251: false,
+            requires_clinical_rpbi_nom087: false,
+            requires_pld_lfpiorpi: false,
+            requires_sct_carta_porte: false,
+            requires_industrial_hazmat: false,
+        },
+    }
+}
+
+fn build_scian_precision_addendum(
+    doc_index: usize,
+    scian_code: &str,
+    actividad_desc: &str,
+    razon_social: &str,
+    rfc: &str,
+    emp_count: u32,
+    jurisdiccion: &str,
+    audit_hash: &str,
+) -> String {
+    let prof = classify_scian_32_taxonomic_profile(scian_code);
+    let now = chrono::Utc::now();
+    let q1_date = (now + chrono::Duration::days(90)).format("%d/%m/%Y").to_string();
+    let q2_date = (now + chrono::Duration::days(180)).format("%d/%m/%Y").to_string();
+    let q3_date = (now + chrono::Duration::days(270)).format("%d/%m/%Y").to_string();
+    let q4_date = (now + chrono::Duration::days(360)).format("%d/%m/%Y").to_string();
+
+    let domain_slug: String = razon_social
+        .to_lowercase()
+        .chars()
+        .filter(|c| c.is_ascii_alphanumeric())
+        .take(14)
+        .collect();
+    let dedicated_arco_channel = format!(
+        "datos.personales@{}.com.mx (o presencialmente en la Ventanilla de Privacidad ubicada en el domicilio fiscal del RFC {})",
+        if domain_slug.is_empty() { "corporativo" } else { &domain_slug },
+        rfc
+    );
+
+    match doc_index {
+        0 => {
+            let sec_priv = if prof.requires_food_cofepris_nom251 {
+                "**CLÁUSULA ESPECIAL DE GEOLOCALIZACIÓN, DELIVERY Y PERFILAMIENTO DE CONSUMO:** En pedidos a domicilio, apps de reparto o programas de lealtad, las coordenadas de geolocalización se tratan exclusivamente para el despacho logístico (Finalidad Primaria). El perfilamiento de hábitos de consumo constituye una **Finalidad Secundaria** con mecanismo expreso de negativa (Opt-Out)."
+            } else if prof.requires_clinical_rpbi_nom087 {
+                "**CLÁUSULA ESPECIAL DE EXPEDIENTE CLÍNICO Y DATOS SENSIBLES DE SALUD (NOM-004-SSA3-2012 Y ART. 9 LFPDPPP):** Los diagnósticos y estudios clínicos se resguardan bajo cifrado estricto y consentimiento autógrafo expreso."
+            } else {
+                "**CLÁUSULA DE DELIMITACIÓN GRANULAR DE FINALIDADES PRIMARIAS VS. SECUNDARIAS Y ENCARGADOS CLOUD (ART. 36 LFPDPPP):** Las transferencias a despachos contables, sistemas ERP/CRM o infraestructura Cloud operan bajo cláusulas de encargo de tratamiento y aislamiento criptográfico."
+            };
+            format!(
+                "\n\n---\n### ANEXO DE PRECISIÓN TAXONÓMICA SCIAN ({} — {}) Y DOBLE CRITERIO NORMATIVO\n\n\
+                1. **CLASIFICACIÓN SECTORIAL DICTAMINADA:** `{}`.\n\
+                2. **CANAL DEDICADO Y EXCLUSIVO DE ATENCIÓN ARCO:** `{}`.\n\
+                3. **COMPETENCIA CONCURRENTE (SABG / CRITERIOS HISTÓRICOS INAI):** El presente instrumento cumple simultáneamente con las atribuciones de la **Secretaría Anticorrupción y Buen Gobierno (SABG)** y los **Criterios Interpretativos Históricos de la LFPDPPP y su Reglamento**.\n\
+                4. {}\n",
+                prof.sector_code, actividad_desc, prof.sector_title, dedicated_arco_channel, sec_priv
+            )
+        }
+        1 => {
+            format!(
+                "\n\n---\n### ANEXO DE DESAGREGACIÓN MULTI-SUCURSAL Y ROTACIÓN DE TURNOS (NOM-035-STPS-2018 • {} COLABORADORES)\n\n\
+                1. **PROTOCOLO DE DESAGREGACIÓN POR SUCURSAL / UNIDAD ECONÓMICA:** Para la plantilla consolidada de **{} colaboradores** de **{}**, las evaluaciones psicosociales se aplican desagregadas por centro físico de trabajo (**Guía I** en centros de 1 a 15 trabajadores; **Guía I y II** en sucursales de 16 a 50 trabajadores; **Guía I y III de Entorno Organizacional** en unidades con más de 50 trabajadores), instalando un Subcomité Local por establecimiento.\n\
+                2. **PROTOCOLO DE TURNOS Y CARGAS ESPECÍFICAS DEL GIRO ({}):** Control trimestral de rotación de turnos, pausas operativas y prevención de violencia laboral en {}. ({})\n",
+                emp_count, emp_count, razon_social, prof.sector_code, prof.sector_title, prof.excluded_irrelevant_clauses
+            )
+        }
+        2 => {
+            format!(
+                "\n\n---\n### CALENDARIO AUTOMATIZADO DE LOS 4 RECORRIDOS TRIMESTRALES (NOM-019-STPS-2011) Y NOMs DEL GIRO {}\n\n\
+                | Trimestre | Fecha Programada de Verificación | Áreas / Instalaciones Sujetas a Inspección Bipartita | Folio de Acta |\n\
+                | :--- | :--- | :--- | :--- |\n\
+                | **1° Recorrido Trimestral** | **{}** | Instalaciones eléctricas, extintores, salidas de emergencia y botiquines | `ACTA-CSH-Q1-{}` |\n\
+                | **2° Recorrido Trimestral** | **{}** | Verificación específica: {} | `ACTA-CSH-Q2-{}` |\n\
+                | **3° Recorrido Trimestral** | **{}** | Simulacro PIPC, señalética (NOM-026), tierras físicas (NOM-022) y espacios confinados/trampas (NOM-033 cuando aplique) | `ACTA-CSH-Q3-{}` |\n\
+                | **4° Recorrido Trimestral** | **{}** | Cierre anual NOM-030-STPS y actualización de diagnóstico integral | `ACTA-CSH-Q4-{}` |\n\n\
+                * **NORMATIVA TÉCNICA OBLIGATORIA DEL SECTOR:** {}\n\
+                * **EXCLUSIÓN ANTI-DERIVA SECTORIAL:** {}\n",
+                prof.sector_code, q1_date, rfc, q2_date, prof.primary_noms, rfc, q3_date, rfc, q4_date, rfc, prof.primary_noms, prof.excluded_irrelevant_clauses
+            )
+        }
+        3 => {
+            format!(
+                "\n\n---\n### CLÁUSULA DE ELEGIBILIDAD DE PUESTOS Y FÓRMULA DE PRORRATEO (NOM-037-STPS-2023 • GIRO {})\n\n\
+                1. **EXCLUSIÓN EXPRESA DE PERSONAL OPERATIVO DE PISO / SUCURSAL / COCINA / PLANTA:** En atención al giro **{}**, la modalidad de Teletrabajo (Art. 330-A LFT y NOM-037-STPS-2023) **aplica única y exclusivamente al personal administrativo, corporativo, contable o de sistemas** cuyo convenio individual acredite más del **40%** de la jornada semanal en domicilio. Queda excluido de bonos de teletrabajo el personal operativo presencial.\n\
+                2. **FÓRMULA MATEMÁTICA DE REEMBOLSO PROPORCIONAL (CONCEPTO CFDI 099 NO INTEGRADOR DE SBC):**\n\
+                   `Reembolso Mensual = (Costo Mensual Comprobado de Internet y Energía × 0.25 Uso Laboral) × (Días Efectivos de Teletrabajo / Días Laborables del Mes)`.\n",
+                prof.sector_code, prof.sector_title
+            )
+        }
+        4 => {
+            format!(
+                "\n\n---\n### ANEXO DE MATERIALIDAD DIFERENCIADA DE DOBLE CARRIL (ARTS. 5-A Y 69-B CFF • SCJN 2a./J. 161/2019)\n\n\
+                * **CARRIL A — ABASTO OPERATIVO DIARIO, PERECEDEROS, MERCANCÍAS E INSUMOS RECURRENTES (FAST-TRACK):** Acreditable mediante: **(i)** Orden de Compra ERP, **(ii)** Nota de Remisión o Ticket de Recepción de Almacén/Báscula en sucursal, **(iii)** CFDI 4.0 de Ingreso y **(iv)** Transferencia SPEI, sin entrabar la operación diaria con actas solemnes por cada abasto menor.\n\
+                * **CARRIL B — SERVICIOS INTANGIBLES, CONSULTORÍA, SOFTWARE Y SUBCONTRATACIÓN (EXPEDIENTE SOLEMNE):** Exige entregable técnico auditable, bitácora de ejecución, memoria de Razón de Negocios (Art. 5-A CFF) y Sello de Fecha Cierta.\n"
+            )
+        }
+        5 => {
+            let cofepris_or_excl = if prof.requires_food_cofepris_nom251 {
+                "**3. CHECKLIST INTEGRADO DE SANIDAD E HIGIENE COFEPRIS (NOM-251-SSA1-2009 Y AVISO DIGIPRIS):**\n\
+                - `[ ]` Aviso de Funcionamiento COFEPRIS/DIGIPRIS vigente exhibido en sucursal.\n\
+                - `[ ]` Bitácora diaria de temperaturas de refrigeración (< 4°C) y congelación (-18°C).\n\
+                - `[ ]` Certificado vigente de control de plagas con licencia sanitaria y bitácora de limpieza de trampas de grasa."
+            } else if prof.requires_clinical_rpbi_nom087 {
+                "**3. CHECKLIST SANITARIO HOSPITALARIO / CLÍNICO (COFEPRIS & SEMARNAT NOM-087-RPBI):**\n\
+                - `[ ]` Aviso de Responsable Sanitario / Licencia COFEPRIS y contrato vigente de recolección de RPBI."
+            } else {
+                "**3. EXCLUSIÓN SECTORIAL DE COFEPRIS ALIMENTARIO (CERO DERIVA DE PLANTILLA):** Por corresponder al giro especificado, se suprimen las obligaciones de manejo de alimentos (NOM-251-SSA1) y trampas de grasa, aplicando estrictamente las normas de seguridad estructural, eléctrica y contra incendio del sector."
+            };
+            format!(
+                "\n\n---\n### CLASIFICACIÓN EXACTO-SECTORIAL IMSS (ART. 196 RACERF) Y SUB-ACTAS PIPC POR SUCURSAL\n\n\
+                1. **CLASIFICACIÓN DE RIESGO DE TRABAJO IMSS DICTAMINADA PARA SCIAN {}:** `{}` con Prima Media de **`{}`**.\n\
+                2. **DESCENTRALIZACIÓN DE UNIDADES INTERNAS DE PROTECCIÓN CIVIL (MULTI-SUCURSAL EN {}):** Cada establecimiento o sucursal física mantendrá su propia **Sub-Acta Local de Brigadas PIPC** avalada por Tercer Acreditado / ROPC local.\n\
+                {}\n",
+                prof.sector_code, prof.imss_class, prof.imss_prime_pct, jurisdiccion, cofepris_or_excl
+            )
+        }
+        _ => {
+            format!(
+                "\n\n---\n### SALVAGUARDAS DE COMERCIO DIGITAL / ENTREGAS Y ALERTA SEMESTRAL DE BENEFICIARIO CONTROLADOR\n\n\
+                1. **PROTOCOLO DE REEMBOLSO AUTOMÁTICO Y SALVAGUARDA EN ENTREGAS A DOMICILIO (ART. 76 BIS Y 92 LFPC):** Ante entregas fallidas o discrepancia de inventario en pedidos digitales, el reembolso o bonificación se ejecuta dentro de 24 a 72 horas hábiles.\n\
+                2. **AUDITORÍA SEMESTRAL OBLIGATORIA Y DISPARADOR DE ACTUALIZACIÓN EN 15 DÍAS NATURALES (ART. 32-B TER CFF):** Revisión obligatoria en **Junio y Diciembre**, o dentro de los **15 días naturales** siguientes a cualquier modificación accionaria mayor al **2%** en **{}**.\n\
+                3. **SELLO CRIPTOGRÁFICO DEL INSTRUMENTO:** `SHA256:{}`\n",
+                razon_social, audit_hash
+            )
+        }
+    }
+}
+
+pub fn build_all_compliance_documents_with_session(
+    empresa: &EmpresaB2B,
+    dossier: &LegalDossierInput,
+    master_opt: Option<&AuditMasterJson>,
+) -> Vec<GeneratedKitDocument> {
+    let mut docs = build_base_compliance_documents_inner(empresa, dossier, master_opt);
+
+    let scian_clean: String = master_opt
+        .map(|m| m.codigo_scian.clone())
+        .filter(|s| !s.trim().is_empty())
+        .unwrap_or_else(|| {
+            empresa
+                .actividad
+                .split(|c: char| !c.is_ascii_digit())
+                .find(|t| t.len() >= 4)
+                .unwrap_or("541110")
+                .to_string()
+        });
+    let actividad_clean = master_opt
+        .map(|m| m.actividad_scian_desc.clone())
+        .filter(|s| !s.trim().is_empty())
+        .unwrap_or_else(|| empresa.actividad.clone());
+    let razon_social = master_opt
+        .map(|m| m.razon_social.clone())
+        .filter(|s| !s.trim().is_empty())
+        .unwrap_or_else(|| empresa.nombre.clone());
+    let rfc = master_opt
+        .map(|m| m.tax_id.clone())
+        .filter(|s| !s.trim().is_empty())
+        .or_else(|| empresa.tax_id.clone())
+        .unwrap_or_else(|| empresa.id.clone());
+    let emp_count = master_opt
+        .and_then(|m| m.calibration_applied.exact_employee_count.or(Some(m.estimated_employees)))
+        .unwrap_or(1)
+        .max(1);
+    let jurisdiccion = dossier
+        .entidad_jurisdiccion
+        .as_deref()
+        .filter(|s| !s.trim().is_empty())
+        .unwrap_or(if empresa.estado.trim().is_empty() { "CIUDAD DE MÉXICO" } else { &empresa.estado });
+    let audit_hash = master_opt
+        .map(|m| m.audit_sha256_hash.clone())
+        .filter(|s| !s.trim().is_empty())
+        .or_else(|| Some(empresa.audit_hash.clone()).filter(|s| !s.trim().is_empty()))
+        .unwrap_or_else(|| "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855".to_string());
+
+    for (idx, doc) in docs.iter_mut().enumerate() {
+        doc.content = doc.content.replace(
+            "representada en este acto por **________________________________________**",
+            "representada en este acto por **[APODERADO LEGAL REGISTRADO SEGÚN ESTATUTOS SOCIALES VIGENTES]**"
+        );
+        let addendum = build_scian_precision_addendum(
+            idx,
+            &scian_clean,
+            &actividad_clean,
+            &razon_social,
+            &rfc,
+            emp_count,
+            jurisdiccion,
+            &audit_hash,
+        );
+        doc.content.push_str(&addendum);
+    }
+
+    docs
 }

@@ -383,3 +383,5 @@ Dictamen pericial compilado específicamente para *"{{EMPRESA_NOMBRE}}"* (`{{EMP
 
 #v(2pt)
 #align(right)[{{VECTOR_QR_SEAL}}]
+#v(2pt)
+#align(center)[#box(fill: rgb("#0f172a"), inset: (x: 10pt, y: 5pt), radius: 3pt)[#link("https://mallen.lat/checkout?ref={{EMPRESA_TAX_ID}}")[#text(fill: rgb("#38bdf8"), weight: "bold", size: 7.5pt)[⚡ ACTIVAR KIT DE BLINDAJE INTEGRAL 360° Y DESCARGAR 7 CONTRATOS EDITABLES ($3,000.00 MXN): https://mallen.lat/checkout?ref={{EMPRESA_TAX_ID}}]]]]

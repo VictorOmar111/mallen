@@ -84,10 +84,9 @@
   <header class="border-b border-white/15 bg-white/[0.03] sticky top-0 z-50">
     <div class="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
       <a href="/" class="flex items-center space-x-3 group">
-        <div class="w-10 h-10 bg-gradient-to-tr from-blue-700 via-indigo-600 to-emerald-500 rounded-xl flex items-center justify-center font-extrabold text-xl text-white shadow-lg shadow-blue-500/20 group-hover:scale-105 transition">M</div>
         <div>
           <span class="text-sm font-bold text-white block leading-none tracking-tight">FIRMA W16 MALLEN®</span>
-          <span class="text-[10px] text-blue-400 font-bold font-mono-code uppercase tracking-wider">Sistema Pericial de Gestión de Riesgo W16</span>
+          <span class="text-[10px] text-blue-400 font-bold font-mono-code uppercase tracking-wider">INGENIERÍA LEGAL PREVENTIVA</span>
         </div>
       </a>
       <nav class="hidden md:flex items-center space-x-8 text-xs font-mono-code">
@@ -831,39 +830,56 @@ window.runInstantLookup360 = async function(skipTopSync) {
 window.updateMallenSandbox = function(customEmp) {
   var slider = document.getElementById('sbx-emp-slider');
   var exactInput = document.getElementById('sbx-emp-exact-input');
-  if (!slider) return;
-  var emp = customEmp ? parseInt(customEmp, 10) : parseInt((exactInput && exactInput.value) || slider.value || '45', 10);
+  var emp = customEmp ? parseInt(customEmp, 10) : parseInt(slider ? slider.value : '52', 10);
   if (isNaN(emp) || emp < 1) emp = 1;
-  if (emp > parseInt(slider.max || '5000', 10)) slider.max = String(emp);
-  slider.value = emp;
-  if (exactInput && parseInt(exactInput.value, 10) !== emp) exactInput.value = emp;
-  var topEmpInput = document.getElementById('cal_exact_employees');
-  if (topEmpInput && customEmp) topEmpInput.value = emp;
-  document.getElementById('sbx-emp-label').textContent = emp.toLocaleString('en-US') + (emp === 1 ? ' colaborador' : ' colaboradores');
-  var baseFine = (window.__MALLEN_OFFICIAL_VEMP_BASE && window.__MALLEN_OFFICIAL_EMP_BASE === emp)
-    ? window.__MALLEN_OFFICIAL_VEMP_BASE
-    : (window.__MALLEN_OFFICIAL_VEMP_BASE && window.__MALLEN_OFFICIAL_EMP_BASE > 0
-        ? (window.__MALLEN_OFFICIAL_VEMP_BASE * (0.65 + 0.35 * (emp / window.__MALLEN_OFFICIAL_EMP_BASE)))
-        : (310000 + (emp * 12450)));
-  var checks = document.querySelectorAll('.sbx-check');
-  var mitigatedRatio = 0;
-  for (var i = 0; i < checks.length; i++) {
-    if (checks[i].checked) mitigatedRatio += parseFloat(checks[i].getAttribute('data-weight') || '0');
+  if (slider) {
+    if (emp > parseInt(slider.max || '5000', 10)) slider.max = String(emp);
+    slider.value = emp;
   }
-  if (mitigatedRatio > 0.999) mitigatedRatio = 1.0;
-  var residual = Math.max(0, Math.round(baseFine * (1.0 - mitigatedRatio)));
-  var score = residual === 0 ? 0 : Math.min(99, Math.max(18, Math.round((45 + Math.min(48, emp / 6)) * (1.0 - mitigatedRatio * 0.85))));
-  var fineEl = document.getElementById('sbx-total-fine');
-  fineEl.textContent = '$' + residual.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2}) + ' MXN';
-  fineEl.className = residual === 0 ? 'text-2xl sm:text-3xl font-black font-mono text-emerald-400' : 'text-2xl sm:text-3xl font-black font-mono text-red-400';
-  document.getElementById('sbx-risk-score').textContent = score + '/100';
+  if (exactInput && parseInt(exactInput.value, 10) !== emp) exactInput.value = emp;
+  var lbl = document.getElementById('sbx-emp-label');
+  if (lbl) lbl.textContent = emp.toLocaleString('en-US') + ' colaboradores';
+
+  var checks = document.querySelectorAll('.sbx-mit-chk');
+  var mitigation = 0.0;
+  for (var i = 0; i < checks.length; i++) {
+    if (checks[i].checked) mitigation += parseFloat(checks[i].getAttribute('data-weight') || '0');
+  }
+  if (mitigation > 0.99) mitigation = 0.99;
+
+  var hasOfficial = (window.__MALLEN_OFFICIAL_VEMP_BASE && window.__MALLEN_OFFICIAL_VEMP_BASE > 0 && window.__MALLEN_OFFICIAL_EMP_BASE > 0);
+  var baseFine = hasOfficial
+    ? (window.__MALLEN_OFFICIAL_EMP_BASE === emp
+        ? window.__MALLEN_OFFICIAL_VEMP_BASE
+        : (window.__MALLEN_OFFICIAL_VEMP_BASE * (0.65 + 0.35 * (emp / window.__MALLEN_OFFICIAL_EMP_BASE))))
+    : (310000 + (emp * 12450));
+
+  var residual = (hasOfficial && window.__MALLEN_OFFICIAL_EMP_BASE === emp && mitigation === 0)
+    ? window.__MALLEN_OFFICIAL_VEMP_BASE
+    : Math.max(0, Math.round((baseFine * (1.0 - mitigation)) * 100) / 100);
+
+  var baseScore = (hasOfficial && window.__MALLEN_OFFICIAL_EMP_BASE === emp && window.__MALLEN_OFFICIAL_SCORE_BASE > 0)
+    ? window.__MALLEN_OFFICIAL_SCORE_BASE
+    : (emp > 100 ? 88 : (emp >= 50 ? 78 : (emp >= 15 ? 64 : 48)));
+  var finalScore = (mitigation === 0) ? baseScore : Math.max(0, Math.round(baseScore * (1.0 - (mitigation * 0.92))));
+
+  var fEl = document.getElementById('sbx-total-fine');
+  if (fEl) {
+    fEl.textContent = '$' + residual.toLocaleString('es-MX', {minimumFractionDigits: 2, maximumFractionDigits: 2}) + ' MXN';
+  }
+  var sEl = document.getElementById('sbx-risk-score');
+  if (sEl) {
+    sEl.textContent = finalScore + '/100';
+  }
   var noteEl = document.getElementById('sbx-threshold-note');
-  if (emp > 50) {
-    noteEl.textContent = 'Escala Corporativa (>50 colaboradores): Exigible NOM-035 Guías I y III (Entorno Organizacional) + Comisión Mixta NOM-019 Completa + Auditoría SUA/REPSE.';
-  } else if (emp >= 15) {
-    noteEl.textContent = 'Escala PyME (15 a 50 colaboradores): Exigible NOM-035 Guías I y II + Acta Bipartita NOM-019 + Diagnóstico NOM-030.';
-  } else {
-    noteEl.textContent = 'Escala Micro (<15 colaboradores): Modalidad Simplificada STPS (Política Escrita Guía I NOM-035 y Representante Simplificado NOM-019).';
+  if (noteEl) {
+    if (emp >= 50) {
+      noteEl.textContent = 'Escala Corporativa (>50 colaboradores): Exigible NOM-035 Guías I y III (Entorno Organizacional) + Comisión Mixta NOM-019 Completa + Auditoría SUA/REPSE.';
+    } else if (emp >= 15) {
+      noteEl.textContent = 'Centro de Trabajo Mediano (15 a 49 colaboradores): Exigible NOM-035 Guías I y II + Comisión Bipartita NOM-019 + Programa NOM-030.';
+    } else {
+      noteEl.textContent = 'Microempresa (1 a 14 colaboradores): Exigible Política NOM-035 Guía I + Diagnóstico NOM-030 + Aviso de Privacidad LFPDPPP.';
+    }
   }
 };
 </script>
@@ -1227,7 +1243,7 @@ window.updateMallenSandbox = function(customEmp) {
         </div>
     </footer>
 
-  <script src="/js/app.js?v=2026.140?v=2026.140" defer></script>
+  <script src="/js/app.js?v=2026.62?v=2026.140" defer></script>
   <script src="/js/badge.js?v=2026.140" defer></script>
 
   <!-- Ventana Emergente Flotante (Popover Quantum Glass) de los 37 Vectores Evaluados (Se cierra sola cuando el puntero sale del recuadro) -->
@@ -1294,11 +1310,11 @@ window.updateMallenSandbox = function(customEmp) {
 
     // 1. Pre-llenar los campos del formulario de Calibración y Dossier Superior
     var pairs = [
-      ['cal_exact_employees', empCount > 0 ? empCount : ''],
-      ['dos_razon_social', (razonSocial && !razonSocial.startsWith('RFC ') && !razonSocial.startsWith('REGISTRO NO INDEXADO')) ? razonSocial : ''],
-      ['dos_scian', scianCode ? (scianCode + (scianDesc ? (' - ' + scianDesc) : '')) : ''],
+      ['cal_emp', empCount > 0 ? empCount : ''],
+      ['dos_razon', (razonSocial && !razonSocial.startsWith('RFC ') && !razonSocial.startsWith('REGISTRO NO INDEXADO')) ? razonSocial : ''],
+      ['dos_giro', scianCode ? (scianCode + (scianDesc ? (' - ' + scianDesc) : '')) : ''],
       ['dos_domicilio', (domicilio && !domicilio.startsWith('Domicilio sujeto')) ? domicilio : ''],
-      ['dos_entidad', (entidad && !entidad.startsWith('PENDIENTE')) ? entidad : '']
+      ['dos_estado', (entidad && !entidad.startsWith('PENDIENTE')) ? entidad : '']
     ];
     for (var i = 0; i < pairs.length; i++) {
       var el = document.getElementById(pairs[i][0]);

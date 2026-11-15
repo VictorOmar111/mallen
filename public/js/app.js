@@ -195,7 +195,7 @@
             razon_social_override: effectiveRazonOverride,
             email_contacto: valOrNull("dos_email"),
             calibration: {
-                exact_employee_count: parseInt(document.getElementById("cal_emp")?.value || "45", 10),
+                exact_employee_count: (function() { const v = document.getElementById("cal_emp")?.value?.trim(); const n = v ? parseInt(v, 10) : NaN; return (!isNaN(n) && n > 0) ? n : null; })(),
                 has_telework_over_40_percent: document.getElementById("cal_nom037")?.checked ?? true,
                 uses_subcontracted_services_repse: document.getElementById("cal_repse")?.checked ?? true,
                 has_pressure_vessels_boilers: document.getElementById("cal_nom020")?.checked ?? false,
@@ -251,6 +251,26 @@
             setField("dos_razon", data.razon_social, true);
             setField("dos_giro", `${data.codigo_scian} - ${data.actividad_scian_desc}`, true);
             setField("dos_domicilio", data.domicilio_fiscal_o_denue, true);
+            if (data.estimated_employees && data.estimated_employees > 0) {
+                const calEmpEl = document.getElementById("cal_emp");
+                if (calEmpEl) calEmpEl.value = data.estimated_employees;
+            }
+            window.__MALLEN_OFFICIAL_VEMP_BASE = Number(data.total_estimated_fine_mxn || 0);
+            window.__MALLEN_OFFICIAL_EMP_BASE = Number(data.estimated_employees || 0);
+            window.__MALLEN_OFFICIAL_SCORE_BASE = Number(data.risk_score || 0);
+            if (typeof window.applyUnifiedSsotToAllPanels === "function") {
+                window.applyUnifiedSsotToAllPanels(
+                    data.tax_id || effectiveTaxOrName,
+                    data.razon_social,
+                    data.codigo_scian,
+                    data.actividad_scian_desc,
+                    data.domicilio_fiscal_o_denue,
+                    (data.calibration_applied && data.calibration_applied.dossier && data.calibration_applied.dossier.entidad_jurisdiccion) || "",
+                    Number(data.estimated_employees || 0),
+                    Number(data.total_estimated_fine_mxn || 0),
+                    Number(data.risk_score || 0)
+                );
+            }
             if (data.domicilio_fiscal_o_denue && data.domicilio_fiscal_o_denue.includes(",")) {
                 const parts = data.domicilio_fiscal_o_denue.split(",");
                 setField("dos_estado", parts[parts.length - 1].trim(), true);

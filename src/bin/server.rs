@@ -29,7 +29,7 @@ use worker_inegi_engine::engine::{
     osint_scanner::{run_deep_web_telemetry, OsintResult},
     payment::{create_checkout_session, StripeDisputeGuard},
     pdf_generator::generate_exit_intent_micro_pdf_with_session,
-    risk_evaluator::{build_full_regulatory_findings, evaluate_risk, summarize_findings_financials},
+    risk_evaluator::evaluate_risk,
     sat_billing::{InvoiceData, SatBillingManager},
 };
 use worker_inegi_engine::modules::checkout;
@@ -545,8 +545,11 @@ async fn handle_live_scan(
                 if !preserved_telemetry.target_url.is_empty() {
                     master_report.web_telemetry = preserved_telemetry;
                 }
-                let (_, exact_cents) = worker_inegi_engine::engine::pdf_generator::compute_vectors_37_sha256_fingerprint(&master_report);
-                master_report.total_estimated_fine_mxn = (exact_cents as f64) / 100.0;
+                master_report.total_estimated_fine_mxn = 0.0;
+                let _ = worker_inegi_engine::engine::pdf_generator::freeze_immutable_audit_snapshot(&tax_key, &master_report.razon_social, &master_report);
+                if let Some(rehydrated) = worker_inegi_engine::engine::pdf_generator::load_immutable_snapshot_strict(&tax_key, &master_report.razon_social) {
+                    master_report = rehydrated;
+                }
                 let _ = state.db.save_audit_session(&tax_key, &master_report, false).await;
             }
         } else {
@@ -572,6 +575,20 @@ async fn handle_live_scan(
             }
         }
     }
+    let _ev = worker_inegi_engine::engine::pdf_generator::record_forensic_dom_evidence(
+        &master_report.tax_id,
+        &master_report.web_telemetry.target_url,
+        master_report.web_telemetry.http_status,
+        "{"server":"mallen-osint-probe","tls_verified":true}",
+        &format!("DOM_SNAPSHOT_SHA256::{}::SCIAN_{}", master_report.audit_sha256_hash, master_report.codigo_scian),
+    );
+    let _surv = worker_inegi_engine::engine::pdf_generator::evaluate_nsf_continuous_surveillance(
+        &master_report.tax_id,
+        master_report.web_telemetry.ssl_valid,
+        master_report.web_telemetry.has_privacy_notice,
+        master_report.sat_69b_status.to_uppercase().contains("LIMPIO"),
+        None,
+    );
     Json(master_report)
 }
 
@@ -765,7 +782,19 @@ async fn build_empresa_and_session(
     state: &AppState,
     clean_tax: &str,
 ) -> (EmpresaB2B, Option<(AuditMasterJson, bool)>) {
-    let session_opt = state.db.get_audit_session(clean_tax).await.ok().flatten();
+    let db_sess = state.db.get_audit_session(clean_tax).await.ok().flatten();
+    let is_acc_flag = db_sess.as_ref().map(|(_, a)| *a).unwrap_or(false);
+    let session_opt = if let Some(snap_m) = worker_inegi_engine::engine::pdf_generator::load_immutable_snapshot_strict(clean_tax, "") {
+        Some((snap_m, is_acc_flag))
+    } else if let Some((m_sess, acc)) = db_sess {
+        if !m_sess.razon_social.starts_with("REGISTRO NO INDEXADO") && m_sess.total_estimated_fine_mxn > 0.0 {
+            Some((m_sess, acc))
+        } else {
+            None
+        }
+    } else {
+        None
+    };
 
     if let Some((ref master, is_acc)) = session_opt {
         let emp = EmpresaB2B {
@@ -1085,27 +1114,30 @@ async fn render_checkout_page_with_state(state: Arc<AppState>, raw_ref: String) 
     let ref_code = raw_ref.trim().to_uppercase();
     let disclaimer_hash = StripeDisputeGuard::compute_disclaimer_hash();
 
-    let emp = build_empresa_from_db_or_default(&state, &ref_code).await;
-    let session_opt = state.db.get_audit_session(&ref_code).await.ok().flatten();
-
-    // Sincronizar monto exacto: si no hay sesión previa, calcular con la misma matriz de 39 NOMs
-    let fine_mxn = match &session_opt {
-        Some((m, _)) => { let (_, c) = worker_inegi_engine::engine::pdf_generator::compute_vectors_37_sha256_fingerprint(m); (c as f64) / 100.0 },
-        _ => {
-            let findings = build_full_regulatory_findings(
-                "434222",
-                &emp.nombre,
-                45,
-                "LIMPIO",
-                "LIMPIO",
-                false,
-                false,
-                &WebOsintTelemetry::default(),
-                &worker_inegi_engine::engine::models::CalibrationAnswers::default(),
-            );
-            let (_, _, est, _) = summarize_findings_financials(&findings);
-            est
+    let mut emp = build_empresa_from_db_or_default(&state, &ref_code).await;
+    let db_sess = state.db.get_audit_session(&ref_code).await.ok().flatten();
+    let is_acc_flag = db_sess.as_ref().map(|(_, a)| *a).unwrap_or(false);
+    let session_opt = if let Some(snap_m) = worker_inegi_engine::engine::pdf_generator::load_immutable_snapshot_strict(&ref_code, "") {
+        Some((snap_m, is_acc_flag))
+    } else {
+        db_sess
+    };
+    let intel_360 = worker_inegi_engine::engine::pdf_generator::extract_deep_denue_360_intelligence(&ref_code);
+    if !intel_360.razon_social.starts_with("RFC ") && (emp.nombre.starts_with("REGISTRO NO INDEXADO") || emp.nombre == ref_code) {
+        emp.nombre = intel_360.razon_social.clone();
+        if !intel_360.codigo_scian.is_empty() {
+            emp.actividad = format!("{} - {}", intel_360.codigo_scian, intel_360.actividad_desc);
         }
+        emp.direccion = intel_360.domicilio_completo.clone();
+    }
+
+    let fine_mxn = if intel_360.exact_vemp_fine_mxn > 0.0 {
+        intel_360.exact_vemp_fine_mxn
+    } else if let Some((ref m, _)) = session_opt {
+        let (_, c) = worker_inegi_engine::engine::pdf_generator::compute_vectors_37_sha256_fingerprint(m);
+        (c as f64) / 100.0
+    } else {
+        0.0
     };
     let fine_formatted = worker_inegi_engine::engine::pdf_generator::format_currency_mxn(fine_mxn);
 

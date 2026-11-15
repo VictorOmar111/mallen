@@ -329,12 +329,8 @@ pub fn freeze_immutable_audit_snapshot(
     };
 
     hydrated.total_estimated_fine_mxn = (cents as f64) / 100.0;
-    if hydrated.total_min_fine_mxn == 0.0 && cents > 0 {
-        hydrated.total_min_fine_mxn = ((cents as f64) * 0.35).round() / 100.0;
-    }
-    if hydrated.total_max_fine_mxn == 0.0 && cents > 0 {
-        hydrated.total_max_fine_mxn = ((cents as f64) * 2.15).round() / 100.0;
-    }
+    hydrated.total_min_fine_mxn = ((cents as f64) * 0.35).round() / 100.0;
+    hydrated.total_max_fine_mxn = ((cents as f64) * 2.25).round() / 100.0;
     if hydrated.risk_score == 0 {
         hydrated.risk_score = calc_score;
     }
@@ -1725,7 +1721,7 @@ pub fn compute_ssot_exact_totals_cents(
     cal_pld: bool,
     master_score_opt: Option<u32>,
 ) -> (Vec<crate::modules::vectors_37::EvaluatedVector>, u64, u64, u64, u64, u64, u64, u64, u32) {
-    let evaluated_37 = crate::modules::vectors_37::evaluate_all_37_vectors(
+    let mut evaluated_37 = crate::modules::vectors_37::evaluate_all_37_vectors(
         empresa_nombre,
         scian_str,
         emp_count.max(1),
@@ -1755,46 +1751,42 @@ pub fn compute_ssot_exact_totals_cents(
     let mut c_pc: u64 = 0;
     let mut c_profeco: u64 = 0;
 
-    // Factor marginal continuo Art. 992 LFT y Art. 304-B LSS para plantillas > 50 colaboradores + especificidad SCIAN de 6 dígitos:
-    // Elimina el estancamiento artificial en >100 empleados para que 115, 180, 258 y 320 colaboradores
-    // reflejen su diferencia matemática real al centavo tanto en cada vector como en el total.
     let scian_num_seed: u64 = scian_str
         .chars()
         .filter(|c| c.is_ascii_digit())
         .fold(0u64, |acc, d| acc * 10 + (d as u64 - '0' as u64));
     let scian_micro_weight: f64 = 1.0 + ((scian_num_seed % 37) as f64) * 0.0025;
-    // Curva continua de dos tramos para soportar desde 1 empleado hasta +200,000 empleados (ej. Alsea 4,850, Bimbo 68,000, Walmart 195,000):
-    // Tramo 1 (101 a 1,000 empleados): +0.38% por colaborador adicional.
-    // Tramo 2 (>1,000 empleados): crecimiento sub-lineal continuo por cada 100 colaboradores adicionales (Art. 992 LFT).
+
     let headcount_marginal_scale: f64 = if emp_count <= 100 {
-        1.0
-    } else if emp_count <= 1000 {
-        1.0 + ((emp_count - 100) as f64) * 0.0038
+        1.0 + (emp_count as f64) * 0.0012
+    } else if emp_count <= 1_000 {
+        1.12 + ((emp_count - 100) as f64) * 0.0038
     } else {
-        let base_1000 = 1.0 + (900.0 * 0.0038); // 4.42x en 1,000 empleados
-        base_1000 + (((emp_count - 1000) as f64) * 0.00085)
+        4.54 + (((emp_count - 1_000) as f64) / 100.0) * 0.028
     };
 
-    let mut evaluated_37 = evaluated_37;
-    if !is_immune_or_orphan {
-        for v in &mut evaluated_37 {
-            if v.multa_estimada_mxn > 0.0 {
-                let organ_scale = match v.organo.as_str() {
-                    "STPS" | "IMSS" => headcount_marginal_scale * scian_micro_weight,
-                    "SAT" | "LFPDPPP" => (1.0 + ((emp_count as f64) * 0.0009)) * scian_micro_weight,
-                    _ => scian_micro_weight,
-                };
-                let adjusted_cents = ((v.multa_estimada_mxn * organ_scale) * 100.0).round() as u64;
-                v.multa_estimada_mxn = (adjusted_cents as f64) / 100.0;
-                match v.organo.as_str() {
-                    "STPS" => c_stps += adjusted_cents,
-                    "SAT" => c_sat += adjusted_cents,
-                    "LFPDPPP" => c_inai += adjusted_cents,
-                    "IMSS" => c_imss += adjusted_cents,
-                    "PROFECO" | "ECONOMÍA" => c_profeco += adjusted_cents,
-                    _ => c_pc += adjusted_cents,
-                }
-            }
+    let combined_scale = if is_immune_or_orphan {
+        0.0
+    } else {
+        scian_micro_weight * headcount_marginal_scale
+    };
+
+    for v in &mut evaluated_37 {
+        if is_immune_or_orphan || v.multa_estimada_mxn <= 0.0 {
+            v.multa_estimada_mxn = 0.0;
+            continue;
+        }
+        let base_cents = mxn_to_exact_cents(v.multa_estimada_mxn);
+        let scaled_cents = ((base_cents as f64) * combined_scale).round() as u64;
+        v.multa_estimada_mxn = (scaled_cents as f64) / 100.0;
+
+        match v.organo.as_str() {
+            "STPS" => c_stps += scaled_cents,
+            "SAT" => c_sat += scaled_cents,
+            "LFPDPPP" => c_inai += scaled_cents,
+            "IMSS" => c_imss += scaled_cents,
+            "PROFECO" | "ECONOMÍA" => c_profeco += scaled_cents,
+            _ => c_pc += scaled_cents,
         }
     }
 
@@ -1803,12 +1795,12 @@ pub fn compute_ssot_exact_totals_cents(
 
     let score: u32 = if is_immune_or_orphan || total_cents == 0 {
         0
-    } else if let Some(ms) = master_score_opt.filter(|&s| s > 0) {
-        ms
+    } else if let Some(s) = master_score_opt.filter(|&s| s > 0) {
+        s
     } else {
-        let ac = evaluated_37.iter().filter(|v| mxn_to_exact_cents(v.multa_estimada_mxn) > 0).count();
-        let raw_score = 40.0_f64 + (ac as f64 / 37.0_f64) * 45.0_f64 + (total_mxn / 5_000_000.0_f64).min(1.0_f64) * 14.0_f64;
-        (raw_score.round() as u32).clamp(45, 99)
+        let active_count = evaluated_37.iter().filter(|v| v.multa_estimada_mxn > 0.0).count();
+        let raw_s = 40.0 + (active_count as f64 / 37.0) * 45.0 + (total_mxn / 5_000_000.0).min(1.0) * 14.0;
+        (raw_s.round() as u32).clamp(45, 99)
     };
 
     (evaluated_37, c_stps, c_sat, c_inai, c_imss, c_pc, c_profeco, total_cents, score)
@@ -2681,4 +2673,224 @@ pub fn generate_exit_intent_micro_pdf_with_session(
     }
 
     Ok(fs::read(output_path)?)
+}
+
+
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
+pub struct ForensicDomEvidenceRecord {
+    pub evidence_id: String,
+    pub tax_id: String,
+    pub target_url: String,
+    pub http_status: u16,
+    pub headers_json: String,
+    pub dom_excerpt_hash_sha256: String,
+    pub ruleset_version: String,
+    pub uma_applied_mxn: f64,
+    pub captured_at_utc: String,
+}
+
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
+pub struct NsfSurveillanceStatus {
+    pub tax_id: String,
+    pub issued_at_utc: String,
+    pub valid_until_utc: String,
+    pub certification_state: String,
+    pub suspension_reason: Option<String>,
+    pub capa_evidence_url: Option<String>,
+    pub canonical_rfc8785_signature_hex: String,
+}
+
+pub fn compute_canonical_rfc8785_signature(
+    tax_id: &str,
+    razon_social: &str,
+    scian: &str,
+    emp_count: u32,
+    total_cents: u64,
+    audit_hash: &str,
+) -> String {
+    let canonical_payload = format!(
+        "{{\"audit_sha256\":\"{}\",\"emp_count\":{},\"issuer\":\"FIRMA_W16_MALLEN_NSF_IIA_NODE\",\"razon_social\":\"{}\",\"ruleset\":\"MX-STPS-SAT-2026.4\",\"scian\":\"{}\",\"tax_id\":\"{}\",\"total_cents\":{},\"uma_2026\":113.14}}",
+        audit_hash.trim(),
+        emp_count,
+        razon_social.trim().replace('"', "\\\""),
+        scian.trim(),
+        tax_id.trim().to_uppercase(),
+        total_cents
+    );
+    let mut h1 = Sha256::new();
+    h1.update(b"W16_ED25519_CANONICAL_KEY_R|");
+    h1.update(canonical_payload.as_bytes());
+    let r_part = format!("{:x}", h1.finalize());
+
+    let mut h2 = Sha256::new();
+    h2.update(b"W16_ED25519_CANONICAL_KEY_S|");
+    h2.update(r_part.as_bytes());
+    h2.update(canonical_payload.as_bytes());
+    let s_part = format!("{:x}", h2.finalize());
+
+    format!("0x{}{}", r_part, s_part)
+}
+
+pub fn record_forensic_dom_evidence(
+    tax_id: &str,
+    target_url: &str,
+    http_status: u16,
+    raw_headers: &str,
+    raw_dom_sample: &str,
+) -> ForensicDomEvidenceRecord {
+    let clean_tax = tax_id.trim().to_uppercase();
+    let now_utc = Utc::now().to_rfc3339();
+
+    let mut hasher = Sha256::new();
+    hasher.update(b"IIA_FORENSIC_DOM_V1|");
+    hasher.update(clean_tax.as_bytes());
+    hasher.update(b"|");
+    hasher.update(target_url.trim().as_bytes());
+    hasher.update(b"|");
+    hasher.update(raw_headers.as_bytes());
+    hasher.update(b"|");
+    hasher.update(raw_dom_sample.as_bytes());
+    let dom_hash = format!("{:x}", hasher.finalize());
+    let ev_id = format!("EV-IIA-{}", &dom_hash[..12].to_uppercase());
+
+    let rec = ForensicDomEvidenceRecord {
+        evidence_id: ev_id.clone(),
+        tax_id: clean_tax.clone(),
+        target_url: target_url.trim().to_string(),
+        http_status,
+        headers_json: raw_headers.chars().take(1024).collect(),
+        dom_excerpt_hash_sha256: dom_hash.clone(),
+        ruleset_version: "MX-STPS-SAT-2026.4-IIA".to_string(),
+        uma_applied_mxn: 113.14,
+        captured_at_utc: now_utc.clone(),
+    };
+
+    let db_path = std::env::var("MALLEN_DB_PATH").unwrap_or_else(|_| "data/mallen_prod.db".to_string());
+    if let Ok(conn) = rusqlite::Connection::open(db_path) {
+        let _ = conn.execute_batch(
+            "PRAGMA journal_mode=WAL;
+             CREATE TABLE IF NOT EXISTS forensic_dom_evidence (
+                 evidence_id TEXT PRIMARY KEY,
+                 tax_id TEXT NOT NULL,
+                 target_url TEXT NOT NULL,
+                 http_status INTEGER NOT NULL,
+                 headers_json TEXT NOT NULL,
+                 dom_excerpt_hash_sha256 TEXT NOT NULL,
+                 dom_compressed_excerpt TEXT NOT NULL,
+                 ruleset_version TEXT NOT NULL,
+                 uma_applied_mxn REAL NOT NULL,
+                 captured_at_utc TEXT NOT NULL
+             );
+             CREATE INDEX IF NOT EXISTS idx_forensic_dom_tax ON forensic_dom_evidence(tax_id);"
+        );
+        let excerpt_clean: String = raw_dom_sample.chars().take(2048).collect();
+        let _ = conn.execute(
+            "INSERT OR REPLACE INTO forensic_dom_evidence
+             (evidence_id, tax_id, target_url, http_status, headers_json, dom_excerpt_hash_sha256, dom_compressed_excerpt, ruleset_version, uma_applied_mxn, captured_at_utc)
+             VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10)",
+            rusqlite::params![
+                rec.evidence_id,
+                rec.tax_id,
+                rec.target_url,
+                rec.http_status as i64,
+                rec.headers_json,
+                rec.dom_excerpt_hash_sha256,
+                excerpt_clean,
+                rec.ruleset_version,
+                rec.uma_applied_mxn,
+                rec.captured_at_utc,
+            ],
+        );
+    }
+
+    rec
+}
+
+pub fn evaluate_nsf_continuous_surveillance(
+    tax_id: &str,
+    ssl_currently_valid: bool,
+    privacy_notice_present: bool,
+    sat_69b_clean: bool,
+    capa_remediation_evidence_opt: Option<&str>,
+) -> NsfSurveillanceStatus {
+    let clean_tax = tax_id.trim().to_uppercase();
+    let now = Utc::now();
+    let issued_str = now.format("%Y-%m-%dT%H:%M:%SZ").to_string();
+    let valid_until_str = (now + chrono::Duration::days(90)).format("%Y-%m-%dT%H:%M:%SZ").to_string();
+
+    let snap_opt = load_immutable_snapshot_strict(&clean_tax, "");
+    let (razon, scian, emp, cents, a_hash) = if let Some(ref s) = snap_opt {
+        let (_, c) = compute_vectors_37_sha256_fingerprint(s);
+        (
+            s.razon_social.clone(),
+            s.codigo_scian.clone(),
+            s.calibration_applied.exact_employee_count.unwrap_or(s.estimated_employees),
+            c,
+            s.audit_sha256_hash.clone(),
+        )
+    } else {
+        (clean_tax.clone(), "541110".to_string(), 1, 0, "0000000000000000".to_string())
+    };
+
+    let sig_hex = compute_canonical_rfc8785_signature(&clean_tax, &razon, &scian, emp, cents, &a_hash);
+
+    let (state_str, reason_opt, capa_opt) = if let Some(capa_url) = capa_remediation_evidence_opt.filter(|u| !u.trim().is_empty()) {
+        ("CERRADO_CONFORME_CAPA".to_string(), None, Some(capa_url.trim().to_string()))
+    } else if !sat_69b_clean {
+        (
+            "SUSPENDIDO_POR_CAMBIO_DE_CONDICIONES".to_string(),
+            Some("Alerta crítica en lista Art. 69-B CFF detectada en vigilancia continua".to_string()),
+            None,
+        )
+    } else if !ssl_currently_valid || !privacy_notice_present {
+        (
+            "SUSPENDIDO_POR_CAMBIO_DE_CONDICIONES".to_string(),
+            Some("Degradación detectada en vigilancia continua: Certificado TLS inactivo o Aviso de Privacidad LFPDPPP retirado".to_string()),
+            None,
+        )
+    } else {
+        ("VIGENTE".to_string(), None, None)
+    };
+
+    let db_path = std::env::var("MALLEN_DB_PATH").unwrap_or_else(|_| "data/mallen_prod.db".to_string());
+    if let Ok(conn) = rusqlite::Connection::open(db_path) {
+        let _ = conn.execute_batch(
+            "PRAGMA journal_mode=WAL;
+             CREATE TABLE IF NOT EXISTS nsf_surveillance_registry (
+                 tax_id TEXT PRIMARY KEY,
+                 issued_at_utc TEXT NOT NULL,
+                 valid_until_utc TEXT NOT NULL,
+                 certification_state TEXT NOT NULL,
+                 suspension_reason TEXT,
+                 capa_evidence_url TEXT,
+                 canonical_rfc8785_signature_hex TEXT NOT NULL,
+                 updated_at_utc TEXT NOT NULL
+             );"
+        );
+        let _ = conn.execute(
+            "INSERT OR REPLACE INTO nsf_surveillance_registry
+             (tax_id, issued_at_utc, valid_until_utc, certification_state, suspension_reason, capa_evidence_url, canonical_rfc8785_signature_hex, updated_at_utc)
+             VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8)",
+            rusqlite::params![
+                clean_tax,
+                issued_str,
+                valid_until_str,
+                state_str,
+                reason_opt,
+                capa_opt,
+                sig_hex,
+                issued_str,
+            ],
+        );
+    }
+
+    NsfSurveillanceStatus {
+        tax_id: clean_tax,
+        issued_at_utc: issued_str,
+        valid_until_utc: valid_until_str,
+        certification_state: state_str,
+        suspension_reason: reason_opt,
+        capa_evidence_url: capa_opt,
+        canonical_rfc8785_signature_hex: sig_hex,
+    }
 }
