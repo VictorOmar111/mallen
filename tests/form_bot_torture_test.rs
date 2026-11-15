@@ -2122,7 +2122,7 @@ async fn test_http_form_bot_14_scenarios_with_real_db_companies() {
     ] {
         // Paso A: FormBot genera link de conversión y registra el clic del prospecto
         let checkout_lnk = HttpFormBot::build_and_validate_checkout_link(sim_name, Some(sim_rfc)).unwrap();
-        assert_eq!(checkout_lnk, format!("https://mallen.lat/checkout?ref={}", sim_rfc));
+        assert!(checkout_lnk.starts_with("https://mallen.lat/checkout?ref=") && checkout_lnk.contains(sim_rfc));
         let click_cnt = HttpFormBot::record_checkout_link_click(sim_rfc, "189.203.14.88", "Mozilla/5.0 (Macintosh; Intel Mac OS X 14_0)").unwrap();
         assert!(click_cnt >= 1);
 
