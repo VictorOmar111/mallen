@@ -1481,5 +1481,135 @@ window.updateMallenSandbox = function(customEmp) {
 })();
 </script>
 
+
+<!-- CALIBRACIÓN MÓVIL PRO Y GESTOR UNIFICADO DE COOKIES MÉXICO (mallen_cookie_gate_unified_mx) -->
+<style id="mallen-mobile-and-cookie-calibration">
+  html, body {
+    max-width: 100vw !important;
+    overflow-x: hidden !important;
+    -webkit-text-size-adjust: 100%;
+  }
+  @media (max-width: 768px) {
+    input, select, textarea {
+      font-size: 16px !important; /* Evita auto-zoom forzado en iOS Safari */
+      min-height: 44px;
+    }
+    button, a.btn, [role="button"] {
+      min-height: 44px;
+      touch-action: manipulation;
+    }
+    #legal-consent-modal > div,
+    #exit-intent-modal > div {
+      width: 94vw !important;
+      max-width: 94vw !important;
+      max-height: 88dvh !important;
+      overflow-y: auto !important;
+      padding: 1.15rem !important;
+      margin: 0 auto !important;
+    }
+    .grid-cols-2, .grid-cols-3, .grid-cols-4 {
+      gap: 0.65rem !important;
+    }
+  }
+</style>
+<script id="mallen_cookie_gate_unified_mx">
+(function() {
+  var CONSENT_KEY_PRIMARY = 'mallen_legal_consent_accepted_v1';
+  var CONSENT_KEY_LEGACY  = 'mallen_legal_accepted';
+  var CONSENT_KEY_MX_PREF = 'mallen_mx_cookie_preferences_v2026';
+
+  function hasUserAlreadyAcceptedCookies() {
+    try {
+      return localStorage.getItem(CONSENT_KEY_PRIMARY) === '1' ||
+             localStorage.getItem(CONSENT_KEY_LEGACY) === 'true' ||
+             localStorage.getItem(CONSENT_KEY_LEGACY) === '1' ||
+             !!localStorage.getItem(CONSENT_KEY_MX_PREF) ||
+             document.cookie.indexOf('mallen_mx_consent=1') !== -1;
+    } catch (e) {
+      return false;
+    }
+  }
+
+  window.saveMexicoCookieConsentUnified = function(mode) {
+    try {
+      var prefs = {
+        jurisdiction: 'ESTADOS UNIDOS MEXICANOS (LFPDPPP / SABG / CCom Art. 89)',
+        essential_crypto_sha256: true,
+        session_calibration_ssot: true,
+        anonymous_normative_telemetry: mode !== 'essential_only',
+        accepted_at_utc: new Date().toISOString()
+      };
+      localStorage.setItem(CONSENT_KEY_PRIMARY, '1');
+      localStorage.setItem(CONSENT_KEY_LEGACY, 'true');
+      localStorage.setItem(CONSENT_KEY_MX_PREF, JSON.stringify(prefs));
+      document.cookie = 'mallen_mx_consent=1; path=/; max-age=31536000; SameSite=Lax';
+    } catch (e) {}
+
+    var modal = document.getElementById('legal-consent-modal');
+    if (modal) {
+      modal.classList.add('hidden');
+      modal.style.display = 'none';
+    }
+    var secondaryGate = document.getElementById('mallen-global-region-gate');
+    if (secondaryGate) {
+      secondaryGate.classList.add('hidden');
+      secondaryGate.style.display = 'none';
+    }
+  };
+
+  function upgradeConsentModalToMexicoExclusive() {
+    var modal = document.getElementById('legal-consent-modal');
+    if (!modal) return;
+
+    // Si ya aceptó antes en cualquier sesión, ocultar de inmediato y NUNCA preguntar dos veces
+    if (hasUserAlreadyAcceptedCookies()) {
+      modal.classList.add('hidden');
+      modal.style.display = 'none';
+      return;
+    }
+
+    // Inyectar el panel desglosado de Cookies exclusivo para México dentro del modal si aún no está
+    if (!document.getElementById('mx-cookie-granular-box')) {
+      var innerCard = modal.querySelector('div');
+      if (innerCard) {
+        var granularHtml = document.createElement('div');
+        granularHtml.id = 'mx-cookie-granular-box';
+        granularHtml.className = 'mt-3 mb-4 p-3 rounded-xl bg-slate-900/80 border border-emerald-500/30 text-left text-xs text-slate-200 space-y-2';
+        granularHtml.innerHTML =
+          '<div class="font-bold text-emerald-400 uppercase tracking-wider text-[11px]">Configuración de Cookies y Trazabilidad (Jurisdicción Exclusiva: México — LFPDPPP / SABG)</div>' +
+          '<label class="flex items-start gap-2 cursor-not-allowed opacity-95">' +
+            '<input type="checkbox" checked disabled class="mt-0.5 accent-emerald-500">' +
+            '<span><strong>1. Cookies Técnicas y Sello Criptográfico SHA-256 (Obligatorias):</strong> Indispensables para la integridad pericial (Arts. 89–93 Código de Comercio y Art. 19 LFPDPPP).</span>' +
+          '</label>' +
+          '<label class="flex items-start gap-2 cursor-pointer">' +
+            '<input type="checkbox" id="chk-mx-cookie-ssot" checked class="mt-0.5 accent-emerald-500">' +
+            '<span><strong>2. Memoria de Calibración Patronal (SSOT Local):</strong> Conserva su plantilla y giro SCIAN entre el Simulador In Situ, Pre-Dictamen PDF y Pasarela 3D Secure.</span>' +
+          '</label>' +
+          '<label class="flex items-start gap-2 cursor-pointer">' +
+            '<input type="checkbox" id="chk-mx-cookie-telemetry" checked class="mt-0.5 accent-emerald-500">' +
+            '<span><strong>3. Telemetría Normativa Nacional (DOF / STPS / SAT / IMSS):</strong> Optimiza la velocidad de compulsa en padrones federales mexicanos sin transferir datos a terceros.</span>' +
+          '</label>';
+        var btnContainer = innerCard.querySelector('button')?.parentElement || innerCard;
+        innerCard.insertBefore(granularHtml, btnContainer);
+      }
+    }
+
+    // Vincular todos los botones de cierre/aceptación del modal para que guarden todas las llaves y no vuelva a aparecer
+    var buttons = modal.querySelectorAll('button');
+    buttons.forEach(function(b) {
+      b.addEventListener('click', function() {
+        window.saveMexicoCookieConsentUnified('full_mx');
+      });
+    });
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', upgradeConsentModalToMexicoExclusive);
+  } else {
+    upgradeConsentModalToMexicoExclusive();
+  }
+})();
+</script>
+
 </body>
 </html>

@@ -348,3 +348,5 @@ document.addEventListener("DOMContentLoaded", () => {
         rInput.addEventListener("input", () => { rInput.dataset.autoFilled = "false"; });
     }
 });
+
+window.acceptLegalConsent = function() { if (typeof window.saveMexicoCookieConsentUnified === 'function') { window.saveMexicoCookieConsentUnified('full_mx'); } };
