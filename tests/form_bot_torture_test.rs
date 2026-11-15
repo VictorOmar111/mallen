@@ -2087,7 +2087,7 @@ async fn test_http_form_bot_14_scenarios_with_real_db_companies() {
     assert!(!idx_html.to_uppercase().contains("SISTEMA PERICIAL DE GESTIÓN DE RIESGO W16"));
     assert!(!idx_html.contains(">M</div>"));
     let app_js_src = std::fs::read_to_string("public/js/app.js").unwrap_or_default();
-    assert!(!app_js_src.contains('?.value || "45"'));
+    assert!(!app_js_src.contains(r#"?.value || "45""#));
     println!("║  90  ║ Identidad Visual: FIRMA W16 MALLEN® | INGENIERÍA LEGAL PREV. ║ 0 Icono 'M' | 0 Hardcode '45' | UI 100% Limpia    ║ [SUPERADO]   ║");
 
     // ESCENARIO 91: Módulos 2, 3 y 4 (IIA Evidencia Forense DOM + NSF Vigilancia 90 Días/CAPA + Firma RFC 8785)

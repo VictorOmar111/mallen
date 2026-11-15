@@ -127,15 +127,15 @@ fn build_base_compliance_documents_inner(
     let email_arco = pick_known_or_blank(&dossier.email_arco_privacidad, &empresa.email, BLANK_LINE);
     let telefono_corp = pick_known_or_blank(&dossier.telefono_corporativo, &empresa.telefono, BLANK_SHORT);
 
-    let rep_legal = pick_known_or_blank(&dossier.representante_legal_nombre, "", BLANK_LINE);
-    let rep_cargo = pick_known_or_blank(&dossier.representante_legal_cargo, "", BLANK_SHORT);
+    let rep_legal = pick_known_or_blank(&dossier.representante_legal_nombre, "", "[APODERADO LEGAL REGISTRADO SEGÚN ESTATUTOS SOCIALES VIGENTES]");
+    let rep_cargo = pick_known_or_blank(&dossier.representante_legal_cargo, "", "Representante Legal / Órgano de Administración Estatutario");
     let escritura_num = pick_known_or_blank(&dossier.instrumento_notarial_num, "", BLANK_SHORT);
     // No asumir que el Representante Legal es el Oficial de Privacidad si se dejó vacío
     let oficial_privacidad = pick_known_or_blank(&dossier.oficial_privacidad_nombre, "", BLANK_LINE);
 
-    let reg_patronal = pick_known_or_blank(&dossier.registro_patronal_imss, "", BLANK_SHORT);
-    let csh_coord = pick_known_or_blank(&dossier.comision_coordinador_patronal, "", BLANK_LINE);
-    let csh_sec = pick_known_or_blank(&dossier.comision_secretario_trabajadores, "", BLANK_LINE);
+    let reg_patronal = pick_known_or_blank(&dossier.registro_patronal_imss, "", "[REGISTRO PATRONAL ACTIVO VINCULADO AL RFC EN SISTEMA SUA IMSS]");
+    let csh_coord = pick_known_or_blank(&dossier.comision_coordinador_patronal, "", "[COORDINADOR DESIGNADO POR LA REPRESENTACIÓN PATRONAL (NOM-019-STPS)]");
+    let csh_sec = pick_known_or_blank(&dossier.comision_secretario_trabajadores, "", "[SECRETARIO DESIGNADO POR LA REPRESENTACIÓN DE LOS TRABAJADORES (NOM-019-STPS)]");
     let csh_vocal_pat = pick_known_or_blank(&dossier.comision_vocal_patronal, "", BLANK_LINE);
     let csh_vocal_trab = pick_known_or_blank(&dossier.comision_vocal_trabajadores, "", BLANK_LINE);
 
@@ -1184,7 +1184,7 @@ pub fn build_all_compliance_documents_with_session(
 
     for (idx, doc) in docs.iter_mut().enumerate() {
         doc.content = doc.content.replace(
-            "representada en este acto por **________________________________________**",
+            "representada en este acto por **[APODERADO LEGAL REGISTRADO SEGÚN ESTATUTOS SOCIALES VIGENTES]**",
             "representada en este acto por **[APODERADO LEGAL REGISTRADO SEGÚN ESTATUTOS SOCIALES VIGENTES]**"
         );
         let addendum = build_scian_precision_addendum(
