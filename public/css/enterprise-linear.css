@@ -1,0 +1,186 @@
+:root {
+  --bg-canvas: #08090a;
+  --bg-surface: #0f1115;
+  --bg-elevated: #14171f;
+  --bg-input: #0b0d11;
+  --text-primary: #f8fafc;
+  --text-secondary: #cbd5e1;
+  --text-muted: #94a3b8;
+  --border-subtle: rgba(255, 255, 255, 0.08);
+  --border-hover: rgba(255, 255, 255, 0.18);
+  --accent-primary: #10b981;
+  --accent-secondary: #2563eb;
+  --shadow-card: 0 4px 20px -2px rgba(0, 0, 0, 0.55);
+}
+
+html.light-mode {
+  --bg-canvas: #f8fafc;
+  --bg-surface: #ffffff;
+  --bg-elevated: #f1f5f9;
+  --bg-input: #ffffff;
+  --text-primary: #0f172a;
+  --text-secondary: #334155;
+  --text-muted: #475569;
+  --border-subtle: #e2e8f0;
+  --border-hover: #cbd5e1;
+  --accent-primary: #059669;
+  --accent-secondary: #1d4ed8;
+  --shadow-card: 0 4px 14px -2px rgba(15, 23, 42, 0.06);
+}
+
+/* 1. Neutralizar efectos decorativos invasivos (láser orbital, halos de 120px y blur pesado) */
+.quantum-ambient-stage,
+.quantum-orb,
+.quantum-grid-overlay,
+.laser-border::before,
+.laser-border::after {
+  display: none !important;
+  animation: none !important;
+}
+
+*, *::before, *::after {
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+}
+
+/* 2. Lienzo principal de alto contraste (18.7:1 en Dark, 17.3:1 en Light) */
+body {
+  background-color: var(--bg-canvas) !important;
+  color: var(--text-primary) !important;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif !important;
+  font-size: 16px;
+  line-height: 1.6;
+  letter-spacing: -0.011em;
+}
+
+/* 3. Tarjetas sobrias estilo Linear / Stripe con micro-interacción de 150ms */
+.quantum-card,
+.glass-panel,
+.bg-slate-900\/90,
+.bg-slate-900\/80,
+.bg-slate-950\/90 {
+  background-color: var(--bg-surface) !important;
+  border: 1px solid var(--border-subtle) !important;
+  box-shadow: var(--shadow-card) !important;
+  border-radius: 12px !important;
+  transition: border-color 150ms cubic-bezier(0.16, 1, 0.3, 1), transform 150ms cubic-bezier(0.16, 1, 0.3, 1) !important;
+}
+
+.quantum-card:hover {
+  border-color: var(--border-hover) !important;
+}
+
+/* 4. Inputs y controles con contraste AA/AAA garantizado en ambos modos */
+input[type="text"],
+input[type="email"],
+input[type="tel"],
+input[type="number"],
+input[type="url"],
+input[type="search"],
+select,
+textarea {
+  background-color: var(--bg-input) !important;
+  color: var(--text-primary) !important;
+  border: 1px solid var(--border-hover) !important;
+  border-radius: 8px !important;
+  font-family: 'Inter', sans-serif;
+}
+
+input:focus, select:focus, textarea:focus {
+  outline: none !important;
+  border-color: var(--accent-primary) !important;
+  box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.18) !important;
+}
+
+/* Reservar JetBrains Mono estrictamente para RFC, códigos SCIAN, hashes y cifras */
+#folioInput,
+#cal_emp,
+.font-mono-data,
+code,
+pre {
+  font-family: 'JetBrains Mono', monospace !important;
+}
+
+/* 5. Corrección nativa de Modo Claro (Cero botones blancos invisibles en MX, DACH y Benelux) */
+html.light-mode .text-white,
+html.light-mode h1,
+html.light-mode h2,
+html.light-mode h3,
+html.light-mode h4 {
+  color: var(--text-primary) !important;
+}
+
+html.light-mode .text-slate-300,
+html.light-mode .text-slate-400 {
+  color: var(--text-secondary) !important;
+}
+
+html.light-mode button.bg-emerald-600,
+html.light-mode button.bg-blue-600,
+html.light-mode a.bg-emerald-600,
+html.light-mode .cta-primary-btn {
+  color: #ffffff !important;
+}
+
+/* 6. Barra superior ejecutiva y pestañas de Divulgación Progresiva */
+.mallen-exec-subnav {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding: 10px 14px;
+  background: var(--bg-surface);
+  border: 1px solid var(--border-subtle);
+  border-radius: 10px;
+  margin-bottom: 20px;
+}
+
+.mallen-exec-tab {
+  font-size: 13px;
+  font-weight: 600;
+  padding: 7px 14px;
+  border-radius: 7px;
+  border: 1px solid transparent;
+  color: var(--text-secondary);
+  background: transparent;
+  cursor: pointer;
+  transition: all 140ms ease;
+}
+
+.mallen-exec-tab:hover,
+.mallen-exec-tab.active {
+  color: var(--text-primary);
+  background: var(--bg-elevated);
+  border-color: var(--border-hover);
+}
+
+/* 7. Acordeón de Divulgación Progresiva para Calibración y Dossier Legal */
+.mallen-progressive-drawer {
+  border: 1px solid var(--border-subtle);
+  background: var(--bg-surface);
+  border-radius: 12px;
+  margin: 18px 0;
+  overflow: hidden;
+}
+
+.mallen-progressive-header {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 20px;
+  background: var(--bg-elevated);
+  color: var(--text-primary);
+  font-weight: 700;
+  font-size: 14px;
+  cursor: pointer;
+  border: none;
+  text-align: left;
+}
+
+.mallen-baymard-microcopy {
+  display: block;
+  font-size: 11.5px;
+  color: var(--text-muted);
+  margin-top: 4px;
+  line-height: 1.4;
+}

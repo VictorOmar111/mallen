@@ -1,24 +1,25 @@
+/**
+ * FIRMA W16 MALLEN® — Passive Jurisdiction & Top-Bar Switcher (Zero Entry-Wall)
+ * Cumple con estándares UX B2B (Linear/Stripe): acceso inmediato al buscador sin
+ * pantallas negras de bloqueo inicial. El cambio de país se realiza bajo demanda.
+ */
 (function () {
     "use strict";
 
-    // Detect if we are on the main landing page and no country has been selected yet.
-    function checkAndShowGateway() {
-        const urlParams = new URLSearchParams(window.location.search);
-        // Force gateway open if explicitly requested, or if no country is set yet
-        const countryUrl = urlParams.get('country');
-        const countryStorage = localStorage.getItem('mallen_country');
-
-        if (!countryUrl && !countryStorage && window.location.pathname === '/') {
-            if (typeof window.openMallenGateway === 'function') {
-                window.openMallenGateway();
+    function initPassiveRegionRouting() {
+        try {
+            if (!localStorage.getItem("mallen_country")) {
+                localStorage.setItem("mallen_country", "MX");
             }
-        }
+            if (!localStorage.getItem("mallen_consented_locale_v3")) {
+                localStorage.setItem("mallen_consented_locale_v3", "es-MX");
+            }
+        } catch (e) {}
     }
 
-    // Attach to DOMContentLoaded or run immediately
-    if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', checkAndShowGateway);
+    if (document.readyState === "loading") {
+        document.addEventListener("DOMContentLoaded", initPassiveRegionRouting);
     } else {
-        checkAndShowGateway();
+        initPassiveRegionRouting();
     }
 })();

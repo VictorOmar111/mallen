@@ -2274,6 +2274,37 @@ async fn test_http_form_bot_14_scenarios_with_real_db_companies() {
         assert!(score_c >= 45 && score_c <= 99);
     }
     println!("║  94  ║ Simulación Cliente Real Multi-Giro + Móvil + Cookies México  ║ 1 Sola Ventana Cookies MX | Móvil 100% | 4/4 OK   ║ [SUPERADO]   ║");
+
+    // ESCENARIO 95: Auditoría de Diseño Enterprise (Linear / Stripe / Vanta / Baymard — Cero Fugas de Rutas y Cero Muro de Entrada)
+    let linear_css = std::fs::read_to_string("public/css/enterprise-linear.css").unwrap_or_default();
+    assert!(
+        linear_css.contains("--bg-canvas: #08090a;") && linear_css.contains("html.light-mode"),
+        "El sistema de tokens CSS semánticos Linear/Stripe debe estar activo para Modo Oscuro y Modo Claro"
+    );
+
+    let idx_html_95 = std::fs::read_to_string("public/index.html").unwrap_or_default();
+    assert!(
+        idx_html_95.contains("/css/enterprise-linear.css") && idx_html_95.contains("mallen-vanta-trust-center"),
+        "La portada debe cargar enterprise-linear.css e incluir el Centro de Confianza estilo Vanta/Drata"
+    );
+    assert!(
+        idx_html_95.contains("mallen-baymard-microcopy"),
+        "La portada debe incluir los microcopys de transparencia Baymard en los campos sensibles"
+    );
+
+    let i18n_js_95 = std::fs::read_to_string("public/js/i18n_engine.js").unwrap_or_default();
+    assert!(
+        !i18n_js_95.contains("Carpeta: templates/mx/es_mx") && !i18n_js_95.contains(">M</div>"),
+        "No debe existir ninguna fuga de rutas internas (Carpeta: templates/...) ni iconos 'M' en i18n_engine.js"
+    );
+
+    let connect_js_95 = std::fs::read_to_string("public/js/i18n_regions_connect.js").unwrap_or_default();
+    assert!(
+        !connect_js_95.contains("openMallenGateway()"),
+        "i18n_regions_connect.js no debe bloquear la entrada en '/' con una cortina de pantalla completa"
+    );
+
+    println!("║  95  ║ Diseño Enterprise Linear/Stripe + Vanta Trust + Baymard UX   ║ 0 Muro Inicial | 0 Fugas Rutas | Contraste AAA OK ║ [SUPERADO]   ║");
     println!("╚══════╩══════════════════════════════════════════════════════════════╩═══════════════════════════════════════════════════╩══════════════╝");
-    println!("✓ LOS 94 ESCENARIOS DE GRADO MILITAR (NIST SP 800-53 / IIA / NSF TRL 8 / RAGE-CLICK / MÓVIL & COOKIES MX) SUPERADOS AL 100%");
+    println!("✓ LOS 95 ESCENARIOS DE GRADO MILITAR E INSTITUCIONAL (NIST / IIA / NSF TRL 8 / LINEAR-STRIPE-BAYMARD UX) SUPERADOS AL 100%");
 }

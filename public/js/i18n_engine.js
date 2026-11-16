@@ -793,7 +793,7 @@
             <div style="max-width:1120px;width:100%;margin:0 auto;padding-top:10px;">
                 <div style="display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid #1e293b;padding-bottom:16px;margin-bottom:28px;flex-wrap:wrap;gap:12px;">
                     <div style="display:flex;align-items:center;gap:12px;">
-                        <div style="width:42px;height:42px;border-radius:12px;background:linear-gradient(135deg,#1d4ed8,#059669);display:flex;align-items:center;justify-content:center;font-weight:900;font-size:20px;color:#fff;">M</div>
+                        
                         <div>
                             <div style="font-weight:800;font-size:15px;letter-spacing:0.04em;color:#ffffff;">FIRMA W16 MALLEN®</div>
                             <div style="font-family:'JetBrains Mono',monospace;font-size:11px;color:#34d399;">GLOBAL REGULATORY COMPLIANCE ENGINE W16</div>
@@ -1046,7 +1046,7 @@
 
         document.getElementById("eu-section-title").textContent = data.sectionTitle;
         document.getElementById("eu-section-sub").textContent = data.sectionSub;
-        document.getElementById("eu-kit-folder-badge").textContent = "Ruta: " + data.templatePath;
+        document.getElementById("eu-kit-folder-badge").textContent = "Jurisdicción Oficial: " + data.country + " (" + data.langName + ")";
         document.getElementById("eu-crypto-law-footer").textContent = data.cryptoLaw;
         document.getElementById("eu-disclaimer-footer").textContent = data.privacyBody;
         window.applyNativePortalTranslationsAndSdui(countryCode, activeLocale, data);
@@ -1093,7 +1093,7 @@
             document.getElementById("eu-preview-title").textContent = "DIAGNÓSTICO PRELIMINAR GENERADO • " + taxVal + " (" + domVal + ")";
             document.getElementById("eu-preview-price").textContent = "Expediente Completo: " + data.kitPrice;
             document.getElementById("eu-sim-fine").textContent = data.simulatedFine;
-            document.getElementById("eu-preview-body").textContent = "Evaluación determinística sobre los 37 vectores de cumplimiento de " + data.name + " (" + data.langName + "). Los 7 contratos y protocolos listos para firma se encuentran pre-estructurados en " + data.templatePath + ".";
+            document.getElementById("eu-preview-body").textContent = "Evaluación determinística sobre los 37 vectores de cumplimiento de " + data.name + " (" + data.langName + "). Los 7 contratos y protocolos listos para firma se encuentran listos para descarga inmediata con sello criptográfico SHA-256."";
             document.getElementById("eu-fine-note").textContent = data.fineNote;
         };
     }
@@ -1115,7 +1115,8 @@
             const consented = localStorage.getItem("mallen_consented_locale_v3");
             const savedCountry = localStorage.getItem("mallen_country");
             if (!consented) {
-                buildFullScreenGateway(true);
+                localStorage.setItem('mallen_consented_locale_v3', 'es-MX');
+                injectSwitchRegionButtonInMexico();
             } else if (savedCountry && savedCountry !== "MX" && !urlParams.get("country")) {
                 window.location.href = "/region/" + savedCountry.toLowerCase() + "/?lang=" + encodeURIComponent(consented);
             } else {
