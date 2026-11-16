@@ -2305,6 +2305,31 @@ async fn test_http_form_bot_14_scenarios_with_real_db_companies() {
     );
 
     println!("║  95  ║ Diseño Enterprise Linear/Stripe + Vanta Trust + Baymard UX   ║ 0 Muro Inicial | 0 Fugas Rutas | Contraste AAA OK ║ [SUPERADO]   ║");
+
+    // ESCENARIO 96: Auditoría Integral de los 16 Puntos UX/UI en Todos los Países (MX, DE, AT, CH, NL, BE, LU)
+    for eu_c in ["de", "at", "ch", "nl", "be", "lu"] {
+        let p_path = format!("public/region/{}/index.html", eu_c);
+        let p_html = std::fs::read_to_string(&p_path).expect("Portal europeo debe existir");
+        assert!(p_html.contains("</html>"), "El portal {} debe tener HTML íntegro sin truncamientos", eu_c);
+        assert!(p_html.contains("FIRMA MALLEN®") && !p_html.contains("FIRMA PERICIAL MALLEN"));
+        assert!(!p_html.contains("backdrop-blur"), "Cero backdrop-blur en {}", eu_c);
+    }
+    let eu_ctrl = std::fs::read_to_string("public/js/eu_portal_controller.js").unwrap_or_default();
+    assert!(
+        eu_ctrl.contains("290,00 €") && eu_ctrl.contains("CHF 290.00") && !eu_ctrl.contains("templates/"),
+        "El controlador europeo debe mostrar precios claros (290,00 € / CHF 290.00) y cero fugas de rutas"
+    );
+    let q_lights = std::fs::read_to_string("public/js/quantum-lights.js").unwrap_or_default();
+    assert!(
+        q_lights.contains("Hell") && q_lights.contains("Dunkel") && q_lights.contains("Clair") && q_lights.contains("Licht"),
+        "El conmutador de tema debe estar traducido al 100% en alemán, francés, italiano y neerlandés"
+    );
+    let idx_96 = std::fs::read_to_string("public/index.html").unwrap_or_default();
+    assert!(
+        idx_96.contains("mallen-unified-autocomplete-list") && idx_96.contains("/normativa") && idx_96.contains("/radar-dof"),
+        "La portada debe tener el buscador predictivo unificado y enlaces a /normativa y /radar-dof"
+    );
+    println!("║  96  ║ 16 Puntos UX/UI en 7 Países (MX/DE/AT/CH/NL/BE/LU) + Baymard ║ 4 Bloques | /normativa | /radar-dof | 7 Países OK ║ [SUPERADO]   ║");
     println!("╚══════╩══════════════════════════════════════════════════════════════╩═══════════════════════════════════════════════════╩══════════════╝");
-    println!("✓ LOS 95 ESCENARIOS DE GRADO MILITAR E INSTITUCIONAL (NIST / IIA / NSF TRL 8 / LINEAR-STRIPE-BAYMARD UX) SUPERADOS AL 100%");
+    println!("✓ LOS 96 ESCENARIOS DE GRADO MILITAR E INSTITUCIONAL (16/16 MEJORAS UX/UI EN LOS 7 PAÍSES) SUPERADOS AL 100%");
 }

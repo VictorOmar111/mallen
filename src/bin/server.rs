@@ -104,6 +104,8 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .route("/api/i18n/jurisdictions", get(api_i18n_jurisdictions))
         .route("/api/lookup", get(api_instant_rfc_lookup_360))
         .route("/api/regulatory_news", get(api_daily_regulatory_news))
+        .route("/normativa", get(handle_dedicated_normativa_page))
+        .route("/radar-dof", get(handle_dedicated_radar_dof_page))
         .route("/api/sdui/tracker/:country", get(api_sdui_tracker_schema))
         .route("/api/sdui/tracker/:country/export_pdf", axum::routing::post(api_sdui_tracker_export_pdf))
         .route("/region/:country", get(handle_eu_region_portal))
@@ -1226,7 +1228,44 @@ async fn render_checkout_page_with_state(state: Arc<AppState>, raw_ref: String) 
             </div>
         </div>
 
-        <form id="checkoutForm" onsubmit="processCheckoutPayment(event)" class="space-y-5">
+        
+            <!-- VISTA PREVIA TANGIBLE DE ENTREGABLES PERSONALIZADOS Y TABLA DE TARIFAS (ESTÁNDAR BAYMARD) -->
+            <div class="mallen-surface-card rounded-xl p-5 border border-slate-800 mb-6">
+                <div class="flex flex-wrap items-center justify-between gap-2 pb-3 mb-4 border-b border-slate-800">
+                    <div>
+                        <span class="text-[11px] font-semibold uppercase text-emerald-400 block">Resumen Verificable del Paquete (.ZIP) antes de Pagar</span>
+                        <h3 class="text-base font-bold text-white">18 Entregables Compilados a Nombre de su Razón Social (.PDF + Word .HTML)</h3>
+                    </div>
+                    <span class="font-mono-data text-xs px-2.5 py-1 rounded bg-emerald-950/60 border border-emerald-700/50 text-emerald-300 font-bold">
+                        Tarifa Única México: $3,000.00 MXN | Europa: 290,00 € / CHF 290.00
+                    </span>
+                </div>
+                <div class="grid sm:grid-cols-2 gap-4 text-xs text-slate-300">
+                    <div>
+                        <div class="font-bold text-sky-400 mb-1.5">7 Instrumentos Jurídicos Editables en Word (.HTML) y Sellados (.PDF):</div>
+                        <ul class="space-y-1 leading-relaxed">
+                            <li>01. Aviso de Privacidad Integral, Simplificado y Corto (LFPDPPP / SABG).</li>
+                            <li>02. Política de Prevención de Riesgos Psicosociales (NOM-035-STPS-2018).</li>
+                            <li>03. Acta Constitutiva de Comisión Mixta de Seguridad e Higiene (NOM-019-STPS).</li>
+                            <li>04. Convenio y Adendum de Teletrabajo y Desconexión (NOM-037-STPS-2023).</li>
+                            <li>05. Contrato Marco de Materialidad y Razón de Negocios (Arts. 69-B y 5-A CFF).</li>
+                            <li>06. Acta de Unidades Internas de Protección Civil (PIPC) y Clasificación IMSS.</li>
+                            <li>07. Términos de Comercio Electrónico (Art. 76 BIS LFPC) y Beneficiario Controlador.</li>
+                        </ul>
+                    </div>
+                    <div>
+                        <div class="font-bold text-emerald-400 mb-1.5">Dictamen Completo (3 Págs.) + 10 Certificados SHA-256 + Manifiesto:</div>
+                        <ul class="space-y-1 leading-relaxed">
+                            <li>• Dictamen Ejecutivo y Cédula Técnica de 37 Vectores sin censura + QR 13x13.</li>
+                            <li>• 10 Certificados Individuales de Cumplimiento Normativo con Sello SHA-256.</li>
+                            <li>• Manifiesto Criptográfico de Fecha Cierta con Firma Desconectada RFC 8785.</li>
+                            <li>• Acceso al Asistente Post-Pago para personalizar representantes y comisiones sin prisa.</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+
+            <form id="checkoutForm" onsubmit="processCheckoutPayment(event)" class="space-y-5">
             <div class="bg-slate-950 border border-white/15 p-4 rounded-xl space-y-3">
                 <span class="text-[10px] font-bold text-blue-400 uppercase block">Datos Societarios, Domicilio Fiscal y Representación Legal</span>
                 <div class="grid sm:grid-cols-2 gap-3">
@@ -1916,4 +1955,133 @@ pub async fn api_daily_regulatory_news() -> axum::Json<Vec<serde_json::Value>> {
     .await
     .unwrap_or_default();
     axum::Json(news)
+}
+
+
+async fn handle_dedicated_normativa_page() -> impl IntoResponse {
+    let html = r#"<!DOCTYPE html>
+<html lang="es-MX">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>FIRMA MALLEN® — Directorio Normativo Federal (31 Fichas Técnicas)</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/css/enterprise-linear.css?v=2026.71">
+</head>
+<body class="min-h-screen flex flex-col">
+  <header class="border-b px-6 py-4">
+    <div class="max-w-6xl mx-auto flex items-center justify-between">
+      <div>
+        <a href="/" class="text-base font-extrabold text-white">FIRMA MALLEN®</a>
+        <span class="text-[11px] text-emerald-400 font-semibold uppercase block">Ingeniería Legal Preventiva</span>
+      </div>
+      <div class="flex items-center gap-4 text-xs font-semibold">
+        <a href="/" class="mallen-btn-secondary px-3 py-1.5">Volver al Diagnóstico Principal</a>
+        <a href="/radar-dof" class="mallen-btn-secondary px-3 py-1.5">Radar DOF Diario</a>
+        <button type="button" data-mallen-theme-btn onclick="window.toggleMallenTheme()" class="mallen-btn-secondary px-3 py-1.5">Modo Claro</button>
+      </div>
+    </div>
+  </header>
+  <main class="max-w-6xl mx-auto px-6 py-10 flex-1 space-y-8">
+    <div>
+      <span class="text-xs font-semibold uppercase text-emerald-400">Enciclopedia Regulatoria Especializada</span>
+      <h1 class="text-3xl font-extrabold text-white mt-1">Directorio Normativo Federal y 31 Fichas de Inspección</h1>
+      <p class="text-base text-slate-300 mt-2">Seleccione la materia para consultar los criterios de inspección, fundamentos legales y guías preventivas sin saturar su consola de diagnóstico.</p>
+    </div>
+    <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+      <a href="/normas/stps" class="mallen-surface-card p-6 block">
+        <span class="font-mono-data text-xs text-emerald-400 font-bold">STPS • 39 NOMs</span>
+        <h2 class="text-lg font-bold text-white mt-1">Seguridad, Salud, NOM-035, NOM-037 y Comisiones Mixtas</h2>
+        <p class="text-sm text-slate-300 mt-2">Inspección laboral federal, ergonomía, teletrabajo y condiciones generales de trabajo.</p>
+      </a>
+      <a href="/normas/sat" class="mallen-surface-card p-6 block">
+        <span class="font-mono-data text-xs text-emerald-400 font-bold">SAT • CFF Arts. 69-B y 32-B Ter</span>
+        <h2 class="text-lg font-bold text-white mt-1">Materialidad Fiscal, Razón de Negocios y Beneficiario Controlador</h2>
+        <p class="text-sm text-slate-300 mt-2">Prevención de presunción EFOS/EDOS, Carta Porte 3.1 y expedientes de fecha cierta.</p>
+      </a>
+      <a href="/normas/imss" class="mallen-surface-card p-6 block">
+        <span class="font-mono-data text-xs text-emerald-400 font-bold">IMSS • INFONAVIT • REPSE</span>
+        <h2 class="text-lg font-bold text-white mt-1">Clasificación de Riesgo (Art. 196 RACERF), SUA e Informativas</h2>
+        <p class="text-sm text-slate-300 mt-2">Siniestralidad laboral, integración salarial y validación de contratistas especializados.</p>
+      </a>
+      <a href="/normas/inai" class="mallen-surface-card p-6 block">
+        <span class="font-mono-data text-xs text-emerald-400 font-bold">LFPDPPP • SABG</span>
+        <h2 class="text-lg font-bold text-white mt-1">Protección de Datos Personales, Derechos ARCO y Seguridad Web</h2>
+        <p class="text-sm text-slate-300 mt-2">Avisos de privacidad integrales, encargados de tratamiento cloud y cifrado TLS.</p>
+      </a>
+      <a href="/normas/pld" class="mallen-surface-card p-6 block">
+        <span class="font-mono-data text-xs text-emerald-400 font-bold">LFPIORPI • UIF • CNBV</span>
+        <h2 class="text-lg font-bold text-white mt-1">Prevención de Operaciones con Recursos de Procedencia Ilícita</h2>
+        <p class="text-sm text-slate-300 mt-2">Actividades vulnerables (Art. 17), expedientes KYC y umbrales de aviso en UMAs.</p>
+      </a>
+      <a href="/normas/comercio" class="mallen-surface-card p-6 block">
+        <span class="font-mono-data text-xs text-emerald-400 font-bold">PROFECO • COFEPRIS • PIPC</span>
+        <h2 class="text-lg font-bold text-white mt-1">Comercio Digital (Art. 76 BIS LFPC), Sanidad y Protección Civil</h2>
+        <p class="text-sm text-slate-300 mt-2">Términos de e-commerce, avisos sanitarios DIGIPRIS y programas internos locales.</p>
+      </a>
+    </div>
+  </main>
+  <script src="/js/quantum-lights.js?v=2026.71"></script>
+</body>
+</html>"#;
+    Html(html.to_string())
+}
+
+async fn handle_dedicated_radar_dof_page() -> impl IntoResponse {
+    let html = r#"<!DOCTYPE html>
+<html lang="es-MX">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>FIRMA MALLEN® — Radar Regulatorio Diario del DOF</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/css/enterprise-linear.css?v=2026.71">
+</head>
+<body class="min-h-screen flex flex-col">
+  <header class="border-b px-6 py-4">
+    <div class="max-w-6xl mx-auto flex items-center justify-between">
+      <div>
+        <a href="/" class="text-base font-extrabold text-white">FIRMA MALLEN®</a>
+        <span class="text-[11px] text-emerald-400 font-semibold uppercase block">Ingeniería Legal Preventiva</span>
+      </div>
+      <div class="flex items-center gap-4 text-xs font-semibold">
+        <a href="/" class="mallen-btn-secondary px-3 py-1.5">Volver al Diagnóstico Principal</a>
+        <a href="/normativa" class="mallen-btn-secondary px-3 py-1.5">Directorio Normativo</a>
+        <button type="button" data-mallen-theme-btn onclick="window.toggleMallenTheme()" class="mallen-btn-secondary px-3 py-1.5">Modo Claro</button>
+      </div>
+    </div>
+  </header>
+  <main class="max-w-6xl mx-auto px-6 py-10 flex-1 space-y-6">
+    <div>
+      <span class="text-xs font-semibold uppercase text-emerald-400">Monitoreo Normativo Federal</span>
+      <h1 class="text-3xl font-extrabold text-white mt-1">Radar Regulatorio Diario — Publicaciones del DOF, SAT y STPS</h1>
+      <p class="text-base text-slate-300 mt-2">Consulte los acuerdos, reformas y criterios de inspección vigentes y su impacto por sector SCIAN.</p>
+    </div>
+    <div id="radar-dof-dedicated-feed" class="grid md:grid-cols-2 gap-5"></div>
+  </main>
+  <script src="/js/quantum-lights.js?v=2026.71"></script>
+  <script>
+    fetch('/api/regulatory_news')
+      .then(function(r){ return r.json(); })
+      .then(function(items){
+        var box = document.getElementById('radar-dof-dedicated-feed');
+        if (!box || !Array.isArray(items)) return;
+        box.innerHTML = items.map(function(n){
+          return '<div class="mallen-surface-card p-6">' +
+            '<div class="flex items-center justify-between text-xs font-mono-data text-emerald-400 mb-2">' +
+              '<span>' + (n.organo || 'DOF') + ' • SCIAN ' + (n.scian_prefix || 'General') + '</span>' +
+              '<span>' + (n.published_at || '') + '</span>' +
+            '</div>' +
+            '<h2 class="text-lg font-bold text-white mb-2">' + (n.title || '') + '</h2>' +
+            '<p class="text-sm text-slate-300 mb-4">' + (n.summary || '') + '</p>' +
+            '<a href="/?rfc=' + encodeURIComponent(n.scian_prefix || '') + '" class="mallen-btn-secondary px-3.5 py-2 text-xs inline-block">Evaluar impacto en mi empresa</a>' +
+          '</div>';
+        }).join('');
+      });
+  </script>
+</body>
+</html>"#;
+    Html(html.to_string())
 }

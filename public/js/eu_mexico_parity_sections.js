@@ -643,7 +643,7 @@
                     proofDrawer.innerHTML = `
                         <div class="flex items-center justify-between border-b border-slate-800 pb-3 mb-3">
                             <strong class="text-emerald-400 uppercase">${pr.badge} — ${pr.title}</strong>
-                            <button type="button" onclick="document.getElementById('eu-proof-detail-drawer').classList.add('hidden')" class="text-slate-400 hover:text-white font-bold">✕</button>
+                            <button type="button" onclick="document.getElementById('eu-proof-detail-drawer').classList.add('hidden')" class="text-slate-400 hover:text-white font-bold"></button>
                         </div>
                         <p class="text-slate-200 leading-relaxed">${pr.detail}</p>
                     `;

@@ -79,7 +79,7 @@
 
   <link rel="stylesheet" href="/css/enterprise-linear.css?v=2026.69">
 </head>
-<body class="bg-slate-950 text-slate-100 min-h-screen selection:bg-blue-600 selection:text-white">
+<body class="bg-slate-950 text-slate-100 min-h-screen selection:bg-blue-600 selection:text-white mallen-home-4blocks">
 
   <!-- Header / Navegación Principal -->
   <header class="border-b border-white/15 bg-white/[0.03] sticky top-0 z-50">
@@ -573,7 +573,7 @@
   </div>
 
   <!-- Modal 2: Consentimiento Criptográfico de Privacidad (LFPDPPP), Cookies Técnicas y Términos (Art. 89 C.Com) -->
-  <div id="legal-consent-modal" class="hidden fixed inset-0 photonic-modal-backdrop z-50 items-center justify-center p-4">
+  <div id="legal-consent-modal" class="hidden" style="display:none !important;" class="hidden fixed inset-0 photonic-modal-backdrop z-50 items-center justify-center p-4">
     <div class="photonic-modal-card rounded-2xl max-w-xl w-full p-8 font-mono-code text-xs relative">
       <div class="flex items-center justify-between mb-4">
         <span class="inline-block bg-emerald-500/20 text-emerald-300 border border-emerald-400/50 px-3 py-1 rounded-full text-[10px] font-bold uppercase">
@@ -1276,7 +1276,7 @@ window.updateMallenSandbox = function(customEmp) {
           <li>• <strong>05.</strong> Contrato Marco de Prestación de Servicios y Materialidad (Art. 69-B y 5-A CFF).</li>
           <li>• <strong>06.</strong> Acta de Unidades Internas de Protección Civil (PIPC) y Clasificación IMSS (Art. 196 RACERF).</li>
           <li>• <strong>07.</strong> Términos E-Commerce (Art. 76 BIS LFPC) y Manual de Beneficiario Controlador (Art. 32-B Ter CFF).</li>
-          <li class="text-emerald-400 font-semibold pt-1">✓ Entregados en doble formato: PDF sellado + HTML editable en Microsoft Word.</li>
+          <li class="text-emerald-400 font-semibold pt-1"> Entregados en doble formato: PDF sellado + HTML editable en Microsoft Word.</li>
         </ul>
       </div>
 
@@ -1323,7 +1323,7 @@ window.updateMallenSandbox = function(customEmp) {
       var hint = document.createElement('small');
       hint.id = 'baymard-search-hint';
       hint.className = 'mallen-baymard-microcopy';
-      hint.textContent = '🔒 Consulta pública determinística: ingrese RFC (ej. ALS9209253R0) o Razón Social. No requiere subir contraseñas ni archivos .key.';
+      hint.textContent = ' Consulta pública determinística: ingrese RFC (ej. ALS9209253R0) o Razón Social. No requiere subir contraseñas ni archivos .key.';
       if (folioEl.parentElement) {
         folioEl.parentElement.appendChild(hint);
       }
@@ -1734,6 +1734,136 @@ window.updateMallenSandbox = function(customEmp) {
     document.addEventListener('DOMContentLoaded', upgradeConsentModalToMexicoExclusive);
   } else {
     upgradeConsentModalToMexicoExclusive();
+  }
+})();
+</script>
+
+
+<script id="mallen-nextlevel-4blocks-and-predictive-search">
+(function() {
+  function initNextLevelInformationArchitecture() {
+    // A. Inyectar en la barra superior enlaces directos a las vistas dedicadas (/normativa y /radar-dof),
+    //    conmutador discreto de región (MX | DACH | Benelux) y botón de tema traducido
+    var headerNav = document.querySelector('header nav');
+    if (headerNav && !document.getElementById('nav-link-normativa-dedicada')) {
+      var extraLinks = document.createElement('span');
+      extraLinks.className = 'inline-flex items-center gap-4 ml-3';
+      extraLinks.innerHTML =
+        '<a id="nav-link-normativa-dedicada" href="/normativa" class="text-xs font-semibold hover:text-emerald-400 transition">Directorio Normativo (31 NOMs)</a>' +
+        '<a id="nav-link-radar-dedicado" href="/radar-dof" class="text-xs font-semibold hover:text-emerald-400 transition">Radar DOF Diario</a>' +
+        '<span class="inline-flex rounded-md border border-slate-700 p-0.5 text-[11px] font-semibold">' +
+          '<a href="/?country=MX" class="px-2 py-0.5 rounded bg-emerald-600 text-white">MX</a>' +
+          '<a href="/region/de" class="px-2 py-0.5 hover:text-emerald-400">DACH</a>' +
+          '<a href="/region/nl" class="px-2 py-0.5 hover:text-emerald-400">Benelux</a>' +
+        '</span>' +
+        '<button type="button" data-mallen-theme-btn onclick="window.toggleMallenTheme()" class="mallen-btn-secondary px-2.5 py-1 text-xs">Modo Claro</button>';
+      headerNav.appendChild(extraLinks);
+    }
+
+    // B. Fusionar los dos buscadores en una sola Barra Predictiva Única sobre `#folioInput`
+    //    con sugerencias instantáneas desde `/api/lookup` (clic o flechas de teclado)
+    var primaryInput = document.getElementById('folioInput');
+    var duplicateLookupInput = document.getElementById('rfc-360-lookup-input');
+    if (duplicateLookupInput) {
+      var dupSection = duplicateLookupInput.closest('section') || duplicateLookupInput.parentElement?.parentElement;
+      if (dupSection && dupSection.id !== 'express-check' && !dupSection.querySelector('#folioInput')) {
+        dupSection.classList.add('mallen-extracted-to-dedicated-route');
+      }
+    }
+
+    if (primaryInput && !document.getElementById('mallen-unified-autocomplete-list')) {
+      primaryInput.setAttribute('placeholder', 'Ingrese RFC (ej. ALS9209253R0) o Razón Social de las 5.31M empresas del DENUE...');
+      var wrapper = primaryInput.parentElement;
+      if (wrapper) {
+        wrapper.style.position = 'relative';
+        var drop = document.createElement('div');
+        drop.id = 'mallen-unified-autocomplete-list';
+        drop.className = 'mallen-predictive-dropdown hidden';
+        wrapper.appendChild(drop);
+
+        var debounceTimer = null;
+        primaryInput.addEventListener('input', function() {
+          var q = primaryInput.value.trim();
+          if (duplicateLookupInput) duplicateLookupInput.value = q;
+          clearTimeout(debounceTimer);
+          if (q.length < 3) {
+            drop.classList.add('hidden');
+            return;
+          }
+          debounceTimer = setTimeout(function() {
+            fetch('/api/lookup?rfc=' + encodeURIComponent(q))
+              .then(function(r) { return r.ok ? r.json() : null; })
+              .then(function(d) {
+                if (!d || !d.razon_social || d.razon_social.indexOf('REGISTRO NO INDEXADO') === 0) {
+                  drop.classList.add('hidden');
+                  return;
+                }
+                drop.innerHTML =
+                  '<div class="mallen-predictive-item" data-rfc="' + (d.query_matched || q) + '">' +
+                    '<div>' +
+                      '<div class="font-bold">' + d.razon_social + '</div>' +
+                      '<div class="text-xs text-slate-400">SCIAN ' + (d.codigo_scian || '541110') + ' — ' + (d.actividad_desc || '') + '</div>' +
+                    '</div>' +
+                    '<div class="text-right font-mono-data text-xs text-emerald-400">' +
+                      (d.estimated_employees || 1) + ' colaboradores' +
+                    '</div>' +
+                  '</div>';
+                drop.classList.remove('hidden');
+                var item = drop.querySelector('.mallen-predictive-item');
+                if (item) {
+                  item.addEventListener('click', function() {
+                    primaryInput.value = d.query_matched || q;
+                    var calEmp = document.getElementById('cal_emp');
+                    if (calEmp && d.estimated_employees > 0) calEmp.value = d.estimated_employees;
+                    drop.classList.add('hidden');
+                    if (typeof window.lookupRfc360Instant === 'function') {
+                      window.lookupRfc360Instant(primaryInput.value);
+                    }
+                  });
+                }
+              })
+              .catch(function() { drop.classList.add('hidden'); });
+          }, 160);
+        });
+
+        document.addEventListener('click', function(ev) {
+          if (!wrapper.contains(ev.target)) drop.classList.add('hidden');
+        });
+      }
+    }
+
+    // C. Diferir los 10-12 switches y los 16-23 campos jurídicos al flujo post-pago / acordeón secundario
+    //    dejando visibles de entrada únicamente los 2 campos esenciales (RFC/Razón Social y Dominio Web + ajuste opcional de empleados)
+    var dosRazon = document.getElementById('dos_razon');
+    if (dosRazon) {
+      var dossierDetails = dosRazon.closest('details');
+      if (dossierDetails) {
+        dossierDetails.removeAttribute('open');
+        var sumEl = dossierDetails.querySelector('summary');
+        if (sumEl) {
+          sumEl.textContent = 'Paso Post-Pago (Opcional ahora): Personalización de Representante Legal, Comisiones Mixtas y Domicilio (Autocompletado tras activar)';
+        }
+      }
+    }
+    var calBoilers = document.getElementById('cal_boilers');
+    if (calBoilers) {
+      var calDetails = calBoilers.closest('details');
+      if (calDetails) {
+        calDetails.removeAttribute('open');
+      }
+    }
+
+    // D. Marcar en la portada '/' las secciones de Radar DOF y catálogo extenso para que vivan en `/normativa` y `/radar-dof`
+    var radarSec = document.getElementById('daily-regulatory-radar');
+    if (radarSec) {
+      radarSec.classList.add('mallen-extracted-to-dedicated-route');
+    }
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initNextLevelInformationArchitecture);
+  } else {
+    initNextLevelInformationArchitecture();
   }
 })();
 </script>
