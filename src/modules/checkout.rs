@@ -63,7 +63,7 @@ pub async fn handle_verify(Path(id): Path<String>) -> impl IntoResponse {
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Cédula de Verificación Oficial | FIRMA W16 MALLEN®</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <link rel="stylesheet" href="/css/quantum-glass.css?v=2026.25">
+    <link rel="stylesheet" href="/css/enterprise-linear.css?v=2026.25">
     <script src="/js/quantum-lights.js?v=2026.25" defer></script>
 <link rel="stylesheet" href="/css/pure-light-mode.css?v=2026.140"><script src="/js/theme-init.js?v=2026.140"></script></head>
 <body class="bg-slate-950 text-slate-100 font-serif min-h-screen antialiased flex flex-col justify-between selection:bg-blue-600 selection:text-white">
@@ -121,7 +121,7 @@ pub async fn handle_verify(Path(id): Path<String>) -> impl IntoResponse {
             </div>
         </div>
 
-        <div class="rounded-xl p-6 mb-8 border border-emerald-500/30 bg-emerald-950/10 backdrop-blur-sm">
+        <div class="rounded-xl p-6 mb-8 border border-emerald-500/30 bg-emerald-950/10 ">
             <h3 class="text-sm font-sans font-bold text-emerald-400 mb-3">
                 {notice_title}
             </h3>
