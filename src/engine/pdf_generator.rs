@@ -1842,7 +1842,7 @@ pub fn render_exact_proportional_risk_chart_typst(
         let amount_str = format_cents_mxn(cents);
 
         table_rows.push_str(&format!(
-            "  [#text(size: 6.2pt, weight: \"bold\", fill: rgb(\"#1e293b\"))[{}]],\n  [#box(width: 100%, height: 6.5pt, fill: rgb(\"#e2e8f0\"), radius: 2pt)[#box(width: {}%, height: 6.5pt, fill: rgb(\"{}\"), radius: 2pt)]],\n  [#align(right)[#text(font: (\"Liberation Mono\", \"DejaVu Sans Mono\"), size: 6.1pt, weight: \"bold\", fill: rgb(\"#0f172a\"))[{}% (\\$ {} MXN)]]],\n",
+            "  [#text(size: 6.2pt, weight: \"bold\", fill: rgb(\"#1e293b\"))[{}]],\n  [#box(width: 100%, height: 6.5pt, fill: rgb(\"#e2e8f0\"), radius: 2pt)[#box(width: {}%, height: 6.5pt, fill: rgb(\"{}\"), radius: 2pt)]],\n  [#align(right)[#text(font: (\"DejaVu Sans Mono\", \"DejaVu Sans Mono\"), size: 6.1pt, weight: \"bold\", fill: rgb(\"#0f172a\"))[{}% (\\$ {} MXN)]]],\n",
             label, bar_width_pct, hex_color, pct_round, amount_str
         ));
     }
