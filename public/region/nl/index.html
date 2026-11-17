@@ -1,25 +1,25 @@
 <!DOCTYPE html>
-<html lang="de" class="scroll-smooth">
+<html lang="nl" class="scroll-smooth">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>FIRMA MALLEN® — Ingeniería Legal Preventiva (DACH &amp; Benelux)</title>
+    <title>FIRMA MALLEN® (Nederland) — Ingeniería Legal Preventiva</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="/css/enterprise-linear.css?v=2026.71">
-  <link rel="stylesheet" href="/css/mallen-high-impact.css?v=2026.105">
+    <link rel="stylesheet" href="/css/enterprise-linear.css?v=2026.86">
+    <link rel="stylesheet" href="/css/mallen-high-impact.css?v=2026.105">
 </head>
-<body class="min-h-screen flex flex-col">
-
-    <!-- Barra Superior Inteligente (Conmutador MX | DACH | Benelux + Idioma + Tema Traducido) -->
-    <div class="top-bar-surface border-b px-4 sm:px-6 py-2 text-xs">
+<body class="min-h-screen flex flex-col" data-eu-country="nl">
+    <div class="top-bar-surface border-b px-4 sm:px-6 py-2.5 text-xs">
         <div class="max-w-6xl mx-auto flex flex-wrap items-center justify-between gap-3">
-            <div class="flex items-center gap-2.5">
-                <span id="eu-block-pill" class="px-2.5 py-0.5 rounded bg-emerald-950/60 border border-emerald-700/50 text-emerald-400 font-semibold uppercase">DACH</span>
-                <span id="eu-country-name" class="font-semibold">Deutschland</span>
-                <span id="eu-currency-badge" class="font-mono-data text-emerald-400 font-bold">290,00 €</span>
+            <div class="flex flex-wrap items-center gap-2.5">
+                <span id="eu-block-pill" class="px-2.5 py-0.5 rounded bg-emerald-950/60 border border-emerald-700/50 text-emerald-400 font-semibold uppercase">BENELUX • KONINKRIJK DER NEDERLANDEN</span>
+                <span id="eu-country-name" class="font-bold text-white">Nederland</span>
+                <span class="text-slate-400">•</span>
+                <span class="font-mono-data text-slate-300">Autoriteit Persoonsgegevens • Arbeidsinspectie • Belastingdienst • KVK</span>
+                <span id="eu-currency-badge" class="font-mono-data text-emerald-400 font-bold ml-1">290,00 €</span>
             </div>
             <div class="flex flex-wrap items-center gap-2">
                 <div class="inline-flex rounded-lg border border-slate-700/70 p-0.5 bg-slate-900/50">
@@ -27,97 +27,114 @@
                     <a href="/region/de" class="px-2.5 py-1 rounded-md text-xs font-medium hover:text-emerald-400 transition">DE</a>
                     <a href="/region/at" class="px-2.5 py-1 rounded-md text-xs font-medium hover:text-emerald-400 transition">AT</a>
                     <a href="/region/ch" class="px-2.5 py-1 rounded-md text-xs font-medium hover:text-emerald-400 transition">CH</a>
-                    <a href="/region/nl" class="px-2.5 py-1 rounded-md text-xs font-medium hover:text-emerald-400 transition">NL</a>
+                    <a href="/region/nl" class="px-2.5 py-1 rounded-md text-xs font-medium bg-emerald-600 text-white transition">NL</a>
                     <a href="/region/be" class="px-2.5 py-1 rounded-md text-xs font-medium hover:text-emerald-400 transition">BE</a>
                     <a href="/region/lu" class="px-2.5 py-1 rounded-md text-xs font-medium hover:text-emerald-400 transition">LU</a>
                 </div>
                 <select id="eu-dialect-select" aria-label="Language" class="px-2.5 py-1 text-xs font-semibold rounded-lg"></select>
-                <button type="button" id="eu-theme-toggle-btn" data-mallen-theme-btn onclick="window.toggleMallenTheme()" class="mallen-btn-secondary px-3 py-1 text-xs">
-                    Hell / Dunkel
-                </button>
+                <button type="button" id="eu-theme-toggle-btn" data-mallen-theme-btn onclick="window.toggleMallenTheme()" class="mallen-btn-secondary px-3 py-1 text-xs">Hell / Dunkel</button>
             </div>
         </div>
     </div>
 
-    <!-- Header Institucional Unificado (FIRMA MALLEN® — Ingeniería Legal Preventiva, Superficie Solida Sin Desenfoque) -->
     <header class="border-b sticky top-0 z-40">
         <div class="max-w-6xl mx-auto px-4 sm:px-6 py-4 flex items-center justify-between">
             <div>
-                <a href="/" class="text-base font-extrabold tracking-tight block leading-none text-white">FIRMA MALLEN®</a>
-                <span id="eu-header-sub" class="text-[11px] text-emerald-400 font-semibold uppercase tracking-wider block mt-1">INGENIERÍA LEGAL PREVENTIVA</span>
+                <a href="/" class="text-lg font-extrabold tracking-tight block leading-none text-white">FIRMA MALLEN®</a>
+                <span id="eu-header-sub" class="text-xs text-emerald-400 font-semibold uppercase tracking-wider block mt-1">INGENIERÍA LEGAL PREVENTIVA • NEDERLAND</span>
             </div>
             <nav class="hidden md:flex items-center gap-6 text-sm font-medium text-slate-300">
-                <a href="#osint-calibration-engine" id="eu-nav-calibration" class="hover:text-white transition">Diagnóstico</a>
-                <a href="#eu-trust-center-section" id="eu-nav-deliverables" class="hover:text-white transition">Centro de Confianza &amp; Entregables</a>
-                <a href="#probative-validity-section" id="eu-nav-proof" class="hover:text-white transition">Validez Probatoria eIDAS</a>
-                <a href="#laws-grid" id="eu-nav-coverage" class="hover:text-white transition">Marco Normativo</a>
-                <a href="/dashboard.html" id="eu-nav-partner" class="text-emerald-400 hover:text-emerald-300 font-semibold transition">Panel Despachos</a>
+                <a href="#osint-calibration-engine" id="eu-nav-calibration" class="hover:text-white transition">Diagnose</a>
+                <a href="#eu-interactive-sandbox" class="hover:text-white transition">Risiko-Simulator</a>
+                <a href="#eu-trust-center-section" id="eu-nav-deliverables" class="hover:text-white transition">Trust Center</a>
+                <a href="#laws-grid" id="eu-nav-coverage" class="hover:text-white transition">Rechtsrahmen (Nederland)</a>
+                <a href="/dashboard.html" id="eu-nav-partner" class="text-emerald-400 hover:text-emerald-300 font-semibold transition">Kanzlei-Portal</a>
             </nav>
         </div>
     </header>
 
     <main class="max-w-6xl mx-auto px-4 sm:px-6 py-10 space-y-12 flex-1">
-
-        <!-- BLOQUE 1 DE 4: HERO CON BUSCADOR PREDICTIVO UNIFICADO EN 2 CAMPOS ESENCIALES -->
-        <section id="osint-calibration-engine" class="mallen-surface-card p-6 sm:p-10">
+        <section id="osint-calibration-engine" class="mallen-surface-card mallen-glass-card p-6 sm:p-10">
             <div class="flex flex-wrap items-center justify-between gap-3 mb-4">
-                <span id="eu-hero-badge" class="text-xs font-semibold uppercase px-3 py-1 rounded-md bg-emerald-950/60 border border-emerald-700/50 text-emerald-400"></span>
-                <span id="eu-crypto-law-badge" class="text-xs font-mono-data px-3 py-1 rounded-md bg-slate-900 border border-slate-800 text-slate-300"></span>
+                <span id="eu-hero-badge" class="text-xs font-semibold uppercase px-3 py-1 rounded-md bg-emerald-950/60 border border-emerald-700/50 text-emerald-400">BENELUX • KONINKRIJK DER NEDERLANDEN</span>
+                <span id="eu-crypto-law-badge" class="text-xs font-mono-data px-3 py-1 rounded-md bg-slate-900 border border-slate-800 text-slate-300">Autoriteit Persoonsgegevens • Arbeidsinspectie • Belastingdienst • KVK</span>
             </div>
-
-            <h1 id="eu-hero-title" class="text-2xl sm:text-4xl font-extrabold tracking-tight leading-tight mb-3"></h1>
-            <p id="eu-hero-subtitle" class="text-base text-slate-300 max-w-3xl mb-8"></p>
-
-            <!-- Diagnóstico en 2 campos esenciales + plantilla opcional -->
+            <h1 id="eu-hero-title" class="text-2xl sm:text-4xl font-extrabold tracking-tight leading-tight mb-3">Preventieve Juridische & Compliance-Architectuur voor Nederland (AVG, Arbowet RI&E, AWR Art. 52 & Wwft)</h1>
+            <p id="eu-hero-subtitle" class="text-base text-slate-300 max-w-4xl mb-8">Deterministische audit over 37 wettelijke vectoren gekoppeld aan het KVK Handelsregister, SBI-risicoprofielen, UBO-register en NCSC-richtlijnen.</p>
             <div class="grid grid-cols-1 md:grid-cols-12 gap-4 p-5 rounded-xl border border-slate-800/80 bg-slate-950/40">
                 <div class="md:col-span-5 relative">
-                    <label id="eu-tax-label" for="eu-tax-input" class="block text-xs font-semibold uppercase text-slate-300 mb-1.5"></label>
-                    <input type="text" id="eu-tax-input" autocomplete="off" class="w-full px-4 py-2.5 font-mono-data" placeholder="DE123456789 / HRB / UID / KVK">
+                    <label id="eu-tax-label" for="eu-tax-input" class="block text-xs font-semibold uppercase text-slate-300 mb-1.5">1. Register- / USt-IdNr. / UID / KVK</label>
+                    <input type="text" id="eu-tax-input" autocomplete="off" class="w-full px-4 py-2.5 font-mono-data" placeholder="KVK-nummer (8 cijfers), BTW-id (NL...) of Bedrijfsnaam">
                     <small id="eu-tax-microcopy" class="mallen-baymard-microcopy"></small>
                 </div>
                 <div class="md:col-span-4">
-                    <label id="eu-domain-label" for="eu-domain-input" class="block text-xs font-semibold uppercase text-slate-300 mb-1.5"></label>
-                    <input type="text" id="eu-domain-input" class="w-full px-4 py-2.5" placeholder="unternehmen.de">
+                    <label id="eu-domain-label" for="eu-domain-input" class="block text-xs font-semibold uppercase text-slate-300 mb-1.5">2. Unternehmens-Domain</label>
+                    <input type="text" id="eu-domain-input" class="w-full px-4 py-2.5" placeholder="onderneming.nl">
                     <small id="eu-domain-microcopy" class="mallen-baymard-microcopy"></small>
                 </div>
                 <div class="md:col-span-3">
-                    <label id="eu-emp-label" for="eu-emp-input" class="block text-xs font-semibold uppercase text-slate-300 mb-1.5"></label>
+                    <label id="eu-emp-label" for="eu-emp-input" class="block text-xs font-semibold uppercase text-slate-300 mb-1.5">Mitarbeitende</label>
                     <input type="number" id="eu-emp-input" value="45" min="1" class="w-full px-4 py-2.5 font-mono-data">
                     <small id="eu-emp-microcopy" class="mallen-baymard-microcopy"></small>
                 </div>
             </div>
-
             <div class="flex flex-wrap items-center justify-between gap-4 mt-6">
                 <div class="flex flex-wrap gap-3">
-                    <button type="button" onclick="window.runEuRegionalSimulation()" id="eu-scan-btn" class="mallen-btn-primary px-6 py-3 text-sm"></button>
-                    <a href="/api/micro_scan/ALS9209253R0" target="_blank" rel="noopener" id="eu-demo-pdf-btn" class="mallen-btn-secondary px-5 py-3 text-sm inline-flex items-center"></a>
+                    <button type="button" onclick="window.runEuRegionalSimulation()" id="eu-scan-btn" class="mallen-btn-primary px-6 py-3 text-sm">Präventive Diagnose starten</button>
+                    <a href="/api/micro_scan/ALS9209253R0" target="_blank" rel="noopener" id="eu-demo-pdf-btn" class="mallen-btn-secondary px-5 py-3 text-sm inline-flex items-center">Muster-Gutachten (PDF)</a>
                 </div>
                 <span id="eu-postpay-defer-note" class="text-xs text-slate-400"></span>
             </div>
-
-            <!-- Panel de Resultados del Diagnóstico y Vista Previa de los 7 Instrumentos + 10 Certificados -->
             <div id="eu-simulation-result-box" class="hidden mt-8 p-6 rounded-xl border border-emerald-500/40 bg-slate-950/70 space-y-5"></div>
         </section>
 
-        <!-- BLOQUE 2 DE 4: CENTRO DE CONFIANZA INTERACTIVO (PATRÓN VANTA/DRATA) Y TABLA DE INVERSIÓN CLARA -->
-        <section id="eu-trust-center-section" class="mallen-surface-card p-6 sm:p-8">
+        <section id="eu-interactive-sandbox" class="mallen-surface-card mallen-glass-card p-6 sm:p-8">
+            <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-6 border-b border-slate-800">
+                <div>
+                    <span class="text-xs font-semibold uppercase text-emerald-400 block mb-1">INTERACTIEVE RISICO-SIMULATOR (NEDERLAND — AVG / Arbowet RI&E / Belastingdienst)</span>
+                    <h2 class="text-xl sm:text-2xl font-extrabold text-white">Interaktiver Bußgeld- &amp; Mitigations-Rechner (Nederland)</h2>
+                </div>
+                <div class="text-right">
+                    <span class="text-xs text-slate-400 block">Simuliertes Restrisiko (EUR):</span>
+                    <span id="eu-sbx-residual-fine" class="text-2xl font-extrabold font-mono-data text-emerald-400">1.960,00 EUR</span>
+                </div>
+            </div>
+            <div class="my-6">
+                <div class="flex items-center justify-between text-sm font-semibold mb-2">
+                    <span>Unternehmensgröße (Mitarbeitende):</span>
+                    <span id="eu-sbx-emp-display" class="font-mono-data text-emerald-400 font-bold">45 Mitarbeitende</span>
+                </div>
+                <input type="range" id="eu-sbx-slider" min="1" max="1000" value="45" class="w-full accent-emerald-500 cursor-pointer">
+            </div>
+            <div class="grid sm:grid-cols-2 lg:grid-cols-4 gap-4 mt-4"><label class="mallen-surface-card mallen-glass-card mallen-sandbox-card-active p-4 cursor-pointer flex items-start gap-3"><input type="checkbox" checked data-weight="0.3" class="eu-sbx-toggle mt-1 h-4 w-4 accent-emerald-500"><div><div class="font-bold text-white text-sm">AVG / UAVG Verwerkingsregister & Privacy</div><div class="text-xs text-emerald-400 font-mono-data mt-0.5">-30% Boete-Expositie</div></div></label><label class="mallen-surface-card mallen-glass-card mallen-sandbox-card-active p-4 cursor-pointer flex items-start gap-3"><input type="checkbox" checked data-weight="0.25" class="eu-sbx-toggle mt-1 h-4 w-4 accent-emerald-500"><div><div class="font-bold text-white text-sm">Arbowet RI&E, PSA & Thuiswerkbeleid</div><div class="text-xs text-emerald-400 font-mono-data mt-0.5">-25% Boete-Expositie</div></div></label><label class="mallen-surface-card mallen-glass-card mallen-sandbox-card-active p-4 cursor-pointer flex items-start gap-3"><input type="checkbox" checked data-weight="0.25" class="eu-sbx-toggle mt-1 h-4 w-4 accent-emerald-500"><div><div class="font-bold text-white text-sm">AWR Art. 52 Fiscale Bewaarplicht</div><div class="text-xs text-emerald-400 font-mono-data mt-0.5">-25% Boete-Expositie</div></div></label><label class="mallen-surface-card mallen-glass-card mallen-sandbox-card-active p-4 cursor-pointer flex items-start gap-3"><input type="checkbox" checked data-weight="0.2" class="eu-sbx-toggle mt-1 h-4 w-4 accent-emerald-500"><div><div class="font-bold text-white text-sm">Wwft UBO-registratie & ACM E-Commerce</div><div class="text-xs text-emerald-400 font-mono-data mt-0.5">-20% Boete-Expositie</div></div></label></div>
+        </section>
+
+        <section id="laws-grid" class="mallen-surface-card mallen-glass-card p-6 sm:p-8">
+            <div class="flex flex-wrap items-center justify-between gap-4 mb-6">
+                <div>
+                    <span id="eu-dir-kicker" class="text-xs font-semibold uppercase text-emerald-400 block mb-1">NATIONALE RECHTSABDECKUNG (NEDERLAND)</span>
+                    <h2 id="eu-section-title" class="text-xl sm:text-2xl font-extrabold">6 Geprüfte Rechtsgebiete &amp; Behördenregister</h2>
+                </div>
+                <span id="eu-reg-count-badge" class="text-xs font-mono-data px-3 py-1.5 rounded-md border border-slate-700 text-emerald-400 font-semibold"></span>
+            </div>
+            <div id="eu-laws-cards-container" class="grid md:grid-cols-2 lg:grid-cols-3 gap-5"></div>
+            <div id="official-registries-section" class="mt-8 pt-6 border-t border-slate-800">
+                <h3 id="eu-reg-title" class="text-base font-bold text-sky-400 mb-4">Offizielle Nationale Register (Nederland)</h3>
+                <div id="eu-registries-grid" class="grid md:grid-cols-2 lg:grid-cols-3 gap-4"></div>
+            </div>
+        </section>
+
+        <section id="eu-trust-center-section" class="mallen-surface-card mallen-glass-card p-6 sm:p-8">
             <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4 pb-5 border-b border-slate-800">
                 <div>
-                    <span id="eu-trust-kicker" class="text-xs font-semibold uppercase text-emerald-400 block mb-1"></span>
-                    <h2 id="eu-trust-title" class="text-xl sm:text-2xl font-extrabold"></h2>
+                    <span id="eu-trust-kicker" class="text-xs font-semibold uppercase text-emerald-400 block mb-1">TRUST CENTER &amp; MANDANTEN-ROI (NEDERLAND)</span>
+                    <h2 id="eu-trust-title" class="text-xl sm:text-2xl font-extrabold">Umfang der Präventiv-Architektur &amp; Kostenvergleich</h2>
                 </div>
-                <span class="font-mono-data text-xs px-3 py-1.5 rounded-md border border-slate-700 text-slate-300">ISO 19011 • eIDAS Art. 41 • SHA-256</span>
+                <span class="font-mono-data text-xs px-3 py-1.5 rounded-md border border-slate-700 text-slate-300">Traditionelle Beratung: ~17.200,00 € vs. FIRMA MALLEN®: 290,00 €</span>
             </div>
-
             <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mt-6">
-                <div class="p-5 rounded-xl border border-slate-800/80">
-                    <h3 id="eu-trust-col1-title" class="text-sm font-bold text-emerald-400 mb-3"></h3>
-                    <ul id="eu-trust-col1-list" class="text-sm space-y-2"></ul>
-                </div>
-                <div class="p-5 rounded-xl border border-slate-800/80">
-                    <h3 id="eu-trust-col2-title" class="text-sm font-bold text-sky-400 mb-3"></h3>
-                    <ul id="eu-trust-col2-list" class="text-sm space-y-2"></ul>
-                </div>
+                <div class="p-5 rounded-xl border border-slate-800/80"><h3 id="eu-trust-col1-title" class="text-sm font-bold text-emerald-400 mb-3"></h3><ul id="eu-trust-col1-list" class="text-sm space-y-2"></ul></div>
+                <div class="p-5 rounded-xl border border-slate-800/80"><h3 id="eu-trust-col2-title" class="text-sm font-bold text-sky-400 mb-3"></h3><ul id="eu-trust-col2-list" class="text-sm space-y-2"></ul></div>
                 <div class="p-5 rounded-xl border border-slate-800/80 flex flex-col justify-between">
                     <div>
                         <h3 id="eu-trust-col3-title" class="text-sm font-bold text-amber-400 mb-3"></h3>
@@ -141,44 +158,20 @@
             </div>
         </section>
 
-        <!-- BLOQUE 3 DE 4: GARANTÍAS PROBATORIAS Y SUSTENTO PROCESAL (eIDAS / ZertES / SHA-256) -->
-        <section id="probative-validity-section" class="mallen-surface-card p-6 sm:p-8">
+        <section id="probative-validity-section" class="mallen-surface-card mallen-glass-card p-6 sm:p-8">
             <div class="mb-6">
                 <span id="eu-proof-kicker" class="text-xs font-semibold uppercase text-emerald-400 block mb-1"></span>
                 <h2 id="eu-proof-title" class="text-xl sm:text-2xl font-extrabold"></h2>
                 <p id="eu-proof-sub" class="text-sm text-slate-300 mt-1"></p>
             </div>
             <div id="eu-proof-cards-grid" class="grid sm:grid-cols-2 lg:grid-cols-4 gap-4"></div>
+            <div id="eu-proof-detail-drawer" class="hidden mt-5 p-5 rounded-xl border border-emerald-500/40 bg-slate-950/90 text-xs"></div>
         </section>
-
-        <!-- BLOQUE 4 DE 4: RESUMEN NORMATIVO Y PADRONES OFICIALES (DESPLEGABLE PROGRESIVO) -->
-        <section id="laws-grid" class="mallen-surface-card p-6 sm:p-8">
-            <div class="flex flex-wrap items-center justify-between gap-4 mb-6">
-                <div>
-                    <span id="eu-dir-kicker" class="text-xs font-semibold uppercase text-emerald-400 block mb-1"></span>
-                    <h2 id="eu-section-title" class="text-xl sm:text-2xl font-extrabold"></h2>
-                </div>
-                <span id="eu-reg-count-badge" class="text-xs font-mono-data px-3 py-1.5 rounded-md border border-slate-700 text-emerald-400 font-semibold"></span>
-            </div>
-            <div id="eu-laws-cards-container" class="grid md:grid-cols-2 lg:grid-cols-3 gap-5"></div>
-
-            <details id="official-registries-section" class="mt-8 pt-6 border-t border-slate-800">
-                <summary class="cursor-pointer text-sm font-bold text-sky-400 flex items-center justify-between">
-                    <span id="eu-reg-title">Registros Oficiales Nacionales Conectados</span>
-                    <span class="text-xs font-mono-data text-slate-400">+ / -</span>
-                </summary>
-                <div id="eu-registries-grid" class="grid md:grid-cols-2 lg:grid-cols-3 gap-5 mt-5"></div>
-            </details>
-        </section>
-
     </main>
 
-    <!-- Footer Institucional Unificado (FIRMA MALLEN® — Cero Fugas de Rutas Internas) -->
     <footer class="border-t py-8 px-4 sm:px-6 text-xs text-slate-400 mt-12">
         <div class="max-w-6xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4">
-            <div>
-                <strong class="text-white">FIRMA MALLEN® (mallen.lat)</strong> — Ingeniería Legal Preventiva • ISO 19011 • eIDAS Art. 41 • SHA-256 Merkle Seal.
-            </div>
+            <div><strong class="text-white">FIRMA MALLEN® (mallen.lat)</strong> — Ingeniería Legal Preventiva (Nederland) • ISO 19011 • eIDAS Art. 41 • SHA-256 Merkle Seal.</div>
             <div class="flex flex-wrap gap-4">
                 <a href="/privacidad" class="hover:text-white transition">Privacidad</a>
                 <a href="/terminos" class="hover:text-white transition">Términos</a>
@@ -188,8 +181,12 @@
         </div>
     </footer>
 
-    <script src="/js/quantum-lights.js?v=2026.71"></script>
-    <script src="/js/i18n_regions_connect.js?v=2026.71"></script>
-    <script src="/js/eu_portal_controller.js?v=2026.71"></script>
+    <script src="/js/quantum-lights.js?v=2026.86"></script>
+    <script src="/js/i18n_regions_connect.js?v=2026.86"></script>
+    <script src="/js/dach_deep_data.js?v=2026.86"></script>
+    <script src="/js/dach_deep_content.js?v=2026.86"></script>
+    <script src="/js/eu_portal_controller.js?v=2026.86"></script>
+    <script src="/js/eu_subpages_bridge.js?v=2026.86"></script>
+    <script src="/js/eu_mexico_parity_sections.js?v=2026.86"></script>
 </body>
 </html>

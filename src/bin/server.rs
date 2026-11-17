@@ -1909,8 +1909,14 @@ pub async fn api_i18n_jurisdictions() -> axum::Json<&'static [worker_inegi_engin
     axum::Json(worker_inegi_engine::modules::i18n_regions::get_all_jurisdictions())
 }
 
-pub async fn handle_eu_region_portal(axum::extract::Path(_country): axum::extract::Path<String>) -> axum::response::Html<String> {
-    let html = std::fs::read_to_string("public/regions/eu_country_portal.html").unwrap_or_default();
+pub async fn handle_eu_region_portal(axum::extract::Path(country): axum::extract::Path<String>) -> axum::response::Html<String> {
+    let clean_c = country.trim().to_lowercase();
+    let allowed = ["de", "at", "ch", "nl", "be", "lu"];
+    let target_c = if allowed.contains(&clean_c.as_str()) { clean_c.as_str() } else { "de" };
+    let specific_path = format!("public/region/{}/index.html", target_c);
+    let html = std::fs::read_to_string(&specific_path)
+        .or_else(|_| std::fs::read_to_string("public/regions/eu_country_portal.html"))
+        .unwrap_or_default();
     axum::response::Html(html)
 }
 
