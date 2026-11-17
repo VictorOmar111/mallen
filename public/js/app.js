@@ -350,3 +350,52 @@ document.addEventListener("DOMContentLoaded", () => {
 });
 
 window.acceptLegalConsent = function() { if (typeof window.saveMexicoCookieConsentUnified === 'function') { window.saveMexicoCookieConsentUnified('full_mx'); } };
+
+
+// Seguimiento de iluminación especular a 60 FPS (Awwwards / FWA Sensory Richness)
+(() => {
+  let rafScheduled = false;
+  document.addEventListener('pointermove', (ev) => {
+    if (rafScheduled) return;
+    rafScheduled = true;
+    requestAnimationFrame(() => {
+      const cards = document.querySelectorAll('.mallen-glass-card, .quantum-card, .mallen-surface-card');
+      for (let i = 0; i < cards.length; i++) {
+        const rect = cards[i].getBoundingClientRect();
+        const x = ev.clientX - rect.left;
+        const y = ev.clientY - rect.top;
+        if (x >= -100 && x <= rect.width + 100 && y >= -100 && y <= rect.height + 100) {
+          cards[i].style.setProperty('--mouse-x', `${x}px`);
+          cards[i].style.setProperty('--mouse-y', `${y}px`);
+        }
+      }
+      rafScheduled = false;
+    });
+  }, { passive: true });
+})();
+
+// Atajo de teclado Cmd/Ctrl + K para enfocar el buscador nacional (Heurística #7 de Nielsen)
+document.addEventListener('keydown', (ev) => {
+  if ((ev.metaKey || ev.ctrlKey) && ev.key.toLowerCase() === 'k') {
+    const input = document.getElementById('folioInput');
+    if (input) {
+      ev.preventDefault();
+      input.focus();
+      input.select();
+    }
+  }
+});
+
+// Simulación instantánea en 1 clic sin pre-llenar estáticamente el HTML
+window.runQuickSampleScan = function(taxId, domain) {
+  const folioInput = document.getElementById('folioInput');
+  const domainInput = document.getElementById('domainInput');
+  if (folioInput) folioInput.value = taxId;
+  if (domainInput) domainInput.value = domain || '';
+  const triggerBtn = document.getElementById('btnExecuteScan') || document.querySelector('[data-action="scan"]') || document.querySelector('#express-check button[type="submit"]');
+  if (triggerBtn) {
+    triggerBtn.click();
+  } else if (folioInput && folioInput.form) {
+    folioInput.form.dispatchEvent(new Event('submit', { cancelable: true, bubbles: true }));
+  }
+};

@@ -2895,3 +2895,46 @@ pub fn evaluate_nsf_continuous_surveillance(
         canonical_rfc8785_signature_hex: sig_hex,
     }
 }
+
+
+pub fn compile_typst_in_memory(typst_source: &str) -> Result<Vec<u8>, String> {
+    use std::io::Write;
+    use std::process::{Command, Stdio};
+
+    let typst_bin = if std::path::Path::new("/usr/local/bin/typst").exists() {
+        "/usr/local/bin/typst"
+    } else {
+        "typst"
+    };
+
+    let mut cmd = Command::new(typst_bin);
+    cmd.arg("compile");
+    if std::path::Path::new("/usr/local/share/fonts/mallen").exists() {
+        cmd.arg("--font-path").arg("/usr/local/share/fonts/mallen");
+    }
+    cmd.arg("-").arg("-");
+
+    let mut child = cmd
+        .stdin(Stdio::piped())
+        .stdout(Stdio::piped())
+        .stderr(Stdio::piped())
+        .spawn()
+        .map_err(|e| format!("Error al invocar binario Typst en RAM: {}", e))?;
+
+    if let Some(mut stdin) = child.stdin.take() {
+        stdin
+            .write_all(typst_source.as_bytes())
+            .map_err(|e| format!("Error al escribir buffer en stdin de Typst: {}", e))?;
+    }
+
+    let output = child
+        .wait_with_output()
+        .map_err(|e| format!("Error al esperar salida de Typst en RAM: {}", e))?;
+
+    if !output.status.success() {
+        let stderr_str = String::from_utf8_lossy(&output.stderr);
+        return Err(format!("Error de compilación Typst: {}", stderr_str));
+    }
+
+    Ok(output.stdout)
+}

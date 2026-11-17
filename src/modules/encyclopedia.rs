@@ -740,7 +740,8 @@ pub fn render_norma_category(category: &str) -> Html<String> {
     <style>body {{ font-family: 'Inter', sans-serif; }} .font-mono-code {{ font-family: 'JetBrains Mono', monospace; }}</style>
     <link rel="stylesheet" href="/css/enterprise-linear.css?v=2026.25">
     <script src="/js/quantum-lights.js?v=2026.25" defer></script>
-<link rel="stylesheet" href="/css/pure-light-mode.css?v=2026.140"><script src="/js/theme-init.js?v=2026.140"></script></head>
+<link rel="stylesheet" href="/css/pure-light-mode.css?v=2026.140"><script src="/js/theme-init.js?v=2026.140"></script>  <link rel="stylesheet" href="/css/mallen-high-impact.css?v=2026.105">
+</head>
 <body class="bg-slate-950 text-slate-100 min-h-screen p-4 sm:p-8 border-t-4 {border_top}">
     <div class="max-w-7xl mx-auto">
         <div class="flex flex-col sm:flex-row sm:items-center justify-between pb-5 mb-6 border-b border-white/15 gap-4">
@@ -853,7 +854,8 @@ pub fn render_subnorma_detail(category: &str, code_idx: &str) -> Html<String> {
     <style>body {{ font-family: 'Inter', sans-serif; }} .font-mono-code {{ font-family: 'JetBrains Mono', monospace; }}</style>
     <link rel="stylesheet" href="/css/enterprise-linear.css?v=2026.25">
     <script src="/js/quantum-lights.js?v=2026.25" defer></script>
-<link rel="stylesheet" href="/css/pure-light-mode.css?v=2026.140"><script src="/js/theme-init.js?v=2026.140"></script></head>
+<link rel="stylesheet" href="/css/pure-light-mode.css?v=2026.140"><script src="/js/theme-init.js?v=2026.140"></script>  <link rel="stylesheet" href="/css/mallen-high-impact.css?v=2026.105">
+</head>
 <body class="bg-slate-950 text-slate-100 min-h-screen p-4 sm:p-8 border-t-4 {border_top}">
     <div class="max-w-5xl mx-auto">
         <div class="flex flex-col sm:flex-row sm:items-center justify-between pb-5 mb-6 border-b border-white/15 gap-4">

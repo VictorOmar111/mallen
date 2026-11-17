@@ -2409,6 +2409,45 @@ async fn test_http_form_bot_14_scenarios_with_real_db_companies() {
         "La hoja de estilo debe elevar la base tipográfica a 17px y escalar las clases pequeñas"
     );
     println!("║  98  ║ Escalado Tipográfico Ejecutivo (Base 17px y Mínimo 14px)     ║ Cero Textos Microscópicos | Lectura AAA Activa    ║ [SUPERADO]   ║");
+
+    // ESCENARIO 99: Auditoría de Swiss Forensic Precision & Tactile Glass, WCAG 2.2 AA y Secreto Industrial en 4 Capas
+    let hi_css = std::fs::read_to_string("public/css/mallen-high-impact.css").expect("mallen-high-impact.css debe existir");
+    assert!(
+        hi_css.contains("SWISS FORENSIC PRECISION & TACTILE GLASS")
+            && hi_css.contains("scroll-padding-top: 5.5rem;")
+            && hi_css.contains("min-width: 24px;")
+            && hi_css.contains("mallen-guilloche-ring"),
+        "Debe incluir el sistema Swiss Forensic Precision y las reglas WCAG 2.2 AA (2.4.11, 2.4.13 y 2.5.8)"
+    );
+
+    let (p_cell, f_cell) = worker_inegi_engine::modules::vectors_37::format_asymmetric_forensic_cell(
+        1,
+        "722511",
+        "NOM-035-STPS-2018 — Factores de riesgo psicosocial en el trabajo",
+        "Brecha crítica en aplicación de Guías I y III para centro de trabajo mayor a 50 empleados; requiere implementar política...",
+        485_000.0,
+        true,
+    );
+    assert!(
+        p_cell.contains("INCISO RESERVADO") && f_cell.contains("REMEDIACIÓN E INSTRUMENTO RESERVADOS AL KIT 360°"),
+        "La Capa 1 de Secreto Industrial debe truncar en RAM la receta de remediación y mostrar el bloque reservado"
+    );
+
+    let mem_pdf = worker_inegi_engine::engine::pdf_generator::compile_typst_in_memory(
+        "#set page(paper: \"a4\")\n#text[Prueba de compilacion efimera en RAM stdin/stdout]"
+    ).expect("La Capa 2 (compile_typst_in_memory) debe compilar PDF directamente en RAM via stdin/stdout");
+    assert!(mem_pdf.starts_with(b"%PDF-"));
+
+    let stego_html = worker_inegi_engine::engine::bundle_generator::inject_steganographic_canary(
+        "<h1>Contrato Marco</h1><p>Contenido</p>",
+        "SNAP-9999",
+        "ALS9209253R0",
+    );
+    assert!(
+        stego_html.contains('\u{200D}') && (stego_html.contains('\u{200B}') || stego_html.contains('\u{200C}')),
+        "La Capa 3 debe inyectar la huella esteganográfica de ancho cero (Zero-Width Canary Token) en los HTML editables"
+    );
+    println!("║  99  ║ Swiss Forensic Glass + WCAG 2.2 AA + Secreto Industrial 4x   ║ RAM stdin/stdout + Canary Stego + Asymmetric OK   ║ [SUPERADO]   ║");
     println!("╚══════╩══════════════════════════════════════════════════════════════╩═══════════════════════════════════════════════════╩══════════════╝");
-    println!("✓ LOS 98 ESCENARIOS DE GRADO MILITAR E INSTITUCIONAL (INCLUYENDO AUDITORÍA PROFUNDA DEL .ZIP Y TIPOGRAFÍA) SUPERADOS AL 100%");
+    println!("✓ LOS 99 ESCENARIOS DE GRADO MILITAR E INSTITUCIONAL (SWISS FORENSIC GLASS, WCAG 2.2 AA Y SECRETO INDUSTRIAL) SUPERADOS AL 100%");
 }

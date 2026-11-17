@@ -537,7 +537,8 @@ pub fn build_zip_buffer_from_dir(
             zip.write_all(&kit_pdf_bytes)?;
         }
 
-        let html_str = render_kit_as_printable_html(&doc.disk_filename, &doc.content, empresa);
+        let raw_html_str = render_kit_as_printable_html(&doc.disk_filename, &doc.content, empresa);
+        let html_str = inject_steganographic_canary(&raw_html_str, &empresa.audit_hash, tax_id);
         zip.start_file(&html_rel_path, options)?;
         zip.write_all(html_str.as_bytes())?;
     }
@@ -626,4 +627,33 @@ pub fn build_zip_buffer_from_dir(
     let _zip_sha256 = CryptoSigner::compute_bytes_hash(&final_bytes);
 
     Ok(final_bytes)
+}
+
+
+/// Inserta una huella esteganográfica invisible (U+200B = 0, U+200C = 1, U+200D = delimitador)
+/// vinculada al audit_id y al RFC comprador dentro de los documentos Word-HTML del Kit .ZIP.
+pub fn inject_steganographic_canary(html_doc: &str, audit_id: &str, tax_id: &str) -> String {
+    let payload = format!("MALLEN|{}|{}", tax_id.trim(), audit_id.trim());
+    let mut zw_signature = String::with_capacity(payload.len() * 9 + 2);
+    zw_signature.push('\u{200D}');
+    for byte in payload.as_bytes() {
+        for bit in (0..8).rev() {
+            if (byte >> bit) & 1 == 1 {
+                zw_signature.push('\u{200C}');
+            } else {
+                zw_signature.push('\u{200B}');
+            }
+        }
+    }
+    zw_signature.push('\u{200D}');
+
+    if let Some(idx) = html_doc.find("</h1>") {
+        let mut signed = String::with_capacity(html_doc.len() + zw_signature.len());
+        signed.push_str(&html_doc[..idx]);
+        signed.push_str(&zw_signature);
+        signed.push_str(&html_doc[idx..]);
+        signed
+    } else {
+        format!("{}{}", html_doc, zw_signature)
+    }
 }

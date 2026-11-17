@@ -949,3 +949,58 @@ pub fn render_calendar_table(censored_blur: bool) -> String {
 )"##.to_string()
     }
 }
+
+
+/// Revelación Forense Asimétrica: en el Pre-Dictamen gratuito (is_censored_micro_report == true)
+/// conserva el síntoma inicial personalizado del giro SCIAN y la multa exacta, pero trunca en RAM
+/// la cláusula y el protocolo de remediación antes de enviarlos a Typst.
+pub fn format_asymmetric_forensic_cell(
+    vector_num: usize,
+    scian_code: &str,
+    full_precept: &str,
+    full_finding_and_remediation: &str,
+    fine_mxn: f64,
+    is_censored_micro_report: bool,
+) -> (String, String) {
+    if !is_censored_micro_report {
+        return (
+            escape_typst(full_precept),
+            escape_typst(full_finding_and_remediation),
+        );
+    }
+
+    let token_seed = format!("MALLEN-W16-VEC-{:02}-{}", vector_num, scian_code);
+    let short_hash = &crate::engine::cleaner::sha256_hex(&token_seed)[0..6].to_uppercase();
+
+    let precept_cell = if vector_num == 1 || vector_num == 9 || vector_num == 15 {
+        let base_law = full_precept.split('—').next().unwrap_or("Norma Oficial");
+        format!(
+            "{} — #box(fill: rgb(\"#e2e8f0\"), inset: (x: 3pt, y: 1pt), radius: 2pt)[#text(size: 5.8pt, weight: \"bold\", fill: rgb(\"#334155\"))[INCISO RESERVADO • 0x{}]]",
+            escape_typst(base_law.trim()),
+            short_hash
+        )
+    } else {
+        format!(
+            "#box(fill: rgb(\"#f1f5f9\"), stroke: 0.4pt + rgb(\"#cbd5e1\"), inset: (x: 4pt, y: 1.5pt), radius: 2pt)[#text(size: 6pt, weight: \"bold\", fill: rgb(\"#334155\"))[VEC-{:02} • PRECEPTO RESERVADO SCIAN {} • 0x{}]]",
+            vector_num,
+            escape_typst(scian_code),
+            short_hash
+        )
+    };
+
+    let symptom_teaser: String = full_finding_and_remediation.chars().take(62).collect();
+    let finding_cell = if fine_mxn > 0.0 {
+        format!(
+            "{}... #v(1pt) #box(width: 100%, fill: rgb(\"#0f172a\"), inset: (x: 4pt, y: 2pt), radius: 2pt)[#text(size: 5.7pt, weight: \"bold\", fill: rgb(\"#f8fafc\"))[▓▓▓▓▓▓▓▓ REMEDIACIÓN E INSTRUMENTO RESERVADOS AL KIT 360° (0x{})]]",
+            escape_typst(symptom_teaser.trim()),
+            short_hash
+        )
+    } else {
+        format!(
+            "Supuesto normativo validado para giro SCIAN {} — #text(weight: \"bold\", fill: rgb(\"#047857\"))[CONTROL PREVENTIVO VERIFICADO ($0.00 MXN)]",
+            escape_typst(scian_code)
+        )
+    };
+
+    (precept_cell, finding_cell)
+}

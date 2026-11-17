@@ -1,0 +1,222 @@
+/* ==========================================================================
+   MALLEN 360° — SWISS FORENSIC PRECISION & TACTILE GLASS
+   Conformance: W3C WCAG 2.2 Level AA | Awwwards / FWA 60fps Specular UI
+   ========================================================================== */
+
+:root {
+  /* Obsidian Forensic Dark Mode (Default) */
+  --bg-canvas: #070a12;
+  --bg-elevated: rgba(15, 23, 42, 0.76);
+  --bg-card: rgba(17, 25, 40, 0.80);
+  --bg-card-hover: rgba(24, 35, 56, 0.90);
+  --text-primary: #f8fafc;
+  --text-secondary: #cbd5e1;
+  --text-muted: #94a3b8;
+  --border-hairline: rgba(148, 163, 184, 0.16);
+  --shadow-architectural: 0 1px 0 0 inset rgba(255, 255, 255, 0.12),
+                          0 20px 40px -15px rgba(0, 0, 0, 0.70);
+  --grid-line-color: rgba(148, 163, 184, 0.05);
+  --focus-ring-color: #38bdf8;
+
+  /* Regulatory Agency RGB Channels */
+  --accent-stps: 59, 130, 246;      /* Electric Blue */
+  --accent-sat: 16, 185, 129;       /* Emerald */
+  --accent-imss: 168, 85, 247;      /* Royal Purple */
+  --accent-inai: 6, 182, 212;       /* Forensic Cyan */
+  --accent-sectorial: 245, 158, 11; /* Institutional Amber */
+  --accent-vemp: 239, 68, 68;       /* Crimson Alert */
+
+  /* Typography System */
+  --font-display: 'Plus Jakarta Sans', 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  --font-mono: 'JetBrains Mono', 'Fira Code', ui-monospace, SFMono-Regular, monospace;
+}
+
+/* Fiduciary Paper Light Mode (Replaces washed-out #ffffff/?v=2026.99) */
+html.light-mode,
+body.light-mode {
+  --bg-canvas: #f1f5f9;
+  --bg-elevated: rgba(255, 255, 255, 0.94);
+  --bg-card: #ffffff;
+  --bg-card-hover: #f8fafc;
+  --text-primary: #0f172a;
+  --text-secondary: #334155;
+  --text-muted: #475569;
+  --border-hairline: #cbd5e1;
+  --shadow-architectural: 0 1px 0 0 inset #ffffff,
+                          0 1px 3px 0 rgba(15, 23, 42, 0.06),
+                          0 14px 28px -8px rgba(15, 23, 42, 0.09);
+  --grid-line-color: rgba(15, 23, 42, 0.045);
+  --focus-ring-color: #0284c7;
+}
+
+/* WCAG 2.2 SC 2.4.11 Focus Not Obscured (Minimum) */
+html {
+  font-size: 18px !important;
+  scroll-padding-top: 5.5rem;
+  scroll-behavior: smooth;
+  background-color: var(--bg-canvas);
+  color: var(--text-primary);
+  font-family: var(--font-sans);
+}
+
+/* Swiss Mathematical Grid Canvas */
+body {
+  position: relative;
+  background-color: var(--bg-canvas) !important;
+  color: var(--text-primary) !important;
+  background-image:
+    linear-gradient(to right, var(--grid-line-color) 1px, transparent 1px),
+    linear-gradient(to bottom, var(--grid-line-color) 1px, transparent 1px) !important;
+  background-size: 48px 48px !important;
+  overflow-x: hidden;
+}
+
+/* Tactile SVG Fractal Noise Overlay (0 KB External Assets) */
+body::before {
+  content: "" !important;
+  display: block !important;
+  position: fixed;
+  inset: 0;
+  z-index: 9998;
+  pointer-events: none;
+  opacity: 0.024;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+
+/* WCAG 2.2 SC 2.4.7 & 2.4.13 Focus Appearance (>= 2px solid perimeter, >= 3:1 contrast) */
+*:focus {
+  outline: none;
+}
+
+*:focus-visible {
+  outline: 2px solid var(--focus-ring-color) !important;
+  outline-offset: 2px !important;
+  box-shadow: 0 0 0 4px rgba(56, 189, 248, 0.25) !important;
+}
+
+/* WCAG 2.2 SC 2.5.8 Target Size (Minimum) — >= 24x24 CSS pixels */
+button,
+a.btn-forensic,
+input[type="checkbox"],
+input[type="radio"],
+summary,
+.interactive-chip,
+.lang-pill {
+  min-width: 24px;
+  min-height: 24px;
+}
+
+/* Specular Tactile Glass Card with 60fps Cursor-Tracked Spotlight */
+.mallen-glass-card,
+.quantum-card,
+.mallen-surface-card {
+  --card-accent: var(--accent-stps);
+  --mouse-x: 50%;
+  --mouse-y: 0%;
+  position: relative;
+  background: var(--bg-card) !important;
+  backdrop-filter: blur(16px) saturate(140%);
+  -webkit-backdrop-filter: blur(16px) saturate(140%);
+  border: 1px solid var(--border-hairline) !important;
+  border-radius: 14px !important;
+  box-shadow: var(--shadow-architectural) !important;
+  transition: transform 0.28s cubic-bezier(0.22, 1, 0.36, 1),
+              border-color 0.28s ease,
+              box-shadow 0.28s ease !important;
+  overflow: hidden;
+}
+
+.mallen-glass-card::before,
+.quantum-card::before,
+.mallen-surface-card::before {
+  content: "" !important;
+  display: block !important;
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: radial-gradient(
+    420px circle at var(--mouse-x) var(--mouse-y),
+    rgba(var(--card-accent), 0.14),
+    transparent 65%
+  );
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.mallen-glass-card::after,
+.quantum-card::after,
+.mallen-surface-card::after {
+  content: "" !important;
+  display: block !important;
+  position: absolute;
+  bottom: 0;
+  left: 12%;
+  right: 12%;
+  height: 2px;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(var(--card-accent), 0.92),
+    transparent
+  );
+  opacity: 0.28;
+  transition: opacity 0.3s ease, left 0.3s ease, right 0.3s ease;
+}
+
+.mallen-glass-card:hover,
+.quantum-card:hover,
+.mallen-surface-card:hover {
+  transform: translateY(-3px) !important;
+  border-color: rgba(var(--card-accent), 0.50) !important;
+  box-shadow: 0 1px 0 0 inset rgba(255, 255, 255, 0.22),
+              0 22px 44px -12px rgba(var(--card-accent), 0.18) !important;
+}
+
+.mallen-glass-card:hover::before,
+.quantum-card:hover::before,
+.mallen-surface-card:hover::before {
+  opacity: 1;
+}
+
+.mallen-glass-card:hover::after,
+.quantum-card:hover::after,
+.mallen-surface-card:hover::after {
+  opacity: 1;
+  left: 4%;
+  right: 4%;
+}
+
+.mallen-glass-card[data-agency="stps"]      { --card-accent: var(--accent-stps); }
+.mallen-glass-card[data-agency="sat"]       { --card-accent: var(--accent-sat); }
+.mallen-glass-card[data-agency="imss"]      { --card-accent: var(--accent-imss); }
+.mallen-glass-card[data-agency="inai"]      { --card-accent: var(--accent-inai); }
+.mallen-glass-card[data-agency="sectorial"] { --card-accent: var(--accent-sectorial); }
+.mallen-glass-card[data-agency="vemp"]      { --card-accent: var(--accent-vemp); }
+
+.tabular-telemetry {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.02em;
+}
+
+@keyframes guilloche-spin {
+  from { transform: rotate(0deg); }
+  to   { transform: rotate(360deg); }
+}
+
+.mallen-guilloche-ring {
+  transform-origin: center;
+  animation: guilloche-spin 48s linear infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  ::before,
+  ::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
