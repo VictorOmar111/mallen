@@ -48,7 +48,7 @@ fn get_category_data(
                         "Aplicar cada 2 años la Guía de Referencia II (16 a 50 empleados) o Guía III (>50 empleados) y conservar cuestionarios firmados.",
                         "Habilitar un buzón confidencial de quejas por violencia laboral con bitácora de resolución."
                     ],
-                    entregable_kit: "02_Politica_Prevencion_Psicosocial_NOM035_STPS.pdf y Certificado NOM-035",
+                    entregable_kit: "Instrumento Normativo Propietario de Blindaje Documental, Protocolo de Inspección y Certificación Criptográfica SHA-256 personalizada a su giro SCIAN",
                 },
                 NormaEducativa {
                     codigo: "NOM-037-STPS-2023 • Artículos 330-A al 330-K de la LFT",
@@ -64,7 +64,7 @@ fn get_category_data(
                         "Publicar la Política de Teletrabajo reconociendo expresamente el Derecho a la Desconexión Digital fuera de la jornada.",
                         "Aplicar la Lista de Verificación de Condiciones de Seguridad y Salud en el espacio remoto validada por la Comisión Mixta."
                     ],
-                    entregable_kit: "04_Politica_Teletrabajo_y_Desconexion_NOM037_STPS.pdf y Certificado NOM-037",
+                    entregable_kit: "Instrumento Normativo Propietario de Blindaje Documental, Protocolo de Inspección y Certificación Criptográfica SHA-256 personalizada a su giro SCIAN",
                 },
                 NormaEducativa {
                     codigo: "NOM-036-1-STPS-2018 • Ergonomía y Manejo Manual de Cargas",
@@ -96,7 +96,7 @@ fn get_category_data(
                         "Designar por escrito al Responsable SST conforme al Numeral 4.1 de la NOM-030 y actualizar anualmente el Programa Preventivo.",
                         "Levantar y archivar cada 3 meses el Acta de Recorrido de Verificación de la Comisión Mixta."
                     ],
-                    entregable_kit: "03_Acta_Constitutiva_Comision_Seguridad_NOM019_y_NOM030.pdf y Certificados",
+                    entregable_kit: "Instrumento Normativo Propietario de Blindaje Documental y Certificación SHA-256 y Certificados",
                 },
                 NormaEducativa {
                     codigo: "NOM-017-STPS-2008, NOM-018-STPS-2015, NOM-026-STPS-2008 y NOM-028-STPS-2012",
@@ -184,7 +184,7 @@ fn get_category_data(
                         "Integrar por cada operación una Bitácora de Materialidad con: (1) Cotización y Orden de Compra; (2) Entregable verificable (reportes, planos, bitácoras, memoria fotográfica); (3) Opinión 32-D positiva del proveedor; y (4) CFDI 4.0 y REP.",
                         "Cruzar mensualmente el RFC de todos sus proveedores contra los listados completos del Art. 69 y Art. 69-B del SAT."
                     ],
-                    entregable_kit: "05_Contrato_Marco_Materialidad_Fecha_Cierta_y_Bitacora_69B.pdf y Certificado SAT-CFF69B",
+                    entregable_kit: "Instrumento Normativo Propietario de Blindaje Documental, Protocolo de Inspección y Certificación Criptográfica SHA-256 personalizada a su giro SCIAN",
                 },
                 NormaEducativa {
                     codigo: "Artículo 5-A del Código Fiscal de la Federación",
@@ -199,7 +199,7 @@ fn get_category_data(
                         "Estipular expresamente en las declaraciones y cláusulas de cada contrato el objetivo comercial, operativo o productivo que persigue la empresa al contratar el servicio.",
                         "Archivar junto con el contrato las cotizaciones comparativas, estudios o proyecciones de retorno de inversión que motivaron la contratación."
                     ],
-                    entregable_kit: "Cláusula Segunda de Razón de Negocios en 05_Contrato_Marco_Materialidad_69B.pdf",
+                    entregable_kit: "Cláusula Segunda de Razón de Negocios en Instrumento Normativo Propietario de Blindaje Documental y Certificación SHA-256",
                 },
                 NormaEducativa {
                     codigo: "Artículo 17-K, Artículo 86-C y Artículo 86-D del CFF",
@@ -285,7 +285,7 @@ fn get_category_data(
                         "Conciliar cada mes el visor de nómina del SAT contra las cédulas EMA/EBA del SUA, vigilando que premios de puntualidad/asistencia no rebasen el 10% del SBC y vales de despensa no superen el 40% de la UMA.",
                         "Presentar los avisos bimestrales de modificación salarial por percepciones variables en los primeros 5 días hábiles de enero, marzo, mayo, julio, septiembre y noviembre."
                     ],
-                    entregable_kit: "06_Protocolo_Blindaje_Solidario_REPSE_ICSOE_SISSUB.pdf y Cédula SBC",
+                    entregable_kit: "Instrumento Normativo Propietario de Blindaje Documental y Certificación SHA-256 y Cédula SBC",
                 },
                 NormaEducativa {
                     codigo: "Artículo 15-A LSS • Artículos 12 a 15 LFT • Art. 29 Bis LINFONAVIT (ICSOE y SISSUB)",
@@ -300,7 +300,7 @@ fn get_category_data(
                         "Si presta servicios especializados: mantener vigente su folio REPSE y presentar a más tardar el día 17 de enero, mayo y septiembre las informativas ICSOE y SISSUB (incluso informativa Sin Información).",
                         "Si contrata servicios especializados: recabar mensualmente del contratista los 7 comprobantes del Art. 27 Fracc. V LISR para garantizar la deducción de ISR y el acreditamiento de IVA."
                     ],
-                    entregable_kit: "Checklist Mensual de 7 Comprobantes REPSE en 06_Protocolo_IMSS_REPSE_32D.pdf",
+                    entregable_kit: "Checklist Mensual de 7 Comprobantes REPSE en Instrumento Normativo Propietario de Blindaje Documental y Certificación SHA-256",
                 },
                 NormaEducativa {
                     codigo: "Artículos 71, 72, 73, 74 y 75 de la LSS y Artículos 18 a 38 y 196 del RACERF",
@@ -383,7 +383,7 @@ fn get_category_data(
                         "Publicar en el pie de página de su dominio web el Aviso de Privacidad Integral con los 6 requisitos del Art. 16: identidad y domicilio del responsable, datos tratados, finalidades primarias y secundarias separadas, opciones de limitación, medios ARCO y transferencias.",
                         "Colocar el Aviso de Privacidad Corto impreso a la vista en recepción y zonas con cámaras CCTV."
                     ],
-                    entregable_kit: "01_Aviso_de_Privacidad_Integral_ARCO_y_Biometricos.pdf y versión editable Word",
+                    entregable_kit: "Instrumento Normativo Propietario de Blindaje Documental y Certificación SHA-256 y versión editable Word",
                 },
                 NormaEducativa {
                     codigo: "Artículos 22 al 35 de la LFPDPPP y Artículos 87 al 110 del RLFPDPPP",
@@ -455,7 +455,7 @@ fn get_category_data(
                     pasos_cumplimiento: &[
                         "Suscribir el Acta de Designación del Oficial de Privacidad e imprimir su nombre o cargo y correo oficial dentro del Aviso de Privacidad Integral."
                     ],
-                    entregable_kit: "Nombramiento Formal del Oficial de Privacidad en 01_Aviso_de_Privacidad_Integral.pdf",
+                    entregable_kit: "Nombramiento Formal del Oficial de Privacidad en Instrumento Normativo Propietario de Blindaje Documental y Certificación SHA-256",
                 },
             ],
         ),
@@ -579,7 +579,7 @@ fn get_category_data(
                         "Publicar de forma visible en el pie de página de su sitio web su Razón Social, RFC, domicilio físico completo en México, teléfono fijo y correo electrónico de atención.",
                         "Mostrar siempre precios totales en Pesos Mexicanos (MXN) con IVA e impuestos incluidos. En restaurantes y servicios (Art. 7 BIS y Art. 10 LFPC): exhibir carta con precios totales a la entrada y no incluir ni cargar propina sin consentimiento expreso del cliente."
                     ],
-                    entregable_kit: "07_Terminos_Condiciones_Ecommerce_Art76BIS_y_Garantias.pdf y versión editable Word",
+                    entregable_kit: "Instrumento Normativo Propietario de Blindaje Documental y Certificación SHA-256 y versión editable Word",
                 },
                 NormaEducativa {
                     codigo: "Artículo 76 BIS Fracciones III y VII, Artículo 56 y Artículos 77 a 82 de la LFPC",
@@ -623,7 +623,7 @@ fn get_category_data(
                         "En toda promoción, descuento u oferta publicada en web o redes sociales (Art. 46 LFPC): indicar siempre las condiciones, el plazo de vigencia o el volumen exacto de piezas disponibles.",
                         "Conservar el soporte técnico o documental que acredite cualquier atributo cuantitativo prometido en su publicidad comercial."
                     ],
-                    entregable_kit: "Lineamientos de Publicidad Veraz Art. 32 en 07_Terminos_Ecommerce_PROFECO_76BIS.pdf",
+                    entregable_kit: "Lineamientos de Publicidad Veraz Art. 32 en Instrumento Normativo Propietario de Blindaje Documental y Certificación SHA-256",
                 },
                 NormaEducativa {
                     codigo: "Artículo 128 BIS y Artículo 76 BIS Fracción II de la LFPC • NOM-151-SCFI-2016",

@@ -944,7 +944,7 @@ async fn build_empresa_and_session(
     } else {
         EmpresaB2B {
             id: clean_tax.to_string(),
-            nombre: format!("EMPRESA O RFC NO LOCALIZADO EN PADRONES PÚBLICOS ({})", clean_tax),
+            nombre: clean_tax.replace("%20", " "),
             actividad: "Servicios de consultoría científica, técnica y operación corporativa".to_string(),
             telefono: "".to_string(),
             email: "".to_string(),
@@ -1090,7 +1090,7 @@ async fn build_empresa_from_db_or_default(state: &AppState, clean_tax: &str) -> 
     } else {
         EmpresaB2B {
             id: clean_tax.to_string(),
-            nombre: format!("EMPRESA O RFC NO LOCALIZADO EN PADRONES PÚBLICOS ({})", clean_tax),
+            nombre: clean_tax.replace("%20", " "),
             actividad: "Servicios de consultoría científica, técnica y operación corporativa".to_string(),
             telefono: String::new(),
             email: String::new(),
@@ -1985,7 +1985,7 @@ async fn handle_dedicated_normativa_page() -> impl IntoResponse {
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>FIRMA MALLEN® — Directorio Normativo Federal (31 Fichas Técnicas)</title>
+  <title>FIRMA MALLEN® — Directorio Normativo Federal (39 NOMs STPS y 37 Vectores de Inspección)</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="/css/enterprise-linear.css?v=2026.77">
@@ -2008,8 +2008,8 @@ async fn handle_dedicated_normativa_page() -> impl IntoResponse {
   <main class="max-w-6xl mx-auto px-6 py-10 flex-1 space-y-8">
     <div>
       <span class="text-xs font-semibold uppercase text-emerald-400">Enciclopedia Regulatoria Especializada</span>
-      <h1 class="text-3xl font-extrabold text-white mt-1">Directorio Normativo Federal y 31 Fichas de Inspección</h1>
-      <p class="text-base text-slate-300 mt-2">Seleccione la materia para consultar los criterios de inspección, fundamentos legales y guías preventivas sin saturar su consola de diagnóstico.</p>
+      <h1 class="text-3xl font-extrabold text-white mt-1">Directorio Normativo Federal: 39 NOMs STPS y 37 Vectores de Inspección</h1>
+      <p class="text-base text-slate-300 mt-2">Consulte los criterios de inspección federal, fundamentos legales vigentes y lineamientos técnicos preventivos clasificados por autoridad reguladora.</p>
     </div>
     <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
       <a href="/normas/stps" class="mallen-surface-card p-6 block">

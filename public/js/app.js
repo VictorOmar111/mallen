@@ -523,3 +523,178 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
   } catch (_) {}
 });
+
+
+// ============================================================================
+// 1. REPARACIÓN INTERACTIVA DE LAS 4 TARJETAS DEL SIMULADOR IN SITU (-30%, -25%, -20%, -25% VEMP)
+// ============================================================================
+window.initInteractiveRiskSandboxCards = function() {
+  const sbxCheckboxes = Array.from(document.querySelectorAll('.sbx-toggle'));
+  const slider = document.getElementById('sbx-emp-slider');
+  const fineEl = document.getElementById('sbx-total-fine');
+  const scoreEl = document.getElementById('sbx-risk-score');
+  const empLabelEl = document.getElementById('sbx-emp-label');
+
+  function recalculateSandbox() {
+    const emp = slider ? Math.max(1, parseInt(slider.value || '45', 10)) : 45;
+    if (empLabelEl) empLabelEl.textContent = emp + ' colaboradores';
+
+    // Base VEMP proporcional a la plantilla o sincronizada con el último escaneo
+    const baseFine = window.__lastScannedVempMxn && window.__lastScannedEmpCount
+      ? (window.__lastScannedVempMxn * (emp / Math.max(1, window.__lastScannedEmpCount)))
+      : (425000 + emp * 27960);
+
+    const weights = [0.30, 0.25, 0.20, 0.25];
+    let mitigationRatio = 0;
+
+    sbxCheckboxes.forEach((cb, idx) => {
+      const card = cb.closest('label') || cb.parentElement;
+      const w = parseFloat(cb.getAttribute('data-weight') || String(weights[idx] || 0.25));
+      if (cb.checked) {
+        mitigationRatio += w;
+        if (card) {
+          card.classList.add('mallen-sandbox-card-active');
+          card.classList.remove('mallen-sandbox-card-inactive');
+        }
+      } else {
+        if (card) {
+          card.classList.remove('mallen-sandbox-card-active');
+          card.classList.add('mallen-sandbox-card-inactive');
+        }
+      }
+    });
+
+    // Si los 4 instrumentos están activos, deja una contingencia residual mínima operativa (2.5%);
+    // a medida que se desactivan casillas, sube hasta el 100% de la exposición VEMP.
+    const effectiveReduction = Math.min(0.975, mitigationRatio * 0.975);
+    const residualFine = Math.max(0, baseFine * (1 - effectiveReduction));
+    const residualScore = Math.max(12, Math.round(88 * (1 - effectiveReduction * 0.85)));
+
+    if (fineEl) {
+      fineEl.textContent = '$' + residualFine.toLocaleString('es-MX', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' MXN';
+    }
+    if (scoreEl) {
+      scoreEl.textContent = residualScore + '/100';
+    }
+  }
+
+  // Asegurar que tanto los checkboxes `.sbx-toggle` como las tarjetas que dicen "Blindaje STPS...",
+  // "Contrato Marco Fecha Cierta...", "Conciliación IMSS..." y "Aviso LFPDPPP..." sean 100% clicables
+  sbxCheckboxes.forEach((cb) => {
+    cb.addEventListener('change', recalculateSandbox);
+    const card = cb.closest('label') || cb.parentElement;
+    if (card && !card.dataset.sbxBound) {
+      card.dataset.sbxBound = '1';
+      card.style.cursor = 'pointer';
+      card.addEventListener('click', (ev) => {
+        if (ev.target !== cb) {
+          cb.checked = !cb.checked;
+          recalculateSandbox();
+        }
+      });
+    }
+  });
+
+  if (slider) {
+    slider.addEventListener('input', recalculateSandbox);
+  }
+  recalculateSandbox();
+};
+
+// ============================================================================
+// 2. MENÚ DESPLEGABLE LATERAL EXCLUSIVO PARA VERSIÓN MÓVIL (DRAWER RESPONSIVO)
+//    + CORRECCIÓN DE "39 NOMs" EN LA BARRA SUPERIOR
+// ============================================================================
+window.initMobileResponsiveDrawerAndNav = function() {
+  const headerContainer = document.querySelector('header > div');
+  const desktopNav = document.querySelector('header nav');
+
+  if (desktopNav) {
+    desktopNav.className = 'hidden md:flex items-center gap-4 text-xs font-semibold text-slate-300';
+    desktopNav.innerHTML =
+      '<a href="#express-check" class="hover:text-white transition">Diagnóstico Exprés</a>' +
+      '<a href="#mallen-vanta-trust-center" class="hover:text-white transition">Entregables y Precios</a>' +
+      '<a href="/normativa" id="nav-link-normativa-dedicada" class="hover:text-white transition">Directorio Normativo (39 NOMs)</a>' +
+      '<a href="/radar-dof" id="nav-link-radar-dedicado" class="hover:text-white transition">Radar DOF Diario</a>' +
+      '<a href="/dashboard.html" class="text-emerald-400 hover:text-emerald-300 transition">Panel Despachos</a>' +
+      '<span class="inline-flex rounded-md border border-slate-700 p-0.5 text-[11px] font-semibold">' +
+        '<a href="/?country=MX" class="px-2 py-0.5 rounded bg-emerald-600 text-white">MX</a>' +
+        '<a href="/region/de" class="px-2 py-0.5 hover:text-emerald-400">DACH</a>' +
+        '<a href="/region/nl" class="px-2 py-0.5 hover:text-emerald-400">Benelux</a>' +
+      '</span>' +
+      '<button type="button" data-mallen-theme-btn onclick="window.toggleMallenTheme()" class="mallen-btn-secondary px-3 py-1 text-xs">Modo Claro</button>';
+  }
+
+  if (headerContainer && !document.getElementById('mallen-mobile-menu-trigger')) {
+    const mobileControls = document.createElement('div');
+    mobileControls.className = 'flex md:hidden items-center gap-2';
+    mobileControls.innerHTML =
+      '<button type="button" data-mallen-theme-btn onclick="window.toggleMallenTheme()" class="mallen-btn-secondary px-2.5 py-1.5 text-xs">Modo Claro</button>' +
+      '<button type="button" id="mallen-mobile-menu-trigger" aria-label="Abrir menú de navegación" class="mallen-btn-primary px-3.5 py-2 text-xs font-bold">' +
+        'Menú ☰' +
+      '</button>';
+    headerContainer.appendChild(mobileControls);
+  }
+
+  if (!document.getElementById('mallen-mobile-drawer')) {
+    const backdrop = document.createElement('div');
+    backdrop.id = 'mallen-mobile-drawer-backdrop';
+    const drawer = document.createElement('aside');
+    drawer.id = 'mallen-mobile-drawer';
+    drawer.setAttribute('aria-label', 'Menú móvil');
+    drawer.innerHTML =
+      '<div>' +
+        '<div class="flex items-center justify-between pb-4 mb-4 border-b border-slate-800">' +
+          '<div>' +
+            '<span class="font-extrabold text-base block">FIRMA MALLEN®</span>' +
+            '<span class="text-xs text-emerald-400 font-semibold uppercase">Ingeniería Legal Preventiva</span>' +
+          '</div>' +
+          '<button type="button" id="mallen-mobile-drawer-close" class="mallen-btn-secondary px-3 py-1 text-xs">Cerrar ✕</button>' +
+        '</div>' +
+        '<nav class="flex flex-col space-y-2.5">' +
+          '<a href="#express-check" class="mallen-mobile-link py-2.5 px-3 rounded-lg border border-slate-800 font-semibold">Diagnóstico Exprés por RFC</a>' +
+          '<a href="#mallen-vanta-trust-center" class="mallen-mobile-link py-2.5 px-3 rounded-lg border border-slate-800 font-semibold">Entregables y Precios ($3,000 MXN)</a>' +
+          '<a href="/normativa" class="mallen-mobile-link py-2.5 px-3 rounded-lg border border-slate-800 font-semibold">Directorio Normativo (39 NOMs)</a>' +
+          '<a href="/radar-dof" class="mallen-mobile-link py-2.5 px-3 rounded-lg border border-slate-800 font-semibold">Radar DOF Diario</a>' +
+          '<a href="/dashboard.html" class="mallen-mobile-link py-2.5 px-3 rounded-lg border border-emerald-700/50 text-emerald-400 font-bold">Panel para Despachos</a>' +
+        '</nav>' +
+        '<div class="mt-6 pt-4 border-t border-slate-800">' +
+          '<span class="block text-xs font-semibold uppercase text-slate-400 mb-2">Jurisdicción Activa:</span>' +
+          '<div class="grid grid-cols-3 gap-2 text-center text-xs font-bold">' +
+            '<a href="/?country=MX" class="py-2 rounded-lg bg-emerald-600 text-white">MX</a>' +
+            '<a href="/region/de" class="py-2 rounded-lg border border-slate-700">DACH</a>' +
+            '<a href="/region/nl" class="py-2 rounded-lg border border-slate-700">Benelux</a>' +
+          '</div>' +
+        '</div>' +
+      '</div>' +
+      '<div class="pt-4 border-t border-slate-800 text-xs text-slate-400">' +
+        'Soporte Institucional: <strong class="text-emerald-400">soporte@mallen.lat</strong>' +
+      '</div>';
+
+    document.body.appendChild(backdrop);
+    document.body.appendChild(drawer);
+
+    function closeDrawer() {
+      drawer.classList.remove('open');
+      backdrop.classList.remove('open');
+    }
+    function openDrawer() {
+      drawer.classList.add('open');
+      backdrop.classList.add('open');
+    }
+
+    const triggerBtn = document.getElementById('mallen-mobile-menu-trigger');
+    const closeBtn = document.getElementById('mallen-mobile-drawer-close');
+    if (triggerBtn) triggerBtn.addEventListener('click', openDrawer);
+    if (closeBtn) closeBtn.addEventListener('click', closeDrawer);
+    backdrop.addEventListener('click', closeDrawer);
+    drawer.querySelectorAll('.mallen-mobile-link').forEach((lnk) => {
+      lnk.addEventListener('click', closeDrawer);
+    });
+  }
+};
+
+document.addEventListener('DOMContentLoaded', () => {
+  window.initMobileResponsiveDrawerAndNav();
+  window.initInteractiveRiskSandboxCards();
+});
