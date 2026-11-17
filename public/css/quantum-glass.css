@@ -257,3 +257,62 @@ html.light-mode .text-blue-400 {
 body.mallen-home-4blocks .mallen-extracted-to-dedicated-route {
   display: none !important;
 }
+
+/* ==========================================================================
+   8. ESCALADO TIPOGRÁFICO EJECUTIVO (CERO LETRAS PEQUEÑAS EN WEB Y MÓVIL)
+   Eleva automáticamente todas las clases pequeñas de Tailwind a tamaños
+   de lectura ejecutiva (mínimo 13.5px en etiquetas y 15.5px-17px en cuerpo)
+   ========================================================================== */
+html {
+  font-size: 17px !important;
+}
+
+body, p, li, dd, td, blockquote {
+  font-size: 1rem !important; /* 17px reales */
+  line-height: 1.65 !important;
+}
+
+.text-\[8px\],
+.text-\[9px\],
+.text-\[10px\],
+.text-\[11px\] {
+  font-size: 0.82rem !important; /* ~14px mínimo absoluto, nunca 9px/10px */
+  line-height: 1.45 !important;
+}
+
+.text-xs {
+  font-size: 0.88rem !important; /* ~15px */
+  line-height: 1.55 !important;
+}
+
+.text-sm {
+  font-size: 0.96rem !important; /* ~16.3px */
+  line-height: 1.6 !important;
+}
+
+.text-base {
+  font-size: 1.05rem !important; /* ~17.8px */
+  line-height: 1.65 !important;
+}
+
+h1 {
+  font-size: clamp(1.85rem, 3.2vw, 2.65rem) !important;
+  line-height: 1.2 !important;
+}
+
+h2 {
+  font-size: clamp(1.45rem, 2.4vw, 1.95rem) !important;
+  line-height: 1.28 !important;
+}
+
+h3 {
+  font-size: clamp(1.15rem, 1.8vw, 1.35rem) !important;
+  line-height: 1.35 !important;
+}
+
+input:not([type="checkbox"]):not([type="radio"]),
+select,
+textarea,
+button {
+  font-size: 0.96rem !important; /* ~16.3px en todos los botones e inputs */
+}

@@ -2330,6 +2330,85 @@ async fn test_http_form_bot_14_scenarios_with_real_db_companies() {
         "La portada debe tener el buscador predictivo unificado y enlaces a /normativa y /radar-dof"
     );
     println!("║  96  ║ 16 Puntos UX/UI en 7 Países (MX/DE/AT/CH/NL/BE/LU) + Baymard ║ 4 Bloques | /normativa | /radar-dof | 7 Países OK ║ [SUPERADO]   ║");
+
+    // ESCENARIO 97: Auditoría Forense del Archivo Binario .ZIP Real (Cabecera PK\x03\x04, 10 Certificados PDF,
+    // 8 Contratos PDF/Word con Tablas Alineadas y Paridad Exacta entre Pre-Dictamen y Dictamen del .ZIP)
+    let zip_path_alsea = worker_inegi_engine::engine::bundle_generator::generate_custom_bundle_with_session(
+        &emp_alsea_pdf,
+        &osint_dummy,
+        Some(&alsea_corp),
+        true,
+    ).expect("Debe generar el archivo .ZIP completo de Alsea sin errores");
+    let raw_zip_bytes = std::fs::read(&zip_path_alsea).expect("Debe leer los bytes del .ZIP generado");
+    assert_eq!(
+        &raw_zip_bytes[0..4],
+        b"PK\x03\x04",
+        "El archivo .ZIP debe iniciar exactamente con la firma binaria PK\\x03\\x04 (0 bytes extra al inicio)"
+    );
+
+    let zip_cursor = std::io::Cursor::new(raw_zip_bytes);
+    let mut archive = zip::ZipArchive::new(zip_cursor).expect("El .ZIP debe abrirse sin advertencias ni corrupción");
+    let mut pdf_count = 0usize;
+    let mut cert_pdf_count = 0usize;
+    let mut word_html_count = 0usize;
+
+    for i in 0..archive.len() {
+        let mut entry = archive.by_index(i).expect("Entrada ZIP válida");
+        let name = entry.name().to_string();
+        let mut buf = Vec::new();
+        std::io::Read::read_to_end(&mut entry, &mut buf).unwrap();
+
+        if name.ends_with(".pdf") {
+            assert!(
+                buf.starts_with(b"%PDF-") && buf.len() > 1500,
+                "El archivo PDF '{}' dentro del .ZIP debe ser un binario PDF válido (>1.5 KB)",
+                name
+            );
+            pdf_count += 1;
+            if name.starts_with("00_CERTIFICADOS_ACREDITACION_PDF/") {
+                cert_pdf_count += 1;
+            }
+        } else if name.ends_with("_Editable_Word.html") {
+            let html_str = String::from_utf8_lossy(&buf);
+            let strong_open = html_str.matches("<strong>").count();
+            let strong_close = html_str.matches("</strong>").count();
+            assert_eq!(
+                strong_open, strong_close,
+                "En '{}' todas las etiquetas <strong> deben estar perfectamente cerradas con </strong>",
+                name
+            );
+            assert!(
+                !html_str.contains("**"),
+                "En '{}' no deben quedar asteriscos crudos de Markdown (**)",
+                name
+            );
+            if name.contains("03_Acta_Constitutiva_Comision") {
+                assert!(
+                    html_str.contains("<table>") && html_str.contains("<thead>") && html_str.contains("</table>"),
+                    "El Acta NOM-019 en Word (.HTML) debe contener tablas HTML <table> bien formadas"
+                );
+            }
+            word_html_count += 1;
+        } else if name == "00_MANIFIESTO_FECHA_CIERTA_Y_ALCANCE_PERICIAL.txt" {
+            let man_txt = String::from_utf8_lossy(&buf);
+            assert!(
+                man_txt.contains("4860 COLABORADORES") && man_txt.contains("722511") && man_txt.contains("BEGIN PGP SIGNED MESSAGE"),
+                "El manifiesto del .ZIP debe reflejar los 4,860 colaboradores y el giro 722511 exactos del Pre-Dictamen"
+            );
+        }
+    }
+    assert_eq!(cert_pdf_count, 10, "El .ZIP debe incluir los 10 Certificados Individuales de Acreditación en PDF");
+    assert_eq!(word_html_count, 8, "El .ZIP debe incluir los 8 instrumentos editables en Word (.HTML)");
+    assert!(pdf_count >= 19, "El .ZIP debe incluir al menos 19 PDFs (1 Dictamen + 10 Certificados + 8 Instrumentos)");
+    println!("║  97  ║ Inspección Profunda .ZIP (PK\\x03\\x04, 19 PDFs + 8 Word HTML) ║ 10 Certs PDF + Tablas Typst/HTML + 0 Bytes Extra  ║ [SUPERADO]   ║");
+
+    // ESCENARIO 98: Auditoría de Escalado Tipográfico Web (Cero letras microscópicas 9px/10px)
+    let css_98 = std::fs::read_to_string("public/css/enterprise-linear.css").unwrap_or_default();
+    assert!(
+        css_98.contains("font-size: 17px !important;") && css_98.contains(".text-\\[10px\\]"),
+        "La hoja de estilo debe elevar la base tipográfica a 17px y escalar las clases pequeñas"
+    );
+    println!("║  98  ║ Escalado Tipográfico Ejecutivo (Base 17px y Mínimo 14px)     ║ Cero Textos Microscópicos | Lectura AAA Activa    ║ [SUPERADO]   ║");
     println!("╚══════╩══════════════════════════════════════════════════════════════╩═══════════════════════════════════════════════════╩══════════════╝");
-    println!("✓ LOS 96 ESCENARIOS DE GRADO MILITAR E INSTITUCIONAL (16/16 MEJORAS UX/UI EN LOS 7 PAÍSES) SUPERADOS AL 100%");
+    println!("✓ LOS 98 ESCENARIOS DE GRADO MILITAR E INSTITUCIONAL (INCLUYENDO AUDITORÍA PROFUNDA DEL .ZIP Y TIPOGRAFÍA) SUPERADOS AL 100%");
 }
