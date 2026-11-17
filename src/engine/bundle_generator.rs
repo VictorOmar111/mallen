@@ -450,7 +450,7 @@ pub fn generate_custom_bundle_with_session(
         .map(|m| &m.calibration_applied.dossier)
         .unwrap_or(&default_dossier);
 
-    let _ = generate_compliance_kit_with_session(&synced_empresa, dossier, effective_master)?;
+    let _ = generate_compliance_kit_with_session(&synced_empresa, dossier, effective_master).map_err(|e| e.to_string())?;
 
     let pdf_filename = format!("{}/Dictamen_Ejecutivo_{}.pdf", base_dir, tax_id);
     generate_pdf_report_with_session(&synced_empresa, osint, effective_master, is_accredited, &pdf_filename)?;
@@ -505,9 +505,9 @@ pub fn build_zip_buffer_from_dir(
             fs::read(&cert_disk_path).ok()
         } else {
             compile_single_accreditation_certificate_pdf(
-                cert.code,
-                cert.title,
-                cert.norma,
+                &cert.id,
+                &cert.titulo,
+                &cert.descripcion,
                 empresa,
                 emp_count,
                 scian_str,
