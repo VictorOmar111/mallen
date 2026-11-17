@@ -2529,7 +2529,7 @@ async fn test_http_form_bot_14_scenarios_with_real_db_companies() {
 
     // C) Confirmar que el archivo de pruebas ejecutó íntegramente desde el Escenario 1 (telemetría de prospect_logs)
     //    hasta el Escenario 100 sin saltarse ningún bloque intermedio:
-    let tier1_pyme = worker_inegi_engine::engine::pdf_generator::build_adaptive_prospect_outreach("PANIFICADORA INDUSTRIAL LA ESPIGA S.A. DE C.V. (SUCURSAL 004)", Some("espigadorada.mx"));
+    let tier1_pyme = worker_inegi_engine::engine::pdf_generator::build_adaptive_prospect_outreach("COMERCIALIZADORA DE ABARROTES ROCIO S.A. DE C.V. (SUCURSAL 091)", Some("abarrotesrocio.mx"));
     assert_eq!(tier1_pyme.prospect_tier, "NIVEL_1_PYME_CONVERSION_DIRECTA");
     assert!(tier1_pyme.detected_employees > 0 && tier1_pyme.detected_employees <= 250);
 

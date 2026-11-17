@@ -3011,7 +3011,7 @@ pub fn build_adaptive_prospect_outreach(query_or_name: &str, domain_hint: Option
             secondary_link: cal_link,
             message_body: msg,
         }
-    } else if intel.estimated_employees > 250 || intel.is_multi_branch_corp && intel.estimated_employees >= 200 {
+    } else if intel.estimated_employees > 250 {
         let pdf_link = format!("https://mallen.lat/api/micro_scan/{}", encoded_ref);
         let consult_link = format!(
             "https://mallen.lat/?calibrate=1&rfc={}&razon={}&scian={}&emp={}#express-check",
