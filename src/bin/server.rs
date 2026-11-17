@@ -577,6 +577,28 @@ async fn handle_live_scan(
             }
         }
     }
+    // Sincronización absoluta 1:1 entre POST /api/scan y GET /api/lookup (Ficha 360°):
+    // Si el usuario no forzó manualmente otra plantilla distinta en esta petición, o después de congelar el snapshot,
+    // alinear razón social, giro SCIAN, empleados, risk_score y total_estimated_fine_mxn con extract_deep_denue_360_intelligence
+    let unified_360 = worker_inegi_engine::engine::pdf_generator::extract_deep_denue_360_intelligence(&tax_key);
+    if unified_360.exact_vemp_fine_mxn > 0.0 {
+        let user_explicit_emp = req.calibration.exact_employee_count.unwrap_or(0);
+        if user_explicit_emp == 0 || user_explicit_emp == unified_360.estimated_employees {
+            master_report.razon_social = unified_360.razon_social.clone();
+            if !unified_360.codigo_scian.is_empty() {
+                master_report.codigo_scian = unified_360.codigo_scian.clone();
+            }
+            if !unified_360.actividad_desc.is_empty() {
+                master_report.actividad_scian_desc = unified_360.actividad_desc.clone();
+            }
+            master_report.estimated_employees = unified_360.estimated_employees;
+            master_report.calibration_applied.exact_employee_count = Some(unified_360.estimated_employees);
+            master_report.risk_score = unified_360.exact_risk_score;
+            master_report.total_estimated_fine_mxn = unified_360.exact_vemp_fine_mxn;
+            master_report.total_min_fine_mxn = ((unified_360.exact_vemp_fine_mxn * 0.35) * 100.0).round() / 100.0;
+            master_report.total_max_fine_mxn = ((unified_360.exact_vemp_fine_mxn * 2.25) * 100.0).round() / 100.0;
+        }
+    }
     let _ev = worker_inegi_engine::engine::pdf_generator::record_forensic_dom_evidence(
         &master_report.tax_id,
         &master_report.web_telemetry.target_url,
