@@ -401,37 +401,56 @@ window.runQuickSampleScan = function(taxId, domain) {
 };
 
 
-// GUARDIÁN DE PRECISIÓN OBLIGATORIA: Exigir número exacto de empleados antes de avanzar al diagnóstico
-window.validateMandatoryExactEmployees = function() {
+
+
+// GUARDIÁN INTELIGENTE DE PLANTILLA: Auto-detecta por RFC y solo marca en rojo sutil cuando no se detecta y está vacío
+window.validateMandatoryExactEmployees = async function() {
   const calEmpInput = document.getElementById('cal_emp');
+  const folioInput = document.getElementById('folioInput');
   if (!calEmpInput) return true;
-  const detailsParent = calEmpInput.closest('details');
-  if (detailsParent) detailsParent.setAttribute('open', 'open');
 
-  let alertBox = document.getElementById('mallen-mandatory-emp-warning');
-  const rawVal = (calEmpInput.value || '').trim();
-  const numVal = parseInt(rawVal, 10);
+  let hintEl = document.getElementById('mallen-mandatory-emp-warning');
+  let rawVal = (calEmpInput.value || '').trim();
+  let numVal = parseInt(rawVal, 10);
 
+  // Si está vacío pero el usuario ingresó un RFC o empresa, intentar detectar automáticamente desde el padrón
+  const qFolio = (folioInput?.value || '').trim();
+  if ((!rawVal || isNaN(numVal) || numVal < 1) && qFolio.length >= 3) {
+    try {
+      const resp = await fetch('/api/lookup?rfc=' + encodeURIComponent(qFolio));
+      if (resp.ok) {
+        const lk = await resp.json();
+        if (lk && lk.estimated_employees && Number(lk.estimated_employees) > 0) {
+          calEmpInput.value = String(lk.estimated_employees);
+          rawVal = calEmpInput.value;
+          numVal = Number(lk.estimated_employees);
+        }
+      }
+    } catch (_) {}
+  }
+
+  // Si tras la autodetección sigue sin número de empleados válido, iluminar en rojo sutil y no avanzar
   if (!rawVal || isNaN(numVal) || numVal < 1) {
-    if (!alertBox) {
-      alertBox = document.createElement('div');
-      alertBox.id = 'mallen-mandatory-emp-warning';
-      alertBox.setAttribute('role', 'alert');
-      alertBox.className = 'mt-3 p-3.5 rounded-lg border border-red-500/70 bg-red-950/80 text-red-200 font-semibold text-sm';
-      calEmpInput.parentElement.appendChild(alertBox);
+    const detailsParent = calEmpInput.closest('details');
+    if (detailsParent) detailsParent.setAttribute('open', 'open');
+
+    calEmpInput.classList.add('mallen-input-subtle-red');
+    if (!hintEl) {
+      hintEl = document.createElement('div');
+      hintEl.id = 'mallen-mandatory-emp-warning';
+      hintEl.setAttribute('role', 'alert');
+      hintEl.className = 'mallen-subtle-red-hint';
+      calEmpInput.parentElement.appendChild(hintEl);
     }
-    alertBox.textContent = 'Aviso de Precisión Pericial: Es obligatorio ingresar el número exacto de colaboradores de su empresa (mínimo 1) antes de generar el diagnóstico.';
-    alertBox.style.display = 'block';
-    calEmpInput.style.borderColor = '#ef4444';
+    hintEl.textContent = 'No se detectó plantilla automática para este registro. Indique el número exacto de colaboradores para calcular su diagnóstico.';
+    hintEl.style.display = 'block';
     calEmpInput.focus();
     calEmpInput.scrollIntoView({ behavior: 'smooth', block: 'center' });
     return false;
   }
 
-  if (alertBox) {
-    alertBox.style.display = 'none';
-  }
-  calEmpInput.style.borderColor = '';
+  calEmpInput.classList.remove('mallen-input-subtle-red');
+  if (hintEl) hintEl.style.display = 'none';
   return true;
 };
 
@@ -443,16 +462,13 @@ document.addEventListener('DOMContentLoaded', () => {
   const calEmpEl = document.getElementById('cal_emp');
   if (calEmpEl) {
     calEmpEl.value = '';
-    calEmpEl.setAttribute('placeholder', 'Ingrese número exacto de empleados');
-    calEmpEl.setAttribute('required', 'required');
-    calEmpEl.setAttribute('min', '1');
-    const det = calEmpEl.closest('details');
-    if (det) det.setAttribute('open', 'open');
+    calEmpEl.setAttribute('placeholder', '');
+    calEmpEl.removeAttribute('required');
     calEmpEl.addEventListener('input', () => {
-      const warn = document.getElementById('mallen-mandatory-emp-warning');
-      if (warn && parseInt(calEmpEl.value, 10) >= 1) {
-        warn.style.display = 'none';
-        calEmpEl.style.borderColor = '';
+      if (parseInt(calEmpEl.value, 10) >= 1) {
+        calEmpEl.classList.remove('mallen-input-subtle-red');
+        const warn = document.getElementById('mallen-mandatory-emp-warning');
+        if (warn) warn.style.display = 'none';
       }
     });
   }

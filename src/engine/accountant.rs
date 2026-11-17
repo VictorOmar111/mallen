@@ -1,4 +1,4 @@
-//! Infraestructura de Certificación Criptográfica Institucional FIRMA W16 MALLEN®.
+//! Infraestructura de Certificación Criptográfica Institucional FIRMA MALLEN®.
 //! Emite sellos deterministas SHA-256 / Merkle Tree bajo estándares ISO 19011,
 //! Código de Comercio (Arts. 89–93 bis) y Reglamento Europeo eIDAS Art. 41,
 //! sin atribuir cédulas de personas físicas ni registros gubernamentales ficticios.
@@ -19,7 +19,7 @@ impl Default for AccountantProfile {
     fn default() -> Self {
         Self {
             nombre: std::env::var("MALLEN_AUDITOR_NAME")
-                .unwrap_or_else(|_| "FIRMA W16 MALLEN® — División de Ingeniería Regulatoria y Auditoría Determinista".to_string()),
+                .unwrap_or_else(|_| "FIRMA MALLEN® — División de Ingeniería Regulatoria y Auditoría Determinista".to_string()),
             cedula_profesional: std::env::var("MALLEN_AUDITOR_CEDULA")
                 .unwrap_or_else(|_| "Protocolo Algorítmico ISO 19011 / CCom Arts. 89–93".to_string()),
             colegio_contador: std::env::var("MALLEN_AUDITOR_COLEGIO")
@@ -63,11 +63,11 @@ impl DeterministicRagAgent {
         } else if q.contains("privacidad") || q.contains("arco") || q.contains("lfpdppp") || q.contains("inai") || q.contains("sabg") {
             "En materia de Protección de Datos Personales (LFPDPPP ante la SABG), debe publicarse el Aviso de Privacidad Integral, habilitar la ventanilla ARCO con plazo máximo de respuesta de 20 días hábiles, recabar consentimiento expreso autógrafo para datos sensibles/biométricos (Art. 9) y mantener el Documento de Seguridad (Art. 19)."
         } else {
-            "El motor determinista de FIRMA W16 MALLEN® evalúa los 37 vectores normativos (STPS, SAT, IMSS/INFONAVIT, LFPDPPP/SABG, Protección Civil/Sectoriales y PROFECO) conforme a las Unidades de Medida y Actualización (UMA 2026: $113.14 MXN) y al giro económico SCIAN registrado."
+            "El motor determinista de FIRMA MALLEN® evalúa los 37 vectores normativos (STPS, SAT, IMSS/INFONAVIT, LFPDPPP/SABG, Protección Civil/Sectoriales y PROFECO) conforme a las Unidades de Medida y Actualización (UMA 2026: $113.14 MXN) y al giro económico SCIAN registrado."
         };
 
         format!(
-            "[FIRMA W16 MALLEN® — Respuesta Determinista (Temperature 0.0) | Folio: {}]\n{}\nFundamento de Integridad: Arts. 89–93 del Código de Comercio • eIDAS Art. 41 • Nodo Criptográfico: Frankfurt Core Hub (EU-DE-01).",
+            "[FIRMA MALLEN® — Respuesta Determinista (Temperature 0.0) | Folio: {}]\n{}\nFundamento de Integridad: Arts. 89–93 del Código de Comercio • eIDAS Art. 41 • Nodo Criptográfico: Frankfurt Core Hub (EU-DE-01).",
             tax_id.trim().to_uppercase(),
             topic_analysis
         )

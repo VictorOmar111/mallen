@@ -1,4 +1,4 @@
-//! Motor Institucional de Prospección Automatizada FIRMA W16 MALLEN® (`HttpFormBot`).
+//! Motor Institucional de Prospección Automatizada FIRMA MALLEN® (`HttpFormBot`).
 //! Incluye:
 //! 1. Verificación Semántica del Cuerpo de Respuesta (HTML + JSON Anti-Falsos Positivos).
 //! 2. Rotación de User-Agents y Huellas HTTP Comerciales (Sec-Ch-Ua sincronizado).
@@ -1217,7 +1217,7 @@ impl HttpFormBot {
 
         match tier {
             "TIER_3_WHATSAPP_DIRECT_READY" => format!(
-                "Estimado equipo directivo de {}: Le saludamos de FIRMA W16 MALLEN®. Nuestro sistema de auditoria preventiva detecto observaciones normativas publicas (STPS / LFPDPPP / SAT) asociadas a su giro registrado. Puede revisar su pre-dictamen tecnico sin costo aqui: {}",
+                "Estimado equipo directivo de {}: Le saludamos de FIRMA MALLEN®. Nuestro sistema de auditoria preventiva detecto observaciones normativas publicas (STPS / LFPDPPP / SAT) asociadas a su giro registrado. Puede revisar su pre-dictamen tecnico sin costo aqui: {}",
                 empresa_nombre.trim(),
                 link
             ),
@@ -1231,7 +1231,7 @@ impl HttpFormBot {
                     String::new()
                 };
                 format!(
-                    "ASUNTO: Pre-Diagnóstico de Cumplimiento Normativo y Seguridad Digital — {}\n\nEstimada Dirección Jurídica y de Operaciones de {}:\n\nFIRMA W16 MALLEN® ha compilado la pre-evaluación preventiva de los 37 vectores regulatorios (STPS, SAT Art. 69-B, IMSS y LFPDPPP) correspondiente a su razón social.{} Consulte su expediente preliminar confidencial y active su Kit de Blindaje en: {}",
+                    "ASUNTO: Pre-Diagnóstico de Cumplimiento Normativo y Seguridad Digital — {}\n\nEstimada Dirección Jurídica y de Operaciones de {}:\n\nFIRMA MALLEN® ha compilado la pre-evaluación preventiva de los 37 vectores regulatorios (STPS, SAT Art. 69-B, IMSS y LFPDPPP) correspondiente a su razón social.{} Consulte su expediente preliminar confidencial y active su Kit de Blindaje en: {}",
                     empresa_nombre.trim(),
                     empresa_nombre.trim(),
                     dmarc_alert,
@@ -1484,7 +1484,7 @@ impl HttpFormBot {
         let valid_link = Self::build_and_validate_checkout_link(empresa_nombre, None)
             .unwrap_or_else(|_| format!("https://mallen.lat/checkout?ref={}", Self::encode_url_ref(empresa_nombre)));
         format!(
-            "Estimado equipo directivo y area juridica de {}: Les saludamos cordialmente de FIRMA W16 MALLEN®. Como parte de nuestro programa de apoyo al cumplimiento empresarial, generamos una pre-evaluacion tecnica preventiva basada en informacion publica (padrón INEGI DENUE, normatividad STPS y aviso de privacidad web) para ayudarles a fortalecer su blindaje documental y operativo. Pueden consultar y descargar sin costo su resumen tecnico confidencial en: {}",
+            "Estimado equipo directivo y area juridica de {}: Les saludamos cordialmente de FIRMA MALLEN®. Como parte de nuestro programa de apoyo al cumplimiento empresarial, generamos una pre-evaluacion tecnica preventiva basada en informacion publica (padrón INEGI DENUE, normatividad STPS y aviso de privacidad web) para ayudarles a fortalecer su blindaje documental y operativo. Pueden consultar y descargar sin costo su resumen tecnico confidencial en: {}",
             empresa_nombre.trim(),
             valid_link
         )
@@ -2559,9 +2559,9 @@ impl HttpFormBot {
                         mensaje_utf8.clone()
                     };
                     let sender_full_name = if use_ascii_msg {
-                        "FIRMA W16 MALLEN - Compliance".to_string()
+                        "FIRMA MALLEN® - Compliance".to_string()
                     } else {
-                        "FIRMA W16 MALLEN® — Compliance".to_string()
+                        "FIRMA MALLEN® — Compliance".to_string()
                     };
 
                     let mut params = HashMap::new();
@@ -2691,7 +2691,7 @@ impl HttpFormBot {
                             || name_lower.contains("empresa")
                             || name_lower.contains("organiza")
                         {
-                            params.insert(name.to_string(), "FIRMA W16 MALLEN".to_string());
+                            params.insert(name.to_string(), "FIRMA MALLEN®".to_string());
                         } else if name_lower.contains("city") || name_lower.contains("ciudad") || name_lower.contains("estado") {
                             params.insert(name.to_string(), "Ciudad de Mexico".to_string());
                         } else if field.value().attr("required").is_some() && input_type == "text" {

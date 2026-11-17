@@ -1,5 +1,5 @@
 /**
- * FIRMA W16 MALLEN® — Paridad Estructural 1:1 con México para todos los países de DACH y Benelux
+ * FIRMA MALLEN® — Paridad Estructural 1:1 con México para todos los países de DACH y Benelux
  * Renderiza en el idioma nativo de cada país:
  *  1) Tarjetas del Directorio Regulatorio con badge de porcentaje real y Beneficio Directo.
  *  2) Las 6 tarjetas numeradas de Padrones Oficiales Nacionales (+3.8M DE, +610K AT, +680K CH, +2.4M NL, +1.3M BE, +145K LU).
@@ -68,7 +68,7 @@
                     detail: "Jedes Dossier und jedes der 7 Rechtsinstrumente wird bei der Erstellung mit einem kryptografischen SHA-256 Hash versehen und im L2-Merkle-Baum verankert. Dies beweist gegenüber Finanzbehörden (GoBD / BAO / GeBüV) und Gerichten, dass die Dokumentation zum exakten Prüfungszeitpunkt vorlag und nicht rückdatiert wurde."
                 },
                 {
-                    badge: "FIRMA W16 MALLEN® • METHODIK",
+                    badge: "FIRMA MALLEN® • METHODIK",
                     title: "Zertifiziertes Sachverständigen-Dossier (37 Vektoren)",
                     short: "Deterministische Auswertung aller 37 gesetzlichen Vektoren inkl. 10 Einzelzertifikaten und 7 Vertragsvorlagen.",
                     detail: "Die Begutachtung trennt strikt zwischen dem Executive Summary für die Geschäftsleitung (Haftungs- und Bußgeldübersicht) und der technischen Prüfanlage mit allen 37 Einzelvektoren, Branchenklassifikation (WZ 2008 / ÖNACE / NOGA) und konkreten Abhilfemaßnahmen."
@@ -145,7 +145,7 @@
                     detail: "Chaque dossier et chacun des 7 actes juridiques reçoit une empreinte SHA-256 unique ancrée dans un arbre de Merkle L2, prouvant l'antériorité et l'intégrité des documents devant les autorités fiscales et judiciaires."
                 },
                 {
-                    badge: "FIRMA W16 MALLEN® • MÉTHODOLOGIE",
+                    badge: "FIRMA MALLEN® • MÉTHODOLOGIE",
                     title: "Dossier d'Expertise Certifié (37 Vecteurs)",
                     short: "Évaluation déterministe des 37 vecteurs légaux avec 10 certificats de conformité et 7 actes prêts à signer.",
                     detail: "Le rapport sépare la synthèse exécutive financière destinée au Conseil d'administration et l'annexe technique détaillant les 37 vecteurs, la classification NACE/NOGA et le plan de remédiation."
@@ -222,7 +222,7 @@
                     detail: "Ogni fascicolo e ciascuno dei 7 contratti viene sigillato con un hash SHA-256 e ancorato in un albero di Merkle L2, provando l'integrità e la data certa davanti all'AFC e ai tribunali civili (art. 177 CPC)."
                 },
                 {
-                    badge: "FIRMA W16 MALLEN® • METODOLOGIA",
+                    badge: "FIRMA MALLEN® • METODOLOGIA",
                     title: "Fascicolo Peritale Certificato (37 Vettori)",
                     short: "Valutazione deterministica dei 37 vettori normativi con 10 certificati tecnici e 7 contratti pronti per la firma.",
                     detail: "Il rapporto distingue il riepilogo esecutivo per il Consiglio d'amministrazione (art. 716a e 725 CO) dall'allegato tecnico con i 37 vettori NOGA e il piano d'azione."
@@ -299,7 +299,7 @@
                     detail: "Elk dossier en elk van de 7 juridische instrumenten krijgt een unieke SHA-256 hash verankerd in een L2 Merkle Tree, waarmee de exacte datum en integriteit tegenover Belastingdienst, FOD Financiën en rechters vaststaat."
                 },
                 {
-                    badge: "FIRMA W16 MALLEN® • METHODIEK",
+                    badge: "FIRMA MALLEN® • METHODIEK",
                     title: "Gecertificeerd Compliance-Dossier (37 Vectoren)",
                     short: "Deterministische doorlichting van alle 37 wettelijke vectoren inclusief 10 deelcertificaten en 7 contractmodellen.",
                     detail: "Het rapport combineert een financiële directiesamenvatting met een technische bijlage waarin alle 37 vectoren, SBI/NACE-BEL codes en herstelmaatregelen zijn uitgewerkt."
@@ -376,7 +376,7 @@
                     detail: "All Dossier an all Kontrakt kritt e SHA-256 Hash verankert am L2 Merkle-Bam, wat d'Integritéit an den exakten Datum virun den Autoritéiten (ACD, AED, CNPD, ITM) beweist."
                 },
                 {
-                    badge: "FIRMA W16 MALLEN® • METHODOLOGIE",
+                    badge: "FIRMA MALLEN® • METHODOLOGIE",
                     title: "Zertifizéierten Compliance-Dossier (37 Vektoren)",
                     short: "Deterministesch Evaluatioun vun de 37 gesetzleche Vektore mat 10 Zertifikater a 7 Kontrakter.",
                     detail: "De Rapport kombinéiert eng Finanzsynthees fir de Conseil d'Administration mat enger technescher Annex iwwer all 37 NACELUX-Vektoren."
@@ -469,31 +469,31 @@
     const REALISTIC_CARD_RATES = [74, 68, 79, 57, 64, 62];
     const DIRECT_BENEFITS_BY_LANG = {
         "de": [
-                "© 2026 FIRMA W16 MALLEN® (mallen.lat) • Alle Rechte vorbehalten.",
+                "© 2026 FIRMA MALLEN® (mallen.lat) • Alle Rechte vorbehalten.",
                 "Globale Infrastruktur für deterministische Audits und Regulierungs-Engineering",
                 "Kryptografischer Signaturknoten: Frankfurt Core Hub (SHA-256 / Merkle Tree).",
                 "Internationale Standards für digitale Integrität und Governance: ISO 19011 • UNCITRAL • eIDAS Art. 41 • SEC / FINRA Compliance."
             ],
         "fr": [
-                "© 2026 FIRMA W16 MALLEN® (mallen.lat) • Tous droits réservés.",
+                "© 2026 FIRMA MALLEN® (mallen.lat) • Tous droits réservés.",
                 "Infrastructure Mondiale d'Audit Déterministe et d'Ingénierie Réglementaire",
                 "Nœud de Scellement Cryptographique : Frankfurt Core Hub (SHA-256 / Merkle Tree).",
                 "Normes Internationales d'Intégrité et de Gouvernance Numérique : ISO 19011 • CNUDCI / UNCITRAL • eIDAS Art. 41 • SEC / FINRA Compliance."
             ],
         "it": [
-                "© 2026 FIRMA W16 MALLEN® (mallen.lat) • Tutti i diritti riservati.",
+                "© 2026 FIRMA MALLEN® (mallen.lat) • Tutti i diritti riservati.",
                 "Infrastruttura Globale di Audit Deterministico e Ingegneria Normativa",
                 "Nodo di Sigillatura Crittografica: Frankfurt Core Hub (SHA-256 / Merkle Tree).",
                 "Standard Internazionali di Integrità e Governance Digitale: ISO 19011 • UNCITRAL • eIDAS Art. 41 • SEC / FINRA Compliance."
             ],
         "nl": [
-                "© 2026 FIRMA W16 MALLEN® (mallen.lat) • Alle rechten voorbehouden.",
+                "© 2026 FIRMA MALLEN® (mallen.lat) • Alle rechten voorbehouden.",
                 "Wereldwijde Infrastructuur voor Deterministische Audit en Regulatory Engineering",
                 "Cryptografisch Zegelknooppunt: Frankfurt Core Hub (SHA-256 / Merkle Tree).",
                 "Internationale Normen voor Digitale Integriteit en Governance: ISO 19011 • UNCITRAL • eIDAS Art. 41 • SEC / FINRA Compliance."
             ],
         "lb": [
-                "© 2026 FIRMA W16 MALLEN® (mallen.lat) • All Rechter virbehalen.",
+                "© 2026 FIRMA MALLEN® (mallen.lat) • All Rechter virbehalen.",
                 "Global Infrastruktur fir Deterministeschen Audit a Reglementarescht Engineering",
                 "Kryptographesche Signaturkapp: Frankfurt Core Hub (SHA-256 / Merkle Tree).",
                 "International Standarde fir Digital Integritéit a Governance: ISO 19011 • UNCITRAL • eIDAS Art. 41 • SEC / FINRA Compliance."
@@ -539,31 +539,31 @@
         // Garantizar el Pie de Página Institucional traducido en todos los países e idiomas (DE, AT, CH, NL, BE, LU)
         const FOOTER_BY_LANG = {
             "de": [
-                "© 2026 FIRMA W16 MALLEN® (mallen.lat) • Alle Rechte vorbehalten.",
+                "© 2026 FIRMA MALLEN® (mallen.lat) • Alle Rechte vorbehalten.",
                 "Globale Infrastruktur für deterministische Audits und Regulierungs-Engineering",
                 "Kryptografischer Signaturknoten: Frankfurt Core Hub (SHA-256 / Merkle Tree).",
                 "Internationale Standards für digitale Integrität und Governance: ISO 19011 • UNCITRAL • eIDAS Art. 41 • SEC / FINRA Compliance."
             ],
             "fr": [
-                "© 2026 FIRMA W16 MALLEN® (mallen.lat) • Tous droits réservés.",
+                "© 2026 FIRMA MALLEN® (mallen.lat) • Tous droits réservés.",
                 "Infrastructure Mondiale d'Audit Déterministe et d'Ingénierie Réglementaire",
                 "Nœud de Scellement Cryptographique : Frankfurt Core Hub (SHA-256 / Merkle Tree).",
                 "Normes Internationales d'Intégrité et de Gouvernance Numérique : ISO 19011 • CNUDCI / UNCITRAL • eIDAS Art. 41 • SEC / FINRA Compliance."
             ],
             "it": [
-                "© 2026 FIRMA W16 MALLEN® (mallen.lat) • Tutti i diritti riservati.",
+                "© 2026 FIRMA MALLEN® (mallen.lat) • Tutti i diritti riservati.",
                 "Infrastruttura Globale di Audit Deterministico e Ingegneria Normativa",
                 "Nodo di Sigillatura Crittografica: Frankfurt Core Hub (SHA-256 / Merkle Tree).",
                 "Standard Internazionali di Integrità e Governance Digitale: ISO 19011 • UNCITRAL • eIDAS Art. 41 • SEC / FINRA Compliance."
             ],
             "nl": [
-                "© 2026 FIRMA W16 MALLEN® (mallen.lat) • Alle rechten voorbehouden.",
+                "© 2026 FIRMA MALLEN® (mallen.lat) • Alle rechten voorbehouden.",
                 "Wereldwijde Infrastructuur voor Deterministische Audit en Regulatory Engineering",
                 "Cryptografisch Zegelknooppunt: Frankfurt Core Hub (SHA-256 / Merkle Tree).",
                 "Internationale Normen voor Digitale Integriteit en Governance: ISO 19011 • UNCITRAL • eIDAS Art. 41 • SEC / FINRA Compliance."
             ],
             "lb": [
-                "© 2026 FIRMA W16 MALLEN® (mallen.lat) • All Rechter virbehalen.",
+                "© 2026 FIRMA MALLEN® (mallen.lat) • All Rechter virbehalen.",
                 "Global Infrastruktur fir Deterministeschen Audit a Reglementarescht Engineering",
                 "Kryptographesche Signaturkapp: Frankfurt Core Hub (SHA-256 / Merkle Tree).",
                 "International Standarde fir Digital Integritéit a Governance: ISO 19011 • UNCITRAL • eIDAS Art. 41 • SEC / FINRA Compliance."

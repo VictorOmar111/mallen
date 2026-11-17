@@ -11,14 +11,14 @@
       block(width: 18cm)[
         #align(center)[
           #text(size: 21pt, weight: "bold", fill: rgb(15, 23, 42, 4%))[
-            FIRMA W16 MALLEN® • SELLO CRIPTOGRÁFICO INMUTABLE\
+            FIRMA MALLEN® • SELLO CRIPTOGRÁFICO INMUTABLE\
             #text(size: 11pt, font: "DejaVu Sans Mono")[SHA-256: {{AUDIT_HASH}} • eIDAS ART. 41 / CCOM ART. 89]
           ]
         ]
       ]
     )
   ),
-  header: align(right)[#text(size: 6.6pt, fill: rgb("#475569"), weight: "bold")[FIRMA W16 MALLEN® (MALLEN.LAT) • CERTIFICADO DE ACREDITACIÓN TÉCNICA Y NORMATIVA 360°]],
+  header: align(right)[#text(size: 6.6pt, fill: rgb("#475569"), weight: "bold")[FIRMA MALLEN® (MALLEN.LAT) • CERTIFICADO DE ACREDITACIÓN TÉCNICA Y NORMATIVA 360°]],
   footer: [
     #line(length: 100%, stroke: 0.4pt + rgb("#cbd5e1"))
     #v(2pt)
@@ -72,7 +72,7 @@
 
 #text(size: 7.6pt, weight: "bold", fill: rgb("#0f172a"))[1. FUNDAMENTACIÓN TÉCNICA, PARAMETRIZACIÓN POR GIRO SCIAN Y ALCANCE DOCUMENTAL]
 #v(0.1em)
-#text(size: 6.8pt)[La División de Ingeniería Regulatoria de *FIRMA W16 MALLEN®* hace constar que para la entidad *{{EMPRESA_NOMBRE}}* (*{{EMPRESA_TAX_ID}}*), con actividad económica registrada en el catálogo SCIAN *{{EMPRESA_ACTIVIDAD}}* y una plantilla operativa parametrizada de *{{EMPRESA_EMPLEADOS}} personas*, se han compilado, estructurado y sellado criptográficamente los instrumentos documentales, actas constitutivas y matrices de control preventivo correspondientes al vector *{{NORMA_FOLIO_PREFIX}}*.]
+#text(size: 6.8pt)[La División de Ingeniería Regulatoria de *FIRMA MALLEN®* hace constar que para la entidad *{{EMPRESA_NOMBRE}}* (*{{EMPRESA_TAX_ID}}*), con actividad económica registrada en el catálogo SCIAN *{{EMPRESA_ACTIVIDAD}}* y una plantilla operativa parametrizada de *{{EMPRESA_EMPLEADOS}} personas*, se han compilado, estructurado y sellado criptográficamente los instrumentos documentales, actas constitutivas y matrices de control preventivo correspondientes al vector *{{NORMA_FOLIO_PREFIX}}*.]
 
 #v(0.15em)
 

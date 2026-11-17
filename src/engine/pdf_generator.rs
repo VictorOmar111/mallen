@@ -1,7 +1,7 @@
 use tokio::sync::Semaphore;
 // Compilador Tipográfico Determinístico con Única Fuente de Verdad (SSOT),
 // Caché Concurrente en Memoria (TTL 24h), Aritmética Exacta en Centavos (`u64`),
-// Trazabilidad Estructurada JSON y Raíz de Merkle SHA-256 — FIRMA W16 MALLEN®.
+// Trazabilidad Estructurada JSON y Raíz de Merkle SHA-256 — FIRMA MALLEN®.
 
 use crate::engine::accountant::AccountantProfile;
 use crate::engine::models::{AuditMasterJson, EmpresaB2B, LegalDossierInput};
@@ -1957,11 +1957,11 @@ fn build_report_typst_markup_full(
             if !p.trim().is_empty()
                 && !p.starts_with("DICTAMINADO_POR:")
                 && !p.starts_with("CERTIFICACIÓN")
-                && !p.contains("FIRMA W16 MALLEN") =>
+                && !p.contains("FIRMA MALLEN®") =>
         {
             format!("DESPACHO AUDITOR ALIADO: {}", sanitize_for_typst(p))
         }
-        _ => "FIRMA W16 MALLEN® (MALLEN.LAT)".to_string(),
+        _ => "FIRMA MALLEN® (MALLEN.LAT)".to_string(),
     };
 
     let (status_hex, banner_bg, banner_border, estatus_texto, badge_accion) = if is_immune {

@@ -1,5 +1,5 @@
 /**
- * FIRMA W16 MALLEN® — Puente Directo al Directorio Minucioso de DACH & Benelux
+ * FIRMA MALLEN® — Puente Directo al Directorio Minucioso de DACH & Benelux
  * - Botones limpios sin el contador "6 Dossiers".
  * - Desplegables (<summary>) dinámicos y específicos para cada expediente y precepto legal,
  *   sin repetir frases genéricas ni contadores "2 Étapes Clés".

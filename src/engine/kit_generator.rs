@@ -1,4 +1,4 @@
-//! Generador Determinístico Hiper-Paramétrico de Instrumentos Jurídicos Corporativos — FIRMA W16 MALLEN®.
+//! Generador Determinístico Hiper-Paramétrico de Instrumentos Jurídicos Corporativos — FIRMA MALLEN®.
 //! - 100% apegado a la legislación mexicana vigente (LFPDPPP, LFT, NOMs STPS, CFF, LSS, RACERF, LGPC, LFPC).
 //! - Cero suposiciones falsas: no inventa horarios, no inventa montos, no cruza cargos sin autorización
 //!   y no declara como "ya cumplidos" hechos físicos que requieren llenado o firma en sitio.
@@ -279,7 +279,7 @@ r#"# MANIFIESTO CRIPTOGRÁFICO DE INTEGRIDAD (ÁRBOL DE MERKLE L2) E ÍNDICE PAR
 ---
 
 ### 1. ACREDITACIÓN DE ENSAMBLAJE CONDICIONAL POR ESTRATO DE PERSONAL Y SECTOR SCIAN
-El presente paquete ha sido ensamblado dinámicamente por el motor determinístico de **FIRMA W16 MALLEN®** descartando obligaciones improcedentes y adaptando el clausulado a la escala real de **{emp} colaboradores** y al régimen **{regimen_tit}**:
+El presente paquete ha sido ensamblado dinámicamente por el motor determinístico de **FIRMA MALLEN®** descartando obligaciones improcedentes y adaptando el clausulado a la escala real de **{emp} colaboradores** y al régimen **{regimen_tit}**:
 - **Encaje Societario y Corporativo:** {regimen_det}
 - **Parametrización NOM-035-STPS-2018:** {protocolo_escala}
 - **Parametrización NOM-019-STPS-2011:** {modalidad_csh}
@@ -357,7 +357,7 @@ Yo, _________________________________________________________, declaro que me ha
 | **{rep_legal}** | **{oficial}** | ________________________________________ |
 | Cargo: {cargo} | Medio ARCO: {email} | Fecha de Suscripción: ____/____/2026 |
 
-*Infraestructura Documental FIRMA W16 MALLEN® • Fecha de Compilación: {fecha} • Sello SHA-256:* `{hash}`
+*Infraestructura Documental FIRMA MALLEN® • Fecha de Compilación: {fecha} • Sello SHA-256:* `{hash}`
 "#,
                 razon = razon_social, rfc = tax_id, giro = giro_scian, emp = emp_count,
                 domicilio = domicilio, cp = cp_fiscal, jurisdiccion = jurisdiccion,
@@ -443,7 +443,7 @@ En la localidad de **{jurisdiccion}**, siendo las ______ horas del día ____ de 
 En este mismo acto, con fundamento en el Numeral 4.1 de la **NOM-030-STPS-2009**, el patrón designa formalmente a **{csh_coord}** como **Responsable de los Servicios Preventivos de Seguridad y Salud en el Trabajo**, quien coordinará la elaboración del Diagnóstico Integral de Seguridad y Salud y el Programa Anual de Recorridos Trimestrales sobre las Normas Oficiales Mexicanas aplicables al giro **{giro}**:
 - **Marco Técnico de NOMs STPS a Verificar en Recorridos:** {noms_scian}
 
-*Infraestructura Documental FIRMA W16 MALLEN® • Fecha de Compilación: {fecha} • Sello SHA-256:* `{hash}`
+*Infraestructura Documental FIRMA MALLEN® • Fecha de Compilación: {fecha} • Sello SHA-256:* `{hash}`
 "#,
                 razon = razon_social, rfc = tax_id, reg_patronal = reg_patronal,
                 domicilio = domicilio, cp = cp_fiscal, jurisdiccion = jurisdiccion,
@@ -490,7 +490,7 @@ Para ser requisitada por el trabajador y validada por la Comisión de Seguridad 
 | :--- | :--- | :--- |
 | **{rep_legal}** ({cargo}) | Nombre y Firma: ________________________ | **{csh_coord}** |
 
-*Infraestructura Documental FIRMA W16 MALLEN® • Fecha de Compilación: {fecha} • Sello SHA-256:* `{hash}`
+*Infraestructura Documental FIRMA MALLEN® • Fecha de Compilación: {fecha} • Sello SHA-256:* `{hash}`
 "#,
                 razon = razon_social, rfc = tax_id, giro = giro_scian,
                 domicilio = domicilio, cp = cp_fiscal, jurisdiccion = jurisdiccion,
@@ -596,7 +596,7 @@ Con el objeto de integrar formalmente el Programa Interno de Protección Civil (
 | :--- | :--- | :--- |
 | **{rep_legal}** ({cargo}) | **{csh_coord}** | **{testigo}** |
 
-*Infraestructura Documental FIRMA W16 MALLEN® • Fecha de Compilación: {fecha} • Sello SHA-256:* `{hash}`
+*Infraestructura Documental FIRMA MALLEN® • Fecha de Compilación: {fecha} • Sello SHA-256:* `{hash}`
 "#,
                 razon = razon_social, rfc = tax_id, reg_patronal = reg_patronal,
                 giro = giro_scian, emp = emp_count, clase_prima = clase_prima_imss,
@@ -649,7 +649,7 @@ Como parte de la contabilidad fiscal obligatoria (Art. 28 CFF y Reglas 2.8.1.20 
 | :--- | :--- |
 | **{rep_legal}** ({cargo}) | **{testigo}** |
 
-*Infraestructura Documental FIRMA W16 MALLEN® • Fecha de Compilación: {fecha} • Sello SHA-256:* `{hash}`
+*Infraestructura Documental FIRMA MALLEN® • Fecha de Compilación: {fecha} • Sello SHA-256:* `{hash}`
 "#,
                 garantia = dias_garantia, razon = razon_social, rfc = tax_id,
                 giro = giro_scian, domicilio = domicilio, cp = cp_fiscal,

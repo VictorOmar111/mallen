@@ -1,5 +1,5 @@
 /**
- * FIRMA W16 MALLEN® — Deep Encyclopedia & Official Registries Engine for DACH Block
+ * FIRMA MALLEN® — Deep Encyclopedia & Official Registries Engine for DACH Block
  * Idiomas Regionales 100% Nativos (Cero Español):
  *   - de-DE (Deutschland)
  *   - de-AT (Österreich)
@@ -751,7 +751,7 @@
             ],
             proofCards: [
                 { title: "eIDAS Art. 41 & § 371a ZPO", desc: "Nachweis der Unveränderbarkeit elektronischer Dokumente gemäß EU-Verordnung Nr. 910/2014 (eIDAS), § 371a ZPO und GoBD.", link: "Prozessualen Rahmen ansehen →" },
-                { title: "Zertifiziertes Sachverständigen-Gutachten", desc: "Strukturiert nach deutschen Prüfungsstandards (IDW PS 980 / ISO 37301) durch FIRMA W16 MALLEN®.", link: "Akkreditierung ansehen →" },
+                { title: "Zertifiziertes Sachverständigen-Gutachten", desc: "Strukturiert nach deutschen Prüfungsstandards (IDW PS 980 / ISO 37301) durch FIRMA MALLEN®.", link: "Akkreditierung ansehen →" },
                 { title: "SHA-256 Merkle-Tree-Kryptografie", desc: "Verifizierung über kryptografische Merkle-Bäume. Mathematische Unmöglichkeit nachträglicher Manipulation.", link: "Merkle-Protokoll ansehen →" },
                 { title: "DSGVO & § 26 BDSG Daten-Governance", desc: "Verarbeitung im flüchtigen Arbeitsspeicher (RAM) mit automatischer PII-Maskierung nach Art. 25, 32 DSGVO.", link: "Daten-Governance ansehen →" }
             ]
@@ -1092,7 +1092,7 @@
         ],
         proofCards: [
             { title: "SCSE / ZertES & Olico (CO Art. 957)", desc: "Attestation d'inaltérabilité conforme à l'Ordonnance sur les livres de commerce (Olico), à la SCSE et à l'ancrage L2.", link: "Voir le cadre procédural →" },
-            { title: "Rapport d'Expertise Certifié", desc: "Structuré selon les normes suisses d'audit et de conformité par FIRMA W16 MALLEN®.", link: "Voir l'accréditation →" },
+            { title: "Rapport d'Expertise Certifié", desc: "Structuré selon les normes suisses d'audit et de conformité par FIRMA MALLEN®.", link: "Voir l'accréditation →" },
             { title: "Chiffrement Merkle SHA-256", desc: "Vérification par arbres de Merkle cryptographiques. Impossibilité mathématique d'altération ultérieure.", link: "Voir le protocole Merkle →" },
             { title: "Gouvernance des Données nLPD", desc: "Traitement en mémoire vive (RAM) avec masquage Regex conformément à la nouvelle Loi fédérale sur la protection des données (nLPD).", link: "Voir la gouvernance →" }
         ]

@@ -44,7 +44,7 @@ pub fn build_sdui_tracker_schema(country: &str, locale: &str) -> SduiTrackerSche
 
     match (c.as_str(), lang.as_str()) {
         ("MX", _) => SduiTrackerSchema {
-            brand: "FIRMA W16 MALLEN®",
+            brand: "FIRMA MALLEN®",
             country: "MX".to_string(),
             locale: "es-MX".to_string(),
             hub_signature: "Frankfurt Core Hub — EU-DE-01",
@@ -65,7 +65,7 @@ pub fn build_sdui_tracker_schema(country: &str, locale: &str) -> SduiTrackerSche
             ],
         },
         (_, "fr") => SduiTrackerSchema {
-            brand: "FIRMA W16 MALLEN®",
+            brand: "FIRMA MALLEN®",
             country: c,
             locale: locale.to_string(),
             hub_signature: "Frankfurt Core Hub — EU-DE-01",
@@ -86,7 +86,7 @@ pub fn build_sdui_tracker_schema(country: &str, locale: &str) -> SduiTrackerSche
             ],
         },
         (_, "it") => SduiTrackerSchema {
-            brand: "FIRMA W16 MALLEN®",
+            brand: "FIRMA MALLEN®",
             country: c,
             locale: locale.to_string(),
             hub_signature: "Frankfurt Core Hub — EU-DE-01",
@@ -107,7 +107,7 @@ pub fn build_sdui_tracker_schema(country: &str, locale: &str) -> SduiTrackerSche
             ],
         },
         (_, "nl") => SduiTrackerSchema {
-            brand: "FIRMA W16 MALLEN®",
+            brand: "FIRMA MALLEN®",
             country: c,
             locale: locale.to_string(),
             hub_signature: "Frankfurt Core Hub — EU-DE-01",
@@ -128,7 +128,7 @@ pub fn build_sdui_tracker_schema(country: &str, locale: &str) -> SduiTrackerSche
             ],
         },
         (_, "lb") => SduiTrackerSchema {
-            brand: "FIRMA W16 MALLEN®",
+            brand: "FIRMA MALLEN®",
             country: c,
             locale: locale.to_string(),
             hub_signature: "Frankfurt Core Hub — EU-DE-01",
@@ -149,7 +149,7 @@ pub fn build_sdui_tracker_schema(country: &str, locale: &str) -> SduiTrackerSche
             ],
         },
         _ => SduiTrackerSchema {
-            brand: "FIRMA W16 MALLEN®",
+            brand: "FIRMA MALLEN®",
             country: c,
             locale: locale.to_string(),
             hub_signature: "Frankfurt Core Hub — EU-DE-01",
@@ -211,7 +211,7 @@ pub fn compile_tracker_certificate_pdf(
     columns: (1fr, auto),
     align: horizon,
     [
-      #text(size: 12pt, weight: "bold", fill: white)[FIRMA W16 MALLEN® — COMPLIANCE IMPLEMENTATION TRACKER]
+      #text(size: 12pt, weight: "bold", fill: white)[FIRMA MALLEN® — COMPLIANCE IMPLEMENTATION TRACKER]
       #v(2pt)
       #text(size: 7.5pt, fill: rgb("#38bdf8"))[Cryptographic Hub: Frankfurt Core Hub — EU-DE-01 • eIDAS Art. 41 / CCom Art. 89-93 / SEC-FINRA]
     ],
@@ -254,7 +254,7 @@ pub fn compile_tracker_certificate_pdf(
 #line(length: 100%, stroke: 0.5pt + rgb("#94a3b8"))
 #v(4pt)
 #text(size: 7pt, fill: rgb("#475569"))[
-  © 2026 FIRMA W16 MALLEN® (mallen.lat) • Deterministic Auditing & Digital Expert Infrastructure • Cryptographic Signature: Central Europe Region (Frankfurt Core Hub — EU-DE-01) • Cross-border probative validity: eIDAS Art. 41 (EU) • Commercial Code Art. 89-93 (MX) • SEC / FINRA Compliance.
+  © 2026 FIRMA MALLEN® (mallen.lat) • Deterministic Auditing & Digital Expert Infrastructure • Cryptographic Signature: Central Europe Region (Frankfurt Core Hub — EU-DE-01) • Cross-border probative validity: eIDAS Art. 41 (EU) • Commercial Code Art. 89-93 (MX) • SEC / FINRA Compliance.
 ]
 "##);
 

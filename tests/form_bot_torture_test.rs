@@ -823,7 +823,7 @@ async fn test_http_form_bot_14_scenarios_with_real_db_companies() {
 
     // Escenario 34: Verificar que el nuevo mensaje B2B sea humano, consultivo y no incluya cifras de multa intimidantes
     let msg_sample = HttpFormBot::build_human_consultative_message("CORPORATIVO ALSEA", "CORPORATIVO%20ALSEA");
-    assert!(msg_sample.contains("Les saludamos cordialmente de FIRMA W16 MALLEN"));
+    assert!(msg_sample.contains("Les saludamos cordialmente de FIRMA MALLEN®"));
     assert!(msg_sample.contains("descargar sin costo su resumen tecnico confidencial"));
     assert!(!msg_sample.contains("1245958"), "El mensaje consultivo no debe exponer montos de multas intimidantes en el buzón abierto");
 
@@ -2080,15 +2080,15 @@ async fn test_http_form_bot_14_scenarios_with_real_db_companies() {
     }
     println!("║  89  ║ Pre-Dictamen PDF con Link Único a Pasarela (/checkout?ref=)  ║ 5/5 Empresas con URL de Pago, RFC y Monto Propio  ║ [SUPERADO]   ║");
 
-    // ESCENARIO 90: Auditoría de Identidad Visual ("FIRMA W16 MALLEN®" + "INGENIERÍA LEGAL PREVENTIVA" + 0 icono "M")
+    // ESCENARIO 90: Auditoría de Identidad Visual ("FIRMA MALLEN®" + "INGENIERÍA LEGAL PREVENTIVA" + 0 icono "M")
     let idx_html = std::fs::read_to_string("public/index.html").unwrap_or_default();
-    assert!(idx_html.contains("FIRMA W16 MALLEN®"));
+    assert!(idx_html.contains("FIRMA MALLEN®"));
     assert!(idx_html.to_uppercase().contains("INGENIERÍA LEGAL PREVENTIVA"));
     assert!(!idx_html.to_uppercase().contains("SISTEMA PERICIAL DE GESTIÓN DE RIESGO W16"));
     assert!(!idx_html.contains(">M</div>"));
     let app_js_src = std::fs::read_to_string("public/js/app.js").unwrap_or_default();
     assert!(!app_js_src.contains(r#"?.value || "45""#));
-    println!("║  90  ║ Identidad Visual: FIRMA W16 MALLEN® | INGENIERÍA LEGAL PREV. ║ 0 Icono 'M' | 0 Hardcode '45' | UI 100% Limpia    ║ [SUPERADO]   ║");
+    println!("║  90  ║ Identidad Visual: FIRMA MALLEN® | INGENIERÍA LEGAL PREV. ║ 0 Icono 'M' | 0 Hardcode '45' | UI 100% Limpia    ║ [SUPERADO]   ║");
 
     // ESCENARIO 91: Módulos 2, 3 y 4 (IIA Evidencia Forense DOM + NSF Vigilancia 90 Días/CAPA + Firma RFC 8785)
     let ev_rec = worker_inegi_engine::engine::pdf_generator::record_forensic_dom_evidence(
@@ -2311,7 +2311,7 @@ async fn test_http_form_bot_14_scenarios_with_real_db_companies() {
         let p_path = format!("public/region/{}/index.html", eu_c);
         let p_html = std::fs::read_to_string(&p_path).expect("Portal europeo debe existir");
         assert!(p_html.contains("</html>"), "El portal {} debe tener HTML íntegro sin truncamientos", eu_c);
-        assert!(p_html.contains("FIRMA MALLEN®") && !p_html.contains("FIRMA PERICIAL MALLEN"));
+        assert!(p_html.contains("FIRMA MALLEN®") && !p_html.contains("FIRMA MALLEN®"));
         assert!(!p_html.contains("backdrop-blur"), "Cero backdrop-blur en {}", eu_c);
     }
     let eu_ctrl = std::fs::read_to_string("public/js/eu_portal_controller.js").unwrap_or_default();
@@ -2462,7 +2462,7 @@ async fn test_http_form_bot_14_scenarios_with_real_db_companies() {
         "La sección de Variables Operativas no debe contener el paréntesis '(Opcional)'"
     );
     assert!(
-        app_100.contains("validateMandatoryExactEmployees") && app_100.contains("Es obligatorio ingresar el número exacto de colaboradores"),
+        app_100.contains("validateMandatoryExactEmployees") && app_100.contains("mallen-input-subtle-red"),
         "El sistema debe bloquear el avance y avisar al usuario si no ingresa el número exacto de empleados"
     );
 

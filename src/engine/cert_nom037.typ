@@ -53,7 +53,7 @@
         [
           #line(length: 70%, stroke: 0.8pt + rgb("#0f172a"))
           #v(0.2em)
-          #text(weight: "bold", size: 9.5pt)[FIRMA W16 MALLEN®] \
+          #text(weight: "bold", size: 9.5pt)[FIRMA MALLEN®] \
           #text(size: 8pt)[Auditor Pericial Designado | Reg. CED-2026-B2B]
         ],
         [

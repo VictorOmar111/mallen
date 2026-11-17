@@ -78,7 +78,7 @@
 </style>
 
   <link rel="stylesheet" href="/css/enterprise-linear.css?v=2026.77">
-  <!-- IDENTIDAD_CERTIFICADA: FIRMA W16 MALLEN® | INGENIERÍA LEGAL PREVENTIVA -->
+  <!-- IDENTIDAD_CERTIFICADA: FIRMA MALLEN® | INGENIERÍA LEGAL PREVENTIVA -->
   <link rel="stylesheet" href="/css/mallen-high-impact.css?v=2026.105">
 </head>
 <body class="bg-slate-950 text-slate-100 min-h-screen selection:bg-blue-600 selection:text-white mallen-home-4blocks">
@@ -96,7 +96,7 @@
       </div>
       <div>
         <span class="block text-base font-extrabold tracking-tight text-white sm:text-lg" style="font-family: var(--font-display);">
-          FIRMA W16 MALLEN®
+          FIRMA MALLEN®
         </span>
         <span class="block text-[11px] font-semibold uppercase tracking-[0.18em] text-emerald-400">
           INGENIERÍA LEGAL PREVENTIVA
@@ -398,7 +398,7 @@
             <div class="grid sm:grid-cols-2 gap-3 mt-4 pt-4 border-t border-white/15 text-[11px]">
               <label class="flex items-center justify-between bg-white/[0.05] shadow-[0_8px_32px_rgba(0,0,0,0.5)] p-2.5 rounded-lg border border-white/15">
                 <span>Plantilla exacta de empleados:</span>
-                <input id="cal_emp" type="number" value="" placeholder="Ingrese número exacto" min="1" class="w-20 bg-slate-950 border border-slate-700 rounded px-2 py-1 text-right text-emerald-400 font-bold">
+                <input id="cal_emp" type="number" value="" placeholder="" min="1" class="w-20 bg-slate-950 border border-slate-700 rounded px-2 py-1 text-right text-emerald-400 font-bold">
               </label>
               <label class="flex items-center gap-2 bg-white/[0.05] shadow-[0_8px_32px_rgba(0,0,0,0.5)] p-2.5 rounded-lg border border-white/15 cursor-pointer">
                 <input id="cal_nom037" type="checkbox" checked class="accent-blue-500">
@@ -1804,7 +1804,7 @@ window.updateMallenSandbox = function(customEmp) {
         det.removeAttribute('open');
         if (idx === 0) {
           var s0 = det.querySelector('summary');
-          if (s0) s0.textContent = 'Plantilla Exacta de Colaboradores (Obligatorio) y Variables Operativas';
+          if (s0) s0.textContent = 'Calibración de Plantilla Laboral y Variables Operativas';
         } else {
           det.style.display = 'none'; // Los 16 campos contractuales se difieren al flujo post-diagnóstico / post-pago
         }

@@ -220,3 +220,18 @@ summary,
     scroll-behavior: auto !important;
   }
 }
+
+/* Estado de validación en rojo sutil para cuando el RFC no arroja empleados automáticos */
+input.mallen-input-subtle-red {
+  border-color: rgba(239, 68, 68, 0.78) !important;
+  background-color: rgba(127, 29, 29, 0.14) !important;
+  box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.16) !important;
+  transition: all 0.22s ease !important;
+}
+
+.mallen-subtle-red-hint {
+  color: #f87171 !important;
+  font-size: 0.86rem !important;
+  font-weight: 500;
+  margin-top: 6px;
+}

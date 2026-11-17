@@ -1,5 +1,5 @@
 /**
- * FIRMA W16 MALLEN® — Selector Inicial de Bloque/País/Idioma, Consentimiento Local y Portales Regionales
+ * FIRMA MALLEN® — Selector Inicial de Bloque/País/Idioma, Consentimiento Local y Portales Regionales
  * - Cero emojis en toda la interfaz.
  * - Estructura limpia por bloque: LATAM, DACH y BENELUX en grande, y debajo cada país sin repetir su nombre.
  * - Flujo estricto:
@@ -14,7 +14,7 @@
         "es-MX": {
             country: "MX", block: "LATAM", name: "México", langName: "Español (es-MX)", currency: "MXN (\$)",
             privacyTitle: "Aviso de Privacidad Integral, Política de Cookies Técnicas y Alcance Pericial (LFPDPPP / SABG)",
-            privacyBody: "FIRMA W16 MALLEN® (mallen.lat), en cumplimiento con la Ley Federal de Protección de Datos Personales en Posesión de los Particulares (LFPDPPP vigente ante la SABG) y el Código de Comercio (Arts. 89 a 93), informa que este sistema utiliza exclusivamente cookies técnicas de sesión y ejecuta compulsas OSINT sobre padrones públicos (INEGI DENUE, SAT Art. 69-B, STPS REPSE, IMSS e INAI/SABG) sin almacenar datos personales sensibles.",
+            privacyBody: "FIRMA MALLEN® (mallen.lat), en cumplimiento con la Ley Federal de Protección de Datos Personales en Posesión de los Particulares (LFPDPPP vigente ante la SABG) y el Código de Comercio (Arts. 89 a 93), informa que este sistema utiliza exclusivamente cookies técnicas de sesión y ejecuta compulsas OSINT sobre padrones públicos (INEGI DENUE, SAT Art. 69-B, STPS REPSE, IMSS e INAI/SABG) sin almacenar datos personales sensibles.",
             cookieCheckLabel: "He leído y acepto el Aviso de Privacidad Integral (LFPDPPP), la Política de Cookies Técnicas y los Términos de Alcance Pericial para México.",
             enterBtn: "Ingresar al Portal de México"
         },
@@ -31,7 +31,7 @@
             cryptoLaw: "eIDAS-VO (EU) Nr. 910/2014 Art. 41 • § 371a ZPO",
             fineNote: "Berechnung gemäß Art. 83 DSGVO, § 25 ArbSchG, § 30 OWiG und BAFA-Bußgeldkatalog.",
             privacyTitle: "Datenschutzerklärung, Cookie-Richtlinie (§ 25 TDDDG) & Prüfungsbedingungen (DSGVO / BDSG)",
-            privacyBody: "FIRMA W16 MALLEN® (mallen.lat) verwendet im Rahmen dieses Compliance-Systems ausschließlich technisch notwendige Sitzungs-Cookies gemäß § 25 Abs. 2 Nr. 2 TDDDG sowie öffentlich zugängliche Unternehmensregisterdaten (Handelsregister, Bundesanzeiger, TLS/SSL-Telemetrie) gemäß Art. 6 Abs. 1 lit. f DSGVO und BDSG.",
+            privacyBody: "FIRMA MALLEN® (mallen.lat) verwendet im Rahmen dieses Compliance-Systems ausschließlich technisch notwendige Sitzungs-Cookies gemäß § 25 Abs. 2 Nr. 2 TDDDG sowie öffentlich zugängliche Unternehmensregisterdaten (Handelsregister, Bundesanzeiger, TLS/SSL-Telemetrie) gemäß Art. 6 Abs. 1 lit. f DSGVO und BDSG.",
             cookieCheckLabel: "Ich habe die Datenschutzerklärung nach DSGVO/BDSG sowie die Cookie-Richtlinie (§ 25 TDDDG) gelesen und akzeptiere diese für Deutschland.",
             enterBtn: "Weiter zum Deutschen Compliance-Portal",
             sectionTitle: "Gesetzliche Prüfungsmodule für Deutschland (6 Hauptsäulen • 37 Vektoren)",
@@ -67,7 +67,7 @@
             cryptoLaw: "eIDAS-VO Art. 41 • SVG (Signatur- und Vertrauensdienstegesetz)",
             fineNote: "Bemessung nach österreichischem VStG (Verwaltungsstrafgesetz), § 130 ASchG, WiEReG und Art. 83 DSGVO.",
             privacyTitle: "Datenschutzerklärung, Cookie-Richtlinie (§ 165 TKG 2021) & Prüfungsbedingungen (DSG Österreich)",
-            privacyBody: "FIRMA W16 MALLEN® (mallen.lat) setzt ausschließlich technisch erforderliche Sitzungs-Cookies gemäß § 165 Abs. 3 TKG 2021 ein und verarbeitet öffentliche Firmenbuch- und UID-Registerdaten im Einklang mit der DSGVO und dem österreichischen Datenschutzgesetz (DSG — Datenschutzbehörde DSB).",
+            privacyBody: "FIRMA MALLEN® (mallen.lat) setzt ausschließlich technisch erforderliche Sitzungs-Cookies gemäß § 165 Abs. 3 TKG 2021 ein und verarbeitet öffentliche Firmenbuch- und UID-Registerdaten im Einklang mit der DSGVO und dem österreichischen Datenschutzgesetz (DSG — Datenschutzbehörde DSB).",
             cookieCheckLabel: "Ich akzeptiere die österreichische Datenschutzerklärung (DSG/DSGVO) sowie die Cookie-Richtlinie nach § 165 TKG 2021.",
             enterBtn: "Weiter zum Österreichischen Compliance-Portal",
             sectionTitle: "Gesetzliche Prüfungsmodule für Österreich (6 Hauptsäulen • 37 Vektoren)",
@@ -103,7 +103,7 @@
             cryptoLaw: "ZertES (Bundesgesetz über die elektronische Signatur) • OR Art. 957",
             fineNote: "Bussenberechnung nach Art. 60 ff. revDSG (persönliche Strafbarkeit bis CHF 250'000), ArG und Schweizer Obligationenrecht (OR).",
             privacyTitle: "Datenschutzerklärung & Cookie-Information gemäss Schweizer revDSG / FMG",
-            privacyBody: "FIRMA W16 MALLEN® (mallen.lat) bearbeitet im Rahmen dieser Plattform ausschliesslich technisch notwendige Sitzungsdaten gemäss Art. 45c FMG sowie öffentlich zugängliche Zefix/UID-Handelsregisterdaten nach dem revidierten Schweizer Datenschutzgesetz (revDSG — EDÖB).",
+            privacyBody: "FIRMA MALLEN® (mallen.lat) bearbeitet im Rahmen dieser Plattform ausschliesslich technisch notwendige Sitzungsdaten gemäss Art. 45c FMG sowie öffentlich zugängliche Zefix/UID-Handelsregisterdaten nach dem revidierten Schweizer Datenschutzgesetz (revDSG — EDÖB).",
             cookieCheckLabel: "Ich akzeptiere die Datenschutzerklärung gemäss Schweizer revDSG sowie die Cookie-Richtlinie (Art. 45c FMG).",
             enterBtn: "Weiter zum Schweizer Compliance-Portal (de-CH)",
             sectionTitle: "Gesetzliche Prüfungsmodule für die Schweiz (6 Hauptsäulen • 37 Vektoren)",
@@ -139,7 +139,7 @@
             cryptoLaw: "SCSE / ZertES (Signature électronique suisse) • CO art. 957",
             fineNote: "Calcul des amendes selon les art. 60 ss nLPD (responsabilité pénale jusqu'à CHF 250'000), LTr et Code des obligations.",
             privacyTitle: "Déclaration de protection des données & Cookies (nLPD Suisse / LTC)",
-            privacyBody: "FIRMA W16 MALLEN® (mallen.lat) utilise exclusivement des cookies techniques nécessaires (art. 45c LTC) et traite des données publiques du Registre du commerce (IDE/Zefix) conformément à la Loi fédérale sur la protection des données (nLPD — PFPDT).",
+            privacyBody: "FIRMA MALLEN® (mallen.lat) utilise exclusivement des cookies techniques nécessaires (art. 45c LTC) et traite des données publiques du Registre du commerce (IDE/Zefix) conformément à la Loi fédérale sur la protection des données (nLPD — PFPDT).",
             cookieCheckLabel: "J'accepte la déclaration de protection des données selon la nLPD suisse et la politique de cookies techniques.",
             enterBtn: "Accéder au Portail Suisse (fr-CH)",
             sectionTitle: "Modules d'Audit Réglementaire pour la Suisse (6 Piliers • 37 Vecteurs)",
@@ -175,7 +175,7 @@
             cryptoLaw: "FiEle / ZertES (Firma elettronica svizzera) • CO art. 957",
             fineNote: "Stima sanzionatoria secondo gli art. 60 segg. nLPD (fino a CHF 250'000), LL e Codice delle obbligazioni.",
             privacyTitle: "Informativa sulla protezione dei dati & Cookie (nLPD Svizzera / LTC)",
-            privacyBody: "FIRMA W16 MALLEN® (mallen.lat) utilizza esclusivamente cookie tecnici necessari (art. 45c LTC) e dati pubblici del Registro di commercio (IDI/Zefix) in conformità con la Legge federale sulla protezione dei dati (nLPD — IFPDT).",
+            privacyBody: "FIRMA MALLEN® (mallen.lat) utilizza esclusivamente cookie tecnici necessari (art. 45c LTC) e dati pubblici del Registro di commercio (IDI/Zefix) in conformità con la Legge federale sulla protezione dei dati (nLPD — IFPDT).",
             cookieCheckLabel: "Accetto l'informativa sulla protezione dei dati secondo la nLPD svizzera e la politica sui cookie tecnici.",
             enterBtn: "Accedi al Portale Svizzero (it-CH)",
             sectionTitle: "Moduli di Perizia Normativa per la Svizzera (6 Pilastri • 37 Vettori)",
@@ -211,7 +211,7 @@
             cryptoLaw: "eIDAS-verordening Art. 41 • Art. 156a Wetboek van Burgerlijke Rechtsvordering",
             fineNote: "Berekening conform Boetebeleidsregels Autoriteit Persoonsgegevens (AVG), Arbowet en ACM-richtlijnen.",
             privacyTitle: "Privacyverklaring, Cookiebeleid (Art. 11.7a Telecommunicatiewet) & Auditvoorwaarden (AVG / AP)",
-            privacyBody: "FIRMA W16 MALLEN® (mallen.lat) plaatst uitsluitend functioneel noodzakelijke sessiecookies conform art. 11.7a lid 3 Telecommunicatiewet en verwerkt openbare KVK-handelsregistergegevens volgens de Algemene Verordening Gegevensbescherming (AVG — Autoriteit Persoonsgegevens).",
+            privacyBody: "FIRMA MALLEN® (mallen.lat) plaatst uitsluitend functioneel noodzakelijke sessiecookies conform art. 11.7a lid 3 Telecommunicatiewet en verwerkt openbare KVK-handelsregistergegevens volgens de Algemene Verordening Gegevensbescherming (AVG — Autoriteit Persoonsgegevens).",
             cookieCheckLabel: "Ik ga akkoord met de Nederlandse Privacyverklaring (AVG/UAVG) en het functionele cookiebeleid.",
             enterBtn: "Open het Nederlandse Compliance Portaal (nl-NL)",
             sectionTitle: "Wettelijke Toetsingsmodules voor Nederland (6 Hoofdpijlers • 37 Vectoren)",
@@ -247,7 +247,7 @@
             cryptoLaw: "eIDAS Art. 41 • Wetboek van economisch recht Boek XII",
             fineNote: "Berekend volgens het Belgisch Sociaal Strafwetboek (Niveau 1-4 met opdeciemen), GBA en WER.",
             privacyTitle: "Privacyverklaring, Cookiebeleid & Voorwaarden (Belgische GBA / AVG)",
-            privacyBody: "FIRMA W16 MALLEN® (mallen.lat) gebruikt uitsluitend strikt noodzakelijke technische cookies (Wet Elektronische Communicatie) en openbare KBO-ondernemingsgegevens conform de AVG en de Belgische Kaderwet van 30 juli 2018 (Gegevensbeschermingsautoriteit — GBA).",
+            privacyBody: "FIRMA MALLEN® (mallen.lat) gebruikt uitsluitend strikt noodzakelijke technische cookies (Wet Elektronische Communicatie) en openbare KBO-ondernemingsgegevens conform de AVG en de Belgische Kaderwet van 30 juli 2018 (Gegevensbeschermingsautoriteit — GBA).",
             cookieCheckLabel: "Ik aanvaard de Belgische Privacyverklaring (GBA) en het technisch cookiebeleid.",
             enterBtn: "Open het Belgische Compliance Portaal (nl-BE)",
             sectionTitle: "Wettelijke Auditmodules voor België (6 Hoofdpijlers • 37 Vectoren)",
@@ -283,7 +283,7 @@
             cryptoLaw: "eIDAS Art. 41 • Code de droit économique Livre XII",
             fineNote: "Calcul selon le Code pénal social belge (Niveaux 1 à 4 avec décimes additionnels), APD et CDE.",
             privacyTitle: "Politique de Confidentialité, Cookies & Conditions (APD Belgique / RGPD)",
-            privacyBody: "FIRMA W16 MALLEN® (mallen.lat) utilise exclusivement des cookies techniques strictement nécessaires et traite les données publiques de la Banque-Carrefour des Entreprises (BCE) conformément au RGPD et à la loi belge du 30 juillet 2018 (Autorité de protection des données — APD).",
+            privacyBody: "FIRMA MALLEN® (mallen.lat) utilise exclusivement des cookies techniques strictement nécessaires et traite les données publiques de la Banque-Carrefour des Entreprises (BCE) conformément au RGPD et à la loi belge du 30 juillet 2018 (Autorité de protection des données — APD).",
             cookieCheckLabel: "J'accepte la Politique de Confidentialité belge (APD/RGPD) et la politique relative aux cookies techniques.",
             enterBtn: "Accéder au Portail Belge (fr-BE)",
             sectionTitle: "Modules d'Audit Réglementaire pour la Belgique (6 Piliers • 37 Vecteurs)",
@@ -319,7 +319,7 @@
             cryptoLaw: "eIDAS Art. 41 • Code civil luxembourgeois Art. 1322-1",
             fineNote: "Berechnung no CNPD-Sanktiounen, Code du Travail (ITM) a Loi RBE vum 13. Januar 2019.",
             privacyTitle: "Dateschutz- & Cookie-Richtlinn fir Lëtzebuerg (CNPD / RGPD)",
-            privacyBody: "FIRMA W16 MALLEN® (mallen.lat) benotzt nëmmen technesch noutwendeg Sessiouns-Cookien a veraarbecht ëffentlech RCS- an Entreprise-Donnéeën am Aklang mat der RGPD an dem Lëtzebuerger Dateschutzgesetz vum 1. August 2018 (CNPD).",
+            privacyBody: "FIRMA MALLEN® (mallen.lat) benotzt nëmmen technesch noutwendeg Sessiouns-Cookien a veraarbecht ëffentlech RCS- an Entreprise-Donnéeën am Aklang mat der RGPD an dem Lëtzebuerger Dateschutzgesetz vum 1. August 2018 (CNPD).",
             cookieCheckLabel: "Ech akzeptéieren d'Lëtzebuerger Dateschutzrichtlinn (CNPD) an d'Cookie-Politik.",
             enterBtn: "Op de Lëtzebuerger Compliance-Portal (lb-LU)",
             sectionTitle: "Gesetzlech Prüfungsmoduler fir Lëtzebuerg (6 Haaptsäilen • 37 Vektoren)",
@@ -355,7 +355,7 @@
             cryptoLaw: "eIDAS Art. 41 • Code civil luxembourgeois Art. 1322-1",
             fineNote: "Barème conforme au RGPD (CNPD), Code du Travail (ITM) et Loi du 13 janvier 2019 (RBE : 1 250 € à 1 250 000 €).",
             privacyTitle: "Politique de Confidentialité, Cookies & Conditions (CNPD Luxembourg / RGPD)",
-            privacyBody: "FIRMA W16 MALLEN® (mallen.lat) utilise exclusivement des cookies techniques nécessaires et traite les données publiques du Registre de Commerce et des Sociétés (RCS Luxembourg) conformément au RGPD et à la loi luxembourgeoise du 1er août 2018 (CNPD).",
+            privacyBody: "FIRMA MALLEN® (mallen.lat) utilise exclusivement des cookies techniques nécessaires et traite les données publiques du Registre de Commerce et des Sociétés (RCS Luxembourg) conformément au RGPD et à la loi luxembourgeoise du 1er août 2018 (CNPD).",
             cookieCheckLabel: "J'accepte la Politique de Confidentialité luxembourgeoise (CNPD/RGPD) et la politique de cookies techniques.",
             enterBtn: "Accéder au Portail Luxembourgeois (fr-LU)",
             sectionTitle: "Modules d'Audit Réglementaire pour le Luxembourg (6 Piliers • 37 Vecteurs)",
@@ -475,7 +475,7 @@
             simBodyTpl: function(name, lang, path) {
                 return "Deterministische Wert- und Compliance-Analyse über die 37 gesetzlichen Vektoren für " + name + " (" + lang + "). Sämtliche 7 unterschriftsreifen Rechtsinstrumente sind strukturiert unter " + path + ".";
             },
-            footer1: "© 2026 FIRMA W16 MALLEN® (mallen.lat) • Alle Rechte vorbehalten.",
+            footer1: "© 2026 FIRMA MALLEN® (mallen.lat) • Alle Rechte vorbehalten.",
             footer2: "Infrastruktur für deterministische Audits und digitale Sachverständigenbegutachtung",
             footer3: "Kryptografische Signatur: Region Zentraleuropa (Frankfurt Core Hub — EU-DE-01).",
             footer4: "Regulatorische Konformität und grenzüberschreitende Beweiskraft: eIDAS Art. 41 (EU) • Handelsgesetzbuch Art. 89-93 (MX) • SEC / FINRA Compliance."
@@ -504,7 +504,7 @@
             simBodyTpl: function(name, lang, path) {
                 return "Évaluation déterministe axée sur la création de valeur et la conformité sur les 37 vecteurs réglementaires pour " + name + " (" + lang + "). Les 7 actes prêts à signer sont structurés dans " + path + ".";
             },
-            footer1: "© 2026 FIRMA W16 MALLEN® (mallen.lat) • Tous droits réservés.",
+            footer1: "© 2026 FIRMA MALLEN® (mallen.lat) • Tous droits réservés.",
             footer2: "Infrastructure d'Audit Déterministe et d'Expertise Numérique",
             footer3: "Signature Cryptographique : Région Europe Centrale (Frankfurt Core Hub — EU-DE-01).",
             footer4: "Conformité réglementaire et valeur probante transfrontalière : eIDAS Art. 41 (UE) • Code de Commerce Art. 89-93 (MX) • Conformité SEC / FINRA."
@@ -533,7 +533,7 @@
             simBodyTpl: function(name, lang, path) {
                 return "Valutazione deterministica orientata al valore operativo sui 37 vettori normativi per " + name + " (" + lang + "). I 7 contratti e regolamenti pronti per la firma sono strutturati in " + path + ".";
             },
-            footer1: "© 2026 FIRMA W16 MALLEN® (mallen.lat) • Tutti i diritti riservati.",
+            footer1: "© 2026 FIRMA MALLEN® (mallen.lat) • Tutti i diritti riservati.",
             footer2: "Infrastruttura di Audit Deterministico e Perizia Digitale",
             footer3: "Firma Crittografica: Regione Europa Centrale (Frankfurt Core Hub — EU-DE-01).",
             footer4: "Conformità normativa e validità probatoria transfrontaliera: eIDAS Art. 41 (UE) • Codice di Commercio Art. 89-93 (MX) • SEC / FINRA Compliance."
@@ -562,7 +562,7 @@
             simBodyTpl: function(name, lang, path) {
                 return "Deterministische waarde- en compliance-evaluatie over de 37 wettelijke vectoren voor " + name + " (" + lang + "). Alle 7 ondertekeningsklare overeenkomsten zijn gestructureerd in " + path + ".";
             },
-            footer1: "© 2026 FIRMA W16 MALLEN® (mallen.lat) • Alle rechten voorbehouden.",
+            footer1: "© 2026 FIRMA MALLEN® (mallen.lat) • Alle rechten voorbehouden.",
             footer2: "Infrastructuur voor Deterministische Audit en Digitale Expertise",
             footer3: "Cryptografische Handtekening: Regio Centraal-Europa (Frankfurt Core Hub — EU-DE-01).",
             footer4: "Wettelijke naleving en grensoverschrijdende bewijskracht: eIDAS Art. 41 (EU) • Wetboek van Koophandel Art. 89-93 (MX) • SEC / FINRA Compliance."
@@ -591,7 +591,7 @@
             simBodyTpl: function(name, lang, path) {
                 return "Deterministesch Wäert- a Konformitéitsevaluatioun iwwer déi 37 gesetzlech Vektore fir " + name + " (" + lang + "). Déi 7 ënnerschrëftsreife Kontrakter sinn an " + path + " strukturéiert.";
             },
-            footer1: "© 2026 FIRMA W16 MALLEN® (mallen.lat) • All Rechter virbehalen.",
+            footer1: "© 2026 FIRMA MALLEN® (mallen.lat) • All Rechter virbehalen.",
             footer2: "Infrastruktur fir Deterministeschen Audit an Digital Expertise",
             footer3: "Kryptographesch Ënnerschrëft: Regioun Zentraleuropa (Frankfurt Core Hub — EU-DE-01).",
             footer4: "Reglementaresch Konformitéit a grenziwwerschreidend Beweiskraaft: eIDAS Art. 41 (EU) • Code de Commerce Art. 89-93 (MX) • SEC / FINRA Compliance."
@@ -795,7 +795,7 @@
                     <div style="display:flex;align-items:center;gap:12px;">
                         
                         <div>
-                            <div style="font-weight:800;font-size:15px;letter-spacing:0.04em;color:#ffffff;">FIRMA W16 MALLEN®</div>
+                            <div style="font-weight:800;font-size:15px;letter-spacing:0.04em;color:#ffffff;">FIRMA MALLEN®</div>
                             <div style="font-family:'JetBrains Mono',monospace;font-size:11px;color:#34d399;">GLOBAL REGULATORY COMPLIANCE ENGINE W16</div>
                         </div>
                     </div>
@@ -935,7 +935,7 @@
             </div>
 
             <div style="text-align:center;font-family:'JetBrains Mono',monospace;font-size:11px;color:#64748b;padding-top:20px;">
-                FIRMA W16 MALLEN® • SHA-256 & L2 MERKLE ANCHORED GRC SYSTEM • ALL RIGHTS RESERVED
+                FIRMA MALLEN® • SHA-256 & L2 MERKLE ANCHORED GRC SYSTEM • ALL RIGHTS RESERVED
             </div>
         `;
 
@@ -1013,7 +1013,7 @@
         localStorage.setItem("mallen_locale", activeLocale);
 
         document.documentElement.lang = activeLocale;
-        document.title = "FIRMA W16 MALLEN® — " + data.name + " (" + activeLocale + ")";
+        document.title = "FIRMA MALLEN® — " + data.name + " (" + activeLocale + ")";
 
         document.getElementById("eu-block-pill").textContent = data.block;
         document.getElementById("eu-country-name").textContent = data.name;
