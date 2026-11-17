@@ -2311,7 +2311,7 @@ async fn test_http_form_bot_14_scenarios_with_real_db_companies() {
         let p_path = format!("public/region/{}/index.html", eu_c);
         let p_html = std::fs::read_to_string(&p_path).expect("Portal europeo debe existir");
         assert!(p_html.contains("</html>"), "El portal {} debe tener HTML íntegro sin truncamientos", eu_c);
-        assert!(p_html.contains("FIRMA MALLEN®") && !p_html.contains("FIRMA MALLEN®"));
+        assert!(p_html.contains("FIRMA MALLEN®") && !p_html.contains("FIRMA PERICIAL MALLEN"));
         assert!(!p_html.contains("backdrop-blur"), "Cero backdrop-blur en {}", eu_c);
     }
     let eu_ctrl = std::fs::read_to_string("public/js/eu_portal_controller.js").unwrap_or_default();

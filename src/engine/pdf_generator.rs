@@ -2335,6 +2335,10 @@ fn build_report_typst_markup_full(
         .replace("{{REF_TAX}}", &tax_clean)
         .replace("{{VECTOR_QR_SEAL}}", &render_vector_qr_seal_typst(&empresa.audit_hash))
         .replace("{{VECTORS_37_TABLE_TYPST}}", &vectors_37_typst)
+        .replace("0x0x", "0x")
+        .replace("C.P.C. Víctor Omar Malpica Guillén", "FIRMA MALLEN®")
+        .replace("C.P.C. Víctor Omar Malpica Guillen", "FIRMA MALLEN®")
+        .replace("FIRMA W16 MALLEN®", "FIRMA MALLEN®")
         .replace("{{ROADMAP_PHASE_1}}", &{
             let (p1, _, _, _) = crate::modules::vectors_37::render_roadmap_actions_typst(&actividad_clean, is_censored_micro_report && !is_immune);
             p1
