@@ -61,4 +61,23 @@ impl CryptoSigner {
         let signature = self.sign_document_hash(&hash)?;
         Ok(signature)
     }
+
+    /// Calcula el hash SHA-256 canónico (RFC 8785) operando exclusivamente sobre centavos enteros (`u64`)
+    /// y llaves ordenadas alfabéticamente, evitando cualquier imprecisión de punto flotante (`f64`).
+    pub fn compute_canonical_cents_hash(
+        tax_id: &str,
+        scian_code: &str,
+        employee_count: u32,
+        total_fine_cents: u64,
+    ) -> String {
+        let canonical = format!(
+            "{{\"emp\":{},\"fine_cents\":{},\"scian\":\"{}\",\"tax_id\":\"{}\"}}",
+            employee_count,
+            total_fine_cents,
+            scian_code.trim(),
+            tax_id.trim().to_uppercase()
+        );
+        Self::compute_bytes_hash(canonical.as_bytes())
+    }
+
 }

@@ -1,3 +1,4 @@
+// TRANSACTIONAL_TABLES_PROTECTED_V80: Preserves audit_snapshots, audit_sessions, prospects, link_clicks
 //! Motor ETL en Rust de alto rendimiento para ingesta masiva de TODO el mercado mexicano:
 //! - INEGI DENUE Nacional (32 Entidades Federativas / ~5.5 millones de unidades económicas)
 //! - SAT Listado Completo Art. 69-B (EFOS) y Art. 69 (Incumplidos / No Localizados)

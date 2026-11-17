@@ -399,3 +399,61 @@ window.runQuickSampleScan = function(taxId, domain) {
     folioInput.form.dispatchEvent(new Event('submit', { cancelable: true, bubbles: true }));
   }
 };
+
+
+// GUARDIÁN DE PRECISIÓN OBLIGATORIA: Exigir número exacto de empleados antes de avanzar al diagnóstico
+window.validateMandatoryExactEmployees = function() {
+  const calEmpInput = document.getElementById('cal_emp');
+  if (!calEmpInput) return true;
+  const detailsParent = calEmpInput.closest('details');
+  if (detailsParent) detailsParent.setAttribute('open', 'open');
+
+  let alertBox = document.getElementById('mallen-mandatory-emp-warning');
+  const rawVal = (calEmpInput.value || '').trim();
+  const numVal = parseInt(rawVal, 10);
+
+  if (!rawVal || isNaN(numVal) || numVal < 1) {
+    if (!alertBox) {
+      alertBox = document.createElement('div');
+      alertBox.id = 'mallen-mandatory-emp-warning';
+      alertBox.setAttribute('role', 'alert');
+      alertBox.className = 'mt-3 p-3.5 rounded-lg border border-red-500/70 bg-red-950/80 text-red-200 font-semibold text-sm';
+      calEmpInput.parentElement.appendChild(alertBox);
+    }
+    alertBox.textContent = 'Aviso de Precisión Pericial: Es obligatorio ingresar el número exacto de colaboradores de su empresa (mínimo 1) antes de generar el diagnóstico.';
+    alertBox.style.display = 'block';
+    calEmpInput.style.borderColor = '#ef4444';
+    calEmpInput.focus();
+    calEmpInput.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    return false;
+  }
+
+  if (alertBox) {
+    alertBox.style.display = 'none';
+  }
+  calEmpInput.style.borderColor = '';
+  return true;
+};
+
+document.addEventListener('DOMContentLoaded', () => {
+  const folioEl = document.getElementById('folioInput');
+  if (folioEl) folioEl.setAttribute('placeholder', 'Ingrese RFC');
+  const domEl = document.getElementById('domainInput');
+  if (domEl) domEl.setAttribute('placeholder', 'Ingrese dominio web');
+  const calEmpEl = document.getElementById('cal_emp');
+  if (calEmpEl) {
+    calEmpEl.value = '';
+    calEmpEl.setAttribute('placeholder', 'Ingrese número exacto de empleados');
+    calEmpEl.setAttribute('required', 'required');
+    calEmpEl.setAttribute('min', '1');
+    const det = calEmpEl.closest('details');
+    if (det) det.setAttribute('open', 'open');
+    calEmpEl.addEventListener('input', () => {
+      const warn = document.getElementById('mallen-mandatory-emp-warning');
+      if (warn && parseInt(calEmpEl.value, 10) >= 1) {
+        warn.style.display = 'none';
+        calEmpEl.style.borderColor = '';
+      }
+    });
+  }
+});

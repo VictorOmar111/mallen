@@ -188,6 +188,11 @@ fn compile_kit_document_to_pdf(
         body = typst_lines
     );
 
+    if let Ok(mem_bytes) = crate::engine::pdf_generator::compile_typst_in_memory(&full_typ) {
+        if !mem_bytes.is_empty() {
+            return Some(mem_bytes);
+        }
+    }
     fs::write(&typ_path, full_typ).ok()?;
     let typst_bin = if Path::new("/usr/local/bin/typst").exists() {
         "/usr/local/bin/typst"
@@ -282,6 +287,11 @@ fn compile_single_accreditation_certificate_pdf(
         hash = sanitize_for_typst(&empresa.audit_hash),
     );
 
+    if let Ok(mem_bytes) = crate::engine::pdf_generator::compile_typst_in_memory(&cert_typ) {
+        if !mem_bytes.is_empty() {
+            return Some(mem_bytes);
+        }
+    }
     fs::write(&typ_path, cert_typ).ok()?;
     let typst_bin = if Path::new("/usr/local/bin/typst").exists() {
         "/usr/local/bin/typst"
