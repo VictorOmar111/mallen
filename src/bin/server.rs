@@ -1226,7 +1226,7 @@ async fn render_checkout_page_with_state(state: Arc<AppState>, raw_ref: String) 
     <style>body {{ font-family: 'Inter', sans-serif; }} .font-mono-code {{ font-family: 'JetBrains Mono', monospace; }}</style>
     <link rel="stylesheet" href="/css/quantum-glass.css?v=2026.25">
     <script src="/js/quantum-lights.js?v=2026.25" defer></script>
-<link rel="stylesheet" href="/css/pure-light-mode.css?v=2026.140"><script src="/js/theme-init.js?v=2026.140"></script>    <link rel="stylesheet" href="/css/enterprise-linear.css?v=2026.69">
+<link rel="stylesheet" href="/css/pure-light-mode.css?v=2026.140"><script src="/js/theme-init.js?v=2026.140"></script>    <link rel="stylesheet" href="/css/enterprise-linear.css?v=2026.77">
 </head>
 <body class="bg-slate-950 text-slate-100 min-h-screen p-6 flex items-center justify-center selection:bg-blue-600 selection:text-white">
     <div class="max-w-3xl w-full bg-white/[0.05] shadow-[0_8px_32px_rgba(0,0,0,0.5)] border border-white/15 p-8 rounded-2xl font-mono-code text-xs shadow-2xl">
@@ -1251,37 +1251,32 @@ async fn render_checkout_page_with_state(state: Arc<AppState>, raw_ref: String) 
         </div>
 
         
-            <!-- VISTA PREVIA TANGIBLE DE ENTREGABLES PERSONALIZADOS Y TABLA DE TARIFAS (ESTÁNDAR BAYMARD) -->
-            <div class="mallen-surface-card rounded-xl p-5 border border-slate-800 mb-6">
+                        <!-- ALCANCE CONCEPTUAL RESERVADO DEL EXPEDIENTE (SECRETO INDUSTRIAL PROTEGIDO) -->
+            <div class="mallen-surface-card rounded-xl p-6 border border-slate-800 mb-6">
                 <div class="flex flex-wrap items-center justify-between gap-2 pb-3 mb-4 border-b border-slate-800">
                     <div>
-                        <span class="text-[11px] font-semibold uppercase text-emerald-400 block">Resumen Verificable del Paquete (.ZIP) antes de Pagar</span>
-                        <h3 class="text-base font-bold text-white">18 Entregables Compilados a Nombre de su Razón Social (.PDF + Word .HTML)</h3>
+                        <span class="text-xs font-semibold uppercase text-emerald-400 block">Alcance de la Activación Patrimonial</span>
+                        <h3 class="text-lg font-bold text-white">Expediente de Blindaje Legal Preventivo 360° Compilado para su Entidad</h3>
                     </div>
-                    <span class="font-mono-data text-xs px-2.5 py-1 rounded bg-emerald-950/60 border border-emerald-700/50 text-emerald-300 font-bold">
-                        Tarifa Única México: $3,000.00 MXN | Europa: 290,00 € / CHF 290.00
+                    <span class="font-mono-data text-xs px-3 py-1 rounded bg-emerald-950/60 border border-emerald-700/50 text-emerald-300 font-bold">
+                        Inversión Única: $3,000.00 MXN
                     </span>
                 </div>
-                <div class="grid sm:grid-cols-2 gap-4 text-xs text-slate-300">
+                <div class="grid sm:grid-cols-2 gap-5 text-slate-300">
                     <div>
-                        <div class="font-bold text-sky-400 mb-1.5">7 Instrumentos Jurídicos Editables en Word (.HTML) y Sellados (.PDF):</div>
-                        <ul class="space-y-1 leading-relaxed">
-                            <li>01. Aviso de Privacidad Integral, Simplificado y Corto (LFPDPPP / SABG).</li>
-                            <li>02. Política de Prevención de Riesgos Psicosociales (NOM-035-STPS-2018).</li>
-                            <li>03. Acta Constitutiva de Comisión Mixta de Seguridad e Higiene (NOM-019-STPS).</li>
-                            <li>04. Convenio y Adendum de Teletrabajo y Desconexión (NOM-037-STPS-2023).</li>
-                            <li>05. Contrato Marco de Materialidad y Razón de Negocios (Arts. 69-B y 5-A CFF).</li>
-                            <li>06. Acta de Unidades Internas de Protección Civil (PIPC) y Clasificación IMSS.</li>
-                            <li>07. Términos de Comercio Electrónico (Art. 76 BIS LFPC) y Beneficiario Controlador.</li>
+                        <div class="font-bold text-sky-400 mb-2">Cobertura Integral por Eje Regulador:</div>
+                        <ul class="space-y-1.5 leading-relaxed list-disc pl-5">
+                            <li><strong>Blindaje Laboral e Inspección STPS:</strong> Instrumentación preventiva alineada a su plantilla y giro operativo.</li>
+                            <li><strong>Sustancia Económica y Materialidad Fiscal (SAT):</strong> Soporte documental de operaciones y razón de negocios.</li>
+                            <li><strong>Gobernanza IMSS, Protección Civil y Privacidad:</strong> Protocolos de seguridad social, resguardo de datos y entorno digital.</li>
                         </ul>
                     </div>
                     <div>
-                        <div class="font-bold text-emerald-400 mb-1.5">Dictamen Completo (3 Págs.) + 10 Certificados SHA-256 + Manifiesto:</div>
-                        <ul class="space-y-1 leading-relaxed">
-                            <li>• Dictamen Ejecutivo y Cédula Técnica de 37 Vectores sin censura + QR 13x13.</li>
-                            <li>• 10 Certificados Individuales de Cumplimiento Normativo con Sello SHA-256.</li>
-                            <li>• Manifiesto Criptográfico de Fecha Cierta con Firma Desconectada RFC 8785.</li>
-                            <li>• Acceso al Asistente Post-Pago para personalizar representantes y comisiones sin prisa.</li>
+                        <div class="font-bold text-emerald-400 mb-2">Garantías de Entrega y Certificación:</div>
+                        <ul class="space-y-1.5 leading-relaxed list-disc pl-5">
+                            <li><strong>Dictamen Pericial Desbloqueado:</strong> Evaluación completa de los 37 vectores sin marcas de reserva.</li>
+                            <li><strong>Acreditación Criptográfica SHA-256:</strong> Sellos de integridad y vigencia de vigilancia trimestral (90 días).</li>
+                            <li><strong>Doble Formato Profesional:</strong> Instrumentos propietarios listos para firma y edición corporativa inmediata.</li>
                         </ul>
                     </div>
                 </div>
@@ -1386,7 +1381,7 @@ async fn render_checkout_page_with_state(state: Arc<AppState>, raw_ref: String) 
                 <label class="flex items-start gap-2.5 cursor-pointer">
                     <input id="chk-disclaimer" type="checkbox" required checked class="mt-1 accent-emerald-500">
                     <span>
-                        <strong class="text-slate-200">Manifiesto de Alcance Pericial y Exactitud de Datos (Art. 89 C.Com):</strong> Confirmo los datos ingresados para la emisión de los 10 Certificados y 7 Instrumentos Jurídicos del RFC <b>{ref_code}</b> y su factura CFDI 4.0.
+                        <strong class="text-slate-200">Manifiesto de Alcance Pericial y Exactitud de Datos (Art. 89 C.Com):</strong> Confirmo los datos ingresados para la emisión de los 10 Certificados y Instrumentos Propietarios de Blindaje del RFC <b>{ref_code}</b> y su factura CFDI 4.0.
                         <span class="block text-[9px] text-slate-600 mt-1">SHA-256 Disclaimer: {disclaimer_hash}</span>
                     </span>
                 </label>
@@ -1399,7 +1394,7 @@ async fn render_checkout_page_with_state(state: Arc<AppState>, raw_ref: String) 
 
         <div id="paymentSuccessBox" class="hidden mt-5 bg-emerald-950/40 border border-emerald-500/50 rounded-xl p-5 text-center space-y-3">
             <span class="text-emerald-400 font-bold text-sm block">PAGO 3D SECURE AUTORIZADO Y EXPEDIENTE COMPILADO</span>
-            <p class="text-slate-300 text-[11px]">Su expediente completo de 18 documentos (Dictamen Ejecutivo/Técnico de 3 páginas, 10 Certificados SHA-256 y 7 Instrumentos Jurídicos en formato editable Word/Markdown + Manifiesto Merkle) está listo para descarga inmediata.</p>
+            <p class="text-slate-300 text-[11px]">Su expediente completo de 18 documentos (Dictamen Ejecutivo/Técnico de 3 páginas, 10 Certificados SHA-256 y Instrumentos Propietarios de Blindaje en formato editable Word/Markdown + Manifiesto Merkle) está listo para descarga inmediata.</p>
             <a href="/download/zip/{ref_code}" class="inline-block w-full bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-3.5 rounded-xl uppercase">
                 Descargar Paquete Corporativo ZIP ({ref_code})
             </a>
@@ -1814,7 +1809,7 @@ fn render_validez_detail(slug: &str) -> Html<String> {
             "Instrumentación respaldada por Contador Público Certificado y Agente Capacitador Externo STPS.",
             "Artículo 52 del Código Fiscal de la Federación • Artículos 153-A a 153-X de la LFT",
             "Todos los certificados normativos, matrices de exposición en UMAs y papeles de trabajo (PT-STPS, PT-SAT, PT-IMSS, PT-SABG y PT-PROFECO) se encuentran estructurados bajo estándares de auditoría técnico y certificados institucionalmente por FIRMA W16 MALLEN® (Folio Corporativo ISO-19011-W16 | Registro Pericial EU-DE-01-SHA256).",
-            "El expediente bifurcado entrega por separado la Cédula Ejecutiva Financiera para el Consejo de Administración y el Anexo Técnico Pericial con la evidencia OSINT y los 7 Instrumentos Jurídicos listos para firma autógrafa."
+            "El expediente bifurcado entrega por separado la Cédula Ejecutiva Financiera para el Consejo de Administración y el Anexo Técnico Pericial con la evidencia OSINT y los Instrumentos Propietarios de Blindaje listos para firma autógrafa."
         ),
         "secreto" => (
             "CUSTODIA CERO DE LLAVES PRIVADAS • WEBCRYPTO WASM EN RAM",
@@ -1989,7 +1984,7 @@ async fn handle_dedicated_normativa_page() -> impl IntoResponse {
   <title>FIRMA MALLEN® — Directorio Normativo Federal (31 Fichas Técnicas)</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="/css/enterprise-linear.css?v=2026.71">
+  <link rel="stylesheet" href="/css/enterprise-linear.css?v=2026.77">
 </head>
 <body class="min-h-screen flex flex-col">
   <header class="border-b px-6 py-4">
@@ -2044,7 +2039,7 @@ async fn handle_dedicated_normativa_page() -> impl IntoResponse {
       </a>
     </div>
   </main>
-  <script src="/js/quantum-lights.js?v=2026.71"></script>
+  <script src="/js/quantum-lights.js?v=2026.77"></script>
 </body>
 </html>"#;
     Html(html.to_string())
@@ -2059,7 +2054,7 @@ async fn handle_dedicated_radar_dof_page() -> impl IntoResponse {
   <title>FIRMA MALLEN® — Radar Regulatorio Diario del DOF</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="/css/enterprise-linear.css?v=2026.71">
+  <link rel="stylesheet" href="/css/enterprise-linear.css?v=2026.77">
 </head>
 <body class="min-h-screen flex flex-col">
   <header class="border-b px-6 py-4">
@@ -2083,7 +2078,7 @@ async fn handle_dedicated_radar_dof_page() -> impl IntoResponse {
     </div>
     <div id="radar-dof-dedicated-feed" class="grid md:grid-cols-2 gap-5"></div>
   </main>
-  <script src="/js/quantum-lights.js?v=2026.71"></script>
+  <script src="/js/quantum-lights.js?v=2026.77"></script>
   <script>
     fetch('/api/regulatory_news')
       .then(function(r){ return r.json(); })

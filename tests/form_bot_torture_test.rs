@@ -2405,7 +2405,7 @@ async fn test_http_form_bot_14_scenarios_with_real_db_companies() {
     // ESCENARIO 98: Auditoría de Escalado Tipográfico Web (Cero letras microscópicas 9px/10px)
     let css_98 = std::fs::read_to_string("public/css/enterprise-linear.css").unwrap_or_default();
     assert!(
-        css_98.contains("font-size: 17px !important;") && css_98.contains(".text-\\[10px\\]"),
+        css_98.contains("font-size: 18px !important;") && css_98.contains(".text-\\[10px\\]"),
         "La hoja de estilo debe elevar la base tipográfica a 17px y escalar las clases pequeñas"
     );
     println!("║  98  ║ Escalado Tipográfico Ejecutivo (Base 17px y Mínimo 14px)     ║ Cero Textos Microscópicos | Lectura AAA Activa    ║ [SUPERADO]   ║");

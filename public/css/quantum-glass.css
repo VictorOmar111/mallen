@@ -316,3 +316,66 @@ textarea,
 button {
   font-size: 0.96rem !important; /* ~16.3px en todos los botones e inputs */
 }
+
+
+/* ==========================================================================
+   9. OVERRIDE DE ALTA ESPECIFICIDAD SOBRE TAILWIND CDN (LETRAS GRANDES Y CLARAS)
+   ========================================================================== */
+html {
+  font-size: 18px !important;
+}
+html body {
+  font-size: 18px !important;
+  line-height: 1.7 !important;
+}
+html body p,
+html body li,
+html body dd,
+html body td,
+html body th,
+html body label,
+html body summary {
+  font-size: 1.02rem !important; /* ~18.3px */
+  line-height: 1.68 !important;
+}
+html body .text-xs,
+html body .text-\[8px\],
+html body .text-\[9px\],
+html body .text-\[10px\],
+html body .text-\[11px\],
+html body .text-\[12px\],
+html body small,
+html body .mallen-baymard-microcopy {
+  font-size: 0.88rem !important; /* ~15.8px mínimo absoluto */
+  line-height: 1.55 !important;
+}
+html body .text-sm {
+  font-size: 1.0rem !important; /* 18px */
+  line-height: 1.62 !important;
+}
+html body .text-base,
+html body .text-lg {
+  font-size: 1.14rem !important; /* ~20.5px */
+  line-height: 1.6 !important;
+}
+html body h1 {
+  font-size: clamp(2.1rem, 3.6vw, 3.0rem) !important;
+  line-height: 1.18 !important;
+}
+html body h2 {
+  font-size: clamp(1.6rem, 2.6vw, 2.2rem) !important;
+  line-height: 1.25 !important;
+}
+html body h3 {
+  font-size: clamp(1.25rem, 2.0vw, 1.5rem) !important;
+  line-height: 1.32 !important;
+}
+html body input:not([type="checkbox"]):not([type="radio"]),
+html body select,
+html body textarea,
+html body button,
+html body a.mallen-btn-primary,
+html body a.mallen-btn-secondary {
+  font-size: 1.0rem !important; /* 18px en botones y campos */
+  min-height: 48px !important;
+}
