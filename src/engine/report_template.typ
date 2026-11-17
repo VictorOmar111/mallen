@@ -27,7 +27,7 @@
   ]
 )
 
-#set text(font: ("DejaVu Sans", "Liberation Sans", "Arial"), size: 7.4pt, fill: rgb("#1e293b"), lang: "es")
+#set text(font: "DejaVu Sans", size: 7.4pt, fill: rgb("#1e293b"), lang: "es")
 #set par(justify: false, leading: 0.43em)
 
 // Macro gráfico de Efecto Difuminado (Frosted Glass Blur) para el Pre-Dictamen sin pago

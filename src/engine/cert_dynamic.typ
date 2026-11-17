@@ -12,7 +12,7 @@
         #align(center)[
           #text(size: 21pt, weight: "bold", fill: rgb(15, 23, 42, 4%))[
             FIRMA W16 MALLEN® • SELLO CRIPTOGRÁFICO INMUTABLE\
-            #text(size: 11pt, font: ("Liberation Mono", "DejaVu Sans Mono"))[SHA-256: {{AUDIT_HASH}} • eIDAS ART. 41 / CCOM ART. 89]
+            #text(size: 11pt, font: "DejaVu Sans Mono")[SHA-256: {{AUDIT_HASH}} • eIDAS ART. 41 / CCOM ART. 89]
           ]
         ]
       ]
@@ -24,8 +24,8 @@
     #v(2pt)
     #grid(
       columns: (1.2fr, 1fr),
-      align(left)[#text(size: 6.5pt, fill: rgb("#475569"))[Folio Criptográfico: #text(font: ("Liberation Mono", "DejaVu Sans Mono"), weight: "bold", fill: rgb("#0f172a"))[{{NORMA_FOLIO_PREFIX}}-{{REF_TAX}}] • Giro SCIAN: #text(weight: "bold")[{{EMPRESA_SCIAN_CODE}}]]],
-      align(right)[#text(size: 6.5pt, fill: rgb("#475569"))[Verificación: #text(font: ("Liberation Mono", "DejaVu Sans Mono"), weight: "bold", fill: rgb("#0f172a"))[mallen.lat/verify/{{REF_TAX}}] • #text(weight: "bold")[mallen.lat/#faq]]]
+      align(left)[#text(size: 6.5pt, fill: rgb("#475569"))[Folio Criptográfico: #text(font: "DejaVu Sans Mono", weight: "bold", fill: rgb("#0f172a"))[{{NORMA_FOLIO_PREFIX}}-{{REF_TAX}}] • Giro SCIAN: #text(weight: "bold")[{{EMPRESA_SCIAN_CODE}}]]],
+      align(right)[#text(size: 6.5pt, fill: rgb("#475569"))[Verificación: #text(font: "DejaVu Sans Mono", weight: "bold", fill: rgb("#0f172a"))[mallen.lat/verify/{{REF_TAX}}] • #text(weight: "bold")[mallen.lat/\#faq]]]
     )
   ]
 )
@@ -56,15 +56,15 @@
     row-gutter: 3.8pt,
     column-gutter: 8pt,
     [#box(width: 100%, clip: false)[#set par(leading: 0.42em); *Ente Auditado:* #text(size: 6.9pt, weight: "bold")[{{EMPRESA_NOMBRE}}]]],
-    [#box(width: 100%, clip: false)[*RFC / Clave Registral:* #text(font: ("Liberation Mono", "DejaVu Sans Mono"), size: 6.9pt, weight: "bold")[{{EMPRESA_TAX_ID}}]]],
+    [#box(width: 100%, clip: false)[*RFC / Clave Registral:* #text(font: "DejaVu Sans Mono", size: 6.9pt, weight: "bold")[{{EMPRESA_TAX_ID}}]]],
     [#box(width: 100%, clip: false)[#set par(leading: 0.42em); *Giro SCIAN Oficial:* #text(size: 6.8pt)[{{EMPRESA_ACTIVIDAD}}]]],
-    [#box(width: 100%, clip: false)[*Plantilla y Prima IMSS:* #text(font: ("Liberation Mono", "DejaVu Sans Mono"), size: 6.8pt, weight: "bold")[{{EMPRESA_EMPLEADOS}}] colaboradores • {{EMPRESA_IMSS_CLASE}}]],
+    [#box(width: 100%, clip: false)[*Plantilla y Prima IMSS:* #text(font: "DejaVu Sans Mono", size: 6.8pt, weight: "bold")[{{EMPRESA_EMPLEADOS}}] colaboradores • {{EMPRESA_IMSS_CLASE}}]],
     [#box(width: 100%, clip: false)[#set par(leading: 0.42em); *Domicilio del Centro de Trabajo:* #text(size: 6.7pt)[{{EMPRESA_DIRECCION}}]]],
     [#box(width: 100%, clip: false)[*Jurisdicción Aplicable:* {{EMPRESA_JURISDICCION}} / Fuero Federal]],
     [#box(width: 100%, clip: false)[#set par(leading: 0.42em); *Representación Legal:* #text(size: 6.8pt)[{{REPRESENTANTE_LEGAL}}]]],
-    [#box(width: 100%, clip: false)[*Contingencia Total Mitigada:* #text(font: ("Liberation Mono", "DejaVu Sans Mono"), size: 7pt, weight: "bold", fill: rgb("#047857"))[\$ {{CONTINGENCIA_MITIGADA}} MXN] #text(size: 6.4pt)[(Score: {{RISK_SCORE}}/100)]]],
+    [#box(width: 100%, clip: false)[*Contingencia Total Mitigada:* #text(font: "DejaVu Sans Mono", size: 7pt, weight: "bold", fill: rgb("#047857"))[\$ {{CONTINGENCIA_MITIGADA}} MXN] #text(size: 6.4pt)[(Score: {{RISK_SCORE}}/100)]]],
     [#box(width: 100%, clip: false)[#set par(leading: 0.42em); *Infraestructura Emisora:* #text(size: 6.6pt)[{{AUDITOR_NOMBRE}}]]],
-    [#box(width: 100%, clip: false)[*Sello Criptográfico SHA-256:* #text(font: ("Liberation Mono", "DejaVu Sans Mono"), size: 6.6pt, weight: "bold", fill: rgb("#0369a1"))[#raw("{{AUDIT_HASH}}")]]]
+    [#box(width: 100%, clip: false)[*Sello Criptográfico SHA-256:* #text(font: "DejaVu Sans Mono", size: 6.6pt, weight: "bold", fill: rgb("#0369a1"))[#raw("{{AUDIT_HASH}}")]]]
   )
 ]
 
@@ -95,9 +95,9 @@
   [#text(fill: white, weight: "bold", size: 6.3pt)[Parámetro de Auditoría Evaluado]],
   [#text(fill: white, weight: "bold", size: 6.3pt)[Estatus de Instrumentación]],
   [#text(fill: white, weight: "bold", size: 6.3pt)[Cobertura Probatoria]],
-  [Alineación al Giro SCIAN ({{EMPRESA_SCIAN_CODE}}) y Capacidad ({{EMPRESA_EMPLEADOS}} pers.)], [#text(font: ("Liberation Mono", "DejaVu Sans Mono"), size: 6.1pt, weight: "bold")[PARAMETRIZADO OFICIAL]], [Art. 992 LFT y Art. 75 CFF],
-  [Clasificación de Riesgo Patronal ({{EMPRESA_IMSS_CLASE}})], [#text(font: ("Liberation Mono", "DejaVu Sans Mono"), size: 6.1pt, weight: "bold")[CONCILIADO RACERF]], [Arts. 71-75 LSS y Art. 196 RACERF],
-  [Inalterabilidad y Fecha Cierta Digital (Hash `{{AUDIT_HASH}}`)], [#text(font: ("Liberation Mono", "DejaVu Sans Mono"), size: 6.1pt, weight: "bold", fill: rgb("#047857"))[SELLADO SHA-256]], [Arts. 89-93 CCom • eIDAS Art. 41]
+  [Alineación al Giro SCIAN ({{EMPRESA_SCIAN_CODE}}) y Capacidad ({{EMPRESA_EMPLEADOS}} pers.)], [#text(font: "DejaVu Sans Mono", size: 6.1pt, weight: "bold")[PARAMETRIZADO OFICIAL]], [Art. 992 LFT y Art. 75 CFF],
+  [Clasificación de Riesgo Patronal ({{EMPRESA_IMSS_CLASE}})], [#text(font: "DejaVu Sans Mono", size: 6.1pt, weight: "bold")[CONCILIADO RACERF]], [Arts. 71-75 LSS y Art. 196 RACERF],
+  [Inalterabilidad y Fecha Cierta Digital (Hash `{{AUDIT_HASH}}`)], [#text(font: "DejaVu Sans Mono", size: 6.1pt, weight: "bold", fill: rgb("#047857"))[SELLADO SHA-256]], [Arts. 89-93 CCom • eIDAS Art. 41]
 )
 
 #v(0.2em)
@@ -116,10 +116,10 @@
   [#text(fill: white, weight: "bold", size: 6.2pt)[Código Papel]],
   [#text(fill: white, weight: "bold", size: 6.2pt)[Instrumento Jurídico / Evidencia Técnica Integrada en el Kit]],
   [#text(fill: white, weight: "bold", size: 6.2pt)[Estado]],
-  [#text(font: ("Liberation Mono", "DejaVu Sans Mono"), size: 6pt, weight: "bold")[PT-{{NORMA_FOLIO_PREFIX}}-01]], [{{NORMA_PT_1}}], [#text(font: ("Liberation Mono", "DejaVu Sans Mono"), size: 6pt, weight: "bold")[INSTRUMENTADO]],
-  [#text(font: ("Liberation Mono", "DejaVu Sans Mono"), size: 6pt, weight: "bold")[PT-{{NORMA_FOLIO_PREFIX}}-02]], [{{NORMA_PT_2}}], [#text(font: ("Liberation Mono", "DejaVu Sans Mono"), size: 6pt, weight: "bold")[INSTRUMENTADO]],
-  [#text(font: ("Liberation Mono", "DejaVu Sans Mono"), size: 6pt, weight: "bold")[PT-{{NORMA_FOLIO_PREFIX}}-03]], [{{NORMA_PT_3}}], [#text(font: ("Liberation Mono", "DejaVu Sans Mono"), size: 6pt, weight: "bold")[VERIFICADO]],
-  [#text(font: ("Liberation Mono", "DejaVu Sans Mono"), size: 6pt, weight: "bold")[PT-{{NORMA_FOLIO_PREFIX}}-04]], [Dictamen Determinístico 37 Vectores y Sello Criptográfico (`{{AUDIT_HASH}}`)], [#text(font: ("Liberation Mono", "DejaVu Sans Mono"), size: 6pt, weight: "bold", fill: rgb("#047857"))[SELLADO SHA-256]]
+  [#text(font: "DejaVu Sans Mono", size: 6pt, weight: "bold")[PT-{{NORMA_FOLIO_PREFIX}}-01]], [{{NORMA_PT_1}}], [#text(font: "DejaVu Sans Mono", size: 6pt, weight: "bold")[INSTRUMENTADO]],
+  [#text(font: "DejaVu Sans Mono", size: 6pt, weight: "bold")[PT-{{NORMA_FOLIO_PREFIX}}-02]], [{{NORMA_PT_2}}], [#text(font: "DejaVu Sans Mono", size: 6pt, weight: "bold")[INSTRUMENTADO]],
+  [#text(font: "DejaVu Sans Mono", size: 6pt, weight: "bold")[PT-{{NORMA_FOLIO_PREFIX}}-03]], [{{NORMA_PT_3}}], [#text(font: "DejaVu Sans Mono", size: 6pt, weight: "bold")[VERIFICADO]],
+  [#text(font: "DejaVu Sans Mono", size: 6pt, weight: "bold")[PT-{{NORMA_FOLIO_PREFIX}}-04]], [Dictamen Determinístico 37 Vectores y Sello Criptográfico (`{{AUDIT_HASH}}`)], [#text(font: "DejaVu Sans Mono", size: 6pt, weight: "bold", fill: rgb("#047857"))[SELLADO SHA-256]]
 )
 
 #v(0.45em)
@@ -156,8 +156,8 @@
             #align(left)[
               #text(size: 5.6pt, weight: "bold", fill: rgb("#0f172a"))[VERIFICACIÓN QR INMUTABLE]\
               #text(size: 5.2pt, fill: rgb("#475569"))[UTC: {{FECHA_EMISION}}]\
-              #text(font: ("Liberation Mono", "DejaVu Sans Mono"), size: 5.0pt, fill: rgb("#475569"))[#raw("{{AUDIT_HASH}}")]\
-              #text(font: ("Liberation Mono", "DejaVu Sans Mono"), size: 5.1pt, weight: "bold", fill: rgb("#2563eb"))[mallen.lat/verify/{{REF_TAX}}]
+              #text(font: "DejaVu Sans Mono", size: 5.0pt, fill: rgb("#475569"))[#raw("{{AUDIT_HASH}}")]\
+              #text(font: "DejaVu Sans Mono", size: 5.1pt, weight: "bold", fill: rgb("#2563eb"))[mallen.lat/verify/{{REF_TAX}}]
             ]
           ]
         )

@@ -1853,7 +1853,7 @@ pub fn render_exact_proportional_risk_chart_typst(
     columns: (1fr, auto),
     align: horizon,
     [#text(size: 6.6pt, weight: "bold", fill: rgb("#0f172a"))[PONDERACIÓN PORCENTUAL Y MONETARIA POR ÓRGANO REGULADOR (BASE 100%)]],
-    [#text(font: ("Liberation Mono", "DejaVu Sans Mono"), size: 6.4pt, weight: "bold", fill: rgb("#dc2626"))[ÍNDICE DE EXPOSICIÓN: {}/100]]
+    [#text(font: "DejaVu Sans Mono", size: 6.4pt, weight: "bold", fill: rgb("#dc2626"))[ÍNDICE DE EXPOSICIÓN: {}/100]]
   )
   #v(3pt)
   #grid(
@@ -2248,7 +2248,7 @@ fn build_report_typst_markup_full(
         .replace("{{EMPRESA_NOMBRE}}", &nombre_clean)
         .replace("{{EMPRESA_TAX_ID}}", &tax_clean)
         .replace("{{REPRESENTANTE_LEGAL}}", &sanitize_for_typst(rep_legal))
-        .replace("{{EMPRESA_JURISDICCION}}", &sanitize_for_typst(jurisdiccion))
+        .replace("{{EMPRESA_JURISDICCION}}", &sanitize_for_typst(if jurisdiccion.trim().is_empty() { "CIUDAD DE MÉXICO" } else { jurisdiccion }))
         .replace("{{JURISDICCION}}", &sanitize_for_typst(jurisdiccion))
         .replace("{{OFICIAL_PRIVACIDAD}}", &sanitize_for_typst(oficial_priv))
         .replace("{{COORDINADOR_CSH}}", &sanitize_for_typst(coord_csh))
@@ -2581,7 +2581,7 @@ pub fn generate_pdf_report_with_session(
             .replace("{{EMPRESA_NOMBRE}}", &nombre_clean)
             .replace("{{EMPRESA_TAX_ID}}", &tax_clean)
             .replace("{{REPRESENTANTE_LEGAL}}", &sanitize_for_typst(rep_legal))
-            .replace("{{EMPRESA_JURISDICCION}}", &sanitize_for_typst(jurisdiccion))
+            .replace("{{EMPRESA_JURISDICCION}}", &sanitize_for_typst(if jurisdiccion.trim().is_empty() { "CIUDAD DE MÉXICO" } else { jurisdiccion }))
             .replace("{{EMPRESA_DIRECCION}}", &direccion_clean)
             .replace("{{AUDITOR_NOMBRE}}", &sanitize_for_typst(&auditor.nombre))
             .replace("{{AUDITOR_CEDULA}}", &sanitize_for_typst(&auditor.cedula_profesional))
