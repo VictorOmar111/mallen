@@ -546,3 +546,55 @@
         initEuPortal();
     }
 })();
+
+// Controlador interactivo para el Simulador de Sensibilidad Europeo (DACH & Benelux)
+(function () {
+    function initEuInteractiveSandbox() {
+        const slider = document.getElementById("eu-sbx-slider");
+        const empDisp = document.getElementById("eu-sbx-emp-display");
+        const fineDisp = document.getElementById("eu-sbx-residual-fine");
+        const toggles = Array.from(document.querySelectorAll(".eu-sbx-toggle"));
+        if (!slider || !fineDisp) return;
+
+        const cCode = (document.body.getAttribute("data-eu-country") || "de").toLowerCase();
+        const currSuffix = cCode === "ch" ? "CHF" : "€";
+
+        function recalcEuSbx() {
+            const emp = Math.max(1, parseInt(slider.value || "45", 10));
+            if (empDisp) empDisp.textContent = emp + " Mitarbeitende / FTE";
+            const baseFine = 18500 + emp * 1420;
+            let mit = 0;
+            toggles.forEach(function (cb) {
+                const w = parseFloat(cb.getAttribute("data-weight") || "0.25");
+                const card = cb.closest("label");
+                if (cb.checked) {
+                    mit += w;
+                    if (card) {
+                        card.classList.add("mallen-sandbox-card-active");
+                        card.classList.remove("mallen-sandbox-card-inactive");
+                    }
+                } else {
+                    if (card) {
+                        card.classList.remove("mallen-sandbox-card-active");
+                        card.classList.add("mallen-sandbox-card-inactive");
+                    }
+                }
+            });
+            const reduction = Math.min(0.96, mit * 0.96);
+            const residual = Math.max(290, Math.round(baseFine * (1 - reduction)));
+            fineDisp.textContent = residual.toLocaleString("de-DE", { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + " " + currSuffix;
+        }
+
+        slider.addEventListener("input", recalcEuSbx);
+        toggles.forEach(function (cb) {
+            cb.addEventListener("change", recalcEuSbx);
+        });
+        recalcEuSbx();
+    }
+
+    if (document.readyState === "loading") {
+        document.addEventListener("DOMContentLoaded", initEuInteractiveSandbox);
+    } else {
+        initEuInteractiveSandbox();
+    }
+})();

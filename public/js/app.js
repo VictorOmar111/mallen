@@ -526,32 +526,53 @@ document.addEventListener('DOMContentLoaded', async () => {
 
 
 // ============================================================================
-// 1. REPARACIÓN INTERACTIVA DE LAS 4 TARJETAS DEL SIMULADOR IN SITU (-30%, -25%, -20%, -25% VEMP)
+
+
+// ============================================================================
+// 1. SIMULADOR DE INSPECCIÓN IN SITU (SANDBOX) UNIVERSAL + SINCRONIZACIÓN 360° (v48/v49/v85)
 // ============================================================================
 window.initInteractiveRiskSandboxCards = function() {
-  const sbxCheckboxes = Array.from(document.querySelectorAll('.sbx-toggle'));
-  const slider = document.getElementById('sbx-emp-slider');
-  const fineEl = document.getElementById('sbx-total-fine');
-  const scoreEl = document.getElementById('sbx-risk-score');
-  const empLabelEl = document.getElementById('sbx-emp-label');
+  // Buscar la sección del Sandbox por ID o por título de texto
+  let sbxSection = document.getElementById('risk-sandbox-section') || document.getElementById('interactive-risk-sandbox');
+  if (!sbxSection) {
+    document.querySelectorAll('section, div').forEach((el) => {
+      if (!sbxSection && (el.textContent || '').indexOf('INTERACTIVE RISK SANDBOX') !== -1 && el.querySelector('input[type="range"]')) {
+        sbxSection = el;
+      }
+    });
+  }
+  if (!sbxSection) return;
+
+  const slider = sbxSection.querySelector('input[type="range"]') || document.getElementById('sbx-emp-slider') || document.getElementById('sbx-slider');
+  const sbxCheckboxes = Array.from(sbxSection.querySelectorAll('input[type="checkbox"]'));
+  const fineEl = document.getElementById('sbx-total-fine') || sbxSection.querySelector('[id*="sbx"][id*="fine"]');
+  const scoreEl = document.getElementById('sbx-risk-score') || sbxSection.querySelector('[id*="sbx"][id*="score"]');
+  const empLabelEl = document.getElementById('sbx-emp-label') || sbxSection.querySelector('[id*="sbx"][id*="emp"]');
+  const savingsEl = document.getElementById('sbx-kit-savings') || sbxSection.querySelector('[id*="sbx"][id*="saving"]');
+
+  const defaultWeights = [0.30, 0.25, 0.20, 0.25];
 
   function recalculateSandbox() {
-    const emp = slider ? Math.max(1, parseInt(slider.value || '45', 10)) : 45;
-    if (empLabelEl) empLabelEl.textContent = emp + ' colaboradores';
+    const emp = slider ? Math.max(1, parseInt(slider.value || '90', 10)) : 90;
+    if (empLabelEl && empLabelEl.tagName !== 'INPUT') {
+      empLabelEl.textContent = emp + ' colaboradores';
+    }
 
-    // Base VEMP proporcional a la plantilla o sincronizada con el último escaneo
-    const baseFine = window.__lastScannedVempMxn && window.__lastScannedEmpCount
-      ? (window.__lastScannedVempMxn * (emp / Math.max(1, window.__lastScannedEmpCount)))
-      : (425000 + emp * 27960);
+    const scannedBase = Number(window.__lastScannedVempMxn || 0);
+    const scannedEmp = Math.max(1, Number(window.__lastScannedEmpCount || 90));
+    const fullUnmitigatedFine = scannedBase > 0
+      ? (scannedBase * (0.45 + 0.55 * (emp / scannedEmp)))
+      : (485000 + emp * 27292.42);
 
-    const weights = [0.30, 0.25, 0.20, 0.25];
-    let mitigationRatio = 0;
-
+    // En el diseño original del Sandbox:
+    // - Cuando un checkbox está MARCADO (activo), el usuario SIMULA activar ese instrumento del Kit (-30%, -25%, -20%, -25% VEMP)
+    // - Si todos están desmarcados (0 blindaje), muestra el 100% de la multa ($2,942,317.85 MXN)
+    let activeMitigation = 0;
     sbxCheckboxes.forEach((cb, idx) => {
-      const card = cb.closest('label') || cb.parentElement;
-      const w = parseFloat(cb.getAttribute('data-weight') || String(weights[idx] || 0.25));
+      const card = cb.closest('label') || cb.closest('.quantum-card') || cb.parentElement;
+      const w = parseFloat(cb.getAttribute('data-weight') || String(defaultWeights[idx] || 0.25));
       if (cb.checked) {
-        mitigationRatio += w;
+        activeMitigation += w;
         if (card) {
           card.classList.add('mallen-sandbox-card-active');
           card.classList.remove('mallen-sandbox-card-inactive');
@@ -564,11 +585,10 @@ window.initInteractiveRiskSandboxCards = function() {
       }
     });
 
-    // Si los 4 instrumentos están activos, deja una contingencia residual mínima operativa (2.5%);
-    // a medida que se desactivan casillas, sube hasta el 100% de la exposición VEMP.
-    const effectiveReduction = Math.min(0.975, mitigationRatio * 0.975);
-    const residualFine = Math.max(0, baseFine * (1 - effectiveReduction));
-    const residualScore = Math.max(12, Math.round(88 * (1 - effectiveReduction * 0.85)));
+    const cappedMitigation = Math.min(0.965, activeMitigation * 0.965);
+    const residualFine = Math.max(0, fullUnmitigatedFine * (1 - cappedMitigation));
+    const baseScore = Number(window.__lastScannedScore || 76);
+    const residualScore = Math.max(10, Math.round(baseScore * (1 - cappedMitigation * 0.85)));
 
     if (fineEl) {
       fineEl.textContent = '$' + residualFine.toLocaleString('es-MX', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' MXN';
@@ -576,18 +596,27 @@ window.initInteractiveRiskSandboxCards = function() {
     if (scoreEl) {
       scoreEl.textContent = residualScore + '/100';
     }
+    if (savingsEl) {
+      const pctSaved = fullUnmitigatedFine > 3000 ? Math.min(99.9, ((fullUnmitigatedFine - 3000) / fullUnmitigatedFine) * 100) : 95.0;
+      savingsEl.textContent = pctSaved.toFixed(1) + '%';
+    }
   }
 
-  // Asegurar que tanto los checkboxes `.sbx-toggle` como las tarjetas que dicen "Blindaje STPS...",
-  // "Contrato Marco Fecha Cierta...", "Conciliación IMSS..." y "Aviso LFPDPPP..." sean 100% clicables
-  sbxCheckboxes.forEach((cb) => {
-    cb.addEventListener('change', recalculateSandbox);
-    const card = cb.closest('label') || cb.parentElement;
-    if (card && !card.dataset.sbxBound) {
-      card.dataset.sbxBound = '1';
+  // Por defecto dejar los checkboxes desmarcados al inicio para que el cliente vea su Exposición Total actual
+  // y al hacer clic en cada tarjeta vea cómo baja la multa (-30%, -25%, -20%, -25%)
+  sbxCheckboxes.forEach((cb, idx) => {
+    cb.checked = false;
+    cb.addEventListener('change', (ev) => {
+      ev.stopPropagation();
+      recalculateSandbox();
+    });
+    const card = cb.closest('label') || cb.closest('div.p-4') || cb.parentElement;
+    if (card && !card.dataset.sbxBoundV85) {
+      card.dataset.sbxBoundV85 = '1';
       card.style.cursor = 'pointer';
       card.addEventListener('click', (ev) => {
-        if (ev.target !== cb) {
+        if (ev.target.tagName !== 'INPUT') {
+          ev.preventDefault();
           cb.checked = !cb.checked;
           recalculateSandbox();
         }
@@ -596,10 +625,90 @@ window.initInteractiveRiskSandboxCards = function() {
   });
 
   if (slider) {
-    slider.addEventListener('input', recalculateSandbox);
+    slider.removeAttribute('max');
+    slider.setAttribute('max', '1000');
+    slider.addEventListener('input', () => {
+      recalculateSandbox();
+      const calEmp = document.getElementById('cal_emp');
+      if (calEmp) calEmp.value = slider.value;
+    });
   }
+
+  window.__triggerSandboxRecalc = recalculateSandbox;
   recalculateSandbox();
 };
+
+// Interceptar respuestas de `/api/scan` y `/api/lookup` para sincronizar el Sandbox y mostrar
+// la Inteligencia 360° (ISN Estatal, Sucursales DENUE, Estrato INEGI y Ley Local PIPC)
+(function bindOmnidirectionalFetchSync() {
+  const origFetch = window.fetch;
+  if (!origFetch || window.__mallenOmnidirectionalBound) return;
+  window.__mallenOmnidirectionalBound = true;
+
+  window.fetch = async function(...args) {
+    const resp = await origFetch.apply(this, args);
+    try {
+      const urlStr = typeof args[0] === 'string' ? args[0] : (args[0]?.url || '');
+      if (urlStr.indexOf('/api/scan') !== -1 || urlStr.indexOf('/api/lookup') !== -1) {
+        const clone = resp.clone();
+        clone.json().then((data) => {
+          const fine = Number(data.total_estimated_fine_mxn || data.exact_vemp_fine_mxn || 0);
+          const emp = Number(data.estimated_employees || 0);
+          const score = Number(data.risk_score || data.exact_risk_score || 76);
+          if (fine > 0) window.__lastScannedVempMxn = fine;
+          if (emp > 0) {
+            window.__lastScannedEmpCount = emp;
+            const sbxSlider = document.querySelector('#risk-sandbox-section input[type="range"], input[type="range"]');
+            if (sbxSlider) {
+              if (emp > Number(sbxSlider.max || 1000)) sbxSlider.max = String(emp + 200);
+              sbxSlider.value = String(emp);
+            }
+          }
+          if (score > 0) window.__lastScannedScore = score;
+          if (typeof window.__triggerSandboxRecalc === 'function') {
+            window.__triggerSandboxRecalc();
+          }
+
+          // Si viene de /api/scan, consultar también /api/lookup en segundo plano para inyectar
+          // la barra de Inteligencia 360° (ISN Estatal, Sucursales y Ley PIPC Local) dentro de `#live-scan-result`
+          if (urlStr.indexOf('/api/scan') !== -1 && (data.tax_id || data.razon_social)) {
+            const qKey = data.tax_id && data.tax_id !== 'SIN-RFC' ? data.tax_id : data.razon_social;
+            origFetch('/api/lookup?rfc=' + encodeURIComponent(qKey))
+              .then((r2) => r2.ok ? r2.json() : null)
+              .then((lk) => {
+                if (!lk || !lk.razon_social) return;
+                const resContainer = document.getElementById('live-scan-result');
+                if (!resContainer) return;
+                let box360 = document.getElementById('mallen-inline-360-intel-strip');
+                if (!box360) {
+                  box360 = document.createElement('div');
+                  box360.id = 'mallen-inline-360-intel-strip';
+                  box360.className = 'mt-4 p-4 rounded-xl border border-emerald-500/30 bg-slate-950/60 grid grid-cols-1 md:grid-cols-3 gap-4 text-xs';
+                  resContainer.appendChild(box360);
+                }
+                const isnMxn = Number(lk.estimated_monthly_isn_mxn || 0).toLocaleString('es-MX', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+                box360.innerHTML =
+                  '<div>' +
+                    '<span class="font-bold text-emerald-400 block uppercase">Estrato Oficial INEGI DENUE</span>' +
+                    '<span class="text-slate-200">' + (lk.estrato_personal || 'Registrado') + ' • ' + (lk.branch_count || 1) + ' unidad(es) (' + (lk.estimated_employees || emp) + ' colaboradores)</span>' +
+                  '</div>' +
+                  '<div>' +
+                    '<span class="font-bold text-sky-400 block uppercase">Jurisdicción e ISN Estatal (' + ((Number(lk.isn_rate_pct || 0.03) * 100).toFixed(1)) + '%)</span>' +
+                    '<span class="text-slate-200">' + (lk.entidad_federativa || 'CIUDAD DE MÉXICO') + ' • ISN Est.: $' + isnMxn + ' MXN/mes</span>' +
+                  '</div>' +
+                  '<div>' +
+                    '<span class="font-bold text-amber-400 block uppercase">Marco Local de Protección Civil</span>' +
+                    '<span class="text-slate-200">' + (lk.local_pipc_law || 'Ley Estatal de Gestión Integral de Riesgos y Protección Civil') + '</span>' +
+                  '</div>';
+              })
+              .catch(() => {});
+          }
+        }).catch(() => {});
+      }
+    } catch (_) {}
+    return resp;
+  };
+})();
 
 // ============================================================================
 // 2. MENÚ DESPLEGABLE LATERAL EXCLUSIVO PARA VERSIÓN MÓVIL (DRAWER RESPONSIVO)
@@ -696,5 +805,5 @@ window.initMobileResponsiveDrawerAndNav = function() {
 
 document.addEventListener('DOMContentLoaded', () => {
   window.initMobileResponsiveDrawerAndNav();
-  window.initInteractiveRiskSandboxCards();
+  setTimeout(window.initInteractiveRiskSandboxCards, 120);
 });
