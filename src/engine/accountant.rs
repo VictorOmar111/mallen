@@ -68,14 +68,25 @@ pub struct DeterministicRagAgent;
 
 impl DeterministicRagAgent {
     pub fn answer_compliance_query(query: &str, master: Option<&crate::engine::models::AuditMasterJson>) -> String {
-        Self::answer_grounded_query(query, master)
+        let tax_id = master.map(|m| m.tax_id.as_str()).unwrap_or("SIN-RFC");
+        Self::answer_grounded_query(tax_id, query)
     }
 
-    pub fn answer_grounded_query(query: &str, master: Option<&crate::engine::models::AuditMasterJson>) -> String {
-        let q = query.to_lowercase();
-        let razon = master.map(|m| m.razon_social.as_str()).unwrap_or("su entidad mercantil");
-        let scian = master.map(|m| m.codigo_scian.as_str()).unwrap_or("541110");
-        let fine = master.map(|m| m.total_estimated_fine_mxn).unwrap_or(0.0);
+    pub fn answer_grounded_query(tax_id: &str, question: &str) -> String {
+        let q = question.to_lowercase();
+        let snap_opt = crate::engine::pdf_generator::load_immutable_snapshot_strict(tax_id, "");
+        let razon = snap_opt
+            .as_ref()
+            .map(|m| m.razon_social.as_str())
+            .unwrap_or(tax_id);
+        let scian = snap_opt
+            .as_ref()
+            .map(|m| m.codigo_scian.as_str())
+            .unwrap_or("541110");
+        let fine = snap_opt
+            .as_ref()
+            .map(|m| m.total_estimated_fine_mxn)
+            .unwrap_or(0.0);
 
         if q.contains("69-b") || q.contains("materialidad") || q.contains("efos") || q.contains("fecha cierta") {
             format!(

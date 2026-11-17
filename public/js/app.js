@@ -473,3 +473,53 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 });
+
+
+// ATERRIZAJE INTELIGENTE DESDE ENLACE FORMBOT (?calibrate=1&rfc=...&razon=...&scian=...&emp=...)
+document.addEventListener('DOMContentLoaded', async () => {
+  try {
+    const params = new URLSearchParams(window.location.search);
+    const rfcParam = (params.get('rfc') || params.get('ref') || '').trim();
+    const domParam = (params.get('domain') || '').trim();
+    const empParam = parseInt(params.get('emp') || '0', 10);
+    const isCalibrateLanding = params.get('calibrate') === '1' || rfcParam.length >= 3;
+
+    if (!isCalibrateLanding || !rfcParam) return;
+
+    const folioEl = document.getElementById('folioInput');
+    const domEl = document.getElementById('domainInput');
+    const calEmpEl = document.getElementById('cal_emp');
+
+    if (folioEl) folioEl.value = rfcParam;
+    if (domEl && domParam) domEl.value = domParam;
+
+    // Consultar /api/lookup para pre-llenar todos los datos que sí existan en el padrón
+    const resp = await fetch('/api/lookup?rfc=' + encodeURIComponent(rfcParam));
+    if (resp.ok) {
+      const lk = await resp.json();
+      if (lk && lk.estimated_employees && Number(lk.estimated_employees) > 0) {
+        if (calEmpEl) calEmpEl.value = String(lk.estimated_employees);
+      } else if (empParam > 0 && calEmpEl) {
+        calEmpEl.value = String(empParam);
+      } else if (calEmpEl) {
+        // Si el FormBot no detectó empleados exactos, abrir el panel y resaltar suavemente #cal_emp
+        const det = calEmpEl.closest('details');
+        if (det) det.setAttribute('open', 'open');
+        calEmpEl.classList.add('mallen-input-subtle-red');
+        let hintEl = document.getElementById('mallen-mandatory-emp-warning');
+        if (!hintEl) {
+          hintEl = document.createElement('div');
+          hintEl.id = 'mallen-mandatory-emp-warning';
+          hintEl.className = 'mallen-subtle-red-hint';
+          calEmpEl.parentElement.appendChild(hintEl);
+        }
+        hintEl.textContent = 'Su registro está listo. Ingrese únicamente el número exacto de colaboradores de su empresa para generar su Pre-Dictamen.';
+        hintEl.style.display = 'block';
+        setTimeout(() => {
+          calEmpEl.focus();
+          calEmpEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }, 250);
+      }
+    }
+  } catch (_) {}
+});

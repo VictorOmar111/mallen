@@ -2529,6 +2529,18 @@ async fn test_http_form_bot_14_scenarios_with_real_db_companies() {
 
     // C) Confirmar que el archivo de pruebas ejecutó íntegramente desde el Escenario 1 (telemetría de prospect_logs)
     //    hasta el Escenario 100 sin saltarse ningún bloque intermedio:
+    let tier1_pyme = worker_inegi_engine::engine::pdf_generator::build_adaptive_prospect_outreach("PANIFICADORA INDUSTRIAL LA ESPIGA S.A. DE C.V. (SUCURSAL 004)", Some("espigadorada.mx"));
+    assert_eq!(tier1_pyme.prospect_tier, "NIVEL_1_PYME_CONVERSION_DIRECTA");
+    assert!(tier1_pyme.detected_employees > 0 && tier1_pyme.detected_employees <= 250);
+
+    let tier2_corp = worker_inegi_engine::engine::pdf_generator::build_adaptive_prospect_outreach("MINA141128EE5", Some("mineranoroeste.mx"));
+    assert_eq!(tier2_corp.prospect_tier, "NIVEL_2_CORPORATIVO_BENCHMARK_CONSULTIVO");
+    assert!(tier2_corp.message_body.contains("Benchmark Sectorial"));
+
+    let tier3_inc = worker_inegi_engine::engine::pdf_generator::build_adaptive_prospect_outreach("CTE160824G29", Some("nuevoportal.mx"));
+    assert_eq!(tier3_inc.prospect_tier, "NIVEL_3_CALIBRACION_GUIADA_DATOS_INCOMPLETOS");
+    assert!(tier3_inc.primary_link.contains("calibrate=1&rfc=CTE160824G29"));
+
     let total_scenarios_verified = 100usize;
     assert_eq!(total_scenarios_verified, 100);
     println!("║ 100  ║ Auditoría Esc. 1–100 + Sabotaje 1¢ + Rotación Dinámica + Emp ║ 100/100 Escenarios | Detector 1¢ OK | Emp Oblig.  ║ [SUPERADO]   ║");

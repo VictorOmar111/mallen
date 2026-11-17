@@ -2926,8 +2926,9 @@ pub fn compile_typst_in_memory(typst_source: &str) -> Result<Vec<u8>, String> {
         .map_err(|e| format!("Error al invocar binario Typst en RAM: {}", e))?;
 
     if let Some(mut stdin) = child.stdin.take() {
+        let clean_src = typst_source.replace("0x0x", "0x");
         stdin
-            .write_all(typst_source.as_bytes())
+            .write_all(clean_src.as_bytes())
             .map_err(|e| format!("Error al escribir buffer en stdin de Typst: {}", e))?;
     }
 
@@ -2941,4 +2942,139 @@ pub fn compile_typst_in_memory(typst_source: &str) -> Result<Vec<u8>, String> {
     }
 
     Ok(output.stdout)
+}
+
+
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
+pub struct AdaptiveOutreachPayload {
+    pub prospect_tier: String,
+    pub company_name: String,
+    pub tax_or_ref_id: String,
+    pub scian_code: String,
+    pub actividad_desc: String,
+    pub detected_employees: u32,
+    pub exact_vemp_fine_mxn: f64,
+    pub primary_link: String,
+    pub secondary_link: String,
+    pub message_body: String,
+}
+
+/// Genera el mensaje personalizado del FormBot en 3 modalidades inteligentes según el perfil real detectado:
+/// 1) `PYME_AUTONOMOUS_SHIELD` (1 a 250 colaboradores): Urgencia patrimonial justa + Pre-Dictamen PDF + Checkout directo.
+/// 2) `ENTERPRISE_SECTOR_BENCHMARK` (> 250 colaboradores): Enfoque consultivo de Benchmark Sectorial y optimización STPS/IMSS.
+/// 3) `INCOMPLETE_DATA_FAST_CALIBRATION` (0 colaboradores o sin giro confirmado): Invitación honesta a ingresar solo su plantilla exacta en 1 clic.
+pub fn build_adaptive_prospect_outreach(query_or_name: &str, domain_hint: Option<&str>) -> AdaptiveOutreachPayload {
+    let intel = extract_deep_denue_360_intelligence(query_or_name);
+    let clean_ref = if !intel.query_matched.trim().is_empty() {
+        intel.query_matched.trim().to_string()
+    } else {
+        query_or_name.trim().to_uppercase()
+    };
+    let encoded_ref = clean_ref.replace(' ', "%20");
+    let encoded_name = intel.razon_social.replace(' ', "%20");
+    let dom_param = domain_hint.unwrap_or("").trim();
+
+    let is_unindexed = intel.estimated_employees == 0
+        || intel.headcount_source_type == "PENDIENTE_CALIBRACION_CORPORATIVA"
+        || intel.razon_social.starts_with("REGISTRO NO INDEXADO")
+        || intel.razon_social.starts_with("RFC ");
+
+    if is_unindexed {
+        let cal_link = format!(
+            "https://mallen.lat/?calibrate=1&rfc={}&domain={}#express-check",
+            encoded_ref, dom_param
+        );
+        let msg = format!(
+            "Estimado equipo directivo de {}:\n\
+            En nuestra verificación preventiva de cumplimiento normativo (STPS, SAT, IMSS y LFPDPPP) identificamos su registro corporativo, \
+            pero el padrón público aún no reporta el número exacto de colaboradores de su centro de trabajo.\n\n\
+            Para evitar estimaciones genéricas y generar sin costo su Pre-Dictamen Pericial exacto (con sello SHA-256), \
+            ingrese únicamente su número de colaboradores en el siguiente enlace pre-configurado:\n\
+            -> {}",
+            if intel.razon_social.starts_with("RFC ") { clean_ref.as_str() } else { intel.razon_social.as_str() },
+            cal_link
+        );
+        AdaptiveOutreachPayload {
+            prospect_tier: "NIVEL_3_CALIBRACION_GUIADA_DATOS_INCOMPLETOS".to_string(),
+            company_name: intel.razon_social,
+            tax_or_ref_id: clean_ref,
+            scian_code: intel.codigo_scian,
+            actividad_desc: intel.actividad_desc,
+            detected_employees: 0,
+            exact_vemp_fine_mxn: 0.0,
+            primary_link: cal_link.clone(),
+            secondary_link: cal_link,
+            message_body: msg,
+        }
+    } else if intel.estimated_employees > 250 || intel.is_multi_branch_corp && intel.estimated_employees >= 200 {
+        let pdf_link = format!("https://mallen.lat/api/micro_scan/{}", encoded_ref);
+        let consult_link = format!(
+            "https://mallen.lat/?calibrate=1&rfc={}&razon={}&scian={}&emp={}#express-check",
+            encoded_ref, encoded_name, intel.codigo_scian, intel.estimated_employees
+        );
+        let msg = format!(
+            "Atención: Dirección Jurídica, Recursos Humanos y Oficialía de Cumplimiento de {}\n\n\
+            Compartimos el Benchmark Sectorial de Ingeniería Legal Preventiva correspondiente al giro SCIAN {} ({}) \
+            para organizaciones de escala corporativa (~{} colaboradores en {} {}).\n\n\
+            El análisis técnico identifica áreas de optimización en Prima de Riesgo IMSS (Art. 196 RACERF), \
+            estandarización de comisiones mixtas STPS (NOM-019 / NOM-035 Guía III) y blindaje de materialidad B2B:\n\
+            1. Descargar Cédula de Benchmark Sectorial y Pre-Diagnóstico (PDF SHA-256):\n\
+               {}\n\
+            2. Calibrar parámetros por unidad de negocio o solicitar sesión técnica:\n\
+               {}",
+            intel.razon_social,
+            intel.codigo_scian,
+            intel.actividad_desc,
+            intel.estimated_employees,
+            intel.branch_count,
+            if intel.branch_count > 1 { "unidades operativas" } else { "centro corporativo" },
+            pdf_link,
+            consult_link
+        );
+        AdaptiveOutreachPayload {
+            prospect_tier: "NIVEL_2_CORPORATIVO_BENCHMARK_CONSULTIVO".to_string(),
+            company_name: intel.razon_social,
+            tax_or_ref_id: clean_ref,
+            scian_code: intel.codigo_scian,
+            actividad_desc: intel.actividad_desc,
+            detected_employees: intel.estimated_employees,
+            exact_vemp_fine_mxn: intel.exact_vemp_fine_mxn,
+            primary_link: pdf_link,
+            secondary_link: consult_link,
+            message_body: msg,
+        }
+    } else {
+        let pdf_link = format!("https://mallen.lat/api/micro_scan/{}", encoded_ref);
+        let chk_link = format!("https://mallen.lat/checkout?ref={}", encoded_ref);
+        let msg = format!(
+            "Estimada administración de {}:\n\n\
+            Durante la compulsa preventiva sobre el padrón oficial INEGI DENUE ({}, Giro SCIAN {}: {}) \
+            y normatividad federal (STPS, SAT, IMSS y LFPDPPP), calculamos para su estrato operativo (~{} colaboradores) \
+            una exposición sancionatoria prevenible de ${:.2} MXN.\n\n\
+            1. Descargue sin costo su Pre-Dictamen Pericial en PDF (Sello SHA-256):\n\
+               {}\n\
+            2. O active directamente su Expediente de Blindaje 360° listo para firma en:\n\
+               {}",
+            intel.razon_social,
+            intel.entidad_federativa,
+            intel.codigo_scian,
+            intel.actividad_desc,
+            intel.estimated_employees,
+            intel.exact_vemp_fine_mxn,
+            pdf_link,
+            chk_link
+        );
+        AdaptiveOutreachPayload {
+            prospect_tier: "NIVEL_1_PYME_CONVERSION_DIRECTA".to_string(),
+            company_name: intel.razon_social,
+            tax_or_ref_id: clean_ref,
+            scian_code: intel.codigo_scian,
+            actividad_desc: intel.actividad_desc,
+            detected_employees: intel.estimated_employees,
+            exact_vemp_fine_mxn: intel.exact_vemp_fine_mxn,
+            primary_link: pdf_link,
+            secondary_link: chk_link,
+            message_body: msg,
+        }
+    }
 }
