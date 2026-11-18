@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <rect width="512" height="512" rx="112" fill="#090b10"/>
+  <rect x="24" y="24" width="464" height="464" rx="92" fill="none" stroke="#334155" stroke-width="3"/>
+  <line x1="24" y1="380" x2="488" y2="132" stroke="#1e293b" stroke-width="2"/>
+  <circle cx="256" cy="256" r="168" fill="none" stroke="#475569" stroke-width="2" stroke-dasharray="8 6"/>
+  <text x="256" y="285" text-anchor="middle" fill="#f8fafc" font-family="Inter, Arial, sans-serif" font-weight="800" font-size="108" letter-spacing="-4">FM®</text>
+  <text x="256" y="348" text-anchor="middle" fill="#94a3b8" font-family="JetBrains Mono, monospace" font-weight="600" font-size="24" letter-spacing="6">MALLEN.LAT</text>
+</svg>

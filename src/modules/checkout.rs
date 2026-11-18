@@ -65,7 +65,7 @@ pub async fn handle_verify(Path(id): Path<String>) -> impl IntoResponse {
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="/css/enterprise-linear.css?v=2026.25">
     <script src="/js/quantum-lights.js?v=2026.25" defer></script>
-<link rel="stylesheet" href="/css/pure-light-mode.css?v=2026.140"><script src="/js/theme-init.js?v=2026.140"></script>  <link rel="stylesheet" href="/css/mallen-high-impact.css?v=2026.88">
+<link rel="stylesheet" href="/css/pure-light-mode.css?v=2026.140"><script src="/js/theme-init.js?v=2026.140"></script>  <link rel="stylesheet" href="/css/mallen-high-impact.css?v=2026.89">
 </head>
 <body class="bg-slate-950 text-slate-100 font-serif min-h-screen antialiased flex flex-col justify-between selection:bg-blue-600 selection:text-white">
 

@@ -1,42 +1,46 @@
 /* ==========================================================================
-   MALLEN 360° — SWISS FORENSIC PRECISION & TACTILE GLASS
-   Conformance: W3C WCAG 2.2 Level AA | Awwwards / FWA 60fps Specular UI
+   FIRMA MALLEN® — ARCHITECTURAL WALL, KELVIN WHITE LIGHT & NATIVE PWA (v89)
+   Conformance: W3C WCAG 2.2 Level AA | 120fps GPU Composited Kelvin Lighting
    ========================================================================== */
 
 :root {
-  /* Obsidian Forensic Dark Mode (Default) */
-  --bg-canvas: #070a12;
-  --bg-elevated: rgba(15, 23, 42, 0.76);
-  --bg-card: rgba(17, 25, 40, 0.80);
-  --bg-card-hover: rgba(24, 35, 56, 0.90);
+  /* Paleta Grisácea de Muro Arquitectónico (Obsidian Slate Wall) */
+  --bg-canvas: #090b10;
+  --bg-elevated: rgba(16, 20, 28, 0.84);
+  --bg-card: rgba(18, 22, 31, 0.86);
+  --bg-card-hover: rgba(24, 30, 42, 0.94);
   --text-primary: #f8fafc;
   --text-secondary: #cbd5e1;
   --text-muted: #94a3b8;
-  --border-hairline: rgba(148, 163, 184, 0.16);
-  --shadow-architectural: 0 1px 0 0 inset rgba(255, 255, 255, 0.12),
-                          0 20px 40px -15px rgba(0, 0, 0, 0.70);
-  --grid-line-color: rgba(148, 163, 184, 0.05);
-  --focus-ring-color: #38bdf8;
+  --border-hairline: rgba(148, 163, 184, 0.14);
+  --shadow-architectural: 0 1px 0 0 inset rgba(255, 255, 255, 0.10),
+                          0 20px 42px -15px rgba(0, 0, 0, 0.78);
+  --grid-line-color: rgba(148, 163, 184, 0.035);
+  --focus-ring-color: #e2e8f0;
 
-  /* Regulatory Agency RGB Channels */
-  --accent-stps: 59, 130, 246;      /* Electric Blue */
-  --accent-sat: 16, 185, 129;       /* Emerald */
-  --accent-imss: 168, 85, 247;      /* Royal Purple */
-  --accent-inai: 6, 182, 212;       /* Forensic Cyan */
-  --accent-sectorial: 245, 158, 11; /* Institutional Amber */
-  --accent-vemp: 239, 68, 68;       /* Crimson Alert */
+  /* Temperaturas de Luz Blanca (Kelvin White Spectrum — Cero Colores Saturados) */
+  --kelvin-cool: 236, 244, 255;     /* 6500K Blanco Frío Cuarzo */
+  --kelvin-neutral: 255, 255, 255;  /* 5500K Blanco Puro Luz de Día */
+  --kelvin-warm: 255, 245, 228;     /* 3200K Blanco Cálido Halógeno */
+  --active-kelvin: var(--kelvin-cool);
 
-  /* Typography System */
+  /* Compatibilidad con selectores existentes */
+  --accent-stps: 236, 244, 255;
+  --accent-sat: 255, 255, 255;
+  --accent-imss: 241, 245, 249;
+  --accent-inai: 236, 244, 255;
+  --accent-sectorial: 255, 245, 228;
+  --accent-vemp: 255, 245, 228;
+
   --font-display: 'Plus Jakarta Sans', 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
   --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
   --font-mono: 'JetBrains Mono', 'Fira Code', ui-monospace, SFMono-Regular, monospace;
 }
 
-/* Fiduciary Paper Light Mode (Replaces washed-out #ffffff/?v=2026.99) */
 html.light-mode,
 body.light-mode {
-  --bg-canvas: #f1f5f9;
-  --bg-elevated: rgba(255, 255, 255, 0.94);
+  --bg-canvas: #eef2f6;
+  --bg-elevated: rgba(255, 255, 255, 0.95);
   --bg-card: #ffffff;
   --bg-card-hover: #f8fafc;
   --text-primary: #0f172a;
@@ -44,13 +48,13 @@ body.light-mode {
   --text-muted: #475569;
   --border-hairline: #cbd5e1;
   --shadow-architectural: 0 1px 0 0 inset #ffffff,
-                          0 1px 3px 0 rgba(15, 23, 42, 0.06),
-                          0 14px 28px -8px rgba(15, 23, 42, 0.09);
-  --grid-line-color: rgba(15, 23, 42, 0.045);
-  --focus-ring-color: #0284c7;
+                          0 2px 6px 0 rgba(15, 23, 42, 0.05),
+                          0 14px 28px -8px rgba(15, 23, 42, 0.08);
+  --grid-line-color: rgba(15, 23, 42, 0.035);
+  --focus-ring-color: #334155;
 }
 
-/* WCAG 2.2 SC 2.4.11 Focus Not Obscured (Minimum) */
+/* WCAG 2.2 SC 2.4.11 & Escalado Tipográfico Ejecutivo (18px base) */
 html {
   font-size: 18px !important;
   scroll-padding-top: 5.5rem;
@@ -60,7 +64,6 @@ html {
   font-family: var(--font-sans);
 }
 
-/* Swiss Mathematical Grid Canvas */
 body {
   position: relative;
   background-color: var(--bg-canvas) !important;
@@ -68,63 +71,150 @@ body {
   background-image:
     linear-gradient(to right, var(--grid-line-color) 1px, transparent 1px),
     linear-gradient(to bottom, var(--grid-line-color) 1px, transparent 1px) !important;
-  background-size: 48px 48px !important;
+  background-size: 56px 56px !important;
   overflow-x: hidden;
+  font-size: 18px !important;
+  line-height: 1.7 !important;
 }
 
-/* Tactile SVG Fractal Noise Overlay (0 KB External Assets) */
+/* Textura física de pared arquitectónica mate (SVG Fractal Grain) */
 body::before {
   content: "" !important;
   display: block !important;
   position: fixed;
   inset: 0;
-  z-index: 9998;
+  z-index: 0;
   pointer-events: none;
-  opacity: 0.024;
-  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  opacity: 0.028;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
 }
 
-/* WCAG 2.2 SC 2.4.7 & 2.4.13 Focus Appearance (>= 2px solid perimeter, >= 3:1 contrast) */
-*:focus {
-  outline: none;
+/* ==========================================================================
+   LIENZO DE PARED ILUMINADA CON GEOMETRÍA DISRUPTIVA GRISÁCEA Y LUZ GPU 120FPS
+   ========================================================================== */
+#mallen-architectural-wall {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  overflow: hidden;
 }
 
+/* Figuras geométricas disruptivas y elegantes en tonos grisáceos grabadas en el muro */
+#mallen-architectural-wall .wall-geometry-svg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  opacity: 0.85;
+}
+
+html.light-mode #mallen-architectural-wall .wall-geometry-svg {
+  opacity: 0.55;
+}
+
+/* Proyector de Luz Blanca sobre la Pared (Movido por GPU con translate3d a 120 FPS) */
+#mallen-wall-lamp {
+  position: absolute;
+  top: -450px;
+  left: -450px;
+  width: 900px;
+  height: 900px;
+  border-radius: 50%;
+  pointer-events: none;
+  will-change: transform;
+  transform: translate3d(50vw, 35vh, 0) scale(1);
+  background: radial-gradient(
+    circle,
+    rgba(var(--active-kelvin), 0.13) 0%,
+    rgba(var(--active-kelvin), 0.055) 34%,
+    rgba(var(--active-kelvin), 0.015) 58%,
+    transparent 74%
+  );
+  transition: width 0.35s ease, height 0.35s ease;
+}
+
+html.light-mode #mallen-wall-lamp {
+  background: radial-gradient(
+    circle,
+    rgba(255, 255, 255, 0.92) 0%,
+    rgba(248, 250, 252, 0.55) 38%,
+    transparent 72%
+  );
+}
+
+header, main, section, footer {
+  position: relative;
+  z-index: 1;
+}
+
+/* WCAG 2.2 SC 2.4.7, 2.4.13 & 2.5.8 */
+*:focus { outline: none; }
 *:focus-visible {
   outline: 2px solid var(--focus-ring-color) !important;
   outline-offset: 2px !important;
-  box-shadow: 0 0 0 4px rgba(56, 189, 248, 0.25) !important;
+  box-shadow: 0 0 0 4px rgba(226, 232, 240, 0.22) !important;
 }
 
-/* WCAG 2.2 SC 2.5.8 Target Size (Minimum) — >= 24x24 CSS pixels */
-button,
-a.btn-forensic,
-input[type="checkbox"],
-input[type="radio"],
-summary,
-.interactive-chip,
-.lang-pill {
+button, a.btn-forensic, input[type="checkbox"], input[type="radio"], summary, .interactive-chip, .lang-pill {
   min-width: 24px;
   min-height: 24px;
 }
 
-/* Specular Tactile Glass Card with 60fps Cursor-Tracked Spotlight */
+/* ==========================================================================
+   TARJETAS CON REFLEJO ESPECULAR DE LUZ BLANCA (FRÍA / NEUTRA / CÁLIDA)
+   ========================================================================== */
 .mallen-glass-card,
 .quantum-card,
 .mallen-surface-card {
-  --card-accent: var(--accent-stps);
+  --card-kelvin: var(--kelvin-cool);
+  --spot-size: 460px;
+  --spot-alpha: 0.14;
+  --border-alpha: 0.44;
   --mouse-x: 50%;
   --mouse-y: 0%;
   position: relative;
   background: var(--bg-card) !important;
-  backdrop-filter: blur(16px) saturate(140%);
-  -webkit-backdrop-filter: blur(16px) saturate(140%);
   border: 1px solid var(--border-hairline) !important;
   border-radius: 14px !important;
   box-shadow: var(--shadow-architectural) !important;
-  transition: transform 0.28s cubic-bezier(0.22, 1, 0.36, 1),
-              border-color 0.28s ease,
-              box-shadow 0.28s ease !important;
+  transition: transform 0.22s cubic-bezier(0.22, 1, 0.36, 1),
+              border-color 0.22s ease,
+              box-shadow 0.22s ease !important;
   overflow: hidden;
+}
+
+/* 1. Sección Hero & Consola: Luz Blanca Fría de Cuarzo (6500K, Radio 600px, Brillo Alto) */
+#express-check .mallen-glass-card,
+#express-check .quantum-card,
+#express-check .mallen-surface-card,
+#osint-calibration-engine {
+  --card-kelvin: var(--kelvin-cool);
+  --spot-size: 600px;
+  --spot-alpha: 0.18;
+  --border-alpha: 0.56;
+}
+
+/* 2. Sección Simulador In Situ: Luz Blanca Pura Neutra (5500K, Radio 310px Concentrado) */
+#risk-sandbox-section .mallen-glass-card,
+#risk-sandbox-section label,
+#eu-interactive-sandbox label {
+  --card-kelvin: var(--kelvin-neutral);
+  --spot-size: 310px;
+  --spot-alpha: 0.22;
+  --border-alpha: 0.68;
+}
+
+/* 3. Sección Arquitectura de Blindaje 360° y Garantías: Luz Blanca Cálida Halógena (3200K, Radio 480px) */
+#mallen-vanta-trust-center .mallen-glass-card,
+#mallen-vanta-trust-center .grid > div,
+#eu-trust-center-section .grid > div,
+#validez-legal .mallen-glass-card,
+#probative-validity-section .mallen-surface-card {
+  --card-kelvin: var(--kelvin-warm);
+  --spot-size: 480px;
+  --spot-alpha: 0.16;
+  --border-alpha: 0.50;
 }
 
 .mallen-glass-card::before,
@@ -135,13 +225,16 @@ summary,
   position: absolute;
   inset: 0;
   pointer-events: none;
+  border-radius: inherit;
   background: radial-gradient(
-    420px circle at var(--mouse-x) var(--mouse-y),
-    rgba(var(--card-accent), 0.14),
-    transparent 65%
-  );
-  opacity: 0;
-  transition: opacity 0.3s ease;
+    var(--spot-size, 460px) circle at var(--mouse-x, 50%) var(--mouse-y, 0%),
+    rgba(var(--card-kelvin, 236, 244, 255), var(--spot-alpha, 0.15)),
+    rgba(var(--card-kelvin, 236, 244, 255), 0.03) 46%,
+    transparent 70%
+  ) !important;
+  opacity: var(--spot-visible, 0);
+  transition: opacity 0.18s ease !important;
+  z-index: 0;
 }
 
 .mallen-glass-card::after,
@@ -151,48 +244,50 @@ summary,
   display: block !important;
   position: absolute;
   bottom: 0;
-  left: 12%;
-  right: 12%;
-  height: 2px;
+  left: 14%;
+  right: 14%;
+  height: 1.5px;
+  pointer-events: none;
   background: linear-gradient(
     90deg,
     transparent,
-    rgba(var(--card-accent), 0.92),
+    rgba(var(--card-kelvin, 255, 255, 255), 0.78),
     transparent
-  );
-  opacity: 0.28;
-  transition: opacity 0.3s ease, left 0.3s ease, right 0.3s ease;
+  ) !important;
+  opacity: 0.24;
+  transition: opacity 0.22s ease, left 0.22s ease, right 0.22s ease !important;
+  z-index: 2;
 }
 
 .mallen-glass-card:hover,
 .quantum-card:hover,
 .mallen-surface-card:hover {
-  transform: translateY(-3px) !important;
-  border-color: rgba(var(--card-accent), 0.50) !important;
-  box-shadow: 0 1px 0 0 inset rgba(255, 255, 255, 0.22),
-              0 22px 44px -12px rgba(var(--card-accent), 0.18) !important;
+  transform: translateY(-2px) !important;
+  border-color: rgba(var(--card-kelvin, 255, 255, 255), var(--border-alpha, 0.48)) !important;
+  box-shadow: 0 1px 0 0 inset rgba(255, 255, 255, 0.24),
+              0 20px 40px -14px rgba(0, 0, 0, 0.75) !important;
 }
 
 .mallen-glass-card:hover::before,
 .quantum-card:hover::before,
 .mallen-surface-card:hover::before {
-  opacity: 1;
+  opacity: 1 !important;
 }
 
 .mallen-glass-card:hover::after,
 .quantum-card:hover::after,
 .mallen-surface-card:hover::after {
-  opacity: 1;
-  left: 4%;
-  right: 4%;
+  opacity: 0.9 !important;
+  left: 4% !important;
+  right: 4% !important;
 }
 
-.mallen-glass-card[data-agency="stps"]      { --card-accent: var(--accent-stps); }
-.mallen-glass-card[data-agency="sat"]       { --card-accent: var(--accent-sat); }
-.mallen-glass-card[data-agency="imss"]      { --card-accent: var(--accent-imss); }
-.mallen-glass-card[data-agency="inai"]      { --card-accent: var(--accent-inai); }
-.mallen-glass-card[data-agency="sectorial"] { --card-accent: var(--accent-sectorial); }
-.mallen-glass-card[data-agency="vemp"]      { --card-accent: var(--accent-vemp); }
+.mallen-glass-card > *,
+.quantum-card > *,
+.mallen-surface-card > * {
+  position: relative;
+  z-index: 1;
+}
 
 .tabular-telemetry {
   font-family: var(--font-mono);
@@ -210,128 +305,79 @@ summary,
   animation: guilloche-spin 48s linear infinite;
 }
 
-@media (prefers-reduced-motion: reduce) {
-  *,
-  ::before,
-  ::after {
-    animation-duration: 0.01ms !important;
-    animation-iteration-count: 1 !important;
-    transition-duration: 0.01ms !important;
-    scroll-behavior: auto !important;
-  }
-}
-
-/* Estado de validación en rojo sutil para cuando el RFC no arroja empleados automáticos */
+/* Validación en rojo sutil y controles del Simulador */
 input.mallen-input-subtle-red {
   border-color: rgba(239, 68, 68, 0.78) !important;
   background-color: rgba(127, 29, 29, 0.14) !important;
   box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.16) !important;
-  transition: all 0.22s ease !important;
 }
-
 .mallen-subtle-red-hint {
   color: #f87171 !important;
   font-size: 0.86rem !important;
   font-weight: 500;
   margin-top: 6px;
 }
-
-/* ==========================================================================
-   MODO CLARO FIDUCIARIO DE ALTO CONTRASTE (CERO SOMBRAS OSCURAS NI FONDOS NEGROS)
-   ========================================================================== */
-html.light-mode,
-html.light-mode body {
-  background-color: #f4f7fb !important;
-  color: #0f172a !important;
+.mallen-sandbox-card-active {
+  border-color: rgba(255, 255, 255, 0.62) !important;
+  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.28) !important;
+}
+.mallen-sandbox-card-inactive {
+  opacity: 0.55;
+  border-color: rgba(148, 163, 184, 0.20) !important;
 }
 
-html.light-mode header,
-html.light-mode footer,
-html.light-mode .top-bar-surface {
+/* Escalado Tipográfico de Alta Especificidad (18px Base) */
+html body p, html body li, html body dd, html body td, html body th, html body label, html body summary {
+  font-size: 1.02rem !important;
+  line-height: 1.68 !important;
+}
+html body .text-xs, html body .text-\[8px\], html body .text-\[9px\], html body .text-\[10px\], html body .text-\[11px\], html body .text-\[12px\], html body small, html body .mallen-baymard-microcopy {
+  font-size: 0.88rem !important;
+  line-height: 1.55 !important;
+}
+html body .text-sm { font-size: 1.0rem !important; line-height: 1.62 !important; }
+html body .text-base, html body .text-lg { font-size: 1.14rem !important; line-height: 1.6 !important; }
+html body h1 { font-size: clamp(2.1rem, 3.6vw, 3.0rem) !important; line-height: 1.18 !important; }
+html body h2 { font-size: clamp(1.6rem, 2.6vw, 2.2rem) !important; line-height: 1.25 !important; }
+html body h3 { font-size: clamp(1.25rem, 2.0vw, 1.5rem) !important; line-height: 1.32 !important; }
+html body input:not([type="checkbox"]):not([type="radio"]), html body select, html body textarea, html body button, html body a.mallen-btn-primary, html body a.mallen-btn-secondary {
+  font-size: 1.0rem !important;
+  min-height: 46px !important;
+}
+
+/* Modo Claro Limpio */
+html.light-mode header, html.light-mode footer, html.light-mode .top-bar-surface {
   background-color: #ffffff !important;
   border-color: #cbd5e1 !important;
-  box-shadow: 0 1px 4px rgba(15, 23, 42, 0.05) !important;
 }
-
-html.light-mode .mallen-glass-card,
-html.light-mode .quantum-card,
-html.light-mode .mallen-surface-card,
-html.light-mode [class*="bg-slate-9"],
-html.light-mode [class*="bg-slate-8"] {
+html.light-mode .mallen-glass-card, html.light-mode .quantum-card, html.light-mode .mallen-surface-card, html.light-mode [class*="bg-slate-9"], html.light-mode [class*="bg-slate-8"] {
   background: #ffffff !important;
   background-color: #ffffff !important;
   color: #0f172a !important;
   border: 1px solid #cbd5e1 !important;
   box-shadow: 0 2px 10px rgba(15, 23, 42, 0.04) !important;
 }
-
-html.light-mode .mallen-glass-card::before,
-html.light-mode .quantum-card::before,
-html.light-mode .mallen-surface-card::before {
-  background: radial-gradient(
-    420px circle at var(--mouse-x) var(--mouse-y),
-    rgba(16, 185, 129, 0.06),
-    transparent 65%
-  ) !important;
-}
-
-html.light-mode .shadow-2xl,
-html.light-mode .shadow-xl,
-html.light-mode .shadow-lg {
-  box-shadow: 0 4px 14px rgba(15, 23, 42, 0.06) !important;
-}
-
-html.light-mode h1,
-html.light-mode h2,
-html.light-mode h3,
-html.light-mode h4,
-html.light-mode .text-white,
-html.light-mode .text-slate-100,
-html.light-mode .text-slate-200 {
+html.light-mode h1, html.light-mode h2, html.light-mode h3, html.light-mode h4, html.light-mode .text-white, html.light-mode .text-slate-100, html.light-mode .text-slate-200 {
   color: #0f172a !important;
 }
-
-html.light-mode p,
-html.light-mode li,
-html.light-mode label,
-html.light-mode summary,
-html.light-mode .text-slate-300,
-html.light-mode .text-slate-400 {
+html.light-mode p, html.light-mode li, html.light-mode label, html.light-mode summary, html.light-mode .text-slate-300, html.light-mode .text-slate-400 {
   color: #334155 !important;
 }
-
-html.light-mode input:not([type="checkbox"]):not([type="radio"]),
-html.light-mode select,
-html.light-mode textarea {
+html.light-mode input:not([type="checkbox"]):not([type="radio"]), html.light-mode select, html.light-mode textarea {
   background-color: #f8fafc !important;
   color: #0f172a !important;
   border: 1px solid #94a3b8 !important;
-  box-shadow: none !important;
 }
 
-/* Tarjetas interactivas del Simulador In Situ (Sandbox) */
-.mallen-sandbox-card-active {
-  border-color: #10b981 !important;
-  box-shadow: 0 0 0 2px rgba(16, 185, 129, 0.25) !important;
-}
-
-.mallen-sandbox-card-inactive {
-  opacity: 0.55;
-  border-color: rgba(148, 163, 184, 0.25) !important;
-}
-
-/* Menú Desplegable Lateral Exclusivo para Teléfono Móvil (Drawer) */
-#mallen-mobile-drawer-backdrop {
+/* Menú Lateral Móvil y Modal de Instalación PWA (Android / Manzano iOS) */
+#mallen-mobile-drawer-backdrop, #mallen-pwa-modal-backdrop {
   position: fixed;
   inset: 0;
-  background: rgba(7, 10, 18, 0.72);
+  background: rgba(7, 10, 18, 0.76);
   z-index: 9990;
   display: none;
 }
-
-#mallen-mobile-drawer-backdrop.open {
-  display: block;
-}
+#mallen-mobile-drawer-backdrop.open, #mallen-pwa-modal-backdrop.open { display: block; }
 
 #mallen-mobile-drawer {
   position: fixed;
@@ -342,223 +388,42 @@ html.light-mode textarea {
   background: var(--bg-canvas);
   border-left: 1px solid var(--border-hairline);
   z-index: 9995;
-  transform: translateX(100%);
-  transition: transform 0.24s cubic-bezier(0.22, 1, 0.36, 1);
+  transform: translate3d(100%, 0, 0);
+  transition: transform 0.22s cubic-bezier(0.22, 1, 0.36, 1);
   padding: 1.25rem;
   display: flex;
   flex-direction: column;
   justify-content: space-between;
   overflow-y: auto;
 }
+#mallen-mobile-drawer.open { transform: translate3d(0, 0, 0); }
 
-html.light-mode #mallen-mobile-drawer {
-  background: #ffffff !important;
-  border-left: 1px solid #cbd5e1 !important;
-}
-
-#mallen-mobile-drawer.open {
-  transform: translateX(0);
-}
-
-/* ==========================================================================
-   10. CHROMATIC FORENSIC PRISM — ILUMINACIÓN REACTIVA MULTI-SECCIÓN (v88)
-   Varía dinámicamente el diámetro (--spot-size) y el brillo (--spot-alpha,
-   --border-alpha, --beam-alpha) según la sección de la página, conservando
-   el color cromático exacto (--card-accent) de cada tarjeta y dependencia.
-   ========================================================================== */
-
-:root {
-  --page-mouse-x: 50vw;
-  --page-mouse-y: 30vh;
-  --page-ambient-rgb: 16, 185, 129;
-  --page-ambient-size: 620px;
-  --page-ambient-alpha: 0.075;
-}
-
-html.light-mode {
-  --page-ambient-alpha: 0.045;
-}
-
-/* Halo atmosférico subyacente de página completa que cambia de radio, brillo y color según la sección */
-body::after {
-  content: "" !important;
-  display: block !important;
+#mallen-pwa-install-modal {
   position: fixed;
-  inset: 0;
-  z-index: 0;
-  pointer-events: none;
-  background: radial-gradient(
-    var(--page-ambient-size, 620px) circle at var(--page-mouse-x, 50vw) var(--page-mouse-y, 30vh),
-    rgba(var(--page-ambient-rgb, 16, 185, 129), var(--page-ambient-alpha, 0.075)),
-    transparent 68%
-  );
-  transition: background 0.18s ease;
+  left: 50%;
+  top: 50%;
+  transform: translate3d(-50%, -50%, 0);
+  width: min(92vw, 460px);
+  background: #0f131c;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  border-radius: 16px;
+  padding: 1.5rem;
+  z-index: 9999;
+  box-shadow: 0 25px 60px rgba(0, 0, 0, 0.85);
+  display: none;
+}
+#mallen-pwa-install-modal.open { display: block; }
+html.light-mode #mallen-pwa-install-modal {
+  background: #ffffff;
+  color: #0f172a;
+  border-color: #cbd5e1;
 }
 
-header, main, section, footer {
-  position: relative;
-  z-index: 1;
-}
-
-/* Variables modulables por tarjeta y por sección */
-.mallen-glass-card,
-.quantum-card,
-.mallen-surface-card {
-  --card-accent: 16, 185, 129;
-  --spot-size: 440px;
-  --spot-alpha: 0.16;
-  --border-spot-size: 320px;
-  --border-alpha: 0.58;
-  --beam-alpha: 0.90;
-  position: relative;
-  overflow: hidden;
-}
-
-/* PERFIL SECCIÓN 1: HERO & CONSOLA DE DIAGNÓSTICO (Haz Amplio de Alta Energía: 580px / Brillo 0.23) */
-#express-check .mallen-glass-card,
-#express-check .quantum-card,
-#express-check .mallen-surface-card,
-#osint-calibration-engine.mallen-glass-card,
-#osint-calibration-engine .mallen-surface-card {
-  --spot-size: 580px;
-  --spot-alpha: 0.23;
-  --border-spot-size: 420px;
-  --border-alpha: 0.78;
-  --beam-alpha: 1.0;
-}
-
-/* PERFIL SECCIÓN 2: SIMULADOR IN SITU / SANDBOX (Haz Táctico Concentrado y Brillante: 300px / Brillo 0.27) */
-#risk-sandbox-section .mallen-glass-card,
-#risk-sandbox-section .quantum-card,
-#risk-sandbox-section .mallen-surface-card,
-#risk-sandbox-section label,
-#eu-interactive-sandbox.mallen-glass-card,
-#eu-interactive-sandbox label {
-  --spot-size: 300px;
-  --spot-alpha: 0.27;
-  --border-spot-size: 240px;
-  --border-alpha: 0.85;
-  --beam-alpha: 0.95;
-}
-
-/* PERFIL SECCIÓN 3: ARQUITECTURA DE BLINDAJE 360° & CENTRO DE CONFIANZA (Haz Prisma Equilibrado: 450px / Brillo 0.18) */
-#mallen-vanta-trust-center .mallen-glass-card,
-#mallen-vanta-trust-center .mallen-surface-card,
-#mallen-vanta-trust-center .grid > div,
-#eu-trust-center-section .grid > div {
-  --spot-size: 450px;
-  --spot-alpha: 0.18;
-  --border-spot-size: 340px;
-  --border-alpha: 0.65;
-  --beam-alpha: 0.92;
-}
-
-/* PERFIL SECCIÓN 4: SUSTENTO PROBATORIO, LEYES Y FAQ (Haz Lente Forense Sutil: 350px / Brillo 0.12) */
-#validez-legal .mallen-glass-card,
-#validez-legal .quantum-card,
-#probative-validity-section .mallen-surface-card,
-#laws-grid .mallen-surface-card,
-details.mallen-glass-card,
-details.quantum-card {
-  --spot-size: 350px;
-  --spot-alpha: 0.12;
-  --border-spot-size: 260px;
-  --border-alpha: 0.48;
-  --beam-alpha: 0.75;
-}
-
-/* PERFIL SECCIÓN 5: CHECKOUT 3D SECURE, DIRECTORIO NORMATIVO Y RADAR DOF (Haz Bóveda: 500px / Brillo 0.20) */
-#checkoutForm .mallen-surface-card,
-#radar-dof-dedicated-feed .mallen-surface-card,
-main .grid > a.mallen-surface-card {
-  --spot-size: 500px;
-  --spot-alpha: 0.20;
-  --border-spot-size: 360px;
-  --border-alpha: 0.72;
-  --beam-alpha: 0.95;
-}
-
-/* Superficie de luz radial que usa el tamaño (--spot-size), brillo (--spot-alpha) y color (--card-accent) de su sección */
-.mallen-glass-card::before,
-.quantum-card::before,
-.mallen-surface-card::before {
-  content: "" !important;
-  display: block !important;
-  position: absolute;
-  inset: 0;
-  pointer-events: none;
-  border-radius: inherit;
-  background: radial-gradient(
-    var(--spot-size, 440px) circle at var(--mouse-x, 50%) var(--mouse-y, 0%),
-    rgba(var(--card-accent, 16, 185, 129), var(--spot-alpha, 0.16)),
-    rgba(var(--card-accent, 16, 185, 129), calc(var(--spot-alpha, 0.16) * 0.28)) 42%,
-    transparent 70%
-  ) !important;
-  opacity: var(--spot-visible, 0);
-  transition: opacity 0.25s ease !important;
-  z-index: 0;
-}
-
-/* Filamento inferior y bisel reactivo que conserva el color exacto de la tarjeta */
-.mallen-glass-card::after,
-.quantum-card::after,
-.mallen-surface-card::after {
-  content: "" !important;
-  display: block !important;
-  position: absolute;
-  bottom: 0;
-  left: 10%;
-  right: 10%;
-  height: 2px;
-  pointer-events: none;
-  background: linear-gradient(
-    90deg,
-    transparent,
-    rgba(var(--card-accent, 16, 185, 129), var(--beam-alpha, 0.90)),
-    transparent
-  ) !important;
-  opacity: 0.32;
-  transition: opacity 0.28s ease, left 0.28s ease, right 0.28s ease !important;
-  z-index: 2;
-}
-
-.mallen-glass-card:hover,
-.quantum-card:hover,
-.mallen-surface-card:hover {
-  border-color: rgba(var(--card-accent, 16, 185, 129), var(--border-alpha, 0.58)) !important;
-  box-shadow: 0 1px 0 0 inset rgba(255, 255, 255, 0.20),
-              0 20px 42px -12px rgba(var(--card-accent, 16, 185, 129), calc(var(--spot-alpha, 0.16) * 1.15)) !important;
-}
-
-.mallen-glass-card:hover::before,
-.quantum-card:hover::before,
-.mallen-surface-card:hover::before {
-  opacity: 1 !important;
-}
-
-.mallen-glass-card:hover::after,
-.quantum-card:hover::after,
-.mallen-surface-card:hover::after {
-  opacity: 1 !important;
-  left: 3% !important;
-  right: 3% !important;
-}
-
-.mallen-glass-card > *,
-.quantum-card > *,
-.mallen-surface-card > * {
-  position: relative;
-  z-index: 1;
-}
-
-/* Calibración delicada en Modo Claro para que el haz coloreado luzca limpio sobre papel blanco */
-html.light-mode .mallen-glass-card::before,
-html.light-mode .quantum-card::before,
-html.light-mode .mallen-surface-card::before {
-  background: radial-gradient(
-    var(--spot-size, 440px) circle at var(--mouse-x, 50%) var(--mouse-y, 0%),
-    rgba(var(--card-accent, 16, 185, 129), calc(var(--spot-alpha, 0.16) * 0.62)),
-    rgba(var(--card-accent, 16, 185, 129), calc(var(--spot-alpha, 0.16) * 0.16)) 45%,
-    transparent 70%
-  ) !important;
+@media (prefers-reduced-motion: reduce) {
+  *, ::before, ::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
 }
