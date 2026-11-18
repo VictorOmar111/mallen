@@ -2968,6 +2968,69 @@ pub struct AdaptiveOutreachPayload {
 /// 1) `PYME_AUTONOMOUS_SHIELD` (1 a 250 colaboradores): Urgencia patrimonial justa + Pre-Dictamen PDF + Checkout directo.
 /// 2) `ENTERPRISE_SECTOR_BENCHMARK` (> 250 colaboradores): Enfoque consultivo de Benchmark Sectorial y optimización STPS/IMSS.
 /// 3) `INCOMPLETE_DATA_FAST_CALIBRATION` (0 colaboradores o sin giro confirmado): Invitación honesta a ingresar solo su plantilla exacta en 1 clic.
+
+/// Genera el diagnóstico normativo hiperpersonalizado por código SCIAN para el mensaje saliente del FormBot.
+pub fn build_scian_sector_hook(scian_code: &str, actividad_desc: &str) -> (&'static str, String) {
+    let sc = scian_code.trim();
+    if sc.starts_with("722") || sc.starts_with("311") || sc.starts_with("312") {
+        (
+            "Alimentos, Bebidas y Hospitalidad Gastronómica",
+            format!(
+                "al operar en {} (SCIAN {}), su establecimiento está sujeto a verificación sanitaria concurrente de COFEPRIS (Art. 251 LGS), recipientes sujetos a presión/gas LP (NOM-020-STPS-2011) y factores de riesgo psicosocial en turnos rotativos (NOM-035-STPS-2018)",
+                actividad_desc, sc
+            ),
+        )
+    } else if sc.starts_with("511") || sc.starts_with("518") || sc.starts_with("5415") || sc.starts_with("519") {
+        (
+            "Tecnología, Software Cloud y Servicios Digitales",
+            format!(
+                "al pertenecer al sector de {} (SCIAN {}), los puntos críticos de inspección se concentran en teletrabajo (>40% remoto, NOM-037-STPS-2023), privacidad y transferencia en nube (LFPDPPP Arts. 8, 15 y 36) y acreditación de materialidad en servicios intangibles (Art. 69-B CFF)",
+                actividad_desc, sc
+            ),
+        )
+    } else if sc.starts_with("23") || sc.starts_with("32") || sc.starts_with("33") || sc.starts_with("21") {
+        (
+            "Industria, Manufactura e Infraestructura",
+            format!(
+                "al operar en {} (SCIAN {}), su centro de trabajo clasifica en Clase IV/V de Prima de Riesgo IMSS (hasta 7.58875% conforme al Art. 196 RACERF) y exige trazabilidad documental en manejo de cargas/maquinaria (NOM-006/036-STPS) y subcontratación especializada (REPSE Art. 15-A LSS)",
+                actividad_desc, sc
+            ),
+        )
+    } else if sc.starts_with("62") || sc.starts_with("4641") || sc.starts_with("3254") {
+        (
+            "Salud, Farmacéutica y Servicios Clínicos",
+            format!(
+                "al desarrollar actividades de {} (SCIAN {}), su operación conlleva obligaciones reforzadas sobre datos personales sensibles y biométricos (LFPDPPP Art. 9), manejo de residuos peligrosos (RPBI / NOM-087) y licencias sanitarias COFEPRIS",
+                actividad_desc, sc
+            ),
+        )
+    } else if sc.starts_with("48") || sc.starts_with("49") || sc.starts_with("43") || sc.starts_with("46") {
+        (
+            "Comercio, Abasto y Logística de Transporte",
+            format!(
+                "al operar en {} (SCIAN {}), las inspecciones federales priorizan la emisión de CFDI con Complemento Carta Porte (Art. 29-A CFF), seguridad en almacenes y montacargas (NOM-006-STPS-2023) y Programa Interno de Protección Civil (PIPC)",
+                actividad_desc, sc
+            ),
+        )
+    } else if sc.starts_with("52") || sc.starts_with("53") || sc.starts_with("5411") || sc.starts_with("5412") {
+        (
+            "Servicios Corporativos, Financieros e Inmobiliarios",
+            format!(
+                "al operar en {} (SCIAN {}), su firma debe acreditar cumplimiento preventivo en Actividades Vulnerables Antilavado (Art. 17 LFPIORPI / UIF), Fecha Cierta en contratos mercantiles (Jurisprudencia SCJN 2a./J. 161/2019) y control de jornada/teletrabajo",
+                actividad_desc, sc
+            ),
+        )
+    } else {
+        (
+            "Operación Empresarial Multisectorial",
+            format!(
+                "al operar en {} (SCIAN {}), su unidad económica está sujeta a la matriz federal de 39 NOMs de la STPS (Comisiones Mixtas NOM-019, Diagnóstico NOM-030 y Prevención Psicosocial NOM-035), materialidad fiscal (Art. 69-B CFF) y aviso de privacidad integral",
+                actividad_desc, sc
+            ),
+        )
+    }
+}
+
 pub fn build_adaptive_prospect_outreach(query_or_name: &str, domain_hint: Option<&str>) -> AdaptiveOutreachPayload {
     let intel = extract_deep_denue_360_intelligence(query_or_name);
     let clean_ref = if !intel.query_matched.trim().is_empty() {
@@ -3017,12 +3080,12 @@ pub fn build_adaptive_prospect_outreach(query_or_name: &str, domain_hint: Option
             "https://mallen.lat/?calibrate=1&rfc={}&razon={}&scian={}&emp={}#express-check",
             encoded_ref, encoded_name, intel.codigo_scian, intel.estimated_employees
         );
+        let (sector_label, scian_hook) = build_scian_sector_hook(&intel.codigo_scian, &intel.actividad_desc);
         let msg = format!(
             "Atención: Dirección Jurídica, Recursos Humanos y Oficialía de Cumplimiento de {}\n\n\
-            Compartimos el Benchmark Sectorial de Ingeniería Legal Preventiva correspondiente al giro SCIAN {} ({}) \
-            para organizaciones de escala corporativa (~{} colaboradores en {} {}).\n\n\
-            El análisis técnico identifica áreas de optimización en Prima de Riesgo IMSS (Art. 196 RACERF), \
-            estandarización de comisiones mixtas STPS (NOM-019 / NOM-035 Guía III) y blindaje de materialidad B2B:\n\
+            Compartimos el Benchmark Sectorial de Ingeniería Legal Preventiva [{}] para organizaciones de escala corporativa (~{} colaboradores en {} {}): \
+            {}.\n\n\
+            Hemos consolidado su comparativa técnica para optimización de Prima de Riesgo IMSS (Art. 196 RACERF) y blindaje de materialidad B2B:\n\
             1. Descargar Cédula de Benchmark Sectorial y Pre-Diagnóstico (PDF SHA-256):\n\
                {}\n\
             2. Calibrar parámetros por unidad de negocio o solicitar sesión técnica:\n\
@@ -3051,11 +3114,11 @@ pub fn build_adaptive_prospect_outreach(query_or_name: &str, domain_hint: Option
     } else {
         let pdf_link = format!("https://mallen.lat/api/micro_scan/{}", encoded_ref);
         let chk_link = format!("https://mallen.lat/checkout?ref={}", encoded_ref);
+        let (sector_label, scian_hook) = build_scian_sector_hook(&intel.codigo_scian, &intel.actividad_desc);
         let msg = format!(
-            "Estimada administración de {}:\n\n\
-            Durante la compulsa preventiva sobre el padrón oficial INEGI DENUE ({}, Giro SCIAN {}: {}) \
-            y normatividad federal (STPS, SAT, IMSS y LFPDPPP), calculamos para su estrato operativo (~{} colaboradores) \
-            una exposición sancionatoria prevenible de ${:.2} MXN.\n\n\
+            "Estimada administración de {} ({}):\n\n\
+            Durante la compulsa preventiva sobre el padrón oficial INEGI DENUE [{}], detectamos que {}. \
+            Para su estrato operativo (~{} colaboradores), la exposición sancionatoria prevenible cuantificada asciende a ${:.2} MXN.\n\n\
             1. Descargue sin costo su Pre-Dictamen Pericial en PDF (Sello SHA-256):\n\
                {}\n\
             2. O active directamente su Expediente de Blindaje 360° listo para firma en:\n\

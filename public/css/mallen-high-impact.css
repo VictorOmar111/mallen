@@ -1,23 +1,22 @@
 /* MALLEN 360° — SWISS FORENSIC PRECISION & TACTILE GLASS */
 /* ==========================================================================
-   FIRMA MALLEN® — DEEP ARCHITECTURAL WALL, INSTANT KELVIN LIGHT & NATIVE PWA (v91)
+   FIRMA MALLEN® — ULTRA-FLUID 120FPS KELVIN WALL & NATIVE PWA (v92)
    ========================================================================== */
 
 :root {
   --bg-canvas: #07090e;
-  --bg-elevated: rgba(14, 18, 26, 0.88);
-  --bg-card: rgba(16, 20, 29, 0.84);
-  --bg-card-hover: rgba(22, 28, 40, 0.92);
+  --bg-elevated: rgba(14, 18, 26, 0.90);
+  --bg-card: rgba(16, 20, 29, 0.88);
+  --bg-card-hover: rgba(22, 28, 40, 0.95);
   --text-primary: #f8fafc;
   --text-secondary: #cbd5e1;
   --text-muted: #94a3b8;
   --border-hairline: rgba(148, 163, 184, 0.15);
-  --shadow-architectural: 0 1px 0 0 inset rgba(255, 255, 255, 0.11),
-                          0 24px 48px -14px rgba(0, 0, 0, 0.85);
-  --grid-line-color: rgba(148, 163, 184, 0.04);
+  --shadow-architectural: 0 1px 0 0 inset rgba(255, 255, 255, 0.10),
+                          0 16px 34px -12px rgba(0, 0, 0, 0.80);
+  --grid-line-color: rgba(148, 163, 184, 0.038);
   --focus-ring-color: #e2e8f0;
 
-  /* Temperaturas de Luz Blanca (Kelvin White Spectrum) */
   --kelvin-cool: 236, 244, 255;     /* 6500K Blanco Frío Cuarzo */
   --kelvin-neutral: 255, 255, 255;  /* 5500K Blanco Puro Luz de Día */
   --kelvin-warm: 255, 244, 224;     /* 3200K Blanco Cálido Halógeno */
@@ -39,9 +38,9 @@ body.light-mode {
   --text-muted: #475569;
   --border-hairline: #cbd5e1;
   --shadow-architectural: 0 1px 0 0 inset #ffffff,
-                          0 3px 8px 0 rgba(15, 23, 42, 0.06),
-                          0 16px 32px -10px rgba(15, 23, 42, 0.10);
-  --grid-line-color: rgba(15, 23, 42, 0.04);
+                          0 3px 8px 0 rgba(15, 23, 42, 0.05),
+                          0 14px 26px -10px rgba(15, 23, 42, 0.09);
+  --grid-line-color: rgba(15, 23, 42, 0.038);
   --focus-ring-color: #334155;
 }
 
@@ -59,44 +58,22 @@ body {
   background-color: var(--bg-canvas) !important;
   color: var(--text-primary) !important;
   background-image:
-    radial-gradient(ellipse 90% 60% at 50% 0%, rgba(30, 41, 59, 0.35), transparent 70%),
     linear-gradient(to right, var(--grid-line-color) 1px, transparent 1px),
     linear-gradient(to bottom, var(--grid-line-color) 1px, transparent 1px) !important;
-  background-size: 100% 100%, 56px 56px, 56px 56px !important;
+  background-size: 56px 56px !important;
   overflow-x: hidden;
   font-size: 18px !important;
   line-height: 1.7 !important;
 }
 
-html.light-mode body {
-  background-image:
-    radial-gradient(ellipse 90% 60% at 50% 0%, rgba(203, 213, 225, 0.45), transparent 70%),
-    linear-gradient(to right, var(--grid-line-color) 1px, transparent 1px),
-    linear-gradient(to bottom, var(--grid-line-color) 1px, transparent 1px) !important;
-}
-
-/* Micro-textura mineral de muro arquitectónico mate */
-body::before {
-  content: "" !important;
-  display: block !important;
+/* Muro Arquitectónico Estático en GPU (Cero filtros SVG pesados) */
+#mallen-architectural-wall {
   position: fixed;
   inset: 0;
   z-index: 0;
   pointer-events: none;
-  opacity: 0.032;
-  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.82' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
-}
-
-/* ==========================================================================
-   PARED ARQUITECTÓNICA DE 3 PLANOS DE PROFUNDIDAD + PROYECTOR GPU INSTANTÁNEO
-   ========================================================================== */
-#mallen-architectural-wall {
-  position: fixed;
-  inset: -40px;
-  z-index: 0;
-  pointer-events: none;
   overflow: hidden;
-  perspective: 1200px;
+  contain: strict;
 }
 
 #mallen-wall-geometry-layer {
@@ -104,56 +81,45 @@ body::before {
   inset: 0;
   width: 100%;
   height: 100%;
-  will-change: transform;
-  transform: translate3d(0, 0, 0);
+  transform: translateZ(0);
 }
 
-/* Relieve arquitectónico real sobre las figuras grisáceas de la pared */
-#mallen-wall-geometry-layer polygon.wall-monolith {
-  filter: drop-shadow(0 22px 32px rgba(0, 0, 0, 0.72));
-}
-
-html.light-mode #mallen-wall-geometry-layer polygon.wall-monolith {
-  filter: drop-shadow(0 14px 24px rgba(15, 23, 42, 0.12));
-}
-
-/* Viñeta perimetral de profundidad para que el centro parezca un muro iluminado */
 #mallen-wall-vignette {
   position: absolute;
   inset: 0;
-  background: radial-gradient(circle at 50% 42%, transparent 38%, rgba(4, 6, 10, 0.72) 100%);
+  background: radial-gradient(circle at 50% 42%, transparent 40%, rgba(4, 6, 10, 0.68) 100%);
   pointer-events: none;
 }
 
 html.light-mode #mallen-wall-vignette {
-  background: radial-gradient(circle at 50% 42%, transparent 45%, rgba(203, 213, 225, 0.45) 100%);
+  background: radial-gradient(circle at 50% 42%, transparent 48%, rgba(203, 213, 225, 0.42) 100%);
 }
 
-/* Haz de luz blanca directo en GPU sin retraso de transición */
+/* Proyector de Luz Blanca Movido 100% por Compositor GPU (translate3d) */
 #mallen-wall-lamp {
   position: absolute;
-  top: -520px;
-  left: -520px;
-  width: 1040px;
-  height: 1040px;
+  top: -380px;
+  left: -380px;
+  width: 760px;
+  height: 760px;
   border-radius: 50%;
   pointer-events: none;
   will-change: transform;
-  transform: translate3d(50vw, 35vh, 0) scale(1);
+  backface-visibility: hidden;
+  transform: translate3d(50vw, 35vh, 0);
   background: radial-gradient(
     circle,
-    rgba(var(--active-kelvin), 0.16) 0%,
-    rgba(var(--active-kelvin), 0.075) 28%,
-    rgba(var(--active-kelvin), 0.022) 52%,
-    transparent 72%
+    rgba(var(--active-kelvin), 0.15) 0%,
+    rgba(var(--active-kelvin), 0.06) 35%,
+    transparent 70%
   );
 }
 
 html.light-mode #mallen-wall-lamp {
   background: radial-gradient(
     circle,
-    rgba(255, 255, 255, 0.96) 0%,
-    rgba(255, 255, 255, 0.62) 34%,
+    rgba(255, 255, 255, 0.94) 0%,
+    rgba(255, 255, 255, 0.55) 38%,
     transparent 70%
   );
 }
@@ -163,7 +129,6 @@ header, main, section, footer {
   z-index: 1;
 }
 
-/* WCAG 2.2 SC 2.4.7, 2.4.13 & 2.5.8 */
 *:focus { outline: none; }
 *:focus-visible {
   outline: 2px solid var(--focus-ring-color) !important;
@@ -176,16 +141,14 @@ button, a.btn-forensic, input[type="checkbox"], input[type="radio"], summary, .i
   min-height: 24px;
 }
 
-/* ==========================================================================
-   TARJETAS CON REFLEJO ESPECULAR DE LUZ BLANCA INSTANTÁNEA (0ms DELAY)
-   ========================================================================== */
+/* Tarjetas aisladas con `contain: layout style paint` para repintado local O(1) */
 .mallen-glass-card,
 .quantum-card,
 .mallen-surface-card {
   --card-kelvin: var(--kelvin-cool);
-  --spot-size: 460px;
-  --spot-alpha: 0.16;
-  --border-alpha: 0.48;
+  --spot-size: 360px;
+  --spot-alpha: 0.17;
+  --border-alpha: 0.50;
   --mouse-x: -999px;
   --mouse-y: -999px;
   position: relative;
@@ -193,7 +156,8 @@ button, a.btn-forensic, input[type="checkbox"], input[type="radio"], summary, .i
   border: 1px solid var(--border-hairline) !important;
   border-radius: 14px !important;
   box-shadow: var(--shadow-architectural) !important;
-  transition: transform 0.16s ease-out, border-color 0.14s ease-out !important;
+  contain: layout style paint;
+  transition: border-color 0.12s linear !important;
   overflow: hidden;
 }
 
@@ -202,16 +166,16 @@ button, a.btn-forensic, input[type="checkbox"], input[type="radio"], summary, .i
 #express-check .mallen-surface-card,
 #osint-calibration-engine {
   --card-kelvin: var(--kelvin-cool);
-  --spot-size: 620px;
+  --spot-size: 460px;
   --spot-alpha: 0.20;
-  --border-alpha: 0.60;
+  --border-alpha: 0.62;
 }
 
 #risk-sandbox-section .mallen-glass-card,
 #risk-sandbox-section label,
 #eu-interactive-sandbox label {
   --card-kelvin: var(--kelvin-neutral);
-  --spot-size: 320px;
+  --spot-size: 280px;
   --spot-alpha: 0.24;
   --border-alpha: 0.72;
 }
@@ -222,12 +186,11 @@ button, a.btn-forensic, input[type="checkbox"], input[type="radio"], summary, .i
 #validez-legal .mallen-glass-card,
 #probative-validity-section .mallen-surface-card {
   --card-kelvin: var(--kelvin-warm);
-  --spot-size: 480px;
+  --spot-size: 380px;
   --spot-alpha: 0.17;
   --border-alpha: 0.54;
 }
 
-/* Sin transition en opacity para que la luz encienda y siga al cursor en 0ms */
 .mallen-glass-card::before,
 .quantum-card::before,
 .mallen-surface-card::before {
@@ -238,12 +201,10 @@ button, a.btn-forensic, input[type="checkbox"], input[type="radio"], summary, .i
   pointer-events: none;
   border-radius: inherit;
   background: radial-gradient(
-    var(--spot-size, 460px) circle at var(--mouse-x, -999px) var(--mouse-y, -999px),
-    rgba(var(--card-kelvin, 236, 244, 255), var(--spot-alpha, 0.16)),
-    rgba(var(--card-kelvin, 236, 244, 255), 0.035) 45%,
-    transparent 70%
+    var(--spot-size, 360px) circle at var(--mouse-x, -999px) var(--mouse-y, -999px),
+    rgba(var(--card-kelvin, 236, 244, 255), var(--spot-alpha, 0.17)),
+    transparent 68%
   ) !important;
-  opacity: 1 !important;
   z-index: 0;
 }
 
@@ -264,22 +225,20 @@ button, a.btn-forensic, input[type="checkbox"], input[type="radio"], summary, .i
     rgba(var(--card-kelvin, 255, 255, 255), 0.82),
     transparent
   ) !important;
-  opacity: 0.26;
-  transition: opacity 0.15s ease, left 0.15s ease, right 0.15s ease !important;
+  opacity: 0.25;
   z-index: 2;
 }
 
 .mallen-glass-card:hover,
 .quantum-card:hover,
 .mallen-surface-card:hover {
-  transform: translateY(-2px) !important;
   border-color: rgba(var(--card-kelvin, 255, 255, 255), var(--border-alpha, 0.50)) !important;
 }
 
 .mallen-glass-card:hover::after,
 .quantum-card:hover::after,
 .mallen-surface-card:hover::after {
-  opacity: 0.95 !important;
+  opacity: 0.92 !important;
   left: 4% !important;
   right: 4% !important;
 }
@@ -418,13 +377,4 @@ html.light-mode #mallen-pwa-install-modal {
   background: #ffffff;
   color: #0f172a;
   border-color: #cbd5e1;
-}
-
-@media (prefers-reduced-motion: reduce) {
-  *, ::before, ::after {
-    animation-duration: 0.01ms !important;
-    animation-iteration-count: 1 !important;
-    transition-duration: 0.01ms !important;
-    scroll-behavior: auto !important;
-  }
 }

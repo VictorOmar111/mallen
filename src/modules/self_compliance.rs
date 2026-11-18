@@ -11,7 +11,7 @@ pub fn render_mallen_privacy_notice() -> Html<String> {
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
     <style>body { font-family: 'Inter', sans-serif; } .font-mono-code { font-family: 'JetBrains Mono', monospace; }</style>
     <link rel="stylesheet" href="/css/quantum-glass.css?v=2026.27">
-  <link rel="stylesheet" href="/css/mallen-high-impact.css?v=2026.91">
+  <link rel="stylesheet" href="/css/mallen-high-impact.css?v=2026.92">
 </head>
 <body class="bg-slate-950 text-slate-100 min-h-screen p-6 sm:p-10 border-t-4 border-emerald-500">
     <div class="max-w-4xl mx-auto">
@@ -52,7 +52,7 @@ pub fn render_mallen_privacy_notice() -> Html<String> {
             </div>
         </div>
     </div>
-  <script src="/js/quantum-lights.js?v=2026.91"></script>
+  <script src="/js/quantum-lights.js?v=2026.92"></script>
 </body>
 </html>"##.to_string())
 }
@@ -68,7 +68,7 @@ pub fn render_mallen_terms() -> Html<String> {
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
     <style>body { font-family: 'Inter', sans-serif; } .font-mono-code { font-family: 'JetBrains Mono', monospace; }</style>
     <link rel="stylesheet" href="/css/quantum-glass.css?v=2026.27">
-  <link rel="stylesheet" href="/css/mallen-high-impact.css?v=2026.91">
+  <link rel="stylesheet" href="/css/mallen-high-impact.css?v=2026.92">
 </head>
 <body class="bg-slate-950 text-slate-100 min-h-screen p-6 sm:p-10 border-t-4 border-blue-500">
     <div class="max-w-4xl mx-auto">
@@ -103,7 +103,7 @@ pub fn render_mallen_terms() -> Html<String> {
             </div>
         </div>
     </div>
-  <script src="/js/quantum-lights.js?v=2026.91"></script>
+  <script src="/js/quantum-lights.js?v=2026.92"></script>
 </body>
 </html>"##.to_string())
 }
@@ -119,7 +119,7 @@ pub fn render_mallen_arco_portal() -> Html<String> {
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
     <style>body { font-family: 'Inter', sans-serif; } .font-mono-code { font-family: 'JetBrains Mono', monospace; }</style>
     <link rel="stylesheet" href="/css/quantum-glass.css?v=2026.27">
-  <link rel="stylesheet" href="/css/mallen-high-impact.css?v=2026.91">
+  <link rel="stylesheet" href="/css/mallen-high-impact.css?v=2026.92">
 </head>
 <body class="bg-slate-950 text-slate-100 min-h-screen p-6 sm:p-10 border-t-4 border-cyan-500">
     <div class="max-w-3xl mx-auto">
@@ -187,7 +187,7 @@ pub fn render_mallen_arco_portal() -> Html<String> {
             `;
         }
     </script>
-  <script src="/js/quantum-lights.js?v=2026.91"></script>
+  <script src="/js/quantum-lights.js?v=2026.92"></script>
 </body>
 </html>"##.to_string())
 }
