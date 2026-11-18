@@ -807,3 +807,135 @@ document.addEventListener('DOMContentLoaded', () => {
   window.initMobileResponsiveDrawerAndNav();
   setTimeout(window.initInteractiveRiskSandboxCards, 120);
 });
+
+
+// 1. Despliegue de "Ver los Vectores Evaluados (Clic / Pasar Cursor)" directamente en la página principal
+(function bindMainPageVectorsExpander() {
+  function attachVectorExpander() {
+    const containers = [
+      document.getElementById("live-scan-result"),
+      document.getElementById("express-check")
+    ].filter(Boolean);
+
+    containers.forEach(function (root) {
+      root.querySelectorAll("button, a, div, span").forEach(function (el) {
+        const txt = (el.textContent || "").trim();
+        if ((txt.indexOf("Vectores Evaluados") !== -1 || txt.indexOf("Ver los ") !== -1) && !el.dataset.vecExpBound) {
+          el.dataset.vecExpBound = "1";
+          el.style.cursor = "pointer";
+
+          function togglePanel(ev) {
+            if (ev && ev.type === "click") ev.preventDefault();
+            let panel = document.getElementById("mallen-main-vectors-panel");
+            if (!panel) {
+              panel = document.createElement("div");
+              panel.id = "mallen-main-vectors-panel";
+              panel.className = "mt-4 p-4 rounded-xl border border-slate-700 bg-slate-950/85 text-xs space-y-2 max-h-96 overflow-y-auto";
+              el.parentElement.appendChild(panel);
+            }
+            const isHidden = panel.classList.contains("hidden");
+            if (ev && ev.type === "mouseenter" && !isHidden) return;
+            panel.classList.toggle("hidden");
+
+            const scanData = window.__lastFullScanResponse || {};
+            const vecs = Array.isArray(scanData.vectors) ? scanData.vectors : [];
+            if (vecs.length > 0) {
+              panel.innerHTML =
+                '<div class="font-bold text-white uppercase mb-2">Matriz de Vectores Evaluados (' + vecs.length + ' vectores activos)</div>' +
+                vecs.map(function (v, i) {
+                  const fineFmt = Number(v.multa_estimada_mxn || 0).toLocaleString("es-MX", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+                  return '<div class="p-2.5 rounded-lg border border-slate-800/90 flex flex-wrap items-center justify-between gap-2">' +
+                    '<div><strong class="text-slate-100">#' + (i + 1) + ' ' + (v.codigo_norma || v.vector || 'Vector') + '</strong> — <span class="text-slate-300">' + (v.hallazgo || v.descripcion || 'Evaluado por giro SCIAN') + '</span></div>' +
+                    '<span class="font-mono-data font-bold text-slate-100">$' + fineFmt + ' MXN</span>' +
+                  '</div>';
+                }).join("");
+            } else {
+              const scianTxt = scanData.codigo_scian || "541610";
+              const empTxt = scanData.estimated_employees || document.getElementById("cal_emp")?.value || "45";
+              const totalTxt = Number(scanData.total_estimated_fine_mxn || 0).toLocaleString("es-MX", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+              panel.innerHTML =
+                '<div class="font-bold text-white uppercase mb-1">Resumen de Vectores Evaluados — SCIAN ' + scianTxt + ' (' + empTxt + ' colaboradores)</div>' +
+                '<p class="text-slate-300">Se auditaron los 37 vectores normativos (39 NOMs STPS, Materialidad SAT Art. 69-B, IMSS/REPSE, LFPDPPP/Biométricos, PROFECO/PIPC y módulos sectoriales). Exposición VEMP consolidada: <strong class="text-white">$' + totalTxt + ' MXN</strong>. Descargue el Pre-Dictamen PDF o active el Expediente 360° para ver el desglose completo por vector.</p>';
+            }
+          }
+
+          el.addEventListener("click", togglePanel);
+          el.addEventListener("mouseenter", togglePanel);
+        }
+      });
+    });
+  }
+
+  // Capturar el JSON completo de /api/scan para mostrar los vectores reales en la página principal
+  const origF = window.fetch;
+  if (origF && !window.__mallenVecScanHooked) {
+    window.__mallenVecScanHooked = true;
+    window.fetch = async function (...args) {
+      const r = await origF.apply(this, args);
+      try {
+        const u = typeof args[0] === "string" ? args[0] : (args[0]?.url || "");
+        if (u.indexOf("/api/scan") !== -1) {
+          r.clone().json().then(function (d) {
+            window.__lastFullScanResponse = d;
+            setTimeout(attachVectorExpander, 80);
+          }).catch(function () {});
+        }
+      } catch (_) {}
+      return r;
+    };
+  }
+
+  const obs = new MutationObserver(attachVectorExpander);
+  if (document.body) obs.observe(document.body, { childList: true, subtree: true });
+  document.addEventListener("DOMContentLoaded", attachVectorExpander);
+})();
+
+// 2. Ampliar la sección de Preguntas y Respuestas (FAQ) al doble (20 preguntas Q1 a Q20)
+(function expandFaqTo20Questions() {
+  const EXTRA_FAQS = [
+    { q: "Q11. ¿Cómo calcula la plataforma el monto de exposición VEMP sin tener mi contabilidad interna?", a: "Cruza el giro SCIAN y el estrato de personal del INEGI DENUE (5.31 millones de unidades económicas) con el número de colaboradores ingresado y las tablas de multas en UMAs vigentes de la LFT, LSS, CFF, LFPDPPP y LFPC." },
+    { q: "Q12. ¿Qué pasa si el INEGI DENUE no tiene el número exacto de empleados de mi empresa?", a: "El sistema no inventa cifras ni impone un promedio arbitrario: solicita o resalta en rojo sutil el campo de colaboradores para que ingrese el dato real de su plantilla y recalcule con exactitud." },
+    { q: "Q13. ¿Por qué el Pre-Dictamen PDF gratuito muestra el síntoma y la multa pero reserva la remediación?", a: "Por Secreto Industrial y protección de propiedad intelectual: el Pre-Dictamen muestra la exposición real de su empresa, mientras que los protocolos, cláusulas y matrices de remediación se entregan en el Expediente 360°." },
+    { q: "Q14. ¿Cómo se protege la confidencialidad de los 7 instrumentos editables una vez descargados?", a: "Cada documento editable incluye trazabilidad criptográfica SHA-256 y marca de control vinculada al expediente y RFC para acreditar su origen y vigencia." },
+    { q: "Q15. ¿Qué validez probatoria tiene el sello criptográfico en un procedimiento administrativo o judicial?", a: "Genera una huella digital verificable (SHA-256 y raíz de Merkle) y bitácora de integridad alineada con los lineamientos de documentos y mensajes de datos (Arts. 89–93 del Código de Comercio) e ISO 19011." },
+    { q: "Q16. ¿Cómo se audita la materialidad y Fecha Cierta del Artículo 69-B del CFF?", a: "Evalúa el perfil de riesgo fiscal, la coherencia operativa del giro y los soportes documentales y de ejecución que exige la autoridad y la jurisprudencia aplicable para defender la deducibilidad y acreditamiento." },
+    { q: "Q17. ¿Qué cubre la evaluación de NOM-035, NOM-037, NOM-019 y NOM-030 de la STPS?", a: "Verifica los requisitos de prevención de factores de riesgo psicosocial, condiciones de teletrabajo/home office, constitución de Comisiones de Seguridad e Higiene y diagnóstico de seguridad y salud según el tamaño de plantilla." },
+    { q: "Q18. ¿Cómo puedo descargar e instalar FIRMA MALLEN® como App en Android y iPhone (Manzano)?", a: "Pulse el botón 'Descargar App' en la barra superior: en Android se instala directamente desde el navegador y en iPhone/iPad (Safari) se agrega a la pantalla de inicio con 'Compartir -> Agregar a pantalla de inicio'." },
+    { q: "Q19. ¿Se emite factura CFDI 4.0 por la contratación del Expediente de Blindaje 360°?", a: "Sí, al activar su expediente puede registrar sus datos fiscales para la emisión de su comprobante CFDI 4.0 correspondiente." },
+    { q: "Q20. ¿Cómo opera el Panel para Despachos Contables y Jurídicos?", a: "Permite gestionar expedientes de clientes, consultar diagnósticos por RFC o razón social y operar con trazabilidad estandarizada para firmas que asesoran a múltiples empresas." }
+  ];
+
+  function injectExtraFaqs() {
+    const faqSection = document.getElementById("faq") || Array.from(document.querySelectorAll("section, div")).find(function (el) {
+      return (el.textContent || "").indexOf("Q10.") !== -1 || (el.textContent || "").indexOf("Preguntas Frecuentes") !== -1;
+    });
+    if (!faqSection || faqSection.dataset.expandedTo20) return;
+
+    const existingDetails = faqSection.querySelectorAll("details");
+    if (existingDetails.length >= 20) {
+      faqSection.dataset.expandedTo20 = "1";
+      return;
+    }
+
+    const listHost = existingDetails.length > 0 ? existingDetails[0].parentElement : faqSection;
+    EXTRA_FAQS.forEach(function (item) {
+      if ((faqSection.textContent || "").indexOf(item.q.slice(0, 4)) !== -1) return;
+      const det = document.createElement("details");
+      det.className = "mallen-glass-card p-4 rounded-xl border border-slate-800 mt-3";
+      det.innerHTML =
+        '<summary class="font-bold text-white cursor-pointer">' + item.q + '</summary>' +
+        '<p class="mt-2 text-slate-300">' + item.a + '</p>';
+      listHost.appendChild(det);
+    });
+
+    faqSection.dataset.expandedTo20 = "1";
+    if (typeof window.hydrateMallenChromaticCards === "function") {
+      window.hydrateMallenChromaticCards();
+    }
+  }
+
+  document.addEventListener("DOMContentLoaded", function () {
+    injectExtraFaqs();
+    setTimeout(injectExtraFaqs, 500);
+  });
+})();

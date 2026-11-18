@@ -1,6 +1,6 @@
 /* MALLEN 360° — SWISS FORENSIC PRECISION & TACTILE GLASS */
 /* ==========================================================================
-   FIRMA MALLEN® — ULTRA-FLUID 120FPS KELVIN WALL & NATIVE PWA (v92)
+   FIRMA MALLEN® — SCROLL PROGRESSIVE DIM, BOOSTED CURSOR LAMP & 1.1x SPEED (v94)
    ========================================================================== */
 
 :root {
@@ -13,7 +13,7 @@
   --text-muted: #94a3b8;
   --border-hairline: rgba(148, 163, 184, 0.15);
   --shadow-architectural: 0 1px 0 0 inset rgba(255, 255, 255, 0.10),
-                          0 16px 34px -12px rgba(0, 0, 0, 0.80);
+                          0 16px 34px -12px rgba(0, 0, 0, 0.82);
   --grid-line-color: rgba(148, 163, 184, 0.038);
   --focus-ring-color: #e2e8f0;
 
@@ -21,6 +21,10 @@
   --kelvin-neutral: 255, 255, 255;  /* 5500K Blanco Puro Luz de Día */
   --kelvin-warm: 255, 244, 224;     /* 3200K Blanco Cálido Halógeno */
   --active-kelvin: var(--kelvin-cool);
+
+  /* Variables dinámicas controladas por el desplazamiento vertical (scroll) */
+  --scroll-dim-alpha: 0;
+  --cursor-beam-boost: 1;
 
   --font-display: 'Plus Jakarta Sans', 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
   --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
@@ -66,7 +70,6 @@ body {
   line-height: 1.7 !important;
 }
 
-/* Muro Arquitectónico Estático en GPU (Cero filtros SVG pesados) */
 #mallen-architectural-wall {
   position: fixed;
   inset: 0;
@@ -84,24 +87,37 @@ body {
   transform: translateZ(0);
 }
 
+/* Oscurecimiento gradual conforme baja el usuario para realzar el haz de luz del cursor */
 #mallen-wall-vignette {
   position: absolute;
   inset: 0;
-  background: radial-gradient(circle at 50% 42%, transparent 40%, rgba(4, 6, 10, 0.68) 100%);
+  background:
+    linear-gradient(
+      to bottom,
+      rgba(4, 6, 10, calc(0.18 + var(--scroll-dim-alpha) * 0.65)) 0%,
+      rgba(3, 5, 9, calc(0.45 + var(--scroll-dim-alpha) * 0.85)) 100%
+    ),
+    radial-gradient(circle at 50% 42%, transparent 36%, rgba(3, 5, 9, 0.76) 100%);
   pointer-events: none;
 }
 
 html.light-mode #mallen-wall-vignette {
-  background: radial-gradient(circle at 50% 42%, transparent 48%, rgba(203, 213, 225, 0.42) 100%);
+  background:
+    linear-gradient(
+      to bottom,
+      rgba(15, 23, 42, calc(var(--scroll-dim-alpha) * 0.14)) 0%,
+      rgba(15, 23, 42, calc(var(--scroll-dim-alpha) * 0.24)) 100%
+    ),
+    radial-gradient(circle at 50% 42%, transparent 48%, rgba(203, 213, 225, 0.42) 100%);
 }
 
-/* Proyector de Luz Blanca Movido 100% por Compositor GPU (translate3d) */
+/* Proyector de Luz Blanca del Cursor: se intensifica conforme el usuario baja en la página */
 #mallen-wall-lamp {
   position: absolute;
-  top: -380px;
-  left: -380px;
-  width: 760px;
-  height: 760px;
+  top: -400px;
+  left: -400px;
+  width: 800px;
+  height: 800px;
   border-radius: 50%;
   pointer-events: none;
   will-change: transform;
@@ -109,17 +125,18 @@ html.light-mode #mallen-wall-vignette {
   transform: translate3d(50vw, 35vh, 0);
   background: radial-gradient(
     circle,
-    rgba(var(--active-kelvin), 0.15) 0%,
-    rgba(var(--active-kelvin), 0.06) 35%,
-    transparent 70%
+    rgba(var(--active-kelvin), calc(0.16 * var(--cursor-beam-boost))) 0%,
+    rgba(var(--active-kelvin), calc(0.075 * var(--cursor-beam-boost))) 34%,
+    rgba(var(--active-kelvin), calc(0.02 * var(--cursor-beam-boost))) 56%,
+    transparent 72%
   );
 }
 
 html.light-mode #mallen-wall-lamp {
   background: radial-gradient(
     circle,
-    rgba(255, 255, 255, 0.94) 0%,
-    rgba(255, 255, 255, 0.55) 38%,
+    rgba(255, 255, 255, calc(0.95 * min(1.15, var(--cursor-beam-boost)))) 0%,
+    rgba(255, 255, 255, 0.58) 38%,
     transparent 70%
   );
 }
@@ -141,14 +158,14 @@ button, a.btn-forensic, input[type="checkbox"], input[type="radio"], summary, .i
   min-height: 24px;
 }
 
-/* Tarjetas aisladas con `contain: layout style paint` para repintado local O(1) */
+/* Tarjetas con iluminación reactiva directa sin retraso y con boost de scroll */
 .mallen-glass-card,
 .quantum-card,
 .mallen-surface-card {
   --card-kelvin: var(--kelvin-cool);
-  --spot-size: 360px;
-  --spot-alpha: 0.17;
-  --border-alpha: 0.50;
+  --spot-size: 380px;
+  --spot-alpha: 0.18;
+  --border-alpha: 0.54;
   --mouse-x: -999px;
   --mouse-y: -999px;
   position: relative;
@@ -157,7 +174,6 @@ button, a.btn-forensic, input[type="checkbox"], input[type="radio"], summary, .i
   border-radius: 14px !important;
   box-shadow: var(--shadow-architectural) !important;
   contain: layout style paint;
-  transition: border-color 0.12s linear !important;
   overflow: hidden;
 }
 
@@ -175,7 +191,7 @@ button, a.btn-forensic, input[type="checkbox"], input[type="radio"], summary, .i
 #risk-sandbox-section label,
 #eu-interactive-sandbox label {
   --card-kelvin: var(--kelvin-neutral);
-  --spot-size: 280px;
+  --spot-size: 290px;
   --spot-alpha: 0.24;
   --border-alpha: 0.72;
 }
@@ -186,9 +202,9 @@ button, a.btn-forensic, input[type="checkbox"], input[type="radio"], summary, .i
 #validez-legal .mallen-glass-card,
 #probative-validity-section .mallen-surface-card {
   --card-kelvin: var(--kelvin-warm);
-  --spot-size: 380px;
-  --spot-alpha: 0.17;
-  --border-alpha: 0.54;
+  --spot-size: 410px;
+  --spot-alpha: 0.19;
+  --border-alpha: 0.58;
 }
 
 .mallen-glass-card::before,
@@ -201,8 +217,8 @@ button, a.btn-forensic, input[type="checkbox"], input[type="radio"], summary, .i
   pointer-events: none;
   border-radius: inherit;
   background: radial-gradient(
-    var(--spot-size, 360px) circle at var(--mouse-x, -999px) var(--mouse-y, -999px),
-    rgba(var(--card-kelvin, 236, 244, 255), var(--spot-alpha, 0.17)),
+    var(--spot-size, 380px) circle at var(--mouse-x, -999px) var(--mouse-y, -999px),
+    rgba(var(--card-kelvin, 236, 244, 255), calc(var(--spot-alpha, 0.18) * var(--cursor-beam-boost))),
     transparent 68%
   ) !important;
   z-index: 0;
@@ -222,7 +238,7 @@ button, a.btn-forensic, input[type="checkbox"], input[type="radio"], summary, .i
   background: linear-gradient(
     90deg,
     transparent,
-    rgba(var(--card-kelvin, 255, 255, 255), 0.82),
+    rgba(var(--card-kelvin, 255, 255, 255), 0.85),
     transparent
   ) !important;
   opacity: 0.25;
@@ -232,13 +248,13 @@ button, a.btn-forensic, input[type="checkbox"], input[type="radio"], summary, .i
 .mallen-glass-card:hover,
 .quantum-card:hover,
 .mallen-surface-card:hover {
-  border-color: rgba(var(--card-kelvin, 255, 255, 255), var(--border-alpha, 0.50)) !important;
+  border-color: rgba(var(--card-kelvin, 255, 255, 255), var(--border-alpha, 0.52)) !important;
 }
 
 .mallen-glass-card:hover::after,
 .quantum-card:hover::after,
 .mallen-surface-card:hover::after {
-  opacity: 0.92 !important;
+  opacity: 0.95 !important;
   left: 4% !important;
   right: 4% !important;
 }

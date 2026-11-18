@@ -1,5 +1,5 @@
 /**
- * FIRMA MALLEN® — Zero-Lag 120FPS GPU Kelvin White Light & Native PWA Installer (v92)
+ * FIRMA MALLEN® — 1.1x Cursor Velocity, Scroll Progressive Dim & Boosted Lamp (v94)
  */
 (function () {
     "use strict";
@@ -23,9 +23,7 @@
     window.toggleMallenTheme = function () {
         const root = document.documentElement;
         const isLight = root.classList.toggle("light-mode");
-        try {
-            localStorage.setItem("mallen_theme_mode", isLight ? "light" : "dark");
-        } catch (e) {}
+        try { localStorage.setItem("mallen_theme_mode", isLight ? "light" : "dark"); } catch (e) {}
         document.querySelectorAll("[data-mallen-theme-btn]").forEach(function (btn) {
             btn.textContent = window.getMallenThemeLabel();
         });
@@ -55,8 +53,8 @@
 
     function assignKelvinAndScale(el, idx) {
         let kelvin = "236, 244, 255";
-        let spotSize = "360px";
-        let spotAlpha = "0.17";
+        let spotSize = "380px";
+        let spotAlpha = "0.18";
 
         if (el.closest("#express-check") || el.closest("#osint-calibration-engine")) {
             kelvin = "236, 244, 255";
@@ -64,20 +62,20 @@
             spotAlpha = "0.20";
         } else if (el.closest("#risk-sandbox-section") || el.closest("#eu-interactive-sandbox")) {
             kelvin = "255, 255, 255";
-            spotSize = "280px";
+            spotSize = "290px";
             spotAlpha = "0.24";
         } else if (el.closest("#mallen-vanta-trust-center") || el.closest("#eu-trust-center-section")) {
             kelvin = idx % 3 === 0 ? "236, 244, 255" : (idx % 3 === 1 ? "255, 255, 255" : "255, 244, 224");
-            spotSize = "380px";
-            spotAlpha = "0.18";
-        } else if (el.closest("#validez-legal") || el.closest("#probative-validity-section") || el.tagName === "DETAILS") {
+            spotSize = "410px";
+            spotAlpha = "0.19";
+        } else if (el.closest("#validez-legal") || el.closest("#probative-validity-section") || el.tagName === "DETAILS" || el.closest("#faq")) {
             kelvin = "255, 244, 224";
-            spotSize = "320px";
-            spotAlpha = "0.14";
+            spotSize = "340px";
+            spotAlpha = "0.16";
         } else {
             kelvin = idx % 2 === 0 ? "236, 244, 255" : "255, 244, 224";
-            spotSize = "380px";
-            spotAlpha = "0.17";
+            spotSize = "390px";
+            spotAlpha = "0.18";
         }
 
         el.style.setProperty("--card-kelvin", kelvin);
@@ -188,7 +186,15 @@
         }
     };
 
-    function initZeroLagKelvinEngine() {
+    function syncScrollDimAndCursorBoost() {
+        const docH = Math.max(1, document.documentElement.scrollHeight - window.innerHeight);
+        const ratio = Math.min(1, Math.max(0, window.scrollY / docH));
+        // Conforme baja el usuario, el fondo se oscurece gradualmente y el haz del cursor aumenta hasta 1.45x
+        document.documentElement.style.setProperty("--scroll-dim-alpha", ratio.toFixed(3));
+        document.documentElement.style.setProperty("--cursor-beam-boost", (1.0 + ratio * 0.45).toFixed(3));
+    }
+
+    function initKinetic11xEngine() {
         try {
             if (localStorage.getItem("mallen_theme_mode") === "light") {
                 document.documentElement.classList.add("light-mode");
@@ -202,16 +208,21 @@
         mountArchitecturalWallAndLamp();
         window.hydrateMallenChromaticCards();
         window.ensureMallenAppDownloadButtons();
-        setTimeout(window.ensureMallenAppDownloadButtons, 300);
+        setTimeout(window.hydrateMallenChromaticCards, 400);
+        setTimeout(window.ensureMallenAppDownloadButtons, 400);
 
         const lamp = document.getElementById("mallen-wall-lamp");
         let lastCard = null;
         let lastRect = null;
+        let prevX = null, prevY = null;
         let currentKelvin = "";
-        let pendingFrame = false;
-        let px = 0, py = 0, targetEl = null;
 
-        // Cacheamos getBoundingClientRect() solo cuando cambia la tarjeta activa (Cero Forced Reflow en pointermove)
+        syncScrollDimAndCursorBoost();
+        window.addEventListener("scroll", function () {
+            syncScrollDimAndCursorBoost();
+            if (lastCard) lastRect = lastCard.getBoundingClientRect();
+        }, { passive: true });
+
         document.addEventListener("pointerover", function (ev) {
             const card = ev.target && ev.target.closest ? ev.target.closest(".mallen-glass-card") : null;
             if (card !== lastCard) {
@@ -231,31 +242,32 @@
             }
         }, { passive: true });
 
-        window.addEventListener("scroll", function () {
-            if (lastCard) lastRect = lastCard.getBoundingClientRect();
-        }, { passive: true });
-
+        // Velocidad 1.1x directa en pointermove sin esperar cola de frame extra
         window.addEventListener("pointermove", function (ev) {
-            px = ev.clientX;
-            py = ev.clientY;
-            if (pendingFrame) return;
-            pendingFrame = true;
-            requestAnimationFrame(function () {
-                if (lamp) {
-                    lamp.style.transform = "translate3d(" + px + "px, " + py + "px, 0)";
-                }
-                if (lastCard && lastRect) {
-                    lastCard.style.setProperty("--mouse-x", (px - lastRect.left) + "px");
-                    lastCard.style.setProperty("--mouse-y", (py - lastRect.top) + "px");
-                }
-                pendingFrame = false;
-            });
+            const rawX = ev.clientX;
+            const rawY = ev.clientY;
+            let vx = rawX;
+            let vy = rawY;
+            if (prevX !== null && prevY !== null) {
+                vx = rawX + (rawX - prevX) * 0.10;
+                vy = rawY + (rawY - prevY) * 0.10;
+            }
+            prevX = rawX;
+            prevY = rawY;
+
+            if (lamp) {
+                lamp.style.transform = "translate3d(" + vx + "px, " + vy + "px, 0)";
+            }
+            if (lastCard && lastRect) {
+                lastCard.style.setProperty("--mouse-x", (vx - lastRect.left) + "px");
+                lastCard.style.setProperty("--mouse-y", (vy - lastRect.top) + "px");
+            }
         }, { passive: true });
     }
 
     if (document.readyState === "loading") {
-        document.addEventListener("DOMContentLoaded", initZeroLagKelvinEngine);
+        document.addEventListener("DOMContentLoaded", initKinetic11xEngine);
     } else {
-        initZeroLagKelvinEngine();
+        initKinetic11xEngine();
     }
 })();
