@@ -2964,73 +2964,88 @@ pub struct AdaptiveOutreachPayload {
     pub message_body: String,
 }
 
-/// Genera el mensaje personalizado del FormBot en 3 modalidades inteligentes según el perfil real detectado:
-/// 1) `PYME_AUTONOMOUS_SHIELD` (1 a 250 colaboradores): Urgencia patrimonial justa + Pre-Dictamen PDF + Checkout directo.
-/// 2) `ENTERPRISE_SECTOR_BENCHMARK` (> 250 colaboradores): Enfoque consultivo de Benchmark Sectorial y optimización STPS/IMSS.
-/// 3) `INCOMPLETE_DATA_FAST_CALIBRATION` (0 colaboradores o sin giro confirmado): Invitación honesta a ingresar solo su plantilla exacta en 1 clic.
-
-/// Genera el diagnóstico normativo hiperpersonalizado por código SCIAN para el mensaje saliente del FormBot.
-pub fn build_scian_sector_hook(scian_code: &str, actividad_desc: &str) -> (&'static str, String) {
+/// Matriz de Ingeniería de Ventas Psicológicas por Sector SCIAN (20 giros) y Tamaño de Empresa:
+/// Devuelve: (Nombre del Sector, Dolor Específico de Inspección, Solución Directa que Resuelve su Problema).
+pub fn build_scian_sector_hook(scian_code: &str, actividad_desc: &str, emp_count: u32) -> (&'static str, String, String) {
     let sc = scian_code.trim();
     if sc.starts_with("722") || sc.starts_with("311") || sc.starts_with("312") {
-        (
-            "Alimentos, Bebidas y Hospitalidad Gastronómica",
-            format!(
-                "al operar en {} (SCIAN {}), su establecimiento está sujeto a verificación sanitaria concurrente de COFEPRIS (Art. 251 LGS), recipientes sujetos a presión/gas LP (NOM-020-STPS-2011) y factores de riesgo psicosocial en turnos rotativos (NOM-035-STPS-2018)",
-                actividad_desc, sc
-            ),
-        )
+        let pain = if emp_count <= 30 {
+            format!("en {} (SCIAN {}), las clausuras y multas inmediatas se disparan por verificaciones concurrentes de COFEPRIS (Art. 251 LGS), instalaciones de gas/campanas/presión (NOM-020-STPS) y falta de bitácoras de capacitación en cocina y piso", actividad_desc, sc)
+        } else {
+            format!("en cadenas y operadoras de {} (SCIAN {}), la rotación de turnos activa auditorías STPS sobre Guía II/III de riesgo psicosocial (NOM-035), ergonomía en manejo de insumos (NOM-036) y control sanitario multi-sucursal COFEPRIS", actividad_desc, sc)
+        };
+        let sol = "Su Expediente 360° le entrega listos para firma el Protocolo de Atención de Inspección STPS/COFEPRIS, las Actas de Comisión Mixta NOM-019, la Política Psicosocial NOM-035 y el Blindaje de Proveedores de Insumos (Art. 69-B)".to_string();
+        ("Alimentos, Bebidas y Hospitalidad Gastronómica", pain, sol)
     } else if sc.starts_with("511") || sc.starts_with("518") || sc.starts_with("5415") || sc.starts_with("519") {
-        (
-            "Tecnología, Software Cloud y Servicios Digitales",
-            format!(
-                "al pertenecer al sector de {} (SCIAN {}), los puntos críticos de inspección se concentran en teletrabajo (>40% remoto, NOM-037-STPS-2023), privacidad y transferencia en nube (LFPDPPP Arts. 8, 15 y 36) y acreditación de materialidad en servicios intangibles (Art. 69-B CFF)",
-                actividad_desc, sc
-            ),
-        )
-    } else if sc.starts_with("23") || sc.starts_with("32") || sc.starts_with("33") || sc.starts_with("21") {
-        (
-            "Industria, Manufactura e Infraestructura",
-            format!(
-                "al operar en {} (SCIAN {}), su centro de trabajo clasifica en Clase IV/V de Prima de Riesgo IMSS (hasta 7.58875% conforme al Art. 196 RACERF) y exige trazabilidad documental en manejo de cargas/maquinaria (NOM-006/036-STPS) y subcontratación especializada (REPSE Art. 15-A LSS)",
-                actividad_desc, sc
-            ),
-        )
-    } else if sc.starts_with("62") || sc.starts_with("4641") || sc.starts_with("3254") {
-        (
-            "Salud, Farmacéutica y Servicios Clínicos",
-            format!(
-                "al desarrollar actividades de {} (SCIAN {}), su operación conlleva obligaciones reforzadas sobre datos personales sensibles y biométricos (LFPDPPP Art. 9), manejo de residuos peligrosos (RPBI / NOM-087) y licencias sanitarias COFEPRIS",
-                actividad_desc, sc
-            ),
-        )
-    } else if sc.starts_with("48") || sc.starts_with("49") || sc.starts_with("43") || sc.starts_with("46") {
-        (
-            "Comercio, Abasto y Logística de Transporte",
-            format!(
-                "al operar en {} (SCIAN {}), las inspecciones federales priorizan la emisión de CFDI con Complemento Carta Porte (Art. 29-A CFF), seguridad en almacenes y montacargas (NOM-006-STPS-2023) y Programa Interno de Protección Civil (PIPC)",
-                actividad_desc, sc
-            ),
-        )
+        let pain = format!(
+            "en firmas de {} (SCIAN {}), el SAT e inspectores laborales auditan dos frentes críticos: la deducibilidad y Fecha Cierta de servicios intangibles/desarrollo de software (Art. 69-B CFF) y las condiciones de Teletrabajo/Home Office >40% (NOM-037-STPS-2023) junto con avisos de privacidad en nube (LFPDPPP Art. 36)",
+            actividad_desc, sc
+        );
+        let sol = "Su Expediente 360° incluye el Addendum de Teletrabajo NOM-037 con derecho a la desconexión, el Contrato Marco de Servicios Tecnológicos con Fecha Cierta (SCJN 2a./J. 161/2019) y la Arquitectura de Privacidad y Confidencialidad de Código/Datos".to_string();
+        ("Tecnología, Software Cloud y Ciberseguridad", pain, sol)
+    } else if sc.starts_with("23") || sc.starts_with("21") || sc.starts_with("22") {
+        let pain = format!(
+            "en {} (SCIAN {}), su operación cotiza en Clase V de Riesgo Máximo IMSS (Prima de 7.58875%, Art. 196 RACERF) y enfrenta responsabilidad solidaria por contratistas en obra/campo (REPSE Art. 15-A LSS) y auditorías de seguridad en alturas/maquinaria (NOM-009/NOM-031-STPS)",
+            actividad_desc, sc
+        );
+        let sol = "Su Expediente 360° blinda la deducibilidad de subcontratistas REPSE (ICSOE/SISUB), documenta sus Comisiones de Seguridad e Higiene NOM-019/NOM-030 para contener la Prima de Riesgo IMSS y protege sus contratos de obra con Fecha Cierta".to_string();
+        ("Construcción, Ingeniería, Minería e Infraestructura", pain, sol)
+    } else if sc.starts_with("32") || sc.starts_with("33") {
+        let pain = format!(
+            "en plantas de {} (SCIAN {}), las inspecciones federales extraordinarias STPS/IMSS sancionan por cada trabajador expuesto en manejo de cargas (NOM-006/036), recipientes sujetos a presión/compresores (NOM-020), sustancias químicas (NOM-005/018) y siniestralidad en SUA",
+            actividad_desc, sc
+        );
+        let sol = "Su Expediente 360° integra el Diagnóstico de Seguridad y Salud NOM-030, las Actas Constitutivas NOM-019, el Protocolo de Conciliación SUA/SBC IMSS y los Contratos de Maquila/Suministro con materialidad fiscal 69-B".to_string();
+        ("Manufactura Industrial y Transformación", pain, sol)
+    } else if sc.starts_with("62") || sc.starts_with("4641") {
+        let pain = format!(
+            "en {} (SCIAN {}), el tratamiento de expedientes clínicos, datos biométricos y de salud exige consentimiento expreso reforzado (Art. 9 LFPDPPP), además de vigilancia sanitaria COFEPRIS y protocolos de residuos biológico-infecciosos (RPBI / NOM-087)",
+            actividad_desc, sc
+        );
+        let sol = "Su Expediente 360° le proporciona el Aviso de Privacidad Integral para Datos Sensibles y Biométricos, los Formatos de Consentimiento Expreso LFPDPPP, el Protocolo Sanitario/STPS y el Blindaje de Honorarios Médicos y Proveedores".to_string();
+        ("Salud, Hospitales, Clínicas y Farmacéutica", pain, sol)
+    } else if sc.starts_with("48") || sc.starts_with("49") {
+        let pain = format!(
+            "en empresas de {} (SCIAN {}), la autoridad fiscal y laboral cruza la emisión del Complemento Carta Porte (Art. 29-A CFF) con las bitácoras de jornada de operadores, exámenes médicos y maniobras de carga y almacén (NOM-006/036-STPS)",
+            actividad_desc, sc
+        );
+        let sol = "Su Expediente 360° entrega el Protocolo de Materialidad Logística y Carta Porte, las Comisiones de Seguridad NOM-019/030 para operadores y patios de maniobra, y la Conciliación de Salario Base de Cotización IMSS".to_string();
+        ("Transporte de Carga, Logística y Almacenaje", pain, sol)
+    } else if sc.starts_with("43") || sc.starts_with("46") {
+        let pain = format!(
+            "en {} (SCIAN {}), las revisiones de STPS, PROFECO y Protección Civil se enfocan en el Programa Interno de Protección Civil (PIPC para locales comerciales), ergonomía y estiba en bodega (NOM-006/036) y avisos de privacidad en mostrador y comercio electrónico (Art. 76 BIS LFPC)",
+            actividad_desc, sc
+        );
+        let sol = "Su Expediente 360° incluye la Guía de Programa Interno de Protección Civil (PIPC), los Instrumentos Obligatorios STPS (NOM-019, 030 y 035), el Aviso de Privacidad Comercial y el Blindaje de Compras a Mayoristas (Art. 69-B)".to_string();
+        ("Comercio Mayorista y Minorista", pain, sol)
     } else if sc.starts_with("52") || sc.starts_with("53") || sc.starts_with("5411") || sc.starts_with("5412") {
-        (
-            "Servicios Corporativos, Financieros e Inmobiliarios",
-            format!(
-                "al operar en {} (SCIAN {}), su firma debe acreditar cumplimiento preventivo en Actividades Vulnerables Antilavado (Art. 17 LFPIORPI / UIF), Fecha Cierta en contratos mercantiles (Jurisprudencia SCJN 2a./J. 161/2019) y control de jornada/teletrabajo",
-                actividad_desc, sc
-            ),
-        )
+        let pain = format!(
+            "en {} (SCIAN {}), la Unidad de Inteligencia Financiera (UIF) y el SAT auditan la identificación de Beneficiario Controlador (Arts. 32-B Ter a Quinquies CFF), expedientes de Actividades Vulnerables Antilavado (Art. 17 LFPIORPI) y la materialidad de servicios profesionales (Art. 69-B)",
+            actividad_desc, sc
+        );
+        let sol = "Su Expediente 360° le entrega el Manual y Expediente de Cumplimiento PLD/LFPIORPI y Beneficiario Controlador, el Contrato Marco de Prestación de Servicios con Fecha Cierta y el Blindaje de Privacidad Financiera/Patrimonial".to_string();
+        ("Servicios Financieros, Inmobiliarios y Despachos Corporativos", pain, sol)
+    } else if sc.starts_with("721") {
+        let pain = format!(
+            "en {} (SCIAN {}), la operación continua 24/7 exige cumplimiento simultáneo en Protección Civil y simulacros (PIPC), higiene de alimentos y albercas (COFEPRIS NOM-251), subcontratación de limpieza/seguridad (REPSE) y riesgo psicosocial (NOM-035)",
+            actividad_desc, sc
+        );
+        let sol = "Su Expediente 360° consolida los protocolos PIPC de hospitalidad, la validación de proveedores REPSE de limpieza y vigilancia, la política NOM-035 y la protección de datos de huéspedes (LFPDPPP)".to_string();
+        ("Hotelería, Resorts y Alojamiento Temporal", pain, sol)
     } else {
-        (
-            "Operación Empresarial Multisectorial",
-            format!(
-                "al operar en {} (SCIAN {}), su unidad económica está sujeta a la matriz federal de 39 NOMs de la STPS (Comisiones Mixtas NOM-019, Diagnóstico NOM-030 y Prevención Psicosocial NOM-035), materialidad fiscal (Art. 69-B CFF) y aviso de privacidad integral",
-                actividad_desc, sc
-            ),
-        )
+        let pain = format!(
+            "en {} (SCIAN {}), las inspecciones ordinarias y extraordinarias de la STPS y el SAT verifican la existencia de sus Comisiones Mixtas (NOM-019), Diagnóstico de Seguridad (NOM-030), Prevención Psicosocial (NOM-035), materialidad de facturas (Art. 69-B CFF) y Aviso de Privacidad",
+            actividad_desc, sc
+        );
+        let sol = "Su Expediente 360° genera a la medida de su giro los 7 Instrumentos Jurídicos editables y los 10 Certificados Criptográficos SHA-256 que desactivan estas contingencias desde el primer día".to_string();
+        ("Operación Empresarial y Servicios Especializados", pain, sol)
     }
 }
 
+/// Genera el mensaje personalizado del FormBot cruzando el Sector SCIAN contra el Estrato Psicológico de la empresa:
+/// - Nivel 1 (`1..=250` emp): Enfoque de Solución Llave en Mano + Ahorro frente a consultoría tradicional + Links directos.
+/// - Nivel 2 (`> 250` emp): Enfoque Consultivo de Benchmark Sectorial, Prima IMSS y Gobernanza Multi-Sucursal.
+/// - Nivel 3 (`0` emp / Sin plantilla en padrón): Efecto Zeigarnik (Expediente pre-configurado al 90%, solo falta confirmar empleados).
 pub fn build_adaptive_prospect_outreach(query_or_name: &str, domain_hint: Option<&str>) -> AdaptiveOutreachPayload {
     let intel = extract_deep_denue_360_intelligence(query_or_name);
     let clean_ref = if !intel.query_matched.trim().is_empty() {
@@ -3052,15 +3067,19 @@ pub fn build_adaptive_prospect_outreach(query_or_name: &str, domain_hint: Option
             "https://mallen.lat/?calibrate=1&rfc={}&domain={}#express-check",
             encoded_ref, dom_param
         );
+        let display_entity = if intel.razon_social.starts_with("RFC ") {
+            clean_ref.as_str()
+        } else {
+            intel.razon_social.as_str()
+        };
         let msg = format!(
-            "Estimado equipo directivo de {}:\n\
-            En nuestra verificación preventiva de cumplimiento normativo (STPS, SAT, IMSS y LFPDPPP) identificamos su registro corporativo, \
-            pero el padrón público aún no reporta el número exacto de colaboradores de su centro de trabajo.\n\n\
-            Para evitar estimaciones genéricas y generar sin costo su Pre-Dictamen Pericial exacto (con sello SHA-256), \
-            ingrese únicamente su número de colaboradores en el siguiente enlace pre-configurado:\n\
+            "Estimada Dirección de {}:\n\n\
+            Hemos pre-configurado al 90% su Auditoría Preventiva de Cumplimiento (STPS 39 NOMs, Materialidad SAT Art. 69-B, IMSS y Privacidad LFPDPPP). \
+            Sin embargo, el padrón público aún no refleja el número exacto de colaboradores activos en su centro de trabajo.\n\n\
+            Para no asignarle un cálculo genérico y entregarle sin costo su Pre-Dictamen Pericial exacto (sellado con SHA-256), \
+            únicamente ingrese su número de colaboradores en su enlace pre-cargado:\n\
             -> {}",
-            if intel.razon_social.starts_with("RFC ") { clean_ref.as_str() } else { intel.razon_social.as_str() },
-            cal_link
+            display_entity, cal_link
         );
         AdaptiveOutreachPayload {
             prospect_tier: "NIVEL_3_CALIBRACION_GUIADA_DATOS_INCOMPLETOS".to_string(),
@@ -3075,27 +3094,30 @@ pub fn build_adaptive_prospect_outreach(query_or_name: &str, domain_hint: Option
             message_body: msg,
         }
     } else if intel.estimated_employees > 250 {
+        let (sector_label, scian_pain, scian_solution) =
+            build_scian_sector_hook(&intel.codigo_scian, &intel.actividad_desc, intel.estimated_employees);
         let pdf_link = format!("https://mallen.lat/api/micro_scan/{}", encoded_ref);
         let consult_link = format!(
             "https://mallen.lat/?calibrate=1&rfc={}&razon={}&scian={}&emp={}#express-check",
             encoded_ref, encoded_name, intel.codigo_scian, intel.estimated_employees
         );
-        let (sector_label, scian_hook) = build_scian_sector_hook(&intel.codigo_scian, &intel.actividad_desc);
         let msg = format!(
-            "Atención: Dirección Jurídica, Recursos Humanos y Oficialía de Cumplimiento de {}\n\n\
-            Compartimos el Benchmark Sectorial de Ingeniería Legal Preventiva [{}] para organizaciones de escala corporativa (~{} colaboradores en {} {}): \
-            {}.\n\n\
-            Hemos consolidado su comparativa técnica para optimización de Prima de Riesgo IMSS (Art. 196 RACERF) y blindaje de materialidad B2B:\n\
-            1. Descargar Cédula de Benchmark Sectorial y Pre-Diagnóstico (PDF SHA-256):\n\
+            "Atención: Dirección Jurídica, Recursos Humanos y Oficialía de Cumplimiento de {}\n\
+            Sector: {} (Giro SCIAN {} • ~{} colaboradores en {} {})\n\n\
+            En nuestra compulsa técnica sectorial identificamos que {}.\n\n\
+            ¿Cómo lo resolvemos para su organización? {}.\n\n\
+            1. Descargue sin costo su Cédula de Benchmark Sectorial y Pre-Diagnóstico (PDF SHA-256):\n\
                {}\n\
-            2. Calibrar parámetros por unidad de negocio o solicitar sesión técnica:\n\
+            2. Calibre parámetros por unidad operativa o active su Expediente Corporativo en:\n\
                {}",
             intel.razon_social,
+            sector_label,
             intel.codigo_scian,
-            intel.actividad_desc,
             intel.estimated_employees,
             intel.branch_count,
             if intel.branch_count > 1 { "unidades operativas" } else { "centro corporativo" },
+            scian_pain,
+            scian_solution,
             pdf_link,
             consult_link
         );
@@ -3112,23 +3134,40 @@ pub fn build_adaptive_prospect_outreach(query_or_name: &str, domain_hint: Option
             message_body: msg,
         }
     } else {
+        let (sector_label, scian_pain, scian_solution) =
+            build_scian_sector_hook(&intel.codigo_scian, &intel.actividad_desc, intel.estimated_employees);
+        let size_archetype = if intel.estimated_employees <= 30 {
+            "Blindaje Patrimonial PyME Llave en Mano"
+        } else {
+            "Blindaje de Crecimiento para Empresa Mediana (Umbral >30 Colaboradores)"
+        };
+        let trad_cost = if intel.estimated_employees <= 10 {
+            "$65,000"
+        } else if intel.estimated_employees <= 50 {
+            "$127,000"
+        } else {
+            "$225,000"
+        };
         let pdf_link = format!("https://mallen.lat/api/micro_scan/{}", encoded_ref);
         let chk_link = format!("https://mallen.lat/checkout?ref={}", encoded_ref);
-        let (sector_label, scian_hook) = build_scian_sector_hook(&intel.codigo_scian, &intel.actividad_desc);
         let msg = format!(
-            "Estimada administración de {} ({}):\n\n\
-            Durante la compulsa preventiva sobre el padrón oficial INEGI DENUE [{}], detectamos que {}. \
-            Para su estrato operativo (~{} colaboradores), la exposición sancionatoria prevenible cuantificada asciende a ${:.2} MXN.\n\n\
-            1. Descargue sin costo su Pre-Dictamen Pericial en PDF (Sello SHA-256):\n\
+            "Estimada Dirección de {} [{} — {}]:\n\n\
+            Al cruzar su registro en {} contra el padrón INEGI DENUE, detectamos que {}. \
+            Para una plantilla de ~{} colaboradores, esto representa una exposición sancionatoria prevenible de ${:.2} MXN.\n\n\
+            La solución exacta para su giro: {} (ahorrando los {} MXN que cobra una consultoría tradicional por elaborarlos desde cero).\n\n\
+            1. Descargue sin costo su Pre-Dictamen Pericial personalizado en PDF (Sello SHA-256):\n\
                {}\n\
-            2. O active directamente su Expediente de Blindaje 360° listo para firma en:\n\
+            2. O descargue hoy mismo su Expediente Completo de Blindaje 360° listo para firma ($3,000.00 MXN, CFDI 4.0 deducible) en:\n\
                {}",
             intel.razon_social,
+            sector_label,
+            size_archetype,
             intel.entidad_federativa,
-            intel.codigo_scian,
-            intel.actividad_desc,
+            scian_pain,
             intel.estimated_employees,
             intel.exact_vemp_fine_mxn,
+            scian_solution,
+            trad_cost,
             pdf_link,
             chk_link
         );

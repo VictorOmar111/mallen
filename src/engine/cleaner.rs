@@ -231,3 +231,32 @@ pub fn sha256_hex(data: &str) -> String {
     hasher.update(data);
     format!("{:x}", hasher.finalize())
 }
+
+
+/// Valida y normaliza un dominio o URL bloqueando vectores SSRF (AWS IMDS 169.254.169.254, loopback y redes privadas).
+pub fn validate_and_normalize_domain(raw_input: &str) -> Result<String, String> {
+    let trimmed = raw_input.trim().to_lowercase();
+    if trimmed.is_empty() {
+        return Err("Dominio vacío".to_string());
+    }
+    let without_proto = trimmed
+        .trim_start_matches("https://")
+        .trim_start_matches("http://");
+    let host = without_proto.split('/').next().unwrap_or("").split(':').next().unwrap_or("");
+
+    let forbidden = [
+        "169.254.169.254",
+        "127.0.0.1",
+        "localhost",
+        "0.0.0.0",
+        "[::1]",
+        "metadata.google.internal",
+    ];
+    if forbidden.iter().any(|b| host == *b || host.starts_with("169.254.") || host.starts_with("127.") || host.starts_with("10.") || host.starts_with("192.168.")) {
+        return Err(format!("Bloqueo Anti-SSRF: host interno o reservado no permitido ({})", host));
+    }
+    if !host.contains('.') || host.contains(' ') || host.contains('\0') {
+        return Err(format!("Formato de dominio inválido: {}", host));
+    }
+    Ok(host.to_string())
+}

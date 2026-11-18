@@ -2563,8 +2563,11 @@ async fn test_http_form_bot_14_scenarios_with_real_db_companies() {
             "El mensaje del FormBot debe citar el código SCIAN exacto y enlace válido para {}",
             comp_q
         );
-        let preview_line: String = outreach.message_body.replace('\n', " ").chars().take(126).collect();
-        println!("║ [SCIAN {} | {:>4} emp] {}...", outreach.scian_code, outreach.detected_employees, preview_line);
+        println!("╟────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╢");
+        println!("║ ENTIDAD: {} | SCIAN: {} | EMP: {} | MODALIDAD: {}", outreach.company_name, outreach.scian_code, outreach.detected_employees, outreach.prospect_tier);
+        for line in outreach.message_body.lines() {
+            println!("║   {}", line);
+        }
     }
     println!("╠══════╦══════════════════════════════════════════════════════════════╦═══════════════════════════════════════════════════╦══════════════╣");
     println!("║ 101  ║ Hiperpersonalización Sectorial SCIAN en HttpFormBot (5 Giros)║ 5/5 Sectores con Fundamento SCIAN + Link Activo   ║ [SUPERADO]   ║");
