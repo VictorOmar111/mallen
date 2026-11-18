@@ -1,6 +1,6 @@
 /* MALLEN 360° — SWISS FORENSIC PRECISION & TACTILE GLASS */
 /* ==========================================================================
-   FIRMA MALLEN® — SCROLL PROGRESSIVE DIM, BOOSTED CURSOR LAMP & 1.1x SPEED (v94)
+   FIRMA MALLEN® — DEEP SCROLL DIM, SMOOTH POINTER & PRECISION SANDBOX (v95)
    ========================================================================== */
 
 :root {
@@ -13,16 +13,15 @@
   --text-muted: #94a3b8;
   --border-hairline: rgba(148, 163, 184, 0.15);
   --shadow-architectural: 0 1px 0 0 inset rgba(255, 255, 255, 0.10),
-                          0 16px 34px -12px rgba(0, 0, 0, 0.82);
-  --grid-line-color: rgba(148, 163, 184, 0.038);
+                          0 16px 34px -12px rgba(0, 0, 0, 0.84);
+  --grid-line-color: rgba(148, 163, 184, 0.036);
   --focus-ring-color: #e2e8f0;
 
-  --kelvin-cool: 236, 244, 255;     /* 6500K Blanco Frío Cuarzo */
-  --kelvin-neutral: 255, 255, 255;  /* 5500K Blanco Puro Luz de Día */
-  --kelvin-warm: 255, 244, 224;     /* 3200K Blanco Cálido Halógeno */
+  --kelvin-cool: 236, 244, 255;     /* 6500K Blanco Frío */
+  --kelvin-neutral: 255, 255, 255;  /* 5500K Blanco Neutro */
+  --kelvin-warm: 255, 244, 224;     /* 3200K Blanco Cálido */
   --active-kelvin: var(--kelvin-cool);
 
-  /* Variables dinámicas controladas por el desplazamiento vertical (scroll) */
   --scroll-dim-alpha: 0;
   --cursor-beam-boost: 1;
 
@@ -87,17 +86,18 @@ body {
   transform: translateZ(0);
 }
 
-/* Oscurecimiento gradual conforme baja el usuario para realzar el haz de luz del cursor */
+/* Oscurecimiento gradual más intenso en la parte inferior al hacer scroll */
 #mallen-wall-vignette {
   position: absolute;
   inset: 0;
   background:
     linear-gradient(
       to bottom,
-      rgba(4, 6, 10, calc(0.18 + var(--scroll-dim-alpha) * 0.65)) 0%,
-      rgba(3, 5, 9, calc(0.45 + var(--scroll-dim-alpha) * 0.85)) 100%
+      rgba(3, 5, 9, calc(0.14 + var(--scroll-dim-alpha) * 0.45)) 0%,
+      rgba(2, 4, 8, calc(0.45 + var(--scroll-dim-alpha) * 0.52)) 65%,
+      rgba(1, 2, 5, calc(0.68 + var(--scroll-dim-alpha) * 0.30)) 100%
     ),
-    radial-gradient(circle at 50% 42%, transparent 36%, rgba(3, 5, 9, 0.76) 100%);
+    radial-gradient(circle at 50% 42%, transparent 32%, rgba(2, 4, 8, 0.84) 100%);
   pointer-events: none;
 }
 
@@ -106,18 +106,17 @@ html.light-mode #mallen-wall-vignette {
     linear-gradient(
       to bottom,
       rgba(15, 23, 42, calc(var(--scroll-dim-alpha) * 0.14)) 0%,
-      rgba(15, 23, 42, calc(var(--scroll-dim-alpha) * 0.24)) 100%
+      rgba(15, 23, 42, calc(var(--scroll-dim-alpha) * 0.34)) 100%
     ),
-    radial-gradient(circle at 50% 42%, transparent 48%, rgba(203, 213, 225, 0.42) 100%);
+    radial-gradient(circle at 50% 42%, transparent 46%, rgba(203, 213, 225, 0.46) 100%);
 }
 
-/* Proyector de Luz Blanca del Cursor: se intensifica conforme el usuario baja en la página */
 #mallen-wall-lamp {
   position: absolute;
-  top: -400px;
-  left: -400px;
-  width: 800px;
-  height: 800px;
+  top: -420px;
+  left: -420px;
+  width: 840px;
+  height: 840px;
   border-radius: 50%;
   pointer-events: none;
   will-change: transform;
@@ -125,18 +124,18 @@ html.light-mode #mallen-wall-vignette {
   transform: translate3d(50vw, 35vh, 0);
   background: radial-gradient(
     circle,
-    rgba(var(--active-kelvin), calc(0.16 * var(--cursor-beam-boost))) 0%,
-    rgba(var(--active-kelvin), calc(0.075 * var(--cursor-beam-boost))) 34%,
-    rgba(var(--active-kelvin), calc(0.02 * var(--cursor-beam-boost))) 56%,
-    transparent 72%
+    rgba(var(--active-kelvin), calc(0.17 * var(--cursor-beam-boost))) 0%,
+    rgba(var(--active-kelvin), calc(0.08 * var(--cursor-beam-boost))) 34%,
+    rgba(var(--active-kelvin), calc(0.022 * var(--cursor-beam-boost))) 58%,
+    transparent 74%
   );
 }
 
 html.light-mode #mallen-wall-lamp {
   background: radial-gradient(
     circle,
-    rgba(255, 255, 255, calc(0.95 * min(1.15, var(--cursor-beam-boost)))) 0%,
-    rgba(255, 255, 255, 0.58) 38%,
+    rgba(255, 255, 255, calc(0.96 * min(1.18, var(--cursor-beam-boost)))) 0%,
+    rgba(255, 255, 255, 0.60) 38%,
     transparent 70%
   );
 }
@@ -158,7 +157,6 @@ button, a.btn-forensic, input[type="checkbox"], input[type="radio"], summary, .i
   min-height: 24px;
 }
 
-/* Tarjetas con iluminación reactiva directa sin retraso y con boost de scroll */
 .mallen-glass-card,
 .quantum-card,
 .mallen-surface-card {
@@ -302,7 +300,6 @@ input.mallen-input-subtle-red {
   border-color: rgba(148, 163, 184, 0.20) !important;
 }
 
-/* Escalado Tipográfico Ejecutivo (18px Base) */
 html body p, html body li, html body dd, html body td, html body th, html body label, html body summary {
   font-size: 1.02rem !important;
   line-height: 1.68 !important;
@@ -321,7 +318,6 @@ html body input:not([type="checkbox"]):not([type="radio"]), html body select, ht
   min-height: 46px !important;
 }
 
-/* Modo Claro Limpio */
 html.light-mode header, html.light-mode footer, html.light-mode .top-bar-surface {
   background-color: #ffffff !important;
   border-color: #cbd5e1 !important;
@@ -345,7 +341,6 @@ html.light-mode input:not([type="checkbox"]):not([type="radio"]), html.light-mod
   border: 1px solid #94a3b8 !important;
 }
 
-/* Drawer Móvil y Modal PWA */
 #mallen-mobile-drawer-backdrop, #mallen-pwa-modal-backdrop {
   position: fixed;
   inset: 0;

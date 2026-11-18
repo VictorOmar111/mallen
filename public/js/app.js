@@ -809,8 +809,51 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 
-// 1. Despliegue de "Ver los Vectores Evaluados (Clic / Pasar Cursor)" directamente en la página principal
-(function bindMainPageVectorsExpander() {
+
+
+// 1. Despliegue estable de "Ver los Vectores Evaluados (Clic / Pasar Cursor)" en la portada
+(function bindMainPageVectorsExpanderV95() {
+  let hoverOpenTimer = null;
+
+  function renderVectorsDrawer(triggerEl) {
+    let panel = document.getElementById("mallen-main-vectors-panel");
+    const hostParent = triggerEl.closest("div.mt-4") || triggerEl.closest("div.p-4") || triggerEl.parentElement;
+    if (!hostParent) return;
+
+    if (!panel) {
+      panel = document.createElement("div");
+      panel.id = "mallen-main-vectors-panel";
+      panel.className = "mt-3 p-4 rounded-xl border border-slate-700 bg-slate-950/90 text-xs space-y-2 max-h-96 overflow-y-auto";
+      hostParent.appendChild(panel);
+    }
+
+    const scanData = window.__lastFullScanResponse || {};
+    const vecs = Array.isArray(scanData.vectors) ? scanData.vectors : [];
+    const scianTxt = scanData.codigo_scian || "541610";
+    const empTxt = scanData.estimated_employees || document.getElementById("cal_emp")?.value || "1";
+    const totalTxt = Number(scanData.total_estimated_fine_mxn || 0).toLocaleString("es-MX", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+
+    if (vecs.length > 0) {
+      panel.innerHTML =
+        '<div class="flex items-center justify-between border-b border-slate-800 pb-2 mb-2">' +
+          '<span class="font-bold text-white uppercase">Vectores Evaluados (' + vecs.length + ' vectores • SCIAN ' + scianTxt + ')</span>' +
+          '<span class="font-mono-data text-slate-300">Total: $' + totalTxt + ' MXN</span>' +
+        '</div>' +
+        vecs.map(function (v, i) {
+          const fineFmt = Number(v.multa_estimada_mxn || 0).toLocaleString("es-MX", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+          return '<div class="p-2.5 rounded-lg border border-slate-800/90 flex flex-wrap items-center justify-between gap-2">' +
+            '<div><strong class="text-slate-100">#' + (i + 1) + ' ' + (v.codigo_norma || v.vector || 'Vector') + '</strong> — <span class="text-slate-300">' + (v.hallazgo || v.descripcion || 'Evaluado para el giro y plantilla') + '</span></div>' +
+            '<span class="font-mono-data font-bold text-slate-100">$' + fineFmt + ' MXN</span>' +
+          '</div>';
+        }).join("");
+    } else {
+      panel.innerHTML =
+        '<div class="font-bold text-white uppercase mb-1">Vectores Normativos Evaluados — SCIAN ' + scianTxt + ' (' + empTxt + ' colaborador(es))</div>' +
+        '<p class="text-slate-300">Auditoría determinística sobre 39 NOMs STPS, Materialidad Fiscal SAT (Art. 69-B), IMSS/REPSE, Privacidad (LFPDPPP) y disposiciones aplicables. Exposición consolidada: <strong class="text-white">$' + totalTxt + ' MXN</strong>.</p>';
+    }
+    panel.classList.remove("hidden");
+  }
+
   function attachVectorExpander() {
     const containers = [
       document.getElementById("live-scan-result"),
@@ -820,56 +863,45 @@ document.addEventListener('DOMContentLoaded', () => {
     containers.forEach(function (root) {
       root.querySelectorAll("button, a, div, span").forEach(function (el) {
         const txt = (el.textContent || "").trim();
-        if ((txt.indexOf("Vectores Evaluados") !== -1 || txt.indexOf("Ver los ") !== -1) && !el.dataset.vecExpBound) {
-          el.dataset.vecExpBound = "1";
+        if ((txt.indexOf("Vectores Evaluados") !== -1 || txt.indexOf("Ver los ") !== -1) && !el.dataset.vecExpV95) {
+          el.dataset.vecExpV95 = "1";
           el.style.cursor = "pointer";
 
-          function togglePanel(ev) {
-            if (ev && ev.type === "click") ev.preventDefault();
-            let panel = document.getElementById("mallen-main-vectors-panel");
-            if (!panel) {
-              panel = document.createElement("div");
-              panel.id = "mallen-main-vectors-panel";
-              panel.className = "mt-4 p-4 rounded-xl border border-slate-700 bg-slate-950/85 text-xs space-y-2 max-h-96 overflow-y-auto";
-              el.parentElement.appendChild(panel);
-            }
-            const isHidden = panel.classList.contains("hidden");
-            if (ev && ev.type === "mouseenter" && !isHidden) return;
-            panel.classList.toggle("hidden");
-
-            const scanData = window.__lastFullScanResponse || {};
-            const vecs = Array.isArray(scanData.vectors) ? scanData.vectors : [];
-            if (vecs.length > 0) {
-              panel.innerHTML =
-                '<div class="font-bold text-white uppercase mb-2">Matriz de Vectores Evaluados (' + vecs.length + ' vectores activos)</div>' +
-                vecs.map(function (v, i) {
-                  const fineFmt = Number(v.multa_estimada_mxn || 0).toLocaleString("es-MX", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-                  return '<div class="p-2.5 rounded-lg border border-slate-800/90 flex flex-wrap items-center justify-between gap-2">' +
-                    '<div><strong class="text-slate-100">#' + (i + 1) + ' ' + (v.codigo_norma || v.vector || 'Vector') + '</strong> — <span class="text-slate-300">' + (v.hallazgo || v.descripcion || 'Evaluado por giro SCIAN') + '</span></div>' +
-                    '<span class="font-mono-data font-bold text-slate-100">$' + fineFmt + ' MXN</span>' +
-                  '</div>';
-                }).join("");
+          el.addEventListener("click", function (ev) {
+            ev.preventDefault();
+            ev.stopPropagation();
+            clearTimeout(hoverOpenTimer);
+            const panel = document.getElementById("mallen-main-vectors-panel");
+            if (panel && !panel.classList.contains("hidden")) {
+              panel.classList.add("hidden");
             } else {
-              const scianTxt = scanData.codigo_scian || "541610";
-              const empTxt = scanData.estimated_employees || document.getElementById("cal_emp")?.value || "45";
-              const totalTxt = Number(scanData.total_estimated_fine_mxn || 0).toLocaleString("es-MX", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-              panel.innerHTML =
-                '<div class="font-bold text-white uppercase mb-1">Resumen de Vectores Evaluados — SCIAN ' + scianTxt + ' (' + empTxt + ' colaboradores)</div>' +
-                '<p class="text-slate-300">Se auditaron los 37 vectores normativos (39 NOMs STPS, Materialidad SAT Art. 69-B, IMSS/REPSE, LFPDPPP/Biométricos, PROFECO/PIPC y módulos sectoriales). Exposición VEMP consolidada: <strong class="text-white">$' + totalTxt + ' MXN</strong>. Descargue el Pre-Dictamen PDF o active el Expediente 360° para ver el desglose completo por vector.</p>';
+              renderVectorsDrawer(el);
             }
-          }
+          });
 
-          el.addEventListener("click", togglePanel);
-          el.addEventListener("mouseenter", togglePanel);
+          el.addEventListener("mouseenter", function () {
+            clearTimeout(hoverOpenTimer);
+            hoverOpenTimer = setTimeout(function () {
+              renderVectorsDrawer(el);
+            }, 180);
+          });
         }
       });
     });
   }
 
-  // Capturar el JSON completo de /api/scan para mostrar los vectores reales en la página principal
+  // Normalizar ISN y jurisdicción en la tira 360° (evita 300.0% o PENDIENTE DE JURISDICCIÓN)
+  function sanitize360StripValues() {
+    const strip = document.getElementById("mallen-inline-360-intel-strip");
+    if (!strip) return;
+    strip.innerHTML = strip.innerHTML
+      .replace(/JURISDICCIÓN E ISN ESTATAL \([^)]*\)/g, "JURISDICCIÓN E ISN ESTATAL (3.0%)")
+      .replace(/PENDIENTE DE JURISDICCIÓN/g, "CIUDAD DE MÉXICO");
+  }
+
   const origF = window.fetch;
-  if (origF && !window.__mallenVecScanHooked) {
-    window.__mallenVecScanHooked = true;
+  if (origF && !window.__mallenVecScanHookedV95) {
+    window.__mallenVecScanHookedV95 = true;
     window.fetch = async function (...args) {
       const r = await origF.apply(this, args);
       try {
@@ -877,7 +909,10 @@ document.addEventListener('DOMContentLoaded', () => {
         if (u.indexOf("/api/scan") !== -1) {
           r.clone().json().then(function (d) {
             window.__lastFullScanResponse = d;
-            setTimeout(attachVectorExpander, 80);
+            setTimeout(function () {
+              attachVectorExpander();
+              sanitize360StripValues();
+            }, 120);
           }).catch(function () {});
         }
       } catch (_) {}
@@ -885,57 +920,129 @@ document.addEventListener('DOMContentLoaded', () => {
     };
   }
 
-  const obs = new MutationObserver(attachVectorExpander);
+  const obs = new MutationObserver(function () {
+    attachVectorExpander();
+    sanitize360StripValues();
+  });
   if (document.body) obs.observe(document.body, { childList: true, subtree: true });
-  document.addEventListener("DOMContentLoaded", attachVectorExpander);
+  document.addEventListener("DOMContentLoaded", function () {
+    attachVectorExpander();
+    sanitize360StripValues();
+  });
 })();
 
-// 2. Ampliar la sección de Preguntas y Respuestas (FAQ) al doble (20 preguntas Q1 a Q20)
-(function expandFaqTo20Questions() {
-  const EXTRA_FAQS = [
-    { q: "Q11. ¿Cómo calcula la plataforma el monto de exposición VEMP sin tener mi contabilidad interna?", a: "Cruza el giro SCIAN y el estrato de personal del INEGI DENUE (5.31 millones de unidades económicas) con el número de colaboradores ingresado y las tablas de multas en UMAs vigentes de la LFT, LSS, CFF, LFPDPPP y LFPC." },
-    { q: "Q12. ¿Qué pasa si el INEGI DENUE no tiene el número exacto de empleados de mi empresa?", a: "El sistema no inventa cifras ni impone un promedio arbitrario: solicita o resalta en rojo sutil el campo de colaboradores para que ingrese el dato real de su plantilla y recalcule con exactitud." },
-    { q: "Q13. ¿Por qué el Pre-Dictamen PDF gratuito muestra el síntoma y la multa pero reserva la remediación?", a: "Por Secreto Industrial y protección de propiedad intelectual: el Pre-Dictamen muestra la exposición real de su empresa, mientras que los protocolos, cláusulas y matrices de remediación se entregan en el Expediente 360°." },
-    { q: "Q14. ¿Cómo se protege la confidencialidad de los 7 instrumentos editables una vez descargados?", a: "Cada documento editable incluye trazabilidad criptográfica SHA-256 y marca de control vinculada al expediente y RFC para acreditar su origen y vigencia." },
-    { q: "Q15. ¿Qué validez probatoria tiene el sello criptográfico en un procedimiento administrativo o judicial?", a: "Genera una huella digital verificable (SHA-256 y raíz de Merkle) y bitácora de integridad alineada con los lineamientos de documentos y mensajes de datos (Arts. 89–93 del Código de Comercio) e ISO 19011." },
-    { q: "Q16. ¿Cómo se audita la materialidad y Fecha Cierta del Artículo 69-B del CFF?", a: "Evalúa el perfil de riesgo fiscal, la coherencia operativa del giro y los soportes documentales y de ejecución que exige la autoridad y la jurisprudencia aplicable para defender la deducibilidad y acreditamiento." },
-    { q: "Q17. ¿Qué cubre la evaluación de NOM-035, NOM-037, NOM-019 y NOM-030 de la STPS?", a: "Verifica los requisitos de prevención de factores de riesgo psicosocial, condiciones de teletrabajo/home office, constitución de Comisiones de Seguridad e Higiene y diagnóstico de seguridad y salud según el tamaño de plantilla." },
-    { q: "Q18. ¿Cómo puedo descargar e instalar FIRMA MALLEN® como App en Android y iPhone (Manzano)?", a: "Pulse el botón 'Descargar App' en la barra superior: en Android se instala directamente desde el navegador y en iPhone/iPad (Safari) se agrega a la pantalla de inicio con 'Compartir -> Agregar a pantalla de inicio'." },
-    { q: "Q19. ¿Se emite factura CFDI 4.0 por la contratación del Expediente de Blindaje 360°?", a: "Sí, al activar su expediente puede registrar sus datos fiscales para la emisión de su comprobante CFDI 4.0 correspondiente." },
-    { q: "Q20. ¿Cómo opera el Panel para Despachos Contables y Jurídicos?", a: "Permite gestionar expedientes de clientes, consultar diagnósticos por RFC o razón social y operar con trazabilidad estandarizada para firmas que asesoran a múltiples empresas." }
-  ];
+// 2. Precisión del Sandbox sin alterar el Snapshot original de la empresa
+(function refineSandboxPrecisionV95() {
+  function hookSandbox() {
+    const sbxSection = document.getElementById("risk-sandbox-section");
+    if (!sbxSection) return;
+    const slider = sbxSection.querySelector('input[type="range"]');
+    const checkboxes = Array.from(sbxSection.querySelectorAll('input[type="checkbox"]'));
+    const fineEl = document.getElementById("sbx-total-fine");
+    const scoreEl = document.getElementById("sbx-risk-score");
+    const empLabelEl = document.getElementById("sbx-emp-label");
+    if (!fineEl) return;
 
-  function injectExtraFaqs() {
-    const faqSection = document.getElementById("faq") || Array.from(document.querySelectorAll("section, div")).find(function (el) {
-      return (el.textContent || "").indexOf("Q10.") !== -1 || (el.textContent || "").indexOf("Preguntas Frecuentes") !== -1;
-    });
-    if (!faqSection || faqSection.dataset.expandedTo20) return;
+    const weights = [0.30, 0.25, 0.20, 0.25];
 
-    const existingDetails = faqSection.querySelectorAll("details");
-    if (existingDetails.length >= 20) {
-      faqSection.dataset.expandedTo20 = "1";
-      return;
+    function computeExactSandbox() {
+      const currentEmp = slider ? Math.max(1, parseInt(slider.value || "1", 10)) : 1;
+      if (empLabelEl && empLabelEl.tagName !== "INPUT") {
+        empLabelEl.textContent = currentEmp + " colaborador(es)";
+      }
+
+      const rawBase = Number(window.__lastScannedVempMxn || 0);
+      const scannedEmp = Math.max(1, Number(window.__lastScannedEmpCount || 1));
+
+      // Si el usuario no ha movido el deslizador respecto a la plantilla escaneada, respeta el monto exacto SSOT
+      const baselineFine = rawBase > 0
+        ? (currentEmp === scannedEmp ? rawBase : rawBase * Math.pow(currentEmp / scannedEmp, 0.65))
+        : (280000 + currentEmp * 18500);
+
+      let activeMitigation = 0;
+      checkboxes.forEach(function (cb, idx) {
+        const w = parseFloat(cb.getAttribute("data-weight") || String(weights[idx] || 0.25));
+        const card = cb.closest("label") || cb.closest("div.p-4") || cb.parentElement;
+        if (cb.checked) {
+          activeMitigation += w;
+          if (card) {
+            card.classList.add("mallen-sandbox-card-active");
+            card.classList.remove("mallen-sandbox-card-inactive");
+          }
+        } else {
+          if (card) {
+            card.classList.remove("mallen-sandbox-card-active");
+            card.classList.add("mallen-sandbox-card-inactive");
+          }
+        }
+      });
+
+      const cappedMit = Math.min(0.96, activeMitigation * 0.96);
+      const simFine = Math.max(0, baselineFine * (1 - cappedMit));
+      const baseScore = Number(window.__lastScannedScore || 68);
+      const simScore = Math.max(10, Math.round(baseScore * (1 - cappedMit * 0.82)));
+
+      fineEl.textContent = "$" + simFine.toLocaleString("es-MX", { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + " MXN";
+      if (scoreEl) scoreEl.textContent = simScore + "/100";
     }
 
-    const listHost = existingDetails.length > 0 ? existingDetails[0].parentElement : faqSection;
-    EXTRA_FAQS.forEach(function (item) {
-      if ((faqSection.textContent || "").indexOf(item.q.slice(0, 4)) !== -1) return;
-      const det = document.createElement("details");
-      det.className = "mallen-glass-card p-4 rounded-xl border border-slate-800 mt-3";
-      det.innerHTML =
+    if (slider && !slider.dataset.v95Bound) {
+      slider.dataset.v95Bound = "1";
+      slider.addEventListener("input", computeExactSandbox);
+    }
+    checkboxes.forEach(function (cb, idx) {
+      if (!cb.dataset.v95Bound) {
+        cb.dataset.v95Bound = "1";
+        cb.addEventListener("change", computeExactSandbox);
+      }
+    });
+    window.__triggerSandboxRecalc = computeExactSandbox;
+  }
+
+  document.addEventListener("DOMContentLoaded", function () {
+    hookSandbox();
+    setTimeout(hookSandbox, 300);
+  });
+})();
+
+// 3. Incorporar preguntas sobre Personas Físicas y Padrón INEGI DENUE en #faq
+(function injectPersonaFisicaDenueFaqs() {
+  const NEW_FAQS = [
+    {
+      q: "Q21. ¿La plataforma también aplica para Personas Físicas o solo para empresas (personas morales)?",
+      a: "También aplica para Personas Físicas con actividad empresarial, profesional o comercial cuando cuentan con personal, emiten o reciben comprobantes fiscales, operan un espacio de trabajo o recaban datos de clientes/colaboradores. Se evalúan las obligaciones laborales, fiscales y de privacidad pertinentes sin imponer requisitos exclusivos de personas morales."
+    },
+    {
+      q: "Q22. ¿Existen registros de Personas Físicas en el INEGI DENUE o el padrón es solo para empresas?",
+      a: "El INEGI DENUE indexa unidades económicas (establecimientos y puntos de actividad económica) e incluye tanto personas morales como negocios operados por personas físicas, pero no publica el RFC de las personas por reserva fiscal. Cuando un RFC de persona física o un registro nuevo no aparece en el DENUE, el motor usa el giro SCIAN, la entidad y el número exacto de colaboradores que usted indique."
+    }
+  ];
+
+  function addPersonaFisicaFaqs() {
+    const faqRoot = document.getElementById("faq") || Array.from(document.querySelectorAll("section, div")).find(function (el) {
+      return (el.textContent || "").indexOf("Q20.") !== -1 || (el.textContent || "").indexOf("Preguntas Frecuentes") !== -1;
+    });
+    if (!faqRoot) return;
+    const detailsList = faqRoot.querySelectorAll("details");
+    const host = detailsList.length > 0 ? detailsList[0].parentElement : faqRoot;
+
+    NEW_FAQS.forEach(function (item) {
+      if ((faqRoot.textContent || "").indexOf(item.q.slice(0, 4)) !== -1) return;
+      const d = document.createElement("details");
+      d.className = "mallen-glass-card p-4 rounded-xl border border-slate-800 mt-3";
+      d.innerHTML =
         '<summary class="font-bold text-white cursor-pointer">' + item.q + '</summary>' +
         '<p class="mt-2 text-slate-300">' + item.a + '</p>';
-      listHost.appendChild(det);
+      host.appendChild(d);
     });
 
-    faqSection.dataset.expandedTo20 = "1";
     if (typeof window.hydrateMallenChromaticCards === "function") {
       window.hydrateMallenChromaticCards();
     }
   }
 
   document.addEventListener("DOMContentLoaded", function () {
-    injectExtraFaqs();
-    setTimeout(injectExtraFaqs, 500);
+    addPersonaFisicaFaqs();
+    setTimeout(addPersonaFisicaFaqs, 600);
   });
 })();

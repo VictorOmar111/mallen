@@ -1,5 +1,5 @@
 /**
- * FIRMA MALLEN® — 1.1x Cursor Velocity, Scroll Progressive Dim & Boosted Lamp (v94)
+ * FIRMA MALLEN® — Smooth RAF Pointer Light, Deeper Bottom Dim & Boosted Lamp (v95)
  */
 (function () {
     "use strict";
@@ -189,12 +189,14 @@
     function syncScrollDimAndCursorBoost() {
         const docH = Math.max(1, document.documentElement.scrollHeight - window.innerHeight);
         const ratio = Math.min(1, Math.max(0, window.scrollY / docH));
-        // Conforme baja el usuario, el fondo se oscurece gradualmente y el haz del cursor aumenta hasta 1.45x
-        document.documentElement.style.setProperty("--scroll-dim-alpha", ratio.toFixed(3));
-        document.documentElement.style.setProperty("--cursor-beam-boost", (1.0 + ratio * 0.45).toFixed(3));
+        // Oscurecimiento más intenso en la parte baja y mayor refuerzo de la luz del cursor al descender
+        const dimAlpha = (ratio * 0.78).toFixed(3);
+        const beamBoost = (1.0 + ratio * 0.65).toFixed(3);
+        document.documentElement.style.setProperty("--scroll-dim-alpha", dimAlpha);
+        document.documentElement.style.setProperty("--cursor-beam-boost", beamBoost);
     }
 
-    function initKinetic11xEngine() {
+    function initSmoothKelvinEngine() {
         try {
             if (localStorage.getItem("mallen_theme_mode") === "light") {
                 document.documentElement.classList.add("light-mode");
@@ -214,8 +216,10 @@
         const lamp = document.getElementById("mallen-wall-lamp");
         let lastCard = null;
         let lastRect = null;
-        let prevX = null, prevY = null;
         let currentKelvin = "";
+        let pendingX = window.innerWidth * 0.5;
+        let pendingY = window.innerHeight * 0.35;
+        let rafScheduled = false;
 
         syncScrollDimAndCursorBoost();
         window.addEventListener("scroll", function () {
@@ -242,32 +246,30 @@
             }
         }, { passive: true });
 
-        // Velocidad 1.1x directa en pointermove sin esperar cola de frame extra
-        window.addEventListener("pointermove", function (ev) {
-            const rawX = ev.clientX;
-            const rawY = ev.clientY;
-            let vx = rawX;
-            let vy = rawY;
-            if (prevX !== null && prevY !== null) {
-                vx = rawX + (rawX - prevX) * 0.10;
-                vy = rawY + (rawY - prevY) * 0.10;
-            }
-            prevX = rawX;
-            prevY = rawY;
-
+        function renderPointerStep() {
+            rafScheduled = false;
             if (lamp) {
-                lamp.style.transform = "translate3d(" + vx + "px, " + vy + "px, 0)";
+                lamp.style.transform = "translate3d(" + pendingX + "px, " + pendingY + "px, 0)";
             }
             if (lastCard && lastRect) {
-                lastCard.style.setProperty("--mouse-x", (vx - lastRect.left) + "px");
-                lastCard.style.setProperty("--mouse-y", (vy - lastRect.top) + "px");
+                lastCard.style.setProperty("--mouse-x", (pendingX - lastRect.left) + "px");
+                lastCard.style.setProperty("--mouse-y", (pendingY - lastRect.top) + "px");
+            }
+        }
+
+        window.addEventListener("pointermove", function (ev) {
+            pendingX = ev.clientX;
+            pendingY = ev.clientY;
+            if (!rafScheduled) {
+                rafScheduled = true;
+                requestAnimationFrame(renderPointerStep);
             }
         }, { passive: true });
     }
 
     if (document.readyState === "loading") {
-        document.addEventListener("DOMContentLoaded", initKinetic11xEngine);
+        document.addEventListener("DOMContentLoaded", initSmoothKelvinEngine);
     } else {
-        initKinetic11xEngine();
+        initSmoothKelvinEngine();
     }
 })();
