@@ -359,3 +359,206 @@ html.light-mode #mallen-mobile-drawer {
 #mallen-mobile-drawer.open {
   transform: translateX(0);
 }
+
+/* ==========================================================================
+   10. CHROMATIC FORENSIC PRISM — ILUMINACIÓN REACTIVA MULTI-SECCIÓN (v88)
+   Varía dinámicamente el diámetro (--spot-size) y el brillo (--spot-alpha,
+   --border-alpha, --beam-alpha) según la sección de la página, conservando
+   el color cromático exacto (--card-accent) de cada tarjeta y dependencia.
+   ========================================================================== */
+
+:root {
+  --page-mouse-x: 50vw;
+  --page-mouse-y: 30vh;
+  --page-ambient-rgb: 16, 185, 129;
+  --page-ambient-size: 620px;
+  --page-ambient-alpha: 0.075;
+}
+
+html.light-mode {
+  --page-ambient-alpha: 0.045;
+}
+
+/* Halo atmosférico subyacente de página completa que cambia de radio, brillo y color según la sección */
+body::after {
+  content: "" !important;
+  display: block !important;
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  background: radial-gradient(
+    var(--page-ambient-size, 620px) circle at var(--page-mouse-x, 50vw) var(--page-mouse-y, 30vh),
+    rgba(var(--page-ambient-rgb, 16, 185, 129), var(--page-ambient-alpha, 0.075)),
+    transparent 68%
+  );
+  transition: background 0.18s ease;
+}
+
+header, main, section, footer {
+  position: relative;
+  z-index: 1;
+}
+
+/* Variables modulables por tarjeta y por sección */
+.mallen-glass-card,
+.quantum-card,
+.mallen-surface-card {
+  --card-accent: 16, 185, 129;
+  --spot-size: 440px;
+  --spot-alpha: 0.16;
+  --border-spot-size: 320px;
+  --border-alpha: 0.58;
+  --beam-alpha: 0.90;
+  position: relative;
+  overflow: hidden;
+}
+
+/* PERFIL SECCIÓN 1: HERO & CONSOLA DE DIAGNÓSTICO (Haz Amplio de Alta Energía: 580px / Brillo 0.23) */
+#express-check .mallen-glass-card,
+#express-check .quantum-card,
+#express-check .mallen-surface-card,
+#osint-calibration-engine.mallen-glass-card,
+#osint-calibration-engine .mallen-surface-card {
+  --spot-size: 580px;
+  --spot-alpha: 0.23;
+  --border-spot-size: 420px;
+  --border-alpha: 0.78;
+  --beam-alpha: 1.0;
+}
+
+/* PERFIL SECCIÓN 2: SIMULADOR IN SITU / SANDBOX (Haz Táctico Concentrado y Brillante: 300px / Brillo 0.27) */
+#risk-sandbox-section .mallen-glass-card,
+#risk-sandbox-section .quantum-card,
+#risk-sandbox-section .mallen-surface-card,
+#risk-sandbox-section label,
+#eu-interactive-sandbox.mallen-glass-card,
+#eu-interactive-sandbox label {
+  --spot-size: 300px;
+  --spot-alpha: 0.27;
+  --border-spot-size: 240px;
+  --border-alpha: 0.85;
+  --beam-alpha: 0.95;
+}
+
+/* PERFIL SECCIÓN 3: ARQUITECTURA DE BLINDAJE 360° & CENTRO DE CONFIANZA (Haz Prisma Equilibrado: 450px / Brillo 0.18) */
+#mallen-vanta-trust-center .mallen-glass-card,
+#mallen-vanta-trust-center .mallen-surface-card,
+#mallen-vanta-trust-center .grid > div,
+#eu-trust-center-section .grid > div {
+  --spot-size: 450px;
+  --spot-alpha: 0.18;
+  --border-spot-size: 340px;
+  --border-alpha: 0.65;
+  --beam-alpha: 0.92;
+}
+
+/* PERFIL SECCIÓN 4: SUSTENTO PROBATORIO, LEYES Y FAQ (Haz Lente Forense Sutil: 350px / Brillo 0.12) */
+#validez-legal .mallen-glass-card,
+#validez-legal .quantum-card,
+#probative-validity-section .mallen-surface-card,
+#laws-grid .mallen-surface-card,
+details.mallen-glass-card,
+details.quantum-card {
+  --spot-size: 350px;
+  --spot-alpha: 0.12;
+  --border-spot-size: 260px;
+  --border-alpha: 0.48;
+  --beam-alpha: 0.75;
+}
+
+/* PERFIL SECCIÓN 5: CHECKOUT 3D SECURE, DIRECTORIO NORMATIVO Y RADAR DOF (Haz Bóveda: 500px / Brillo 0.20) */
+#checkoutForm .mallen-surface-card,
+#radar-dof-dedicated-feed .mallen-surface-card,
+main .grid > a.mallen-surface-card {
+  --spot-size: 500px;
+  --spot-alpha: 0.20;
+  --border-spot-size: 360px;
+  --border-alpha: 0.72;
+  --beam-alpha: 0.95;
+}
+
+/* Superficie de luz radial que usa el tamaño (--spot-size), brillo (--spot-alpha) y color (--card-accent) de su sección */
+.mallen-glass-card::before,
+.quantum-card::before,
+.mallen-surface-card::before {
+  content: "" !important;
+  display: block !important;
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  border-radius: inherit;
+  background: radial-gradient(
+    var(--spot-size, 440px) circle at var(--mouse-x, 50%) var(--mouse-y, 0%),
+    rgba(var(--card-accent, 16, 185, 129), var(--spot-alpha, 0.16)),
+    rgba(var(--card-accent, 16, 185, 129), calc(var(--spot-alpha, 0.16) * 0.28)) 42%,
+    transparent 70%
+  ) !important;
+  opacity: var(--spot-visible, 0);
+  transition: opacity 0.25s ease !important;
+  z-index: 0;
+}
+
+/* Filamento inferior y bisel reactivo que conserva el color exacto de la tarjeta */
+.mallen-glass-card::after,
+.quantum-card::after,
+.mallen-surface-card::after {
+  content: "" !important;
+  display: block !important;
+  position: absolute;
+  bottom: 0;
+  left: 10%;
+  right: 10%;
+  height: 2px;
+  pointer-events: none;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(var(--card-accent, 16, 185, 129), var(--beam-alpha, 0.90)),
+    transparent
+  ) !important;
+  opacity: 0.32;
+  transition: opacity 0.28s ease, left 0.28s ease, right 0.28s ease !important;
+  z-index: 2;
+}
+
+.mallen-glass-card:hover,
+.quantum-card:hover,
+.mallen-surface-card:hover {
+  border-color: rgba(var(--card-accent, 16, 185, 129), var(--border-alpha, 0.58)) !important;
+  box-shadow: 0 1px 0 0 inset rgba(255, 255, 255, 0.20),
+              0 20px 42px -12px rgba(var(--card-accent, 16, 185, 129), calc(var(--spot-alpha, 0.16) * 1.15)) !important;
+}
+
+.mallen-glass-card:hover::before,
+.quantum-card:hover::before,
+.mallen-surface-card:hover::before {
+  opacity: 1 !important;
+}
+
+.mallen-glass-card:hover::after,
+.quantum-card:hover::after,
+.mallen-surface-card:hover::after {
+  opacity: 1 !important;
+  left: 3% !important;
+  right: 3% !important;
+}
+
+.mallen-glass-card > *,
+.quantum-card > *,
+.mallen-surface-card > * {
+  position: relative;
+  z-index: 1;
+}
+
+/* Calibración delicada en Modo Claro para que el haz coloreado luzca limpio sobre papel blanco */
+html.light-mode .mallen-glass-card::before,
+html.light-mode .quantum-card::before,
+html.light-mode .mallen-surface-card::before {
+  background: radial-gradient(
+    var(--spot-size, 440px) circle at var(--mouse-x, 50%) var(--mouse-y, 0%),
+    rgba(var(--card-accent, 16, 185, 129), calc(var(--spot-alpha, 0.16) * 0.62)),
+    rgba(var(--card-accent, 16, 185, 129), calc(var(--spot-alpha, 0.16) * 0.16)) 45%,
+    transparent 70%
+  ) !important;
+}
