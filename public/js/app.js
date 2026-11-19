@@ -701,7 +701,7 @@ window.initMobileResponsiveDrawerAndNav = function() {
     desktopNav.className = 'hidden md:flex items-center gap-4 text-xs font-semibold text-slate-300';
     desktopNav.innerHTML =
       '<a href="#express-check" class="hover:text-white transition">Diagnóstico Exprés</a>' +
-      '<a href="#mallen-vanta-trust-center" class="hover:text-white transition">Entregables y Precios</a>' +
+      '<a href="#mallen-vanta-trust-center" class="hover:text-white transition">Entregables y Activación</a>' +
       '<a href="/normativa" id="nav-link-normativa-dedicada" class="hover:text-white transition">Directorio Normativo (39 NOMs)</a>' +
       '<a href="/radar-dof" id="nav-link-radar-dedicado" class="hover:text-white transition">Radar DOF Diario</a>' +
       '<a href="/dashboard.html" class="text-emerald-400 hover:text-emerald-300 transition">Panel Despachos</a>' +
@@ -741,7 +741,7 @@ window.initMobileResponsiveDrawerAndNav = function() {
         '</div>' +
         '<nav class="flex flex-col space-y-2.5">' +
           '<a href="#express-check" class="mallen-mobile-link py-2.5 px-3 rounded-lg border border-slate-800 font-semibold">Diagnóstico Exprés por RFC</a>' +
-          '<a href="#mallen-vanta-trust-center" class="mallen-mobile-link py-2.5 px-3 rounded-lg border border-slate-800 font-semibold">Entregables y Precios ($3,000 MXN)</a>' +
+          '<a href="#mallen-vanta-trust-center" class="mallen-mobile-link py-2.5 px-3 rounded-lg border border-slate-800 font-semibold">Entregables y Activación</a>' +
           '<a href="/normativa" class="mallen-mobile-link py-2.5 px-3 rounded-lg border border-slate-800 font-semibold">Directorio Normativo (39 NOMs)</a>' +
           '<a href="/radar-dof" class="mallen-mobile-link py-2.5 px-3 rounded-lg border border-slate-800 font-semibold">Radar DOF Diario</a>' +
           '<a href="/dashboard.html" class="mallen-mobile-link py-2.5 px-3 rounded-lg border border-emerald-700/50 text-emerald-400 font-bold">Panel para Despachos</a>' +
