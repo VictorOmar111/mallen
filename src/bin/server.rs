@@ -128,6 +128,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .route("/download/zip/:tax_id", get(download_zip_handler))
         .route("/download/:hash", get(download_pdf_report))
         .route("/api/merkle/verify/:ref_code", get(get_merkle_proof_api))
+        .route("/api/quick-contact", axum::routing::post(handle_quick_contact))
         .route("/api/scan", post(handle_live_scan))
         .route("/api/calibrate", post(handle_live_scan))
         .route("/api/dossier/save", post(handle_save_dossier))
@@ -1227,7 +1228,7 @@ async fn render_checkout_page_with_state(state: Arc<AppState>, raw_ref: String) 
     <link rel="stylesheet" href="/css/quantum-glass.css?v=2026.25">
     <script src="/js/quantum-lights.js?v=2026.25" defer></script>
 <link rel="stylesheet" href="/css/pure-light-mode.css?v=2026.140"><script src="/js/theme-init.js?v=2026.140"></script>    <link rel="stylesheet" href="/css/enterprise-linear.css?v=2026.77">
-  <link rel="stylesheet" href="/css/mallen-high-impact.css?v=2026.92">
+  <link rel="stylesheet" href="/css/mallen-high-impact.css?v=2026.95">
 </head>
 <body class="bg-slate-950 text-slate-100 min-h-screen p-6 flex items-center justify-center selection:bg-blue-600 selection:text-white">
     <div class="max-w-3xl w-full bg-white/[0.05] shadow-[0_8px_32px_rgba(0,0,0,0.5)] border border-white/15 p-8 rounded-2xl font-mono-code text-xs shadow-2xl">
@@ -1688,7 +1689,7 @@ async fn handle_privacy() -> impl IntoResponse {
     <style>body { font-family: 'Inter', sans-serif; background-color: #020617; background-image: radial-gradient(at 12% 12%, rgba(37, 99, 235, 0.32) 0px, transparent 48%), radial-gradient(at 88% 18%, rgba(16, 185, 129, 0.25) 0px, transparent 48%), radial-gradient(at 50% 82%, rgba(99, 102, 241, 0.28) 0px, transparent 52%); background-attachment: fixed; } .font-mono-code { font-family: 'JetBrains Mono', monospace; }</style>
     <link rel="stylesheet" href="/css/quantum-glass.css?v=2026.25">
     <script src="/js/quantum-lights.js?v=2026.25" defer></script>
-<link rel="stylesheet" href="/css/pure-light-mode.css?v=2026.140"><script src="/js/theme-init.js?v=2026.140"></script>  <link rel="stylesheet" href="/css/mallen-high-impact.css?v=2026.92">
+<link rel="stylesheet" href="/css/pure-light-mode.css?v=2026.140"><script src="/js/theme-init.js?v=2026.140"></script>  <link rel="stylesheet" href="/css/mallen-high-impact.css?v=2026.95">
 </head>
 <body class="bg-slate-950 text-slate-300 min-h-screen p-6 md:p-12 border-t-4 border-blue-600">
     <div class="max-w-4xl mx-auto bg-white/[0.05] shadow-[0_8px_32px_rgba(0,0,0,0.5)] border border-white/15 p-8 md:p-12 shadow-2xl rounded-2xl">
@@ -1731,7 +1732,7 @@ async fn handle_terms() -> impl IntoResponse {
     <style>body { font-family: 'Inter', sans-serif; background-color: #020617; background-image: radial-gradient(at 12% 12%, rgba(37, 99, 235, 0.32) 0px, transparent 48%), radial-gradient(at 88% 18%, rgba(16, 185, 129, 0.25) 0px, transparent 48%), radial-gradient(at 50% 82%, rgba(99, 102, 241, 0.28) 0px, transparent 52%); background-attachment: fixed; } .font-mono-code { font-family: 'JetBrains Mono', monospace; }</style>
     <link rel="stylesheet" href="/css/quantum-glass.css?v=2026.25">
     <script src="/js/quantum-lights.js?v=2026.25" defer></script>
-<link rel="stylesheet" href="/css/pure-light-mode.css?v=2026.140"><script src="/js/theme-init.js?v=2026.140"></script>  <link rel="stylesheet" href="/css/mallen-high-impact.css?v=2026.92">
+<link rel="stylesheet" href="/css/pure-light-mode.css?v=2026.140"><script src="/js/theme-init.js?v=2026.140"></script>  <link rel="stylesheet" href="/css/mallen-high-impact.css?v=2026.95">
 </head>
 <body class="bg-slate-950 text-slate-300 min-h-screen p-6 md:p-12 border-t-4 border-indigo-600">
     <div class="max-w-4xl mx-auto bg-white/[0.05] shadow-[0_8px_32px_rgba(0,0,0,0.5)] border border-white/15 p-8 md:p-12 shadow-2xl rounded-2xl">
@@ -1843,7 +1844,7 @@ fn render_validez_detail(slug: &str) -> Html<String> {
     <style>body {{ font-family: 'Inter', sans-serif; }} .font-mono-code {{ font-family: 'JetBrains Mono', monospace; }}</style>
     <link rel="stylesheet" href="/css/quantum-glass.css?v=2026.25">
     <script src="/js/quantum-lights.js?v=2026.25" defer></script>
-<link rel="stylesheet" href="/css/pure-light-mode.css?v=2026.140"><script src="/js/theme-init.js?v=2026.140"></script>  <link rel="stylesheet" href="/css/mallen-high-impact.css?v=2026.92">
+<link rel="stylesheet" href="/css/pure-light-mode.css?v=2026.140"><script src="/js/theme-init.js?v=2026.140"></script>  <link rel="stylesheet" href="/css/mallen-high-impact.css?v=2026.95">
 </head>
 <body class="bg-slate-950 text-slate-100 min-h-screen p-6 md:p-12 border-t-4 border-emerald-500">
     <div class="max-w-4xl mx-auto">
@@ -1995,7 +1996,7 @@ async fn handle_dedicated_normativa_page() -> impl IntoResponse {
   <script src="https://cdn.tailwindcss.com"></script>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="/css/enterprise-linear.css?v=2026.77">
-  <link rel="stylesheet" href="/css/mallen-high-impact.css?v=2026.92">
+  <link rel="stylesheet" href="/css/mallen-high-impact.css?v=2026.95">
 </head>
 <body class="min-h-screen flex flex-col">
   <header class="border-b px-6 py-4">
@@ -2066,7 +2067,7 @@ async fn handle_dedicated_radar_dof_page() -> impl IntoResponse {
   <script src="https://cdn.tailwindcss.com"></script>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="/css/enterprise-linear.css?v=2026.77">
-  <link rel="stylesheet" href="/css/mallen-high-impact.css?v=2026.92">
+  <link rel="stylesheet" href="/css/mallen-high-impact.css?v=2026.95">
 </head>
 <body class="min-h-screen flex flex-col">
   <header class="border-b px-6 py-4">
@@ -2113,4 +2114,56 @@ async fn handle_dedicated_radar_dof_page() -> impl IntoResponse {
 </body>
 </html>"#;
     Html(html.to_string())
+}
+
+
+pub async fn handle_quick_contact(
+    axum::Json(payload): axum::Json<serde_json::Value>,
+) -> (axum::http::StatusCode, axum::Json<serde_json::Value>) {
+    let email = payload
+        .get("email")
+        .and_then(|v| v.as_str())
+        .unwrap_or("")
+        .trim()
+        .to_lowercase();
+
+    if email.len() < 5 || !email.contains('@') || !email.contains('.') || email.contains(' ') {
+        return (
+            axum::http::StatusCode::BAD_REQUEST,
+            axum::Json(serde_json::json!({
+                "ok": false,
+                "message": "Ingrese un correo electrónico válido."
+            })),
+        );
+    }
+
+    let db_res = rusqlite::Connection::open("data/mallen_prod.db").and_then(|conn| {
+        conn.execute(
+            "CREATE TABLE IF NOT EXISTS quick_contacts (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                email TEXT NOT NULL,
+                created_at TEXT NOT NULL DEFAULT (datetime('now'))
+            )",
+            [],
+        )?;
+        conn.execute("INSERT INTO quick_contacts (email) VALUES (?1)", [&email])?;
+        Ok(())
+    });
+
+    match db_res {
+        Ok(_) => (
+            axum::http::StatusCode::OK,
+            axum::Json(serde_json::json!({
+                "ok": true,
+                "message": "Correo registrado. Un especialista de FIRMA MALLEN® te contactará en breve."
+            })),
+        ),
+        Err(_) => (
+            axum::http::StatusCode::INTERNAL_SERVER_ERROR,
+            axum::Json(serde_json::json!({
+                "ok": false,
+                "message": "No fue posible registrar el correo en este momento."
+            })),
+        ),
+    }
 }

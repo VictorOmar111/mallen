@@ -411,3 +411,33 @@ html.light-mode #mallen-pwa-install-modal {
   display: none !important;
   content: none !important;
 }
+
+
+/* ==========================================================================
+   LENTE DE ILUMINACIÓN DE TEXTO (GPU 120 FPS — mix-blend-mode: color-dodge)
+   No proyecta neblina sobre el fondo negro; enciende las letras dentro del radio
+   ========================================================================== */
+#mallen-wall-lamp {
+  position: fixed !important;
+  top: -360px !important;
+  left: -360px !important;
+  width: 720px !important;
+  height: 720px !important;
+  z-index: 45 !important;
+  pointer-events: none !important;
+  mix-blend-mode: color-dodge !important;
+  will-change: transform !important;
+  backface-visibility: hidden !important;
+  background: radial-gradient(
+    circle,
+    rgba(255, 255, 255, 0.36) 0%,
+    rgba(236, 244, 255, 0.16) 32%,
+    rgba(236, 244, 255, 0.04) 56%,
+    transparent 70%
+  ) !important;
+}
+
+html.light-mode #mallen-wall-lamp {
+  mix-blend-mode: normal !important;
+  opacity: 0 !important;
+}

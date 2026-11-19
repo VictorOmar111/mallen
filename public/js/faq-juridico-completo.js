@@ -311,3 +311,66 @@
     setTimeout(setupFooterControlsOnly, 900);
   });
 })();
+
+// Widget de Contacto en 1 Clic (solo correo electrónico)
+(function mountQuickEmailContactBar() {
+  function injectBar() {
+    const footer = document.querySelector("footer");
+    if (!footer || document.getElementById("mallen-quick-contact-bar")) return;
+
+    const bar = document.createElement("div");
+    bar.id = "mallen-quick-contact-bar";
+    bar.className = "max-w-4xl mx-auto mb-6 p-4 sm:p-5 rounded-2xl border border-slate-800 bg-slate-950/70 flex flex-col sm:flex-row items-center justify-between gap-3";
+    bar.innerHTML =
+      '<div class="text-left">' +
+        '<div class="text-sm font-bold text-white">¿Prefieres que un especialista te contacte?</div>' +
+        '<div class="text-xs text-slate-400">Deja únicamente tu correo corporativo o personal y te escribimos en breve.</div>' +
+      '</div>' +
+      '<form id="mallen-quick-contact-form" class="flex w-full sm:w-auto items-center gap-2">' +
+        '<input id="mallen-quick-contact-email" type="email" required placeholder="tu@correo.com" class="w-full sm:w-64 px-3.5 py-2 rounded-lg border border-slate-700 bg-slate-900 text-sm text-white focus:border-emerald-400 focus:outline-none" />' +
+        '<button type="submit" id="mallen-quick-contact-btn" class="mallen-btn-primary px-4 py-2 text-xs font-bold shrink-0">Contactarme</button>' +
+      '</form>' +
+      '<div id="mallen-quick-contact-status" class="hidden text-xs font-semibold text-emerald-400"></div>';
+
+    footer.insertBefore(bar, footer.firstChild);
+
+    const form = document.getElementById("mallen-quick-contact-form");
+    if (form) {
+      form.addEventListener("submit", async function (ev) {
+        ev.preventDefault();
+        const emailInput = document.getElementById("mallen-quick-contact-email");
+        const btn = document.getElementById("mallen-quick-contact-btn");
+        const statusEl = document.getElementById("mallen-quick-contact-status");
+        const emailVal = emailInput ? emailInput.value.trim() : "";
+        if (!emailVal) return;
+
+        if (btn) { btn.disabled = true; btn.textContent = "Enviando..."; }
+        try {
+          const r = await fetch("/api/quick-contact", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ email: emailVal })
+          });
+          const data = await r.json();
+          if (statusEl) {
+            statusEl.textContent = data.message || "Correo registrado.";
+            statusEl.className = "text-xs font-semibold " + (r.ok ? "text-emerald-400" : "text-red-400");
+          }
+          if (r.ok && emailInput) emailInput.value = "";
+        } catch (_) {
+          if (statusEl) {
+            statusEl.textContent = "Error de conexión. Intente de nuevo.";
+            statusEl.className = "text-xs font-semibold text-red-400";
+          }
+        } finally {
+          if (btn) { btn.disabled = false; btn.textContent = "Contactarme"; }
+        }
+      });
+    }
+  }
+
+  document.addEventListener("DOMContentLoaded", function () {
+    injectBar();
+    setTimeout(injectBar, 400);
+  });
+})();
