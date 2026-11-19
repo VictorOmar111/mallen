@@ -529,113 +529,92 @@ document.addEventListener('DOMContentLoaded', async () => {
 
 
 // ============================================================================
-// 1. SIMULADOR DE INSPECCIÓN IN SITU (SANDBOX) UNIVERSAL + SINCRONIZACIÓN 360° (v48/v49/v85)
-// ============================================================================
-window.initInteractiveRiskSandboxCards = function() {
-  // Buscar la sección del Sandbox por ID o por título de texto
-  let sbxSection = document.getElementById('risk-sandbox-section') || document.getElementById('interactive-risk-sandbox');
-  if (!sbxSection) {
-    document.querySelectorAll('section, div').forEach((el) => {
-      if (!sbxSection && (el.textContent || '').indexOf('INTERACTIVE RISK SANDBOX') !== -1 && el.querySelector('input[type="range"]')) {
-        sbxSection = el;
-      }
-    });
+// 1. SIMULADOR DE INSPECCIÓN IN SITU (SANDBOX) UNIFICADO — FUENTE ÚNICA DE CÁLCULO (v99)
+window.updateMallenSandbox = function(customEmp) {
+  const slider = document.getElementById('sbx-emp-slider');
+  const exactInput = document.getElementById('sbx-emp-exact-input');
+  const fineEl = document.getElementById('sbx-total-fine');
+  const scoreEl = document.getElementById('sbx-risk-score');
+  const roiEl = document.getElementById('sbx-roi-pct');
+  const empLabelEl = document.getElementById('sbx-emp-label');
+  const noteEl = document.getElementById('sbx-threshold-note');
+  const checkboxes = Array.from(document.querySelectorAll('.sbx-check'));
+
+  let emp = (typeof customEmp === 'number' && !isNaN(customEmp))
+    ? customEmp
+    : parseInt((exactInput && exactInput.value) || (slider && slider.value) || '45', 10);
+  if (isNaN(emp) || emp < 1) emp = 1;
+
+  if (slider) {
+    if (emp > parseInt(slider.max || '5000', 10)) slider.max = String(emp);
+    slider.value = String(emp);
   }
-  if (!sbxSection) return;
-
-  const slider = sbxSection.querySelector('input[type="range"]') || document.getElementById('sbx-emp-slider') || document.getElementById('sbx-slider');
-  const sbxCheckboxes = Array.from(sbxSection.querySelectorAll('input[type="checkbox"]'));
-  const fineEl = document.getElementById('sbx-total-fine') || sbxSection.querySelector('[id*="sbx"][id*="fine"]');
-  const scoreEl = document.getElementById('sbx-risk-score') || sbxSection.querySelector('[id*="sbx"][id*="score"]');
-  const empLabelEl = document.getElementById('sbx-emp-label') || sbxSection.querySelector('[id*="sbx"][id*="emp"]');
-  const savingsEl = document.getElementById('sbx-kit-savings') || sbxSection.querySelector('[id*="sbx"][id*="saving"]');
-
-  const defaultWeights = [0.30, 0.25, 0.20, 0.25];
-
-  function recalculateSandbox() {
-    const emp = slider ? Math.max(1, parseInt(slider.value || '90', 10)) : 90;
-    if (empLabelEl && empLabelEl.tagName !== 'INPUT') {
-      empLabelEl.textContent = emp + ' colaboradores';
-    }
-
-    const scannedBase = Number(window.__lastScannedVempMxn || 0);
-    const scannedEmp = Math.max(1, Number(window.__lastScannedEmpCount || 90));
-    const fullUnmitigatedFine = scannedBase > 0
-      ? (scannedBase * (0.45 + 0.55 * (emp / scannedEmp)))
-      : (485000 + emp * 27292.42);
-
-    // En el diseño original del Sandbox:
-    // - Cuando un checkbox está MARCADO (activo), el usuario SIMULA activar ese instrumento del Kit (-30%, -25%, -20%, -25% VEMP)
-    // - Si todos están desmarcados (0 blindaje), muestra el 100% de la multa ($2,942,317.85 MXN)
-    let activeMitigation = 0;
-    sbxCheckboxes.forEach((cb, idx) => {
-      const card = cb.closest('label') || cb.closest('.quantum-card') || cb.parentElement;
-      const w = parseFloat(cb.getAttribute('data-weight') || String(defaultWeights[idx] || 0.25));
-      if (cb.checked) {
-        activeMitigation += w;
-        if (card) {
-          card.classList.add('mallen-sandbox-card-active');
-          card.classList.remove('mallen-sandbox-card-inactive');
-        }
-      } else {
-        if (card) {
-          card.classList.remove('mallen-sandbox-card-active');
-          card.classList.add('mallen-sandbox-card-inactive');
-        }
-      }
-    });
-
-    const cappedMitigation = Math.min(0.965, activeMitigation * 0.965);
-    const residualFine = Math.max(0, fullUnmitigatedFine * (1 - cappedMitigation));
-    const baseScore = Number(window.__lastScannedScore || 76);
-    const residualScore = Math.max(10, Math.round(baseScore * (1 - cappedMitigation * 0.85)));
-
-    if (fineEl) {
-      fineEl.textContent = '$' + residualFine.toLocaleString('es-MX', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' MXN';
-    }
-    if (scoreEl) {
-      scoreEl.textContent = residualScore + '/100';
-    }
-    if (savingsEl) {
-      const pctSaved = fullUnmitigatedFine > 3000 ? Math.min(99.9, ((fullUnmitigatedFine - 3000) / fullUnmitigatedFine) * 100) : 95.0;
-      savingsEl.textContent = pctSaved.toFixed(1) + '%';
-    }
+  if (exactInput && document.activeElement !== exactInput) {
+    exactInput.value = String(emp);
+  }
+  if (empLabelEl) {
+    empLabelEl.textContent = emp === 1 ? 'colaborador' : 'colaboradores';
   }
 
-  // Por defecto dejar los checkboxes desmarcados al inicio para que el cliente vea su Exposición Total actual
-  // y al hacer clic en cada tarjeta vea cómo baja la multa (-30%, -25%, -20%, -25%)
-  sbxCheckboxes.forEach((cb, idx) => {
-    cb.checked = false;
-    cb.addEventListener('change', (ev) => {
-      ev.stopPropagation();
-      recalculateSandbox();
-    });
-    const card = cb.closest('label') || cb.closest('div.p-4') || cb.parentElement;
-    if (card && !card.dataset.sbxBoundV85) {
-      card.dataset.sbxBoundV85 = '1';
-      card.style.cursor = 'pointer';
-      card.addEventListener('click', (ev) => {
-        if (ev.target.tagName !== 'INPUT') {
-          ev.preventDefault();
-          cb.checked = !cb.checked;
-          recalculateSandbox();
-        }
-      });
+  const scannedBase = Number(window.__MALLEN_OFFICIAL_VEMP_BASE || window.__lastScannedVempMxn || 0);
+  const scannedEmp = Math.max(1, Number(window.__MALLEN_OFFICIAL_EMP_BASE || window.__lastScannedEmpCount || 45));
+  const fullUnmitigatedFine = scannedBase > 0
+    ? (emp === scannedEmp ? scannedBase : scannedBase * Math.pow(emp / scannedEmp, 0.65))
+    : (380000 + emp * 19243.51);
+
+  let activeMitigation = 0;
+  checkboxes.forEach((cb) => {
+    const w = parseFloat(cb.getAttribute('data-weight') || '0.25');
+    const card = cb.closest('label');
+    if (cb.checked) {
+      activeMitigation += w;
+      if (card) {
+        card.classList.add('mallen-sandbox-card-active');
+        card.classList.remove('mallen-sandbox-card-inactive');
+      }
+    } else {
+      if (card) {
+        card.classList.remove('mallen-sandbox-card-active');
+        card.classList.add('mallen-sandbox-card-inactive');
+      }
     }
   });
 
-  if (slider) {
-    slider.removeAttribute('max');
-    slider.setAttribute('max', '1000');
-    slider.addEventListener('input', () => {
-      recalculateSandbox();
-      const calEmp = document.getElementById('cal_emp');
-      if (calEmp) calEmp.value = slider.value;
-    });
-  }
+  // Descuento exacto según los porcentajes marcados (-30%, -25%, -20%, -25% = hasta -100%)
+  const exactMitigation = Math.min(1.0, Math.round(activeMitigation * 100) / 100);
+  const residualFine = Math.max(0, fullUnmitigatedFine * (1 - exactMitigation));
 
-  window.__triggerSandboxRecalc = recalculateSandbox;
-  recalculateSandbox();
+  const baseScore = Number(window.__MALLEN_OFFICIAL_SCORE_BASE || window.__lastScannedScore || 74);
+  const residualScore = Math.max(0, Math.round(baseScore * (1 - exactMitigation)));
+
+  if (fineEl) {
+    fineEl.textContent = '$' + residualFine.toLocaleString('es-MX', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' MXN';
+  }
+  if (scoreEl) {
+    scoreEl.textContent = residualScore + '/100';
+  }
+  if (roiEl) {
+    const pctSaved = fullUnmitigatedFine > 3000
+      ? Math.min(99.9, Math.max(0, ((fullUnmitigatedFine - 3000) / fullUnmitigatedFine) * 100))
+      : 0.0;
+    roiEl.textContent = pctSaved.toFixed(1) + '%';
+  }
+  if (noteEl) {
+    if (emp <= 14) {
+      noteEl.textContent = 'Microempresa (1 a 14 colaboradores): Exigible Política NOM-035 Guía I + Diagnóstico NOM-030 + Aviso de Privacidad LFPDPPP.';
+    } else if (emp <= 49) {
+      noteEl.textContent = 'Pequeña empresa (15 a 49 colaboradores): Obligatoria Comisión Mixta Bipartita NOM-019 + Guías I y II NOM-035 + Confronta SUA/CFDI.';
+    } else if (emp <= 250) {
+      noteEl.textContent = 'Mediana empresa (50 a 250 colaboradores): Exigible Guía III NOM-035 (Entorno Organizacional) + Servicios Preventivos NOM-030 + REPSE/Materialidad 69-B.';
+    } else {
+      noteEl.textContent = 'Corporativo (+250 colaboradores): Gobernanza Multi-Sucursal STPS + Optimización de Prima de Riesgo IMSS (Art. 196 RACERF) + Auditoría 69-B.';
+    }
+  }
+};
+
+window.initInteractiveRiskSandboxCards = function() {
+  window.__triggerSandboxRecalc = function() { window.updateMallenSandbox(); };
+  window.updateMallenSandbox();
 };
 
 // Interceptar respuestas de `/api/scan` y `/api/lookup` para sincronizar el Sandbox y mostrar
@@ -932,75 +911,4 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 })();
 
-// 2. Precision del Sandbox sin alterar el Snapshot original de la empresa
-(function refineSandboxPrecisionV95() {
-  function hookSandbox() {
-    const sbxSection = document.getElementById("risk-sandbox-section");
-    if (!sbxSection) return;
-    const slider = sbxSection.querySelector('input[type="range"]');
-    const checkboxes = Array.from(sbxSection.querySelectorAll('input[type="checkbox"]'));
-    const fineEl = document.getElementById("sbx-total-fine");
-    const scoreEl = document.getElementById("sbx-risk-score");
-    const empLabelEl = document.getElementById("sbx-emp-label");
-    if (!fineEl) return;
 
-    const weights = [0.30, 0.25, 0.20, 0.25];
-
-    function computeExactSandbox() {
-      const currentEmp = slider ? Math.max(1, parseInt(slider.value || "1", 10)) : 1;
-      if (empLabelEl && empLabelEl.tagName !== "INPUT") {
-        empLabelEl.textContent = currentEmp + " colaborador(es)";
-      }
-
-      const rawBase = Number(window.__lastScannedVempMxn || 0);
-      const scannedEmp = Math.max(1, Number(window.__lastScannedEmpCount || 1));
-
-      const baselineFine = rawBase > 0
-        ? (currentEmp === scannedEmp ? rawBase : rawBase * Math.pow(currentEmp / scannedEmp, 0.65))
-        : (280000 + currentEmp * 18500);
-
-      let activeMitigation = 0;
-      checkboxes.forEach(function (cb, idx) {
-        const w = parseFloat(cb.getAttribute("data-weight") || String(weights[idx] || 0.25));
-        const card = cb.closest("label") || cb.closest("div.p-4") || cb.parentElement;
-        if (cb.checked) {
-          activeMitigation += w;
-          if (card) {
-            card.classList.add("mallen-sandbox-card-active");
-            card.classList.remove("mallen-sandbox-card-inactive");
-          }
-        } else {
-          if (card) {
-            card.classList.remove("mallen-sandbox-card-active");
-            card.classList.add("mallen-sandbox-card-inactive");
-          }
-        }
-      });
-
-      const cappedMit = Math.min(0.96, activeMitigation * 0.96);
-      const simFine = Math.max(0, baselineFine * (1 - cappedMit));
-      const baseScore = Number(window.__lastScannedScore || 68);
-      const simScore = Math.max(10, Math.round(baseScore * (1 - cappedMit * 0.82)));
-
-      fineEl.textContent = "$" + simFine.toLocaleString("es-MX", { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + " MXN";
-      if (scoreEl) scoreEl.textContent = simScore + "/100";
-    }
-
-    if (slider && !slider.dataset.v95Bound) {
-      slider.dataset.v95Bound = "1";
-      slider.addEventListener("input", computeExactSandbox);
-    }
-    checkboxes.forEach(function (cb, idx) {
-      if (!cb.dataset.v95Bound) {
-        cb.dataset.v95Bound = "1";
-        cb.addEventListener("change", computeExactSandbox);
-      }
-    });
-    window.__triggerSandboxRecalc = computeExactSandbox;
-  }
-
-  document.addEventListener("DOMContentLoaded", function () {
-    hookSandbox();
-    setTimeout(hookSandbox, 300);
-  });
-})();

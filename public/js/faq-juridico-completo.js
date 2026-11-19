@@ -132,7 +132,7 @@
     }
   ];
 
-  // 1. Renderizar los 6 Apartados completos dentro de #faq sin dejar preguntas flotando
+  // 1. Renderizar los 6 Apartados completos dentro del contenedor alineado de #faq
   function mountStructuredFaqSection() {
     const faqRoot =
       document.getElementById("faq") ||
@@ -141,19 +141,33 @@
       });
     if (!faqRoot) return;
 
-    if (document.getElementById("mallen-faq-6-apartados-v98")) return;
+    if (document.getElementById("mallen-faq-6-apartados-v99")) return;
 
-    // Retirar cualquier <details> suelto que haya quedado flotando dentro de #faq
-    Array.from(faqRoot.querySelectorAll("details")).forEach(function (d) {
-      d.remove();
-    });
+    // Actualizar textos del encabezado de #faq para reflejar los 6 apartados
+    const badgeSpan = faqRoot.querySelector("div.text-center span");
+    if (badgeSpan) {
+      badgeSpan.textContent = "CENTRO DE CERTEZA METODOLÓGICA, ALCANCE JURÍDICO & GUÍA OPERATIVA (6 APARTADOS)";
+    }
+    const subP = faqRoot.querySelector("div.text-center p");
+    if (subP) {
+      subP.textContent = "Seleccione cualquiera de los 6 apartados temáticos para desplegar las respuestas detalladas sobre alcance, validez jurídica, materialidad fiscal, seguridad social y operación del expediente.";
+    }
 
-    const wrapper = document.createElement("div");
-    wrapper.id = "mallen-faq-6-apartados-v98";
-    wrapper.className = "space-y-4 mt-6";
+    // Reutilizar el contenedor interno `max-w-5xl mx-auto text-left` para mantener alineación exacta
+    let hostContainer = faqRoot.querySelector(".max-w-5xl");
+    if (!hostContainer) {
+      hostContainer = document.createElement("div");
+      hostContainer.className = "space-y-4 max-w-5xl mx-auto text-left";
+      faqRoot.appendChild(hostContainer);
+    }
+    hostContainer.innerHTML = "";
+    hostContainer.id = "mallen-faq-6-apartados-v99";
 
-    FAQ_APARTADOS.forEach(function (ap) {
+    const wrapper = hostContainer;
+
+    FAQ_APARTADOS.forEach(function (ap, idx) {
       const catDetails = document.createElement("details");
+      if (idx === 0) catDetails.open = true;
       catDetails.className = "faq-cat rounded-2xl border border-slate-700/80 bg-slate-900/70 p-5 sm:p-6 shadow-lg";
 
       const catSummary = document.createElement("summary");
@@ -190,7 +204,6 @@
       wrapper.appendChild(catDetails);
     });
 
-    faqRoot.appendChild(wrapper);
   }
 
   // 2. Botón Único de Modo Día / Oscuro en Footer (sin duplicados)
