@@ -1,7 +1,6 @@
 /**
- * FIRMA MALLEN® — Centro de Preguntas Frecuentes de Nivel Jurídico y Contable (v96)
- * Módulo desacoplado: inserta las 19 preguntas con respuestas extendidas y retira
- * los prefijos "Q1.", "Q2.", etc. del DOM sin alterar el flujo de app.js.
+ * FIRMA MALLEN® — Apartado 06 de Preguntas Jurídico-Contables, Botón Único de Tema Inferior
+ * y Enlaces Directos de Descarga de App por Sistema Operativo (v97)
  */
 (function () {
   "use strict";
@@ -85,7 +84,8 @@
     }
   ];
 
-  function mountFullJuridicalFaqs() {
+  // 1. Insertar las 19 preguntas dentro de un Apartado 06 con el mismo estilo exacto (`faq-cat` / `faq-sub`)
+  function mountCategorizedFaqSection() {
     const faqRoot =
       document.getElementById("faq") ||
       Array.from(document.querySelectorAll("section, div")).find(function (el) {
@@ -93,42 +93,180 @@
       });
     if (!faqRoot) return;
 
-    // 1. Limpiar prefijos "Q1.", "Q2.", etc. en todos los resúmenes existentes del DOM
+    // Quitar prefijos "Q1.", "Q2.", etc. en todo #faq
     faqRoot.querySelectorAll("summary").forEach(function (sum) {
-      if (/^\s*Q\d{1,2}\.\s*/.test(sum.textContent || "")) {
-        sum.textContent = (sum.textContent || "").replace(/^\s*Q\d{1,2}\.\s*/, "");
+      if (/\bQ\d{1,2}\.\s*/.test(sum.textContent || "")) {
+        sum.textContent = (sum.textContent || "").replace(/\bQ\d{1,2}\.\s*/g, "");
+      }
+      if (/\(Q\d+\s*[–-]\s*Q\d+\)/.test(sum.textContent || "")) {
+        sum.textContent = (sum.textContent || "").replace(/\s*\(Q\d+\s*[–-]\s*Q\d+\)/g, "");
       }
     });
 
-    if (faqRoot.dataset.fullJuridicalFaqsMounted === "1") return;
-    faqRoot.dataset.fullJuridicalFaqsMounted = "1";
+    if (document.getElementById("faq-cat-validez-juridica-v97")) return;
 
-    const existingDetails = faqRoot.querySelectorAll("details");
-    const host = existingDetails.length > 0 ? existingDetails[0].parentElement : faqRoot;
+    const existingCats = faqRoot.querySelectorAll("details.faq-cat");
+    const targetParent = existingCats.length > 0 ? existingCats[0].parentElement : faqRoot;
+
+    const catDetails = document.createElement("details");
+    catDetails.id = "faq-cat-validez-juridica-v97";
+    catDetails.className = "faq-cat rounded-2xl border border-slate-700/80 bg-slate-900/70 p-5 sm:p-6 shadow-lg mt-4";
+
+    const catSummary = document.createElement("summary");
+    catSummary.className = "flex cursor-pointer list-none items-center justify-between gap-4 select-none";
+    catSummary.innerHTML =
+      '<div class="flex items-center gap-3 text-left">' +
+        '<span class="px-2.5 py-1 rounded-md text-xs font-mono font-bold bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 shrink-0">APARTADO 06</span>' +
+        '<span class="font-extrabold text-base sm:text-lg tracking-tight text-white">Validez ante Autoridades, Responsabilidad, Materialidad y Criterio Jurídico-Contable</span>' +
+      '</div>' +
+      '<span class="flex h-7 w-7 shrink-0 items-center justify-center rounded-full border border-slate-600 text-xs font-mono">▼</span>';
+
+    const innerList = document.createElement("div");
+    innerList.className = "mt-5 space-y-3 border-t border-slate-800 pt-4";
 
     FULL_JURIDICAL_FAQS.forEach(function (item) {
-      const fingerprint = item.q.slice(0, 42);
-      if ((faqRoot.textContent || "").indexOf(fingerprint) !== -1) return;
+      const sub = document.createElement("details");
+      sub.className = "faq-sub rounded-xl border border-slate-800 bg-slate-950/60 p-4";
 
-      const det = document.createElement("details");
-      det.className = "py-4 border-b border-slate-800/80";
+      const subSum = document.createElement("summary");
+      subSum.className = "flex cursor-pointer list-none items-start justify-between gap-4 font-semibold text-xs sm:text-sm text-left text-white";
+      subSum.innerHTML = '<span class="flex-1">' + item.q + '</span><span class="text-slate-400 font-mono text-xs shrink-0">+</span>';
 
-      const sum = document.createElement("summary");
-      sum.className = "font-semibold text-white cursor-pointer leading-snug";
-      sum.textContent = item.q;
+      const subP = document.createElement("p");
+      subP.className = "mt-3 text-slate-300 leading-relaxed text-xs sm:text-sm border-t border-slate-800/70 pt-3";
+      subP.textContent = item.a;
 
-      const p = document.createElement("p");
-      p.className = "mt-2.5 text-slate-300 leading-relaxed";
-      p.textContent = item.a;
+      sub.appendChild(subSum);
+      sub.appendChild(subP);
+      innerList.appendChild(sub);
+    });
 
-      det.appendChild(sum);
-      det.appendChild(p);
-      host.appendChild(det);
+    catDetails.appendChild(catSummary);
+    catDetails.appendChild(innerList);
+    targetParent.appendChild(catDetails);
+  }
+
+  // 2. Unificar el cambio de Modo Claro / Oscuro y dejar SOLO el botón inferior funcional
+  window.toggleMallenTheme = function () {
+    const root = document.documentElement;
+    const body = document.body;
+    const isLight = !root.classList.contains("light-mode");
+    root.classList.toggle("light-mode", isLight);
+    root.classList.toggle("w16-light-mode", isLight);
+    if (body) {
+      body.classList.toggle("light-mode", isLight);
+      body.classList.toggle("w16-light-mode", isLight);
+    }
+    try {
+      localStorage.setItem("mallen_theme_mode", isLight ? "light" : "dark");
+      localStorage.setItem("w16_theme_mode", isLight ? "light" : "dark");
+    } catch (_) {}
+    updateBottomThemeButtonLabel();
+  };
+  window.toggleW16PureLightMode = window.toggleMallenTheme;
+
+  function updateBottomThemeButtonLabel() {
+    const isLight = document.documentElement.classList.contains("light-mode");
+    const label = isLight ? "Cambiar a Modo Oscuro" : "Cambiar a Modo Día";
+    document.querySelectorAll("#mallen-bottom-theme-btn, footer [data-mallen-theme-btn]").forEach(function (btn) {
+      btn.textContent = label;
     });
   }
 
+  // 3. Enlaces directos de descarga de App por Sistema Operativo (Android / iOS / Escritorio)
+  window.openMallenOsInstall = function (osName) {
+    if ((osName === "android" || osName === "desktop") && typeof window.openMallenAppInstaller === "function") {
+      // Si el navegador soporta instalación directa PWA, dispara el diálogo nativo; si no, abre la guía enfocada al OS
+      window.openMallenAppInstaller();
+    }
+    const modal = document.getElementById("mallen-pwa-install-modal");
+    const backdrop = document.getElementById("mallen-pwa-modal-backdrop");
+    if (!modal || !backdrop) return;
+
+    const titleMap = {
+      android: "Descarga Directa — Android (Chrome / Edge / Samsung)",
+      ios: "Descarga Directa — iPhone / iPad (iOS Safari)",
+      desktop: "Descarga Directa — Windows / macOS (Escritorio)"
+    };
+    const stepsMap = {
+      android: "1. Si aparece el aviso nativo del navegador, pulse <strong>Instalar</strong>.<br>2. Si no aparece automáticamente, toque el menú <strong>⋮</strong> arriba a la derecha y seleccione <strong>Instalar aplicación</strong> o <strong>Agregar a la pantalla principal</strong>.",
+      ios: "1. Abra <strong>mallen.lat</strong> en <strong>Safari</strong>.<br>2. Toque el botón <strong>Compartir</strong> (cuadro con flecha hacia arriba) y seleccione <strong>Agregar a pantalla de inicio</strong>.<br>3. Pulse <strong>Agregar</strong> para instalar el ícono nativo de FIRMA MALLEN®.",
+      desktop: "1. En Chrome o Edge, haga clic en el ícono de <strong>Instalar</strong> situado a la derecha de la barra de direcciones.<br>2. Confirme <strong>Instalar FIRMA MALLEN®</strong> para abrirla como aplicación independiente de escritorio."
+    };
+
+    modal.innerHTML =
+      '<div class="flex items-center justify-between pb-3 mb-4 border-b border-slate-800">' +
+        '<div>' +
+          '<span class="text-xs font-mono-data uppercase text-emerald-400 block">APP OFICIAL FIRMA MALLEN®</span>' +
+          '<h3 class="text-lg font-extrabold text-white">' + (titleMap[osName] || titleMap.android) + '</h3>' +
+        '</div>' +
+        '<button type="button" onclick="window.closeMallenAppInstaller()" class="mallen-btn-secondary px-3 py-1 text-xs">Cerrar ✕</button>' +
+      '</div>' +
+      '<div class="p-4 rounded-xl border border-slate-800 bg-slate-950/70 text-sm text-slate-200 leading-relaxed">' +
+        (stepsMap[osName] || stepsMap.android) +
+      '</div>';
+
+    modal.classList.add("open");
+    backdrop.classList.add("open");
+  };
+
+  function setupFooterControlsOnly() {
+    // Ocultar botones de tema en cabecera superior para dejar SOLO el botón inferior
+    document.querySelectorAll("header [data-mallen-theme-btn], #eu-theme-toggle-btn").forEach(function (el) {
+      el.style.display = "none";
+    });
+
+    // Asegurar estado inicial sincronizado
+    try {
+      const saved = localStorage.getItem("mallen_theme_mode") || localStorage.getItem("w16_theme_mode");
+      if (saved === "light") {
+        document.documentElement.classList.add("light-mode", "w16-light-mode");
+        if (document.body) document.body.classList.add("light-mode", "w16-light-mode");
+      }
+    } catch (_) {}
+
+    // Reparar cualquier botón existente de tema en el footer
+    const footer = document.querySelector("footer");
+    if (!footer) return;
+
+    footer.querySelectorAll("button").forEach(function (btn) {
+      const txt = (btn.textContent || "").toLowerCase();
+      if (txt.indexOf("modo") !== -1 || txt.indexOf("claro") !== -1 || txt.indexOf("oscuro") !== -1 || txt.indexOf("día") !== -1 || txt.indexOf("dia") !== -1) {
+        btn.id = "mallen-bottom-theme-btn";
+        btn.setAttribute("data-mallen-theme-btn", "1");
+        btn.onclick = window.toggleMallenTheme;
+      }
+    });
+
+    // Crear barra limpia en el footer con el botón único de Modo Día y los 3 enlaces directos por Sistema Operativo
+    if (!document.getElementById("mallen-footer-utility-bar")) {
+      const bar = document.createElement("div");
+      bar.id = "mallen-footer-utility-bar";
+      bar.className = "max-w-6xl mx-auto mt-6 pt-5 border-t border-slate-800/80 flex flex-col sm:flex-row items-center justify-between gap-4";
+      bar.innerHTML =
+        '<div class="flex flex-wrap items-center gap-2">' +
+          '<span class="text-xs font-semibold uppercase tracking-wider text-slate-400 mr-1">App FIRMA MALLEN®:</span>' +
+          '<button type="button" onclick="window.openMallenOsInstall(\'android\')" class="mallen-btn-secondary px-3 py-1.5 text-xs font-semibold border border-slate-700 hover:border-emerald-400">Android</button>' +
+          '<button type="button" onclick="window.openMallenOsInstall(\'ios\')" class="mallen-btn-secondary px-3 py-1.5 text-xs font-semibold border border-slate-700 hover:border-emerald-400">iOS (iPhone / iPad)</button>' +
+          '<button type="button" onclick="window.openMallenOsInstall(\'desktop\')" class="mallen-btn-secondary px-3 py-1.5 text-xs font-semibold border border-slate-700 hover:border-emerald-400">Windows / macOS</button>' +
+        '</div>' +
+        '<div>' +
+          '<button type="button" id="mallen-bottom-theme-btn" data-mallen-theme-btn="1" onclick="window.toggleMallenTheme()" class="mallen-btn-secondary px-4 py-1.5 text-xs font-bold border border-slate-600 hover:border-white">Cambiar a Modo Día</button>' +
+        '</div>';
+      footer.appendChild(bar);
+    }
+
+    updateBottomThemeButtonLabel();
+  }
+
+  function initV97() {
+    mountCategorizedFaqSection();
+    setupFooterControlsOnly();
+  }
+
   document.addEventListener("DOMContentLoaded", function () {
-    mountFullJuridicalFaqs();
-    setTimeout(mountFullJuridicalFaqs, 450);
+    initV97();
+    setTimeout(initV97, 350);
+    setTimeout(setupFooterControlsOnly, 900);
   });
 })();
