@@ -110,7 +110,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .route("/api/sdui/tracker/:country/export_pdf", axum::routing::post(api_sdui_tracker_export_pdf))
         .route("/region/:country", get(handle_eu_region_portal))
         .route("/", get(handle_index))
-        .route("/privacy", get(handle_privacy))
+        .route("/privacy", get(handle_mallen_privacy))
         .route("/terms", get(handle_terms))
         .route("/normas/stps", get(handle_normas_stps))
         .route("/normas/sat", get(handle_normas_sat))
@@ -1678,6 +1678,7 @@ async fn handle_index() -> impl IntoResponse {
     }
 }
 
+#[allow(dead_code)]
 async fn handle_privacy() -> impl IntoResponse {
     let html = r#"<!DOCTYPE html>
 <html lang="es">
