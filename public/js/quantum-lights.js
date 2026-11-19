@@ -144,16 +144,7 @@
         if ("serviceWorker" in navigator) {
             navigator.serviceWorker.register("/sw.js").catch(function () {});
         }
-        const headerContainer = document.querySelector("header > div");
-        if (headerContainer && !document.getElementById("mallen-install-app-global-btn")) {
-            const btn = document.createElement("button");
-            btn.type = "button";
-            btn.id = "mallen-install-app-global-btn";
-            btn.onclick = window.openMallenAppInstaller;
-            btn.className = "mallen-btn-secondary px-3 py-1.5 text-xs font-bold border border-slate-500/80 hover:border-white transition shrink-0";
-            btn.textContent = "Descargar App";
-            headerContainer.appendChild(btn);
-        }
+        // Boton de Descargar App movido exclusivamente al footer
         if (document.body && !document.getElementById("mallen-pwa-install-modal")) {
             const backdrop = document.createElement("div");
             backdrop.id = "mallen-pwa-modal-backdrop";

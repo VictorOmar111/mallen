@@ -196,29 +196,90 @@
     });
   }
 
+  function getActiveRegionLocale() {
+    const euCode = (document.body && document.body.getAttribute("data-eu-country") || "").toLowerCase();
+    if (euCode === "de" || euCode === "at" || euCode === "ch") return "de";
+    if (euCode === "nl" || euCode === "be") return "nl";
+    if (euCode === "lu") return "fr";
+    return "es";
+  }
+
+  const I18N_FOOTER = {
+    es: {
+      dayBtn: "Cambiar a Modo Día",
+      darkBtn: "Cambiar a Modo Oscuro",
+      appLbl: "Descargar App:",
+      regLbl: "Región:",
+      contactTitle: "¿Prefieres que un especialista te contacte?",
+      contactSub: "Deja únicamente tu correo corporativo o personal y te escribimos en breve.",
+      contactPh: "tu@correo.com",
+      contactBtn: "Contactarme",
+      contactSending: "Enviando...",
+      contactOk: "Correo registrado. Te escribiremos en breve.",
+      contactErr: "Error de conexión. Intente de nuevo.",
+      close: "Cerrar ✕"
+    },
+    de: {
+      dayBtn: "Heller Modus",
+      darkBtn: "Dunkler Modus",
+      appLbl: "App herunterladen:",
+      regLbl: "Region:",
+      contactTitle: "Möchten Sie von einem Spezialisten kontaktiert werden?",
+      contactSub: "Hinterlassen Sie einfach Ihre E-Mail-Adresse – wir melden uns kurzfristig.",
+      contactPh: "name@unternehmen.de",
+      contactBtn: "Kontakt anfordern",
+      contactSending: "Wird gesendet...",
+      contactOk: "E-Mail gespeichert. Wir melden uns in Kürze bei Ihnen.",
+      contactErr: "Verbindungsfehler. Bitte erneut versuchen.",
+      close: "Schließen ✕"
+    },
+    nl: {
+      dayBtn: "Lichte modus",
+      darkBtn: "Donkere modus",
+      appLbl: "App downloaden:",
+      regLbl: "Regio:",
+      contactTitle: "Liever persoonlijk contact met een specialist?",
+      contactSub: "Laat alleen uw e-mailadres achter en wij nemen spoedig contact op.",
+      contactPh: "naam@bedrijf.nl",
+      contactBtn: "Neem contact op",
+      contactSending: "Verzenden...",
+      contactOk: "E-mailadres opgeslagen. Wij nemen snel contact op.",
+      contactErr: "Verbindingsfout. Probeer het opnieuw.",
+      close: "Sluiten ✕"
+    },
+    fr: {
+      dayBtn: "Mode clair",
+      darkBtn: "Mode sombre",
+      appLbl: "Télécharger l’App :",
+      regLbl: "Région :",
+      contactTitle: "Souhaitez-vous être contacté par un spécialiste ?",
+      contactSub: "Laissez simplement votre adresse e-mail et nous vous répondrons rapidement.",
+      contactPh: "nom@entreprise.lu",
+      contactBtn: "Être contacté",
+      contactSending: "Envoi...",
+      contactOk: "Adresse enregistrée. Nous vous contacterons sous peu.",
+      contactErr: "Erreur de connexion. Veuillez réessayer.",
+      close: "Fermer ✕"
+    }
+  };
+
   window.toggleMallenTheme = function () {
     const root = document.documentElement;
     const body = document.body;
     const isLight = !root.classList.contains("light-mode");
     root.classList.toggle("light-mode", isLight);
-    root.classList.toggle("w16-light-mode", isLight);
-    if (body) {
-      body.classList.toggle("light-mode", isLight);
-      body.classList.toggle("w16-light-mode", isLight);
-    }
-    try {
-      localStorage.setItem("mallen_theme_mode", isLight ? "light" : "dark");
-      localStorage.setItem("w16_theme_mode", isLight ? "light" : "dark");
-    } catch (_) {}
+    if (body) body.classList.toggle("light-mode", isLight);
+    try { localStorage.setItem("mallen_theme_mode", isLight ? "light" : "dark"); } catch (_) {}
     updateBottomThemeButtonLabel();
   };
   window.toggleW16PureLightMode = window.toggleMallenTheme;
 
   function updateBottomThemeButtonLabel() {
+    const loc = getActiveRegionLocale();
+    const t = I18N_FOOTER[loc] || I18N_FOOTER.es;
     const isLight = document.documentElement.classList.contains("light-mode");
-    const label = isLight ? "Cambiar a Modo Oscuro" : "Cambiar a Modo Día";
     const btn = document.getElementById("mallen-bottom-theme-btn");
-    if (btn) btn.textContent = label;
+    if (btn) btn.textContent = isLight ? t.darkBtn : t.dayBtn;
   }
 
   window.openMallenOsInstall = function (osName) {
@@ -228,28 +289,43 @@
     const modal = document.getElementById("mallen-pwa-install-modal");
     const backdrop = document.getElementById("mallen-pwa-modal-backdrop");
     if (!modal || !backdrop) return;
+    const loc = getActiveRegionLocale();
+    const t = I18N_FOOTER[loc] || I18N_FOOTER.es;
 
-    const titleMap = {
-      android: "Descarga Directa — Android (Chrome / Edge / Samsung)",
-      ios: "Descarga Directa — iPhone / iPad (iOS Safari)",
-      desktop: "Descarga Directa — Windows / macOS (Escritorio)"
+    const guides = {
+      es: {
+        android: "1. Si aparece el aviso nativo, pulse <strong>Instalar</strong>.<br>2. O abra el menú <strong>⋮</strong> y elija <strong>Instalar aplicación</strong>.",
+        ios: "1. Abra en <strong>Safari</strong>, toque <strong>Compartir</strong> y elija <strong>Agregar a pantalla de inicio</strong>.",
+        desktop: "1. En Chrome o Edge, haga clic en el ícono <strong>Instalar</strong> en la barra de direcciones."
+      },
+      de: {
+        android: "1. Tippen Sie auf <strong>Installieren</strong> oder öffnen Sie das Browser-Menü <strong>⋮</strong> → <strong>App installieren</strong>.",
+        ios: "1. In <strong>Safari</strong> auf <strong>Teilen</strong> tippen und <strong>Zum Home-Bildschirm</strong> wählen.",
+        desktop: "1. In Chrome oder Edge rechts in der Adressleiste auf <strong>App installieren</strong> klicken."
+      },
+      nl: {
+        android: "1. Tik op <strong>Installeren</strong> of open het menu <strong>⋮</strong> → <strong>App installeren</strong>.",
+        ios: "1. Tik in <strong>Safari</strong> op <strong>Deel</strong> en kies <strong>Zet op beginscherm</strong>.",
+        desktop: "1. Klik in Chrome of Edge rechts in de adresbalk op <strong>App installeren</strong>."
+      },
+      fr: {
+        android: "1. Appuyez sur <strong>Installer</strong> ou ouvrez le menu <strong>⋮</strong> → <strong>Installer l’application</strong>.",
+        ios: "1. Dans <strong>Safari</strong>, appuyez sur <strong>Partager</strong> puis <strong>Sur l’écran d’accueil</strong>.",
+        desktop: "1. Dans Chrome ou Edge, cliquez sur l’icône <strong>Installer</strong> dans la barre d’adresse."
+      }
     };
-    const stepsMap = {
-      android: "1. Si aparece el aviso nativo del navegador, pulse <strong>Instalar</strong>.<br>2. Si no aparece automáticamente, toque el menú <strong>⋮</strong> arriba a la derecha y seleccione <strong>Instalar aplicación</strong> o <strong>Agregar a la pantalla principal</strong>.",
-      ios: "1. Abra <strong>mallen.lat</strong> en <strong>Safari</strong>.<br>2. Toque el botón <strong>Compartir</strong> (cuadro con flecha hacia arriba) y seleccione <strong>Agregar a pantalla de inicio</strong>.<br>3. Pulse <strong>Agregar</strong> para instalar el ícono nativo de FIRMA MALLEN®.",
-      desktop: "1. En Chrome o Edge, haga clic en el ícono de <strong>Instalar</strong> situado a la derecha de la barra de direcciones.<br>2. Confirme <strong>Instalar FIRMA MALLEN®</strong> para abrirla como aplicación independiente de escritorio."
-    };
+    const g = guides[loc] || guides.es;
 
     modal.innerHTML =
       '<div class="flex items-center justify-between pb-3 mb-4 border-b border-slate-800">' +
         '<div>' +
-          '<span class="text-xs font-mono-data uppercase text-emerald-400 block">APP OFICIAL FIRMA MALLEN®</span>' +
-          '<h3 class="text-lg font-extrabold text-white">' + (titleMap[osName] || titleMap.android) + '</h3>' +
+          '<span class="text-xs font-mono-data uppercase text-emerald-400 block">FIRMA MALLEN® APP</span>' +
+          '<h3 class="text-lg font-extrabold text-white">' + osName.toUpperCase() + '</h3>' +
         '</div>' +
-        '<button type="button" onclick="window.closeMallenAppInstaller()" class="mallen-btn-secondary px-3 py-1 text-xs">Cerrar ✕</button>' +
+        '<button type="button" onclick="window.closeMallenAppInstaller()" class="mallen-btn-secondary px-3 py-1 text-xs">' + t.close + '</button>' +
       '</div>' +
       '<div class="p-4 rounded-xl border border-slate-800 bg-slate-950/70 text-sm text-slate-200 leading-relaxed">' +
-        (stepsMap[osName] || stepsMap.android) +
+        (g[osName] || g.android) +
       '</div>';
 
     modal.classList.add("open");
@@ -257,42 +333,98 @@
   };
 
   function setupFooterControlsOnly() {
-    document.querySelectorAll("header [data-mallen-theme-btn], #eu-theme-toggle-btn").forEach(function (el) {
+    document.querySelectorAll("header [data-mallen-theme-btn], #eu-theme-toggle-btn, #mallen-install-app-global-btn").forEach(function (el) {
       el.style.display = "none";
     });
 
     try {
-      const saved = localStorage.getItem("mallen_theme_mode") || localStorage.getItem("w16_theme_mode");
-      if (saved === "light") {
-        document.documentElement.classList.add("light-mode", "w16-light-mode");
-        if (document.body) document.body.classList.add("light-mode", "w16-light-mode");
+      if (localStorage.getItem("mallen_theme_mode") === "light") {
+        document.documentElement.classList.add("light-mode");
+        if (document.body) document.body.classList.add("light-mode");
       }
     } catch (_) {}
 
     const footer = document.querySelector("footer");
     if (!footer) return;
+    const loc = getActiveRegionLocale();
+    const t = I18N_FOOTER[loc] || I18N_FOOTER.es;
 
     footer.querySelectorAll("button").forEach(function (btn) {
-      if (btn.id === "mallen-bottom-theme-btn") return;
+      if (btn.id === "mallen-bottom-theme-btn" || btn.id === "mallen-quick-contact-btn") return;
       const txt = (btn.textContent || "").toLowerCase();
-      if (txt.indexOf("modo") !== -1 || txt.indexOf("claro") !== -1 || txt.indexOf("oscuro") !== -1 || txt.indexOf("día") !== -1 || txt.indexOf("dia") !== -1) {
+      if (txt.indexOf("modo") !== -1 || txt.indexOf("claro") !== -1 || txt.indexOf("oscuro") !== -1 || txt.indexOf("día") !== -1) {
         btn.style.display = "none";
       }
     });
 
+    if (!document.getElementById("mallen-quick-contact-bar")) {
+      const cbar = document.createElement("div");
+      cbar.id = "mallen-quick-contact-bar";
+      cbar.className = "max-w-4xl mx-auto mb-6 p-4 sm:p-5 rounded-2xl border border-slate-800 bg-slate-950/70 flex flex-col sm:flex-row items-center justify-between gap-3";
+      cbar.innerHTML =
+        '<div class="text-left">' +
+          '<div class="text-sm font-bold text-white">' + t.contactTitle + '</div>' +
+          '<div class="text-xs text-slate-400">' + t.contactSub + '</div>' +
+        '</div>' +
+        '<form id="mallen-quick-contact-form" class="flex w-full sm:w-auto items-center gap-2">' +
+          '<input id="mallen-quick-contact-email" type="email" required placeholder="' + t.contactPh + '" class="w-full sm:w-64 px-3.5 py-2 rounded-lg border border-slate-700 bg-slate-900 text-sm text-white focus:border-emerald-400 focus:outline-none" />' +
+          '<button type="submit" id="mallen-quick-contact-btn" class="mallen-btn-primary px-4 py-2 text-xs font-bold shrink-0">' + t.contactBtn + '</button>' +
+        '</form>' +
+        '<div id="mallen-quick-contact-status" class="hidden text-xs font-semibold text-emerald-400"></div>';
+      footer.insertBefore(cbar, footer.firstChild);
+
+      const form = document.getElementById("mallen-quick-contact-form");
+      if (form) {
+        form.addEventListener("submit", async function (ev) {
+          ev.preventDefault();
+          const emailInput = document.getElementById("mallen-quick-contact-email");
+          const btn = document.getElementById("mallen-quick-contact-btn");
+          const statusEl = document.getElementById("mallen-quick-contact-status");
+          const emailVal = emailInput ? emailInput.value.trim() : "";
+          if (!emailVal) return;
+          if (btn) { btn.disabled = true; btn.textContent = t.contactSending; }
+          try {
+            const r = await fetch("/api/quick-contact", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ email: emailVal })
+            });
+            if (statusEl) {
+              statusEl.textContent = r.ok ? t.contactOk : t.contactErr;
+              statusEl.className = "text-xs font-semibold " + (r.ok ? "text-emerald-400" : "text-red-400");
+            }
+            if (r.ok && emailInput) emailInput.value = "";
+          } catch (_) {
+            if (statusEl) {
+              statusEl.textContent = t.contactErr;
+              statusEl.className = "text-xs font-semibold text-red-400";
+            }
+          } finally {
+            if (btn) { btn.disabled = false; btn.textContent = t.contactBtn; }
+          }
+        });
+      }
+    }
+
     if (!document.getElementById("mallen-footer-utility-bar")) {
       const bar = document.createElement("div");
       bar.id = "mallen-footer-utility-bar";
-      bar.className = "max-w-6xl mx-auto mt-6 pt-5 border-t border-slate-800/80 flex flex-col sm:flex-row items-center justify-between gap-4";
+      bar.className = "max-w-6xl mx-auto mt-6 pt-5 border-t border-slate-800/80 flex flex-col lg:flex-row items-center justify-between gap-4";
       bar.innerHTML =
-        '<div class="flex flex-wrap items-center gap-2">' +
-          '<span class="text-xs font-semibold uppercase tracking-wider text-slate-400 mr-1">App FIRMA MALLEN®:</span>' +
-          '<button type="button" onclick="window.openMallenOsInstall(\'android\')" class="mallen-btn-secondary px-3 py-1.5 text-xs font-semibold border border-slate-700 hover:border-emerald-400">Android</button>' +
-          '<button type="button" onclick="window.openMallenOsInstall(\'ios\')" class="mallen-btn-secondary px-3 py-1.5 text-xs font-semibold border border-slate-700 hover:border-emerald-400">iOS (iPhone / iPad)</button>' +
-          '<button type="button" onclick="window.openMallenOsInstall(\'desktop\')" class="mallen-btn-secondary px-3 py-1.5 text-xs font-semibold border border-slate-700 hover:border-emerald-400">Windows / macOS</button>' +
+        '<div class="flex flex-wrap items-center justify-center gap-2">' +
+          '<span class="text-xs font-semibold uppercase tracking-wider text-slate-400 mr-1">' + t.regLbl + '</span>' +
+          '<a href="/?country=MX" class="mallen-btn-secondary px-2.5 py-1 text-xs font-semibold border border-slate-700 hover:border-emerald-400">MX</a>' +
+          '<a href="/region/de" class="mallen-btn-secondary px-2.5 py-1 text-xs font-semibold border border-slate-700 hover:border-emerald-400">DACH</a>' +
+          '<a href="/region/nl" class="mallen-btn-secondary px-2.5 py-1 text-xs font-semibold border border-slate-700 hover:border-emerald-400">Benelux</a>' +
+        '</div>' +
+        '<div class="flex flex-wrap items-center justify-center gap-2">' +
+          '<span class="text-xs font-semibold uppercase tracking-wider text-slate-400 mr-1">' + t.appLbl + '</span>' +
+          '<button type="button" onclick="window.openMallenOsInstall(\'android\')" class="mallen-btn-secondary px-3 py-1 text-xs font-semibold border border-slate-700 hover:border-emerald-400">Android</button>' +
+          '<button type="button" onclick="window.openMallenOsInstall(\'ios\')" class="mallen-btn-secondary px-3 py-1 text-xs font-semibold border border-slate-700 hover:border-emerald-400">iOS</button>' +
+          '<button type="button" onclick="window.openMallenOsInstall(\'desktop\')" class="mallen-btn-secondary px-3 py-1 text-xs font-semibold border border-slate-700 hover:border-emerald-400">Windows / macOS</button>' +
         '</div>' +
         '<div>' +
-          '<button type="button" id="mallen-bottom-theme-btn" data-mallen-theme-btn="1" onclick="window.toggleMallenTheme()" class="mallen-btn-secondary px-4 py-1.5 text-xs font-bold border border-slate-600 hover:border-white">Cambiar a Modo Día</button>' +
+          '<button type="button" id="mallen-bottom-theme-btn" data-mallen-theme-btn="1" onclick="window.toggleMallenTheme()" class="mallen-btn-secondary px-4 py-1.5 text-xs font-bold border border-slate-600 hover:border-white">' + t.dayBtn + '</button>' +
         '</div>';
       footer.appendChild(bar);
     }
@@ -300,77 +432,15 @@
     updateBottomThemeButtonLabel();
   }
 
-  function initV100() {
-    mountStructuredFaqSection();
+  function initV107() {
+    if (getActiveRegionLocale() === "es") {
+      mountStructuredFaqSection();
+    }
     setupFooterControlsOnly();
   }
 
   document.addEventListener("DOMContentLoaded", function () {
-    initV100();
-    setTimeout(initV100, 350);
-    setTimeout(setupFooterControlsOnly, 900);
-  });
-})();
-
-// Widget de Contacto en 1 Clic (solo correo electrónico)
-(function mountQuickEmailContactBar() {
-  function injectBar() {
-    const footer = document.querySelector("footer");
-    if (!footer || document.getElementById("mallen-quick-contact-bar")) return;
-
-    const bar = document.createElement("div");
-    bar.id = "mallen-quick-contact-bar";
-    bar.className = "max-w-4xl mx-auto mb-6 p-4 sm:p-5 rounded-2xl border border-slate-800 bg-slate-950/70 flex flex-col sm:flex-row items-center justify-between gap-3";
-    bar.innerHTML =
-      '<div class="text-left">' +
-        '<div class="text-sm font-bold text-white">¿Prefieres que un especialista te contacte?</div>' +
-        '<div class="text-xs text-slate-400">Deja únicamente tu correo corporativo o personal y te escribimos en breve.</div>' +
-      '</div>' +
-      '<form id="mallen-quick-contact-form" class="flex w-full sm:w-auto items-center gap-2">' +
-        '<input id="mallen-quick-contact-email" type="email" required placeholder="tu@correo.com" class="w-full sm:w-64 px-3.5 py-2 rounded-lg border border-slate-700 bg-slate-900 text-sm text-white focus:border-emerald-400 focus:outline-none" />' +
-        '<button type="submit" id="mallen-quick-contact-btn" class="mallen-btn-primary px-4 py-2 text-xs font-bold shrink-0">Contactarme</button>' +
-      '</form>' +
-      '<div id="mallen-quick-contact-status" class="hidden text-xs font-semibold text-emerald-400"></div>';
-
-    footer.insertBefore(bar, footer.firstChild);
-
-    const form = document.getElementById("mallen-quick-contact-form");
-    if (form) {
-      form.addEventListener("submit", async function (ev) {
-        ev.preventDefault();
-        const emailInput = document.getElementById("mallen-quick-contact-email");
-        const btn = document.getElementById("mallen-quick-contact-btn");
-        const statusEl = document.getElementById("mallen-quick-contact-status");
-        const emailVal = emailInput ? emailInput.value.trim() : "";
-        if (!emailVal) return;
-
-        if (btn) { btn.disabled = true; btn.textContent = "Enviando..."; }
-        try {
-          const r = await fetch("/api/quick-contact", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ email: emailVal })
-          });
-          const data = await r.json();
-          if (statusEl) {
-            statusEl.textContent = data.message || "Correo registrado.";
-            statusEl.className = "text-xs font-semibold " + (r.ok ? "text-emerald-400" : "text-red-400");
-          }
-          if (r.ok && emailInput) emailInput.value = "";
-        } catch (_) {
-          if (statusEl) {
-            statusEl.textContent = "Error de conexión. Intente de nuevo.";
-            statusEl.className = "text-xs font-semibold text-red-400";
-          }
-        } finally {
-          if (btn) { btn.disabled = false; btn.textContent = "Contactarme"; }
-        }
-      });
-    }
-  }
-
-  document.addEventListener("DOMContentLoaded", function () {
-    injectBar();
-    setTimeout(injectBar, 400);
+    initV107();
+    setTimeout(initV107, 350);
   });
 })();

@@ -2970,75 +2970,68 @@ pub fn build_scian_sector_hook(scian_code: &str, actividad_desc: &str, emp_count
     let sc = scian_code.trim();
     if sc.starts_with("722") || sc.starts_with("311") || sc.starts_with("312") {
         let pain = if emp_count <= 30 {
-            format!("en {} (SCIAN {}), las clausuras y multas inmediatas se disparan por verificaciones concurrentes de COFEPRIS (Art. 251 LGS), instalaciones de gas/campanas/presión (NOM-020-STPS) y falta de bitácoras de capacitación en cocina y piso", actividad_desc, sc)
+            format!("en negocios de {} (SCIAN {}), suelen coincidir revisiones sanitarias de COFEPRIS (NOM-251), seguridad en instalaciones de gas y cocina (NOM-020) y bitácoras básicas de capacitación", actividad_desc, sc)
         } else {
-            format!("en cadenas y operadoras de {} (SCIAN {}), la rotación de turnos activa auditorías STPS sobre Guía II/III de riesgo psicosocial (NOM-035), ergonomía en manejo de insumos (NOM-036) y control sanitario multi-sucursal COFEPRIS", actividad_desc, sc)
+            format!("en operadoras de {} (SCIAN {}), la rotación de turnos y el ritmo en cocina suelen detonar revisiones de riesgo psicosocial (NOM-035), ergonomía (NOM-036) y control sanitario COFEPRIS", actividad_desc, sc)
         };
-        let sol = "Su Expediente 360° le entrega listos para firma el Protocolo de Atención de Inspección STPS/COFEPRIS, las Actas de Comisión Mixta NOM-019, la Política Psicosocial NOM-035 y el Blindaje de Proveedores de Insumos (Art. 69-B)".to_string();
-        ("Alimentos, Bebidas y Hospitalidad Gastronómica", pain, sol)
+        let sol = "preparamos una guía práctica con el protocolo ante visitas STPS/COFEPRIS, actas de comisión mixta (NOM-019), política NOM-035 y soporte documental para proveedores de insumos (Art. 69-B)".to_string();
+        ("Alimentos, Bebidas y Restaurantes", pain, sol)
     } else if sc.starts_with("511") || sc.starts_with("518") || sc.starts_with("5415") || sc.starts_with("519") {
-        let pain = format!(
-            "en firmas de {} (SCIAN {}), el SAT e inspectores laborales auditan dos frentes críticos: la deducibilidad y Fecha Cierta de servicios intangibles/desarrollo de software (Art. 69-B CFF) y las condiciones de Teletrabajo/Home Office >40% (NOM-037-STPS-2023) junto con avisos de privacidad en nube (LFPDPPP Art. 36)",
-            actividad_desc, sc
-        );
-        let sol = "Su Expediente 360° incluye el Addendum de Teletrabajo NOM-037 con derecho a la desconexión, el Contrato Marco de Servicios Tecnológicos con Fecha Cierta (SCJN 2a./J. 161/2019) y la Arquitectura de Privacidad y Confidencialidad de Código/Datos".to_string();
-        ("Tecnología, Software Cloud y Ciberseguridad", pain, sol)
+        let pain = format!("en equipos de {} (SCIAN {}), hoy se revisan con especial atención dos temas: el respaldo de materialidad en servicios intangibles y desarrollo (Art. 69-B CFF) y las condiciones de teletrabajo (NOM-037) junto con privacidad en la nube", actividad_desc, sc);
+        let sol = "reunimos el adendum de teletrabajo NOM-037, el contrato marco de servicios tecnológicos con fecha cierta y los lineamientos de privacidad y confidencialidad de datos".to_string();
+        ("Tecnología, Software y Cloud", pain, sol)
     } else if sc.starts_with("23") || sc.starts_with("21") || sc.starts_with("22") {
-        let pain = format!(
-            "en {} (SCIAN {}), su operación cotiza en Clase V de Riesgo Máximo IMSS (Prima de 7.58875%, Art. 196 RACERF) y enfrenta responsabilidad solidaria por contratistas en obra/campo (REPSE Art. 15-A LSS) y auditorías de seguridad en alturas/maquinaria (NOM-009/NOM-031-STPS)",
-            actividad_desc, sc
-        );
-        let sol = "Su Expediente 360° blinda la deducibilidad de subcontratistas REPSE (ICSOE/SISUB), documenta sus Comisiones de Seguridad e Higiene NOM-019/NOM-030 para contener la Prima de Riesgo IMSS y protege sus contratos de obra con Fecha Cierta".to_string();
-        ("Construcción, Ingeniería, Minería e Infraestructura", pain, sol)
-    } else if sc.starts_with("32") || sc.starts_with("33") {
-        let pain = format!(
-            "en plantas de {} (SCIAN {}), las inspecciones federales extraordinarias STPS/IMSS sancionan por cada trabajador expuesto en manejo de cargas (NOM-006/036), recipientes sujetos a presión/compresores (NOM-020), sustancias químicas (NOM-005/018) y siniestralidad en SUA",
-            actividad_desc, sc
-        );
-        let sol = "Su Expediente 360° integra el Diagnóstico de Seguridad y Salud NOM-030, las Actas Constitutivas NOM-019, el Protocolo de Conciliación SUA/SBC IMSS y los Contratos de Maquila/Suministro con materialidad fiscal 69-B".to_string();
-        ("Manufactura Industrial y Transformación", pain, sol)
-    } else if sc.starts_with("62") || sc.starts_with("4641") {
-        let pain = format!(
-            "en {} (SCIAN {}), el tratamiento de expedientes clínicos, datos biométricos y de salud exige consentimiento expreso reforzado (Art. 9 LFPDPPP), además de vigilancia sanitaria COFEPRIS y protocolos de residuos biológico-infecciosos (RPBI / NOM-087)",
-            actividad_desc, sc
-        );
-        let sol = "Su Expediente 360° le proporciona el Aviso de Privacidad Integral para Datos Sensibles y Biométricos, los Formatos de Consentimiento Expreso LFPDPPP, el Protocolo Sanitario/STPS y el Blindaje de Honorarios Médicos y Proveedores".to_string();
-        ("Salud, Hospitales, Clínicas y Farmacéutica", pain, sol)
+        let pain = format!("en proyectos de {} (SCIAN {}), el foco suele estar en la prima de riesgo IMSS (Clase V), la responsabilidad solidaria con subcontratistas en obra (REPSE) y las medidas de seguridad en alturas o maquinaria (NOM-009 / NOM-031)", actividad_desc, sc);
+        let sol = "organizamos el expediente de control de contratistas REPSE (ICSOE/SISUB), las comisiones de seguridad NOM-019/030 y el contrato marco de obra con soporte de fecha cierta".to_string();
+        ("Construcción, Ingeniería, Minería y Energía", pain, sol)
+    } else if sc.starts_with("621") || sc.starts_with("622") || sc.starts_with("623") || sc.starts_with("3254") {
+        let pain = format!("en centros de {} (SCIAN {}), el manejo de expedientes clínicos y datos sensibles exige consentimiento expreso (Art. 9 LFPDPPP), además de vigilancia sanitaria COFEPRIS y protocolos de residuos RPBI", actividad_desc, sc);
+        let sol = "integramos el aviso de privacidad para datos sensibles y de salud, los formatos de consentimiento expreso y el protocolo sanitario y de honorarios médicos".to_string();
+        ("Salud, Clínicas y Farmacéutica", pain, sol)
     } else if sc.starts_with("48") || sc.starts_with("49") {
-        let pain = format!(
-            "en empresas de {} (SCIAN {}), la autoridad fiscal y laboral cruza la emisión del Complemento Carta Porte (Art. 29-A CFF) con las bitácoras de jornada de operadores, exámenes médicos y maniobras de carga y almacén (NOM-006/036-STPS)",
-            actividad_desc, sc
-        );
-        let sol = "Su Expediente 360° entrega el Protocolo de Materialidad Logística y Carta Porte, las Comisiones de Seguridad NOM-019/030 para operadores y patios de maniobra, y la Conciliación de Salario Base de Cotización IMSS".to_string();
-        ("Transporte de Carga, Logística y Almacenaje", pain, sol)
+        let pain = format!("en operaciones de {} (SCIAN {}), la autoridad cruza el Complemento Carta Porte 3.1 (Art. 29-A CFF) con bitácoras de operadores, exámenes médicos y maniobras de carga en almacén (NOM-006/036)", actividad_desc, sc);
+        let sol = "armamos el protocolo de soporte logístico y Carta Porte, las comisiones de seguridad para patios y operadores (NOM-019/030) y la conciliación de salario base ante el IMSS".to_string();
+        ("Transporte, Logística y Almacenaje", pain, sol)
     } else if sc.starts_with("43") || sc.starts_with("46") {
-        let pain = format!(
-            "en {} (SCIAN {}), las revisiones de STPS, PROFECO y Protección Civil se enfocan en el Programa Interno de Protección Civil (PIPC para locales comerciales), ergonomía y estiba en bodega (NOM-006/036) y avisos de privacidad en mostrador y comercio electrónico (Art. 76 BIS LFPC)",
-            actividad_desc, sc
-        );
-        let sol = "Su Expediente 360° incluye la Guía de Programa Interno de Protección Civil (PIPC), los Instrumentos Obligatorios STPS (NOM-019, 030 y 035), el Aviso de Privacidad Comercial y el Blindaje de Compras a Mayoristas (Art. 69-B)".to_string();
+        let pain = format!("en empresas de {} (SCIAN {}), las verificaciones suelen concentrarse en Protección Civil (PIPC para piso y bodega), ergonomía en estiba (NOM-006/036) y avisos de privacidad y comercio electrónico (PROFECO Art. 76 BIS)", actividad_desc, sc);
+        let sol = "consolidamos la guía de Protección Civil, los instrumentos STPS aplicables (NOM-019, 030 y 035), el aviso de privacidad comercial y el soporte de compras a proveedores".to_string();
         ("Comercio Mayorista y Minorista", pain, sol)
     } else if sc.starts_with("52") || sc.starts_with("53") || sc.starts_with("5411") || sc.starts_with("5412") {
-        let pain = format!(
-            "en {} (SCIAN {}), la Unidad de Inteligencia Financiera (UIF) y el SAT auditan la identificación de Beneficiario Controlador (Arts. 32-B Ter a Quinquies CFF), expedientes de Actividades Vulnerables Antilavado (Art. 17 LFPIORPI) y la materialidad de servicios profesionales (Art. 69-B)",
-            actividad_desc, sc
-        );
-        let sol = "Su Expediente 360° le entrega el Manual y Expediente de Cumplimiento PLD/LFPIORPI y Beneficiario Controlador, el Contrato Marco de Prestación de Servicios con Fecha Cierta y el Blindaje de Privacidad Financiera/Patrimonial".to_string();
-        ("Servicios Financieros, Inmobiliarios y Despachos Corporativos", pain, sol)
+        let pain = format!("en firmas de {} (SCIAN {}), suelen revisarse los expedientes de Beneficiario Controlador (Art. 32-B Ter CFF), controles de actividades vulnerables (LFPIORPI) y la materialidad de servicios profesionales (Art. 69-B)", actividad_desc, sc);
+        let sol = "estructuramos el manual de cumplimiento PLD y Beneficiario Controlador, el contrato marco de servicios con fecha cierta y los controles de privacidad patrimonial".to_string();
+        ("Servicios Financieros, Inmobiliarios y Despachos", pain, sol)
     } else if sc.starts_with("721") {
-        let pain = format!(
-            "en {} (SCIAN {}), la operación continua 24/7 exige cumplimiento simultáneo en Protección Civil y simulacros (PIPC), higiene de alimentos y albercas (COFEPRIS NOM-251), subcontratación de limpieza/seguridad (REPSE) y riesgo psicosocial (NOM-035)",
-            actividad_desc, sc
-        );
-        let sol = "Su Expediente 360° consolida los protocolos PIPC de hospitalidad, la validación de proveedores REPSE de limpieza y vigilancia, la política NOM-035 y la protección de datos de huéspedes (LFPDPPP)".to_string();
-        ("Hotelería, Resorts y Alojamiento Temporal", pain, sol)
+        let pain = format!("en operaciones de {} (SCIAN {}), la operación continua exige tener al día Protección Civil y simulacros (PIPC), higiene sanitaria (COFEPRIS NOM-251), proveedores de limpieza/seguridad (REPSE) y NOM-035", actividad_desc, sc);
+        let sol = "reunimos los protocolos PIPC de hospitalidad, el control de proveedores REPSE, la política NOM-035 y la protección de datos de huéspedes".to_string();
+        ("Hotelería y Alojamiento", pain, sol)
+    } else if sc.starts_with("31") || sc.starts_with("32") || sc.starts_with("33") {
+        let pain = format!("en plantas de {} (SCIAN {}), las inspecciones revisan principalmente seguridad en maquinaria y equipo (NOM-004), ruido/iluminación, comisión de seguridad e higiene (NOM-019) y prima de riesgo IMSS", actividad_desc, sc);
+        let sol = "integramos las actas bipartitas NOM-019, el diagnóstico preventivo NOM-030, la política NOM-035 y el soporte contractual de proveeduría industrial".to_string();
+        ("Manufactura e Industria", pain, sol)
+    } else if sc.starts_with("61") {
+        let pain = format!("en instituciones de {} (SCIAN {}), el enfoque suele estar en Protección Civil para planteles (PIPC), protección de datos de alumnos y familias (LFPDPPP) y clima laboral docente (NOM-035)", actividad_desc, sc);
+        let sol = "preparamos el aviso de privacidad educativo, la política NOM-035, la guía de Protección Civil y los contratos de prestación de servicios".to_string();
+        ("Educación e Instituciones Académicas", pain, sol)
+    } else if sc.starts_with("11") {
+        let pain = format!("en actividades de {} (SCIAN {}), se revisan el registro y seguridad de personal de campo, el manejo de insumos (COFEPRIS/NOM-005) y el soporte fiscal de compras y traslados", actividad_desc, sc);
+        let sol = "reunimos los protocolos de seguridad laboral, el control de proveedores y traslados, y los avisos de privacidad y cumplimiento patronal".to_string();
+        ("Agroindustria y Sector Primario", pain, sol)
+    } else if sc.starts_with("561") {
+        let pain = format!("en empresas de {} (SCIAN {}), el punto más sensible es mantener intacto el registro REPSE, los reportes cuatrimestrales ICSOE/SISUB y la documentación laboral para evitar responsabilidad solidaria con clientes", actividad_desc, sc);
+        let sol = "armamos el paquete de control REPSE (ICSOE/SISUB), los contratos de servicios especializados con fecha cierta y los protocolos STPS".to_string();
+        ("Servicios Especializados y REPSE", pain, sol)
+    } else if sc.starts_with("811") {
+        let pain = format!("en talleres de {} (SCIAN {}), suelen revisarse el manejo de herramientas y sustancias (NOM-005/017), la comisión de seguridad (NOM-019), la prima de riesgo IMSS y las garantías ante PROFECO", actividad_desc, sc);
+        let sol = "consolidamos el diagnóstico preventivo NOM-030, las actas NOM-019, los términos de servicio ante PROFECO y el aviso de privacidad".to_string();
+        ("Talleres, Mantenimiento y Automotriz", pain, sol)
+    } else if sc.starts_with("5418") || sc.starts_with("512") || sc.starts_with("5414") {
+        let pain = format!("en agencias de {} (SCIAN {}), el SAT revisa con lupa la materialidad y entregables de servicios creativos o de pauta (Art. 69-B CFF), además de teletrabajo (NOM-037) y privacidad de bases de clientes", actividad_desc, sc);
+        let sol = "preparamos el contrato marco con bitácora de entregables y fecha cierta, el adendum de teletrabajo NOM-037 y el aviso de privacidad para campañas y bases de datos".to_string();
+        ("Agencias Creativas, Marketing y Medios", pain, sol)
     } else {
-        let pain = format!(
-            "en {} (SCIAN {}), las inspecciones ordinarias y extraordinarias de la STPS y el SAT verifican la existencia de sus Comisiones Mixtas (NOM-019), Diagnóstico de Seguridad (NOM-030), Prevención Psicosocial (NOM-035), materialidad de facturas (Art. 69-B CFF) y Aviso de Privacidad",
-            actividad_desc, sc
-        );
-        let sol = "Su Expediente 360° genera a la medida de su giro los 7 Instrumentos Jurídicos editables y los 10 Certificados Criptográficos SHA-256 que desactivan estas contingencias desde el primer día".to_string();
-        ("Operación Empresarial y Servicios Especializados", pain, sol)
+        let pain = format!("en empresas de {} (SCIAN {}), las revisiones preventivas suelen centrarse en comisiones mixtas (NOM-019), diagnóstico de seguridad (NOM-030), prevención psicosocial (NOM-035), materialidad fiscal (Art. 69-B) y aviso de privacidad", actividad_desc, sc);
+        let sol = "organizamos en un solo expediente los instrumentos laborales, fiscales y de privacidad adaptados a su giro para que puedan revisarlos con calma".to_string();
+        ("Servicios Empresariales", pain, sol)
     }
 }
 
@@ -3102,11 +3095,11 @@ pub fn build_adaptive_prospect_outreach(query_or_name: &str, domain_hint: Option
             encoded_ref, encoded_name, intel.codigo_scian, intel.estimated_employees
         );
         let msg = format!(
-            "Atención: Dirección Jurídica, Recursos Humanos y Oficialía de Cumplimiento de {}\n\
+            "Hola, equipo jurídico y de cumplimiento de {}.\n\
             Sector: {} (Giro SCIAN {} • ~{} colaboradores en {} {})\n\n\
             En nuestra compulsa técnica sectorial identificamos que {}.\n\n\
-            ¿Cómo lo resolvemos para su organización? {}.\n\n\
-            1. Descargue sin costo su Cédula de Benchmark Sectorial y Pre-Diagnóstico (PDF SHA-256):\n\
+            Por si les resulta útil como referencia interna: {}.\n\n\
+            1. Pueden consultar sin costo su Benchmark Sectorial y pre-diagnóstico en PDF (con sello SHA-256):\n\
                {}\n\
             2. Calibre parámetros por unidad operativa o active su Expediente Corporativo en:\n\
                {}",
@@ -3151,13 +3144,13 @@ pub fn build_adaptive_prospect_outreach(query_or_name: &str, domain_hint: Option
         let pdf_link = format!("https://mallen.lat/api/micro_scan/{}", encoded_ref);
         let chk_link = format!("https://mallen.lat/checkout?ref={}", encoded_ref);
         let msg = format!(
-            "Estimada Dirección de {} [{} — {}]:\n\n\
+            "Hola, equipo de {} ({} — {}).\n\n\
             Al cruzar su registro en {} contra el padrón INEGI DENUE, detectamos que {}. \
             Para una plantilla de ~{} colaboradores, esto representa una exposición sancionatoria prevenible de ${:.2} MXN.\n\n\
-            La solución exacta para su giro: {} (ahorrando los {} MXN que cobra una consultoría tradicional por elaborarlos desde cero).\n\n\
-            1. Descargue sin costo su Pre-Dictamen Pericial personalizado en PDF (Sello SHA-256):\n\
+            Por si les sirve como apoyo práctico para validar estos puntos: {} (ahorrando los {} MXN que cobra una consultoría tradicional por elaborarlos desde cero).\n\n\
+            1. Pueden descargar sin costo su pre-diagnóstico preventivo en PDF (con sello SHA-256):\n\
                {}\n\
-            2. O descargue hoy mismo su Expediente Completo de Blindaje 360° listo para firma ($3,000.00 MXN, CFDI 4.0 deducible) en:\n\
+            2. Si desean ajustar algún dato de su plantilla o revisar el alcance completo sin compromiso, pueden hacerlo aquí:\n\
                {}",
             intel.razon_social,
             sector_label,
