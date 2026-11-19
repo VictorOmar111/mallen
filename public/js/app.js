@@ -695,29 +695,10 @@ window.initInteractiveRiskSandboxCards = function() {
 // ============================================================================
 window.initMobileResponsiveDrawerAndNav = function() {
   const headerContainer = document.querySelector('header > div');
-  const desktopNav = document.querySelector('header nav');
-
-  if (desktopNav) {
-    desktopNav.className = 'hidden md:flex items-center gap-4 text-xs font-semibold text-slate-300';
-    desktopNav.innerHTML =
-      '<a href="#express-check" class="hover:text-white transition">Diagnóstico Exprés</a>' +
-      '<a href="#mallen-vanta-trust-center" class="hover:text-white transition">Entregables y Activación</a>' +
-      '<a href="/normativa" id="nav-link-normativa-dedicada" class="hover:text-white transition">Directorio Normativo (39 NOMs)</a>' +
-      '<a href="/radar-dof" id="nav-link-radar-dedicado" class="hover:text-white transition">Radar DOF Diario</a>' +
-      '<a href="/dashboard.html" class="text-emerald-400 hover:text-emerald-300 transition">Panel Despachos</a>' +
-      '<span class="inline-flex rounded-md border border-slate-700 p-0.5 text-[11px] font-semibold">' +
-        '<a href="/?country=MX" class="px-2 py-0.5 rounded bg-emerald-600 text-white">MX</a>' +
-        '<a href="/region/de" class="px-2 py-0.5 hover:text-emerald-400">DACH</a>' +
-        '<a href="/region/nl" class="px-2 py-0.5 hover:text-emerald-400">Benelux</a>' +
-      '</span>' +
-      '<button type="button" data-mallen-theme-btn onclick="window.toggleMallenTheme()" class="mallen-btn-secondary px-3 py-1 text-xs">Modo Claro</button>';
-  }
-
   if (headerContainer && !document.getElementById('mallen-mobile-menu-trigger')) {
     const mobileControls = document.createElement('div');
     mobileControls.className = 'flex md:hidden items-center gap-2';
     mobileControls.innerHTML =
-      '<button type="button" data-mallen-theme-btn onclick="window.toggleMallenTheme()" class="mallen-btn-secondary px-2.5 py-1.5 text-xs">Modo Claro</button>' +
       '<button type="button" id="mallen-mobile-menu-trigger" aria-label="Abrir menú de navegación" class="mallen-btn-primary px-3.5 py-2 text-xs font-bold">' +
         'Menú ☰' +
       '</button>';

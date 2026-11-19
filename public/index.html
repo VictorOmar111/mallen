@@ -27,59 +27,12 @@
   }
 
 </style>
-  <link rel="stylesheet" href="/css/quantum-glass.css?v=2026.140">
-  <script src="/js/quantum-lights.js?v=2026.140" defer></script>
-    <link rel="stylesheet" href="/css/pure-light-mode.css?v=2026.140">
-    <script src="/js/theme-init.js?v=2026.140"></script>
+<script src="/js/quantum-lights.js?v=2026.102" defer></script>
+<script src="/js/theme-init.js?v=2026.102"></script>
 
-<style id="w16-lightmode-and-footer-guard">
-  /* Evitar que el selector flotante de región tape el pie de página */
-  footer {
-    padding-bottom: 5.5rem !important;
-  }
-  #mallen-country-switcher-bar, .country-switcher-floating {
-    bottom: 14px !important;
-    right: 16px !important;
-    left: auto !important;
-    transform: none !important;
-    max-width: calc(100vw - 32px) !important;
-    z-index: 40 !important;
-    opacity: 0.94;
-  }
-  /* Aclarar todos los botones oscuros cuando está activo el Modo Claro */
-  html.light-mode button.bg-slate-900,
-  html.light-mode button.bg-slate-950,
-  html.light-mode button.bg-gray-900,
-  html.light-mode a.bg-slate-900,
-  html.light-mode a.bg-slate-950,
-  html.light-mode .bg-slate-900\/90,
-  html.light-mode .bg-slate-950\/90,
-  html.light-mode #mallen-country-switcher-bar,
-  html.light-mode #mallen-country-switcher-bar button,
-  html.light-mode #mallen-country-switcher-bar a {
-    background: #ffffff !important;
-    color: #0f172a !important;
-    border-color: #cbd5e1 !important;
-    box-shadow: 0 4px 14px rgba(15, 23, 42, 0.08) !important;
-  }
-  html.light-mode button.bg-slate-900:hover,
-  html.light-mode button.bg-slate-950:hover,
-  html.light-mode a.bg-slate-900:hover,
-  html.light-mode a.bg-slate-950:hover {
-    background: #eff6ff !important;
-    color: #1d4ed8 !important;
-    border-color: #60a5fa !important;
-  }
-  html.light-mode .w16-action-btn {
-    background: linear-gradient(135deg, #2563eb 0%, #059669 100%) !important;
-    color: #ffffff !important;
-    border: none !important;
-  }
-</style>
-
-  <link rel="stylesheet" href="/css/enterprise-linear.css?v=2026.77">
+<link rel="stylesheet" href="/css/enterprise-linear.css?v=2026.102">
   <!-- IDENTIDAD_CERTIFICADA: FIRMA MALLEN® | INGENIERÍA LEGAL PREVENTIVA -->
-  <link rel="stylesheet" href="/css/mallen-high-impact.css?v=2026.101">
+  <link rel="stylesheet" href="/css/mallen-high-impact.css?v=2026.102">
   <link rel="manifest" href="/manifest.webmanifest">
   <meta name="theme-color" content="#090b10">
   <meta name="apple-mobile-web-app-capable" content="yes">
@@ -103,15 +56,17 @@
       </div>
     </a>
 
-    <nav aria-label="Jurisdicción e Idioma" class="flex flex-wrap items-center gap-3">
-      <a href="/normativa" class="text-xs font-semibold text-slate-300 hover:text-white transition">Directorio Normativo</a>
-      <a href="/radar-dof" class="text-xs font-semibold text-slate-300 hover:text-white transition">Radar DOF</a>
-      <div class="inline-flex items-center rounded-lg border border-slate-700/70 bg-slate-900/80 p-1 text-xs">
-        <a href="/?region=mx" class="lang-pill rounded-md bg-emerald-500/20 px-2.5 py-1 font-semibold text-emerald-300">MX • LFPDPPP/STPS</a>
-        <a href="/region/de/" class="lang-pill rounded-md px-2.5 py-1 text-slate-300 hover:text-white">DACH • DSGVO</a>
-        <a href="/region/nl/" class="lang-pill rounded-md px-2.5 py-1 text-slate-300 hover:text-white">BENELUX • AVG</a>
-      </div>
-      <button type="button" data-mallen-theme-btn onclick="window.toggleMallenTheme()" class="mallen-btn-secondary px-3 py-1 text-xs">Modo Claro</button>
+    <nav aria-label="Navegación Principal" class="hidden md:flex items-center gap-4 text-xs font-semibold text-slate-300">
+      <a href="#express-check" class="hover:text-white transition">Diagnóstico Exprés</a>
+      <a href="#mallen-vanta-trust-center" class="hover:text-white transition">Entregables y Activación</a>
+      <a href="/normativa" id="nav-link-normativa-dedicada" class="hover:text-white transition">Directorio Normativo (39 NOMs)</a>
+      <a href="/radar-dof" id="nav-link-radar-dedicado" class="hover:text-white transition">Radar DOF Diario</a>
+      <a href="/dashboard.html" class="text-emerald-400 hover:text-emerald-300 transition">Panel Despachos</a>
+      <span class="inline-flex rounded-md border border-slate-700 p-0.5 text-[11px] font-semibold">
+        <a href="/?country=MX" class="px-2 py-0.5 rounded bg-emerald-600 text-white">MX</a>
+        <a href="/region/de" class="px-2 py-0.5 hover:text-emerald-400">DACH</a>
+        <a href="/region/nl" class="px-2 py-0.5 hover:text-emerald-400">Benelux</a>
+      </span>
     </nav>
   </div>
 </header>
@@ -132,7 +87,7 @@
         <a href="#express-check" class="w-full sm:w-auto bg-gradient-to-r from-blue-600 to-emerald-600 hover:from-blue-500 hover:to-emerald-500 text-white font-bold text-xs sm:text-sm px-8 py-4 rounded-xl transition shadow-xl shadow-blue-600/20 uppercase tracking-wider font-mono-code">
           Auditar RFC o Ingresar Folio
         </a>
-        <a href="#cobertura-resumen" class="w-full sm:w-auto bg-white/[0.05] shadow-[0_8px_32px_rgba(0,0,0,0.5)] hover:bg-slate-800 text-slate-300 border border-white/15 font-bold text-xs sm:text-sm px-8 py-4 rounded-xl transition font-mono-code">
+        <a href="/normativa" class="w-full sm:w-auto bg-white/[0.05] shadow-[0_8px_32px_rgba(0,0,0,0.5)] hover:bg-slate-800 text-slate-300 border border-white/15 font-bold text-xs sm:text-sm px-8 py-4 rounded-xl transition font-mono-code">
           Ver Directorio Regulatorio
         </a>
       </div>
@@ -1381,8 +1336,8 @@ window.updateMallenSandbox = function(customEmp) {
         </div>
     </footer>
 
-  <script src="/js/app.js?v=2026.62?v=2026.140" defer></script>
-  <script src="/js/badge.js?v=2026.140" defer></script>
+  <script src="/js/app.js?v=2026.102?v=2026.102" defer></script>
+  <script src="/js/badge.js?v=2026.102" defer></script>
 
   <!-- Ventana Emergente Flotante (Popover Quantum Glass) de los 37 Vectores Evaluados (Se cierra sola cuando el puntero sale del recuadro) -->
   <div id="vectors-37-popover"
@@ -1405,7 +1360,7 @@ window.updateMallenSandbox = function(customEmp) {
     <div id="vectors-37-list" class="overflow-y-auto pr-1 space-y-2 max-h-[42vh]"></div>
   </div>
 
-    <script src="/js/i18n_engine.js?v=2026.140" defer></script>
+    <script src="/js/i18n_engine.js?v=2026.102" defer></script>
     <script src="/js/i18n_regions_connect.js" defer></script>
 
 
@@ -1753,24 +1708,6 @@ window.updateMallenSandbox = function(customEmp) {
 <script id="mallen-nextlevel-4blocks-and-predictive-search">
 (function() {
   function enforceCleanFourBlocksLayout() {
-    // 1. Limpiar el Header principal para que no tenga enlaces duplicados ni dos botones de Modo Claro
-    var headerNav = document.querySelector('header nav');
-    if (headerNav) {
-      headerNav.className = 'hidden md:flex items-center gap-5 text-xs font-semibold text-slate-300';
-      headerNav.innerHTML =
-        '<a href="#express-check" class="hover:text-white transition">Diagnóstico Exprés</a>' +
-        '<a href="#mallen-vanta-trust-center" class="hover:text-white transition">Entregables y Precios</a>' +
-        '<a href="/normativa" id="nav-link-normativa-dedicada" class="hover:text-white transition">Directorio Normativo (39 NOMs)</a>' +
-        '<a href="/radar-dof" id="nav-link-radar-dedicado" class="hover:text-white transition">Radar DOF Diario</a>' +
-        '<a href="/dashboard.html" class="text-emerald-400 hover:text-emerald-300 transition">Panel Despachos</a>' +
-        '<span class="inline-flex rounded-md border border-slate-700 p-0.5 text-[11px] font-semibold">' +
-          '<a href="/?country=MX" class="px-2 py-0.5 rounded bg-emerald-600 text-white">MX</a>' +
-          '<a href="/region/de" class="px-2 py-0.5 hover:text-emerald-400">DACH</a>' +
-          '<a href="/region/nl" class="px-2 py-0.5 hover:text-emerald-400">Benelux</a>' +
-        '</span>' +
-        '<button type="button" data-mallen-theme-btn onclick="window.toggleMallenTheme()" class="mallen-btn-secondary px-3 py-1 text-xs">Modo Claro</button>';
-    }
-
     // 2. Mover #express-check (El Buscador de Diagnóstico) justo debajo del Hero principal
     //    para que el visitante diagnostique de inmediato sin hacer scroll por 3 pantallas de texto
     var expressSec = document.getElementById('express-check');
@@ -1898,6 +1835,6 @@ window.updateMallenSandbox = function(customEmp) {
 })();
 </script>
 
-  <script src="/js/faq-juridico-completo.js?v=2026.101" defer></script>
+  <script src="/js/faq-juridico-completo.js?v=2026.102" defer></script>
 </body>
 </html>
