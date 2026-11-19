@@ -27,12 +27,12 @@
   }
 
 </style>
-<script src="/js/quantum-lights.js?v=2026.102" defer></script>
-<script src="/js/theme-init.js?v=2026.102"></script>
+<script src="/js/quantum-lights.js?v=2026.103" defer></script>
+<script src="/js/theme-init.js?v=2026.103"></script>
 
-<link rel="stylesheet" href="/css/enterprise-linear.css?v=2026.102">
+<link rel="stylesheet" href="/css/enterprise-linear.css?v=2026.103">
   <!-- IDENTIDAD_CERTIFICADA: FIRMA MALLEN® | INGENIERÍA LEGAL PREVENTIVA -->
-  <link rel="stylesheet" href="/css/mallen-high-impact.css?v=2026.102">
+  <link rel="stylesheet" href="/css/mallen-high-impact.css?v=2026.103">
   <link rel="manifest" href="/manifest.webmanifest">
   <meta name="theme-color" content="#090b10">
   <meta name="apple-mobile-web-app-capable" content="yes">
@@ -798,64 +798,6 @@ window.runInstantLookup360 = async function(skipTopSync) {
     </div>
   </div>
 </section>
-<script>
-window.updateMallenSandbox = function(customEmp) {
-  var slider = document.getElementById('sbx-emp-slider');
-  var exactInput = document.getElementById('sbx-emp-exact-input');
-  var emp = customEmp ? parseInt(customEmp, 10) : parseInt(slider ? slider.value : '52', 10);
-  if (isNaN(emp) || emp < 1) emp = 1;
-  if (slider) {
-    if (emp > parseInt(slider.max || '5000', 10)) slider.max = String(emp);
-    slider.value = emp;
-  }
-  if (exactInput && parseInt(exactInput.value, 10) !== emp) exactInput.value = emp;
-  var lbl = document.getElementById('sbx-emp-label');
-  if (lbl) lbl.textContent = emp.toLocaleString('en-US') + ' colaboradores';
-
-  var checks = document.querySelectorAll('.sbx-mit-chk');
-  var mitigation = 0.0;
-  for (var i = 0; i < checks.length; i++) {
-    if (checks[i].checked) mitigation += parseFloat(checks[i].getAttribute('data-weight') || '0');
-  }
-  if (mitigation > 0.99) mitigation = 0.99;
-
-  var hasOfficial = (window.__MALLEN_OFFICIAL_VEMP_BASE && window.__MALLEN_OFFICIAL_VEMP_BASE > 0 && window.__MALLEN_OFFICIAL_EMP_BASE > 0);
-  var baseFine = hasOfficial
-    ? (window.__MALLEN_OFFICIAL_EMP_BASE === emp
-        ? window.__MALLEN_OFFICIAL_VEMP_BASE
-        : (window.__MALLEN_OFFICIAL_VEMP_BASE * (0.65 + 0.35 * (emp / window.__MALLEN_OFFICIAL_EMP_BASE))))
-    : (310000 + (emp * 12450));
-
-  var residual = (hasOfficial && window.__MALLEN_OFFICIAL_EMP_BASE === emp && mitigation === 0)
-    ? window.__MALLEN_OFFICIAL_VEMP_BASE
-    : Math.max(0, Math.round((baseFine * (1.0 - mitigation)) * 100) / 100);
-
-  var baseScore = (hasOfficial && window.__MALLEN_OFFICIAL_EMP_BASE === emp && window.__MALLEN_OFFICIAL_SCORE_BASE > 0)
-    ? window.__MALLEN_OFFICIAL_SCORE_BASE
-    : (emp > 100 ? 88 : (emp >= 50 ? 78 : (emp >= 15 ? 64 : 48)));
-  var finalScore = (mitigation === 0) ? baseScore : Math.max(0, Math.round(baseScore * (1.0 - (mitigation * 0.92))));
-
-  var fEl = document.getElementById('sbx-total-fine');
-  if (fEl) {
-    fEl.textContent = '$' + residual.toLocaleString('es-MX', {minimumFractionDigits: 2, maximumFractionDigits: 2}) + ' MXN';
-  }
-  var sEl = document.getElementById('sbx-risk-score');
-  if (sEl) {
-    sEl.textContent = finalScore + '/100';
-  }
-  var noteEl = document.getElementById('sbx-threshold-note');
-  if (noteEl) {
-    if (emp >= 50) {
-      noteEl.textContent = 'Escala Corporativa (>50 colaboradores): Exigible NOM-035 Guías I y III (Entorno Organizacional) + Comisión Mixta NOM-019 Completa + Auditoría SUA/REPSE.';
-    } else if (emp >= 15) {
-      noteEl.textContent = 'Centro de Trabajo Mediano (15 a 49 colaboradores): Exigible NOM-035 Guías I y II + Comisión Bipartita NOM-019 + Programa NOM-030.';
-    } else {
-      noteEl.textContent = 'Microempresa (1 a 14 colaboradores): Exigible Política NOM-035 Guía I + Diagnóstico NOM-030 + Aviso de Privacidad LFPDPPP.';
-    }
-  }
-};
-</script>
-
 <!-- SECCIÓN DE PREGUNTAS FRECUENTES, ALCANCE METODOLÓGICO Y BLINDAJE PERICIAL (#faq — 5 CATEGORÍAS / 30 PREGUNTAS) -->
 <section id="faq" class="max-w-6xl mx-auto px-4 sm:px-6 py-14 border-t border-slate-800/60">
   <div class="text-center max-w-3xl mx-auto mb-10">
@@ -1336,8 +1278,8 @@ window.updateMallenSandbox = function(customEmp) {
         </div>
     </footer>
 
-  <script src="/js/app.js?v=2026.102?v=2026.102" defer></script>
-  <script src="/js/badge.js?v=2026.102" defer></script>
+  <script src="/js/app.js?v=2026.103" defer></script>
+  <script src="/js/badge.js?v=2026.103" defer></script>
 
   <!-- Ventana Emergente Flotante (Popover Quantum Glass) de los 37 Vectores Evaluados (Se cierra sola cuando el puntero sale del recuadro) -->
   <div id="vectors-37-popover"
@@ -1360,7 +1302,7 @@ window.updateMallenSandbox = function(customEmp) {
     <div id="vectors-37-list" class="overflow-y-auto pr-1 space-y-2 max-h-[42vh]"></div>
   </div>
 
-    <script src="/js/i18n_engine.js?v=2026.102" defer></script>
+    <script src="/js/i18n_engine.js?v=2026.103" defer></script>
     <script src="/js/i18n_regions_connect.js" defer></script>
 
 
@@ -1835,6 +1777,6 @@ window.updateMallenSandbox = function(customEmp) {
 })();
 </script>
 
-  <script src="/js/faq-juridico-completo.js?v=2026.102" defer></script>
+  <script src="/js/faq-juridico-completo.js?v=2026.103" defer></script>
 </body>
 </html>
