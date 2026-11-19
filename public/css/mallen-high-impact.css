@@ -388,3 +388,26 @@ html.light-mode #mallen-pwa-install-modal {
   color: #0f172a;
   border-color: #cbd5e1;
 }
+
+
+/* Vista editorial ligera para Arquitectura de Blindaje Patrimonial 360° (cero lag ni apariencia de botones) */
+#mallen-vanta-trust-center .mallen-glass-card,
+#mallen-vanta-trust-center .quantum-card,
+#mallen-vanta-trust-center .mallen-surface-card,
+#mallen-vanta-trust-center .grid > div {
+  background: transparent !important;
+  border: none !important;
+  border-top: 1px solid var(--border-hairline) !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+  contain: none !important;
+  overflow: visible !important;
+}
+
+#mallen-vanta-trust-center .mallen-glass-card::before,
+#mallen-vanta-trust-center .mallen-glass-card::after,
+#mallen-vanta-trust-center .grid > div::before,
+#mallen-vanta-trust-center .grid > div::after {
+  display: none !important;
+  content: none !important;
+}
