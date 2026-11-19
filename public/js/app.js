@@ -811,6 +811,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
 
 
+
+
 // 1. Despliegue estable de "Ver los Vectores Evaluados (Clic / Pasar Cursor)" en la portada
 (function bindMainPageVectorsExpanderV95() {
   let hoverOpenTimer = null;
@@ -836,20 +838,20 @@ document.addEventListener('DOMContentLoaded', () => {
     if (vecs.length > 0) {
       panel.innerHTML =
         '<div class="flex items-center justify-between border-b border-slate-800 pb-2 mb-2">' +
-          '<span class="font-bold text-white uppercase">Vectores Evaluados (' + vecs.length + ' vectores • SCIAN ' + scianTxt + ')</span>' +
+          '<span class="font-bold text-white uppercase">Vectores Evaluados (' + vecs.length + ' vectores - SCIAN ' + scianTxt + ')</span>' +
           '<span class="font-mono-data text-slate-300">Total: $' + totalTxt + ' MXN</span>' +
         '</div>' +
         vecs.map(function (v, i) {
           const fineFmt = Number(v.multa_estimada_mxn || 0).toLocaleString("es-MX", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
           return '<div class="p-2.5 rounded-lg border border-slate-800/90 flex flex-wrap items-center justify-between gap-2">' +
-            '<div><strong class="text-slate-100">#' + (i + 1) + ' ' + (v.codigo_norma || v.vector || 'Vector') + '</strong> — <span class="text-slate-300">' + (v.hallazgo || v.descripcion || 'Evaluado para el giro y plantilla') + '</span></div>' +
+            '<div><strong class="text-slate-100">#' + (i + 1) + ' ' + (v.codigo_norma || v.vector || 'Vector') + '</strong> - <span class="text-slate-300">' + (v.hallazgo || v.descripcion || 'Evaluado para el giro y plantilla') + '</span></div>' +
             '<span class="font-mono-data font-bold text-slate-100">$' + fineFmt + ' MXN</span>' +
           '</div>';
         }).join("");
     } else {
       panel.innerHTML =
-        '<div class="font-bold text-white uppercase mb-1">Vectores Normativos Evaluados — SCIAN ' + scianTxt + ' (' + empTxt + ' colaborador(es))</div>' +
-        '<p class="text-slate-300">Auditoría determinística sobre 39 NOMs STPS, Materialidad Fiscal SAT (Art. 69-B), IMSS/REPSE, Privacidad (LFPDPPP) y disposiciones aplicables. Exposición consolidada: <strong class="text-white">$' + totalTxt + ' MXN</strong>.</p>';
+        '<div class="font-bold text-white uppercase mb-1">Vectores Normativos Evaluados - SCIAN ' + scianTxt + ' (' + empTxt + ' colaborador(es))</div>' +
+        '<p class="text-slate-300">Auditoria deterministica sobre 39 NOMs STPS, Materialidad Fiscal SAT (Art. 69-B), IMSS/REPSE, Privacidad (LFPDPPP) y disposiciones aplicables. Exposicion consolidada: <strong class="text-white">$' + totalTxt + ' MXN</strong>.</p>';
     }
     panel.classList.remove("hidden");
   }
@@ -890,13 +892,12 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
-  // Normalizar ISN y jurisdicción en la tira 360° (evita 300.0% o PENDIENTE DE JURISDICCIÓN)
   function sanitize360StripValues() {
     const strip = document.getElementById("mallen-inline-360-intel-strip");
     if (!strip) return;
     strip.innerHTML = strip.innerHTML
-      .replace(/JURISDICCIÓN E ISN ESTATAL \([^)]*\)/g, "JURISDICCIÓN E ISN ESTATAL (3.0%)")
-      .replace(/PENDIENTE DE JURISDICCIÓN/g, "CIUDAD DE MÉXICO");
+      .replace(/JURISDICCI.N E ISN ESTATAL \([^)]*\)/g, "JURISDICCION E ISN ESTATAL (3.0%)")
+      .replace(/PENDIENTE DE JURISDICCI.N/g, "CIUDAD DE MEXICO");
   }
 
   const origF = window.fetch;
@@ -931,7 +932,7 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 })();
 
-// 2. Precisión del Sandbox sin alterar el Snapshot original de la empresa
+// 2. Precision del Sandbox sin alterar el Snapshot original de la empresa
 (function refineSandboxPrecisionV95() {
   function hookSandbox() {
     const sbxSection = document.getElementById("risk-sandbox-section");
@@ -954,7 +955,6 @@ document.addEventListener('DOMContentLoaded', () => {
       const rawBase = Number(window.__lastScannedVempMxn || 0);
       const scannedEmp = Math.max(1, Number(window.__lastScannedEmpCount || 1));
 
-      // Si el usuario no ha movido el deslizador respecto a la plantilla escaneada, respeta el monto exacto SSOT
       const baselineFine = rawBase > 0
         ? (currentEmp === scannedEmp ? rawBase : rawBase * Math.pow(currentEmp / scannedEmp, 0.65))
         : (280000 + currentEmp * 18500);
@@ -1005,16 +1005,16 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 })();
 
-// 3. Incorporar preguntas sobre Personas Físicas y Padrón INEGI DENUE en #faq
+// 3. Incorporar preguntas sobre Personas Fisicas y Padron INEGI DENUE en #faq
 (function injectPersonaFisicaDenueFaqs() {
   const NEW_FAQS = [
     {
-      q: "Q21. ¿La plataforma también aplica para Personas Físicas o solo para empresas (personas morales)?",
-      a: "También aplica para Personas Físicas con actividad empresarial, profesional o comercial cuando cuentan con personal, emiten o reciben comprobantes fiscales, operan un espacio de trabajo o recaban datos de clientes/colaboradores. Se evalúan las obligaciones laborales, fiscales y de privacidad pertinentes sin imponer requisitos exclusivos de personas morales."
+      q: "Q21. La plataforma tambien aplica para Personas Fisicas o solo para empresas (personas morales)?",
+      a: "Tambien aplica para Personas Fisicas con actividad empresarial, profesional o comercial cuando cuentan con personal, emiten o reciben comprobantes fiscales, operan un espacio de trabajo o recaban datos de clientes/colaboradores. Se evaluan las obligaciones laborales, fiscales y de privacidad pertinentes sin imponer requisitos exclusivos de personas morales."
     },
     {
-      q: "Q22. ¿Existen registros de Personas Físicas en el INEGI DENUE o el padrón es solo para empresas?",
-      a: "El INEGI DENUE indexa unidades económicas (establecimientos y puntos de actividad económica) e incluye tanto personas morales como negocios operados por personas físicas, pero no publica el RFC de las personas por reserva fiscal. Cuando un RFC de persona física o un registro nuevo no aparece en el DENUE, el motor usa el giro SCIAN, la entidad y el número exacto de colaboradores que usted indique."
+      q: "Q22. Existen registros de Personas Fisicas en el INEGI DENUE o el padron es solo para empresas?",
+      a: "El INEGI DENUE indexa unidades economicas (establecimientos y puntos de actividad economica) e incluye tanto personas morales como negocios operados por personas fisicas, pero no publica el RFC de las personas por reserva fiscal. Cuando un RFC de persona fisica o un registro nuevo no aparece en el DENUE, el motor usa el giro SCIAN, la entidad y el numero exacto de colaboradores que usted indique."
     }
   ];
 

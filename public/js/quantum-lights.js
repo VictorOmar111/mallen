@@ -173,7 +173,7 @@
                 '</div>' +
                 '<div class="space-y-4 text-sm text-slate-300">' +
                     '<div class="p-3.5 rounded-xl border border-slate-800 bg-slate-950/70">' +
-                        '<div class="font-bold text-white mb-1">En iPhone / iPad (iOS Safari — Manzano):</div>' +
+                        '<div class="font-bold text-white mb-1">En iPhone / iPad (iOS Safari):</div>' +
                         '<p class="text-xs text-slate-300">1. Toque <strong>Compartir</strong> (cuadro con flecha arriba).<br>2. Seleccione <strong>"Agregar a pantalla de inicio"</strong> y pulse <strong>Agregar</strong>.</p>' +
                     '</div>' +
                     '<div class="p-3.5 rounded-xl border border-slate-800 bg-slate-950/70">' +
@@ -189,11 +189,8 @@
     function syncScrollDimAndCursorBoost() {
         const docH = Math.max(1, document.documentElement.scrollHeight - window.innerHeight);
         const ratio = Math.min(1, Math.max(0, window.scrollY / docH));
-        // Oscurecimiento más intenso en la parte baja y mayor refuerzo de la luz del cursor al descender
-        const dimAlpha = (ratio * 0.78).toFixed(3);
-        const beamBoost = (1.0 + ratio * 0.65).toFixed(3);
-        document.documentElement.style.setProperty("--scroll-dim-alpha", dimAlpha);
-        document.documentElement.style.setProperty("--cursor-beam-boost", beamBoost);
+        document.documentElement.style.setProperty("--scroll-dim-alpha", (ratio * 0.78).toFixed(3));
+        document.documentElement.style.setProperty("--cursor-beam-boost", (1.0 + ratio * 0.65).toFixed(3));
     }
 
     function initSmoothKelvinEngine() {

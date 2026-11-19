@@ -17,9 +17,9 @@
   --grid-line-color: rgba(148, 163, 184, 0.036);
   --focus-ring-color: #e2e8f0;
 
-  --kelvin-cool: 236, 244, 255;     /* 6500K Blanco Frío */
-  --kelvin-neutral: 255, 255, 255;  /* 5500K Blanco Neutro */
-  --kelvin-warm: 255, 244, 224;     /* 3200K Blanco Cálido */
+  --kelvin-cool: 236, 244, 255;
+  --kelvin-neutral: 255, 255, 255;
+  --kelvin-warm: 255, 244, 224;
   --active-kelvin: var(--kelvin-cool);
 
   --scroll-dim-alpha: 0;
@@ -86,7 +86,6 @@ body {
   transform: translateZ(0);
 }
 
-/* Oscurecimiento gradual más intenso en la parte inferior al hacer scroll */
 #mallen-wall-vignette {
   position: absolute;
   inset: 0;
