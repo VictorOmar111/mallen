@@ -605,7 +605,47 @@
   </script>
 
     <!-- Pie de Página Institucional Criptográfico FIRMA MALLEN® -->
-    <footer class="border-t border-slate-800 bg-slate-950 text-slate-400 py-10 px-6 text-xs font-mono-code mt-12">
+    
+  <!-- Leads captados mediante el botón de Contacto en 1 Clic (quick_contacts) -->
+  <section id="mallen-quick-contacts-panel" class="max-w-7xl mx-auto px-6 my-8">
+    <div class="rounded-2xl border border-slate-800 bg-slate-900/70 p-6">
+      <div class="flex items-center justify-between gap-4 mb-4">
+        <div>
+          <span class="text-xs font-mono-code uppercase text-emerald-400">CONTACTOS DIRECTOS EN 1 CLIC</span>
+          <h2 class="text-lg font-extrabold text-white">Correos Recibidos (quick_contacts)</h2>
+        </div>
+        <button type="button" onclick="window.loadQuickContactsPanel()" class="px-3 py-1.5 rounded-lg border border-slate-700 text-xs font-semibold text-slate-200 hover:border-emerald-400">Actualizar</button>
+      </div>
+      <div id="mallen-quick-contacts-list" class="text-xs font-mono-code text-slate-300 space-y-2">Cargando correos...</div>
+    </div>
+  </section>
+  <script>
+    window.loadQuickContactsPanel = async function () {
+      const box = document.getElementById("mallen-quick-contacts-list");
+      if (!box) return;
+      try {
+        const r = await fetch("/api/quick-contacts");
+        if (!r.ok) throw new Error("HTTP " + r.status);
+        const d = await r.json();
+        const items = Array.isArray(d.contacts) ? d.contacts : [];
+        if (items.length === 0) {
+          box.textContent = "Aún no hay correos registrados.";
+          return;
+        }
+        box.innerHTML = items.map(function (c) {
+          return '<div class="flex items-center justify-between p-2.5 rounded-lg border border-slate-800 bg-slate-950/60">' +
+            '<span class="text-white font-semibold">' + c.email + '</span>' +
+            '<span class="text-slate-400">' + c.created_at + ' UTC</span>' +
+          '</div>';
+        }).join("");
+      } catch (_) {
+        box.textContent = "No fue posible cargar la lista de contactos.";
+      }
+    };
+    document.addEventListener("DOMContentLoaded", window.loadQuickContactsPanel);
+  </script>
+
+  <footer class="border-t border-slate-800 bg-slate-950 text-slate-400 py-10 px-6 text-xs font-mono-code mt-12">
         <div class="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
             <div class="space-y-1.5">
                 <div class="font-extrabold text-white">© 2026 FIRMA MALLEN® (mallen.lat) • Todos los derechos reservados.</div>

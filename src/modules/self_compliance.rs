@@ -167,21 +167,26 @@ pub fn render_mallen_arco_portal() -> Html<String> {
             const target = document.getElementById("arcoTarget").value.trim();
             const email = document.getElementById("arcoEmail").value.trim();
             const motivo = document.getElementById("arcoType").value;
-            const resp = await fetch("/api/arco_optout", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ target, email, motivo })
-            });
-            const data = await resp.json();
             const box = document.getElementById("arcoResultBox");
             box.classList.remove("hidden");
-            box.innerHTML = `
-                <strong class="text-emerald-400 block uppercase mb-1"> Solicitud Procesada y Caché Purgado con Éxito</strong>
-                <div>Folio Oficial ARCO: <span class="text-white font-bold">${data.folio}</span></div>
-                <div>Identificador Purgado: <span class="text-white">${data.purged_target}</span></div>
-                <div>Estampa UTC: <span class="text-slate-300">${data.timestamp_utc}</span></div>
-                <div class="mt-1 text-[11px] text-emerald-300">Se ha eliminado cualquier copia temporal del diagnóstico en <code>audit_cache</code> y registrado su acuse conforme al Art. 32 LFPDPPP.</div>
-            `;
+            try {
+                const resp = await fetch("/api/arco_optout", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ target, email, motivo })
+                });
+                if (!resp.ok) throw new Error("HTTP " + resp.status);
+                const data = await resp.json();
+                box.innerHTML = `
+                    <strong class="text-emerald-400 block uppercase mb-1">Solicitud Procesada y Caché Purgado con Éxito</strong>
+                    <div>Folio Oficial ARCO: <span class="text-white font-bold">${data.folio}</span></div>
+                    <div>Identificador Purgado: <span class="text-white">${data.purged_target}</span></div>
+                    <div>Estampa UTC: <span class="text-slate-300">${data.timestamp_utc}</span></div>
+                    <div class="mt-1 text-[11px] text-emerald-300">Se ha eliminado cualquier copia temporal del diagnóstico en <code>audit_cache</code> y registrado su acuse conforme al Art. 32 LFPDPPP.</div>
+                `;
+            } catch (err) {
+                box.innerHTML = `<strong class="text-red-400 block uppercase mb-1">Error al procesar la solicitud ARCO</strong><div class="text-slate-300 text-xs">Verifique su conexión e intente nuevamente o escriba a soporte@mallen.lat.</div>`;
+            }
         }
     </script>
   <script src="/js/quantum-lights.js?v=2026.103"></script>

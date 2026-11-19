@@ -122,6 +122,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .route("/privacidad", get(handle_mallen_privacy))
         .route("/terminos", get(handle_mallen_terms))
         .route("/derechos-arco", get(handle_mallen_arco))
+        .route("/arco", get(handle_mallen_arco))
         .route("/api/arco_optout", post(handle_api_arco_optout))
         .route("/validez/:slug", get(handle_validez_detail))
         .route("/verify/:id", get(checkout::handle_verify))
@@ -129,6 +130,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .route("/download/:hash", get(download_pdf_report))
         .route("/api/merkle/verify/:ref_code", get(get_merkle_proof_api))
         .route("/api/quick-contact", axum::routing::post(handle_quick_contact))
+        .route("/api/quick-contacts", get(handle_list_quick_contacts))
         .route("/api/scan", post(handle_live_scan))
         .route("/api/calibrate", post(handle_live_scan))
         .route("/api/dossier/save", post(handle_save_dossier))
@@ -2165,6 +2167,45 @@ pub async fn handle_quick_contact(
                 "ok": false,
                 "message": "No fue posible registrar el correo en este momento."
             })),
+        ),
+    }
+}
+
+
+pub async fn handle_list_quick_contacts() -> (axum::http::StatusCode, axum::Json<serde_json::Value>) {
+    let res = rusqlite::Connection::open("data/mallen_prod.db").and_then(|conn| {
+        conn.execute(
+            "CREATE TABLE IF NOT EXISTS quick_contacts (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                email TEXT NOT NULL,
+                created_at TEXT NOT NULL DEFAULT (datetime('now'))
+            )",
+            [],
+        )?;
+        let mut stmt = conn.prepare(
+            "SELECT id, email, created_at FROM quick_contacts ORDER BY id DESC LIMIT 100",
+        )?;
+        let rows = stmt
+            .query_map([], |r| {
+                Ok(serde_json::json!({
+                    "id": r.get::<_, i64>(0)?,
+                    "email": r.get::<_, String>(1)?,
+                    "created_at": r.get::<_, String>(2)?
+                }))
+            })?
+            .filter_map(|x| x.ok())
+            .collect::<Vec<_>>();
+        Ok(rows)
+    });
+
+    match res {
+        Ok(items) => (
+            axum::http::StatusCode::OK,
+            axum::Json(serde_json::json!({ "ok": true, "total": items.len(), "contacts": items })),
+        ),
+        Err(_) => (
+            axum::http::StatusCode::INTERNAL_SERVER_ERROR,
+            axum::Json(serde_json::json!({ "ok": false, "contacts": [] })),
         ),
     }
 }
