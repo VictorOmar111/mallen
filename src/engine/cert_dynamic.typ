@@ -62,7 +62,7 @@
     [#box(width: 100%, clip: false)[#set par(leading: 0.42em); *Domicilio del Centro de Trabajo:* #text(size: 6.7pt)[{{EMPRESA_DIRECCION}}]]],
     [#box(width: 100%, clip: false)[*Jurisdicción Aplicable:* {{EMPRESA_JURISDICCION}} / Fuero Federal]],
     [#box(width: 100%, clip: false)[#set par(leading: 0.42em); *Representación Legal:* #text(size: 6.8pt)[{{REPRESENTANTE_LEGAL}}]]],
-    [#box(width: 100%, clip: false)[*Estatus de Acreditación:] #text(size: 6.4pt)[(Score: {{RISK_SCORE}}/100)]]],
+    [#box(width: 100%, clip: false)[*Estatus de Acreditación:* #text(fill: rgb("#047857"), weight: "bold")[INSTRUMENTADO Y VIGENTE (12 MESES)]]],
     [#box(width: 100%, clip: false)[#set par(leading: 0.42em); *Infraestructura Emisora:* #text(size: 6.6pt)[{{AUDITOR_NOMBRE}}]]],
     [#box(width: 100%, clip: false)[*Sello Criptográfico SHA-256:* #text(font: "DejaVu Sans Mono", size: 6.6pt, weight: "bold", fill: rgb("#0369a1"))[#raw("{{AUDIT_HASH}}")]]]
   )
