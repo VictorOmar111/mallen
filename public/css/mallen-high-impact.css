@@ -455,3 +455,21 @@ section, header, footer, main, article,
   box-shadow: none !important;
   background-image: none !important;
 }
+
+/* v119: Fondo uniforme y plano en todas las páginas (cero oscurecimiento progresivo / viñetas) */
+html, body {
+  background-color: #020617 !important;
+  background-image: none !important;
+  background: #020617 !important;
+}
+html.light-mode, body.light-mode {
+  background-color: #f8fafc !important;
+  background-image: none !important;
+  background: #f8fafc !important;
+}
+body::before, body::after, main::before, main::after,
+#quantum-light-overlay, #quantum-ambient-layer, .quantum-vignette, .mallen-scroll-fade {
+  display: none !important;
+  opacity: 0 !important;
+  background: none !important;
+}
