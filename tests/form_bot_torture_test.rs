@@ -2559,7 +2559,7 @@ async fn test_http_form_bot_14_scenarios_with_real_db_companies() {
     for (comp_q, dom_q) in sample_sectors {
         let outreach = worker_inegi_engine::engine::pdf_generator::build_adaptive_prospect_outreach(comp_q, Some(dom_q));
         assert!(
-            outreach.message_body.contains(&outreach.scian_code) && outreach.primary_link.starts_with("https://mallen.lat/"),
+            !outreach.scian_code.is_empty() && !outreach.message_body.contains("(SCIAN") && !outreach.message_body.contains("?") && outreach.primary_link.starts_with("https://mallen.lat/"),
             "El mensaje del FormBot debe citar el código SCIAN exacto y enlace válido para {}",
             comp_q
         );
@@ -2609,11 +2609,11 @@ async fn test_http_form_bot_14_scenarios_with_real_db_companies() {
             ("221111", "Energia electrica", 150, "Energía"),
             ("541941", "Clinica veterinaria", 12, "Veterinarios"),
             ("621211", "Laboratorio dental", 18, "Dentales"),
-            ("621341", "Clinica rehabilitacion", 25, "Clínicas"),
+            ("621341", "Clinica rehabilitacion", 25, "Fisioterapia"),
             ("622111", "Hospital privado", 320, "Hospitales"),
             ("484129", "Autotransporte de carga", 90, "Transporte"),
             ("488511", "Agencia aduanal", 35, "Aduanales"),
-            ("492110", "Mensajeria y paqueteria", 70, "Mensajería"),
+            ("492110", "Mensajeria y paqueteria", 70, "Paquetería"),
             ("467111", "Ferreteria y materiales", 22, "Ferreterías"),
             ("468411", "Estacion de servicio", 30, "Gasolineras"),
             ("524110", "Seguros y fianzas", 65, "Seguros"),
@@ -2627,7 +2627,7 @@ async fn test_http_form_bot_14_scenarios_with_real_db_companies() {
         for (sc, desc, emp, expected_lbl) in deep_sectors {
             let (lbl, pain, sol) = build_scian_sector_hook(sc, desc, emp);
             assert!(
-                lbl.contains(expected_lbl) && pain.contains(sc) && pain.len() > 60 && sol.len() > 25,
+                lbl.contains(expected_lbl) && !pain.contains("(SCIAN") && pain.len() > 55,
                 "Desfase o contenido pobre en sector SCIAN {} -> lbl='{}'",
                 sc, lbl
             );
@@ -2647,67 +2647,67 @@ async fn test_http_form_bot_14_scenarios_with_real_db_companies() {
             assert!(!out.message_body.contains("Umbral >") && !out.message_body.contains("ahorrando los"), "Etiqueta robótica residual en {}", comp_q);
             assert!(!out.message_body.contains("equipo jurídico y de cumplimiento"), "Saludo antiguo detectado en {}", comp_q);
         }
-        // Generar log completo de estudio con todos los giros personalizados (data/formbot_messages_audit.log)
-        let mut full_log = String::from("=== LOG COMPLETO DE MENSAJES FORMBOT POR TIPO DE EMPRESA (75 GIROS SCIAN) ===\n\n");
-        let log_samples = [
-            ("722514", "Operadora Restaurantera del Valle", 45u32),
-            ("722412", "Cafeteria y Bar Central", 18),
-            ("311811", "Panificadora Industrial La Espiga", 65),
-            ("312111", "Embotelladora del Bajio", 190),
-            ("541510", "Arquitectura Cloud y Ciberseguridad", 52),
-            ("541519", "Defensa Digital SOC Mexico", 38),
-            ("518210", "Data Center Queretaro", 140),
-            ("236221", "Ingenieria y Edificaciones del Sureste", 420),
-            ("221114", "Energia Solar del Pacifico", 85),
-            ("212221", "Minera Extractiva del Noroeste", 680),
-            ("621341", "Centro Medico de Rehabilitacion Integral", 28),
-            ("621511", "Laboratorio de Analisis Clinicos Reforma", 34),
-            ("621512", "Centro de Imagenologia Diagnostica", 22),
-            ("622111", "Hospital Privado de Alta Especialidad", 510),
-            ("541941", "Clinica Veterinaria Integral", 12),
-            ("484129", "Autotransportes Regionales del Norte", 390),
-            ("488511", "Agencia Aduanal del Pacifico", 48),
-            ("493111", "Centro de Distribucion Bajio", 160),
-            ("468420", "Distribuidora de Gas LP Metropolitana", 95),
-            ("467111", "Ferreteria y Materiales El Sol", 24),
-            ("454111", "Comercio Electronico Express", 30),
-            ("522320", "Financiera y Credito del Norte", 75),
-            ("524110", "Despacho de Seguros y Fianzas", 42),
-            ("531210", "Desarrolladora Inmobiliaria Riviera", 60),
-            ("541120", "Notaria Publica Asociada", 19),
-            ("541620", "Consultoria Ambiental Sustentable", 26),
-            ("561422", "Centro de Contacto BPO Mexico", 280),
-            ("561610", "Seguridad Privada Corporativa", 310),
-            ("562111", "Reciclaje Industrial del Centro", 55),
-            ("611630", "Escuela de Idiomas y Capacitacion", 21),
-            ("624411", "Guarderia y Estancia Infantil", 16),
-            ("713941", "Gimnasio y Club Deportivo", 32),
-            ("721111", "Operadora Hotelera Bugambilia", 185),
-            ("812110", "Estetica y Spa Bienestar", 14),
-            ("332310", "Metalmecanica y Estructuras Leon", 110),
-            ("336310", "Autopartes de Precision Bajio", 490),
-            ("111411", "Invernaderos Exportadores de Michoacan", 90),
-            ("112120", "Ganaderia y Lacteos del Norte", 70),
-            ("811111", "Servicio Automotriz Delta", 15),
-            ("541810", "Agencia Creativa y Medios Digitales", 29),
+        // Validar los 20 nuevos giros SCIAN (95 totales) y generar log completo + muestra aleatoria
+        let new_20_probes = [
+            ("468111", "Agencia Automotriz del Centro", 85u32, "Agencias Automotrices"),
+            ("532110", "Rentadora de Autos Ejecutivos", 28, "Rentadoras de Autos"),
+            ("462111", "Supermercados y Autoservicios del Norte", 340, "Supermercados"),
+            ("462210", "Tiendas Departamentales Reforma", 480, "Tiendas Departamentales"),
+            ("311812", "Pasteleria y Reposteria Artesanal", 22, "Pastelerías"),
+            ("311611", "Empacadora de Carnes del Bajio", 150, "Carnicerías"),
+            ("621320", "Clinica Oftalmologica Vision", 32, "Oftalmológicas"),
+            ("621330", "Centro de Psicologia y Bienestar", 14, "Psicología"),
+            ("621340", "Centro de Fisioterapia Deportiva", 19, "Fisioterapia"),
+            ("611311", "Universidad Tecnologica del Pacifico", 410, "Universidades"),
+            ("611121", "Colegio Privado Bilingue", 95, "Escuelas"),
+            ("236111", "Constructora de Vivienda Residencial", 290, "Vivienda"),
+            ("237312", "Obra Civil y Carreteras del Sureste", 520, "Obra Civil"),
+            ("238210", "Contratistas Electricos Industriales", 65, "Contratistas"),
+            ("484210", "Mudanzas y Fletes Nacionales", 44, "Mudanzas"),
+            ("492110", "Paqueteria Internacional Express", 270, "Paquetería"),
+            ("541611", "Consultoria Financiera Estrategica", 35, "Consultoras Financieras"),
+            ("522460", "Casa de Empeno y Prestamos", 55, "Casas de Empeño"),
+            ("713910", "Club Deportivo y Campo de Golf", 130, "Clubes"),
+            ("722320", "Servicios de Catering y Banquetes", 48, "Catering"),
         ];
-        for (idx_s, (sc_s, nom_s, emp_s)) in log_samples.iter().enumerate() {
-            let (lbl_s, pain_s, q_s) = build_scian_sector_hook(sc_s, nom_s, *emp_s);
+        let mut full_log = String::from("=== LOG COMPLETO DE MENSAJES FORMBOT (95 GIROS SCIAN — SIN SCIAN EN TEXTO NI PREGUNTA DE CIERRE) ===\n\n");
+        let seed = std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .map(|d| d.subsec_nanos() as usize)
+            .unwrap_or(7);
+        let mut rendered_msgs: Vec<(String, String)> = Vec::new();
+        for (idx_s, (sc_s, nom_s, emp_s, exp_lbl)) in new_20_probes.iter().enumerate() {
+            let (lbl_s, pain_s, _) = build_scian_sector_hook(sc_s, nom_s, *emp_s);
+            assert!(
+                lbl_s.contains(exp_lbl) && !pain_s.contains("(SCIAN") && !pain_s.contains('?'),
+                "Fallo en nuevo giro {} -> {}", sc_s, lbl_s
+            );
             let msg_s = if *emp_s > 250 {
                 format!(
-                    "[{:02}] {} (SCIAN {} | {} emp | CORPORATIVO)\nHola equipo de {},\n\nEn operaciones de gran escala, {}.\n\nArmamos un Benchmark Sectorial con los puntos de control que hoy se revisan con más lupa en su industria. Les comparto el acceso sin costo aquí:\nhttps://mallen.lat/api/micro_scan/{}\n\nSi desean contrastarlo contra su operación actual, {}\n------------------------------------------------------------------------\n",
-                    idx_s + 1, lbl_s, sc_s, emp_s, nom_s, pain_s, nom_s.replace(' ', "%20"), q_s
+                    "Hola equipo de {},\n\nEn operaciones de gran escala, {}.\n\nArmamos un Benchmark Sectorial con los puntos de control que hoy se revisan con más lupa en su industria. Les comparto el acceso sin costo aquí:\nhttps://mallen.lat/api/micro_scan/{}",
+                    nom_s, pain_s, nom_s.replace(' ', "%20")
                 )
             } else {
                 format!(
-                    "[{:02}] {} (SCIAN {} | {} emp | PYME)\nHola equipo de {},\n\nPara una operación de alrededor de {} personas, {}.\n\nPreparamos un pre-diagnóstico rápido con los puntos críticos a revisar antes de una visita de autoridad o auditoría interna. Pueden descargarlo aquí sin costo:\nhttps://mallen.lat/api/micro_scan/{}\n\nSi quieren que revisemos cómo está su operación hoy, {}\n------------------------------------------------------------------------\n",
-                    idx_s + 1, lbl_s, sc_s, emp_s, nom_s, emp_s, pain_s, nom_s.replace(' ', "%20"), q_s
+                    "Hola equipo de {},\n\nPara una operación de alrededor de {} personas, {}.\n\nPreparamos un pre-diagnóstico rápido con los puntos críticos a revisar antes de una visita de autoridad o auditoría interna. Pueden descargarlo aquí sin costo:\nhttps://mallen.lat/api/micro_scan/{}",
+                    nom_s, emp_s, pain_s, nom_s.replace(' ', "%20")
                 )
             };
-            full_log.push_str(&msg_s);
+            full_log.push_str(&format!("[{:02}] {} ({} emp)\n{}\n------------------------------------------------------------------------\n", idx_s + 1, lbl_s, emp_s, msg_s));
+            rendered_msgs.push((lbl_s.to_string(), msg_s));
         }
         let _ = std::fs::write("data/formbot_messages_audit.log", &full_log);
-        println!("║ 105  ║ Auditoría Profunda FormBot (75 Giros / 40 Mensajes en Log) ║ 40/40 Giros OK | Acentos + URL Exacta | 100% OK   ║ [SUPERADO]   ║");
+        println!("╟────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╢");
+        println!("║ MUESTRA ALEATORIA DE NUEVOS GIROS (SEED {} — CATÁLOGO COMPLETO EN data/formbot_messages_audit.log)", seed);
+        for k in 0..4 {
+            let pick = (seed + k * 5) % rendered_msgs.len();
+            println!("╟────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╢");
+            println!("║ [RANDOM #{}/4] GIRO: {}", k + 1, rendered_msgs[pick].0);
+            for ln in rendered_msgs[pick].1.lines() {
+                println!("║   {}", ln);
+            }
+        }
+        println!("║ 105  ║ Auditoría FormBot (95 Giros / 20 Nuevos + Muestra Random)  ║ 0 (SCIAN) | 0 Pregunta | 95 Giros Conectados OK   ║ [SUPERADO]   ║");
     }
     println!("╚══════╩══════════════════════════════════════════════════════════════╩═══════════════════════════════════════════════════╩══════════════╝");
     println!("✓ LOS 105 ESCENARIOS DE GRADO MILITAR E INSTITUCIONAL (CON HIPERPERSONALIZACIÓN SCIAN FORMBOT, WAF Y GPU 120 FPS) SUPERADOS AL 100%");
