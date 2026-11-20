@@ -12,7 +12,7 @@
         #align(center)[
           #text(size: 21pt, weight: "bold", fill: rgb(15, 23, 42, 4%))[
             FIRMA MALLEN® • SELLO CRIPTOGRÁFICO INMUTABLE\
-            #text(size: 11pt, font: "DejaVu Sans Mono")[SHA-256: {{AUDIT_HASH}} • eIDAS ART. 41 / CCOM ART. 89]
+            #text(size: 11pt, font: "DejaVu Sans Mono")[SHA-256: {{AUDIT_HASH_SHORT}} • eIDAS ART. 41 / CCOM ART. 89]
           ]
         ]
       ]
@@ -25,7 +25,7 @@
     #grid(
       columns: (1.2fr, 1fr),
       align(left)[#text(size: 6.5pt, fill: rgb("#475569"))[Folio Criptográfico: #text(font: "DejaVu Sans Mono", weight: "bold", fill: rgb("#0f172a"))[{{NORMA_FOLIO_PREFIX}}-{{REF_TAX}}] • Giro SCIAN: #text(weight: "bold")[{{EMPRESA_SCIAN_CODE}}]]],
-      align(right)[#text(size: 6.5pt, fill: rgb("#475569"))[Verificación: #text(font: "DejaVu Sans Mono", weight: "bold", fill: rgb("#0f172a"))[mallen.lat/verify/{{REF_TAX}}] • #text(weight: "bold")[mallen.lat/\#faq]]]
+      align(right)[#text(size: 6.5pt, fill: rgb("#475569"))[Verificación: #text(font: "DejaVu Sans Mono", weight: "bold", fill: rgb("#0f172a"))[mallen.lat/verify/{{REF_TAX_URL}}] • #text(weight: "bold")[mallen.lat/\#faq]]]
     )
   ]
 )
@@ -139,7 +139,7 @@
       #text(weight: "bold", size: 6.3pt, fill: rgb("#0f172a"))[TITULAR DEL EXPEDIENTE ACREDITADO]\
       #v(2pt)
       #text(size: 5.8pt, fill: rgb("#334155"))[{{REPRESENTANTE_LEGAL}}]\
-      #text(size: 5.3pt, fill: rgb("#64748b"))[{{EMPRESA_NOMBRE}} ({{EMPRESA_TAX_ID}})]
+      #text(size: 5.3pt, fill: rgb("#64748b"))[{{EMPRESA_LABEL_INLINE}}]
     ],
     [
       #rect(width: 100%, fill: rgb("#ffffff"), stroke: 0.4pt + rgb("#cbd5e1"), inset: 4pt, radius: 2pt)[
@@ -152,8 +152,8 @@
             #align(left)[
               #text(size: 5.8pt, weight: "bold", fill: rgb("#0f172a"))[VERIFICACIÓN DIGITAL]\
               #text(size: 5.1pt, fill: rgb("#475569"))[UTC: {{FECHA_EMISION}}]\
-              #text(size: 5.0pt, fill: rgb("#64748b"))[SHA-256: {{AUDIT_HASH}}]\
-              #text(size: 5.2pt, weight: "bold", fill: rgb("#2563eb"))[mallen.lat/verify/{{REF_TAX}}]
+              #text(size: 5.0pt, fill: rgb("#64748b"))[SHA-256: {{AUDIT_HASH_SHORT}}]\
+              #text(size: 5.2pt, weight: "bold", fill: rgb("#2563eb"))[mallen.lat/verify/{{REF_TAX_URL}}]
             ]
           ]
         )

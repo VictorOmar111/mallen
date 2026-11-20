@@ -85,12 +85,12 @@
   )
 ]
 
-#v(0.16em)
+#v(0.08em)
 
 // FICHA TÉCNICO DEL ENTE AUDITADO
 #table(
   columns: (17%, 33%, 17%, 33%),
-  inset: (x: 5.5pt, y: 3.6pt),
+  inset: (x: 5pt, y: 2.5pt),
   stroke: 0.5pt + rgb("#cbd5e1"),
   fill: (x, y) => if calc.odd(x) { rgb("#ffffff") } else { rgb("#f8fafc") },
   [#text(weight: "bold", size: 6.5pt, fill: rgb("#334155"))[ENTE AUDITADO:]],
@@ -109,19 +109,19 @@
   [#text(weight: "bold", size: 6.7pt, fill: rgb("{{STATUS_HEX}}"))[{{ESTATUS_TEXTO}}]]
 )
 
-#v(0.14em)
+#v(0.08em)
 
 #text(size: 7.8pt, weight: "bold", fill: rgb("#0f172a"))[1. METODOLOGÍA DE PARAMETRIZACIÓN POR GIRO SCIAN, CAPACIDAD ECONÓMICA Y PRIMA IMSS]
 #v(0.05em)
 Dictamen pericial compilado específicamente para *"{{EMPRESA_NOMBRE}}"* (`{{EMPRESA_TAX_ID}}`), evaluando su actividad económica registrada (*{{EMPRESA_ACTIVIDAD}}*) en la jurisdicción de *{{EMPRESA_JURISDICCION}}*. Los cálculos sancionatorios en Unidades de Medida y Actualización (UMA 2026: \$113.14 MXN) ponderan la capacidad económica y plantilla conforme al Art. 992 de la LFT y Art. 75 del CFF, manteniendo correspondencia determinística exacta entre esta Matriz Consolidada y el Anexo Técnico de los 37 Vectores Normativos (Página 2).
 
-#v(0.14em)
+#v(0.08em)
 
 #text(size: 7.8pt, weight: "bold", fill: rgb("#0f172a"))[2. COMPULSA PERICIAL EN BASES DE DATOS OFICIALES, LISTAS NEGRAS Y TELEMETRÍA WEB]
 #v(0.05em)
 #table(
   columns: (21%, 29%, 21%, 29%),
-  inset: (x: 5.5pt, y: 3.4pt),
+  inset: (x: 5pt, y: 2.4pt),
   stroke: 0.5pt + rgb("#cbd5e1"),
   fill: (x, y) => if calc.even(x) { rgb("#f1f5f9") } else { rgb("#ffffff") },
   [#text(weight: "bold", size: 6.3pt)[SAT ART. 69-B (EFOS/EDOS):]],
@@ -140,13 +140,13 @@ Dictamen pericial compilado específicamente para *"{{EMPRESA_NOMBRE}}"* (`{{EMP
   [#text(weight: "bold", size: 6.3pt, fill: rgb("#0f172a"))[{{PRIVACY_STATUS}}]]
 )
 
-#v(0.14em)
+#v(0.08em)
 
 #text(size: 7.8pt, weight: "bold", fill: rgb("#0f172a"))[3. MATRIZ CONSOLIDADA DE CONTINGENCIA PATRIMONIAL POR ÓRGANO REGULADOR (DETERMINACIÓN TÉCNICA POR ÓRGANO REGULADOR)]
 #v(0.05em)
 #table(
   columns: (25%, 19%, 56%),
-  inset: (x: 5.5pt, y: 3.6pt),
+  inset: (x: 5pt, y: 2.5pt),
   stroke: 0.5pt + rgb("#cbd5e1"),
   fill: (x, y) => if y == 0 { rgb("#0f172a") } else if y == 7 { rgb("#fef2f2") } else if calc.odd(y) { rgb("#f8fafc") } else { rgb("#ffffff") },
   align: (left + horizon, right + horizon, left + horizon),
@@ -183,14 +183,14 @@ Dictamen pericial compilado específicamente para *"{{EMPRESA_NOMBRE}}"* (`{{EMP
   [#text(weight: "bold", size: 6.3pt, fill: rgb("#7f1d1d"))[Suma determinística exacta de los 37 vectores evaluados en la Página 2 (UMA 2026: \$113.14 MXN).]]
 )
 
-#v(0.14em)
+#v(0.08em)
 
 // ==================== SECCIÓN 4: GRÁFICA VISUAL DE CONCENTRACIÓN PATRIMONIAL ====================
 #text(size: 7.8pt, weight: "bold", fill: rgb("#0f172a"))[4. GRÁFICA PERICIAL DE DISTRIBUCIÓN DE RIESGO PATRIMONIAL POR DEPENDENCIA]
 #v(0.05em)
 {{VISUAL_RISK_CHART_TYPST}}
 
-#v(0.14em)
+#v(0.08em)
 
 // PIE EJECUTIVO DE PÁGINA 1
 #box(width: 100%, fill: rgb("#f8fafc"), stroke: 0.6pt + rgb("#94a3b8"), radius: 4pt, inset: 5.5pt)[

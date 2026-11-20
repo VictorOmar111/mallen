@@ -806,11 +806,12 @@ pub async fn render_typst_from_strict_snapshot_async(snapshot_uuid: String) -> R
 /// Genera un Sello Matricial Vectorial (QR/DataMatrix determinístico en Typst nativo) a partir del Hash SHA-256.
 /// Al ser 100% vectorial (`#grid` de celdas geométricas), tiene nitidez infinita al 1000% de zoom y pesa 0 KB de imagen.
 pub fn render_vector_qr_seal_typst_sized(url_or_hash: &str, size_pt: f64) -> String {
-    let payload = if url_or_hash.starts_with("http://") || url_or_hash.starts_with("https://") {
+    let raw_payload = if url_or_hash.starts_with("http://") || url_or_hash.starts_with("https://") {
         url_or_hash.trim().to_string()
     } else {
         format!("https://mallen.lat/verify/{}", url_or_hash.trim())
     };
+    let payload = raw_payload.replace(' ', "%20");
 
     let code = match qrcode::QrCode::new(payload.as_bytes()) {
         Ok(c) => c,
@@ -2596,7 +2597,7 @@ pub fn generate_pdf_report_with_session(
             "profeco_lfpc" => (
                 "Términos y Condiciones de Comercio Electrónico (Art. 76 BIS y 7 BIS LFPC — Precios con IVA)",
                 "Póliza Escrita de Garantía Mínima Legal (Art. 77 LFPC) y Derecho de Revocación (5 días)",
-                "Auditoria de Purga de Cláusulas Abusivas o Inequitativas en Contratos (Art. 90 LFPC)",
+                "Auditoría de Purga de Cláusulas Abusivas o Inequitativas en Contratos (Art. 90 LFPC)",
             ),
             _ => (
                 "Manifiesto Criptográfico SHA-256 de Integridad de Mensajes de Datos (Arts. 89-93 CCom)",
@@ -2630,10 +2631,20 @@ pub fn generate_pdf_report_with_session(
             .replace("{{NORMA_DESCRIPCION}}", cert.descripcion)
             .replace("{{NORMA_FOLIO_PREFIX}}", cert.folio_prefix)
             .replace("{{AUDIT_HASH}}", &empresa.audit_hash)
+            .replace("{{AUDIT_HASH_SHORT}}", &{
+                let h = empresa.audit_hash.trim();
+                if h.len() > 20 { format!("{}...{}", &h[..10], &h[h.len()-8..]) } else { h.to_string() }
+            })
+            .replace("{{REF_TAX_URL}}", &tax_clean.replace(' ', "%20"))
+            .replace("{{EMPRESA_LABEL_INLINE}}", &if empresa.nombre.trim().eq_ignore_ascii_case(tax_clean.trim()) {
+                sanitize_for_typst(&empresa.nombre)
+            } else {
+                format!("{} ({})", sanitize_for_typst(&empresa.nombre), sanitize_for_typst(&tax_clean))
+            })
             .replace("{{REF_TAX}}", &tax_clean)
         .replace("{{VECTOR_QR_SEAL}}", &render_vector_qr_seal_typst_sized(&format!("https://mallen.lat/verify/{}", tax_clean), 44.0));
 
-        let cert_content = normalize_typst_dollars(&raw_cert);
+        let cert_content = normalize_typst_dollars(&raw_cert).replace(r"\\$", r"\$");
         fs::write(&cert_typ_path, cert_content)?;
 
         let _ = Command::new(if std::path::Path::new("/usr/local/bin/typst").exists() { "/usr/local/bin/typst" } else { "typst" }).env("PATH", "/usr/local/bin:/usr/bin:/bin").env("XDG_CACHE_HOME", "/tmp/mallen_typst_cache")

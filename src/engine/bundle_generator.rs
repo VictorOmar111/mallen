@@ -22,7 +22,7 @@ fn markdown_bold_to_typst(s: &str) -> String {
     let mut out = String::with_capacity(s.len());
     let parts: Vec<&str> = s.split("**").collect();
     for (i, part) in parts.iter().enumerate() {
-        out.push_str(&sanitize_for_typst(part));
+        out.push_str(&sanitize_for_typst(&part.replace("`", "")));
         if i + 1 < parts.len() {
             out.push('*');
         }
@@ -168,8 +168,9 @@ fn compile_kit_document_to_pdf(
     #v(3pt)
     #grid(
       columns: (1fr, auto),
-      align(left)[#text(size: 7pt, fill: rgb("#64748b"))[Entidad Auditada: {nombre} ({rfc})]],
-      align(right)[#text(size: 7pt, fill: rgb("#059669"), weight: "bold")[Sello SHA-256: {hash}]]
+      column-gutter: 8pt,
+      align(left)[#text(size: 6.5pt, fill: rgb("#64748b"))[{nombre}]],
+      align(right)[#text(size: 6.5pt, fill: rgb("#059669"), weight: "bold")[SHA-256: {hash}]]
     )
   ]
 )
@@ -183,7 +184,7 @@ fn compile_kit_document_to_pdf(
 "##,
         rfc = sanitize_for_typst(tax_id),
         nombre = sanitize_for_typst(&empresa.nombre),
-        hash = sanitize_for_typst(&empresa.audit_hash),
+        hash = sanitize_for_typst(if empresa.audit_hash.len() > 20 { &empresa.audit_hash[..20] } else { &empresa.audit_hash }),
         titulo = sanitize_for_typst(&clean_title),
         body = typst_lines
     );
@@ -284,7 +285,7 @@ fn compile_single_accreditation_certificate_pdf(
         emision = sanitize_for_typst(&now_utc),
         vigencia = sanitize_for_typst(&valid_until),
         domicilio = sanitize_for_typst(&empresa.direccion),
-        hash = sanitize_for_typst(&empresa.audit_hash),
+        hash = sanitize_for_typst(if empresa.audit_hash.len() > 20 { &empresa.audit_hash[..20] } else { &empresa.audit_hash }),
     );
 
     if let Ok(mem_bytes) = crate::engine::pdf_generator::compile_typst_in_memory(&cert_typ) {
