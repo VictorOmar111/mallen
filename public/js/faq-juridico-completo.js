@@ -263,6 +263,73 @@
     }
   };
 
+  function getActiveRegionLocale() {
+    const euCode = (document.body && document.body.getAttribute("data-eu-country") || "").toLowerCase();
+    if (euCode === "de" || euCode === "at" || euCode === "ch") return "de";
+    if (euCode === "nl" || euCode === "be") return "nl";
+    if (euCode === "lu") return "fr";
+    return "es";
+  }
+
+  const I18N_FOOTER = {
+    es: {
+      dayBtn: "Cambiar a Modo Día",
+      darkBtn: "Cambiar a Modo Oscuro",
+      appLbl: "Descargar App:",
+      regLbl: "Región:",
+      contactTitle: "¿Prefieres que un especialista te contacte?",
+      contactSub: "Deja únicamente tu correo corporativo o personal y te escribimos en breve.",
+      contactPh: "tu@correo.com",
+      contactBtn: "Contactarme",
+      contactSending: "Enviando...",
+      contactOk: "Correo registrado. Te escribiremos en breve.",
+      contactErr: "Error de conexión. Intente de nuevo.",
+      close: "Cerrar ✕"
+    },
+    de: {
+      dayBtn: "Heller Modus",
+      darkBtn: "Dunkler Modus",
+      appLbl: "App herunterladen:",
+      regLbl: "Region:",
+      contactTitle: "Möchten Sie von einem Spezialisten kontaktiert werden?",
+      contactSub: "Hinterlassen Sie einfach Ihre E-Mail-Adresse – wir melden uns kurzfristig.",
+      contactPh: "name@unternehmen.de",
+      contactBtn: "Kontakt anfordern",
+      contactSending: "Wird gesendet...",
+      contactOk: "E-Mail gespeichert. Wir melden uns in Kürze bei Ihnen.",
+      contactErr: "Verbindungsfehler. Bitte erneut versuchen.",
+      close: "Schließen ✕"
+    },
+    nl: {
+      dayBtn: "Lichte modus",
+      darkBtn: "Donkere modus",
+      appLbl: "App downloaden:",
+      regLbl: "Regio:",
+      contactTitle: "Liever persoonlijk contact met een specialist?",
+      contactSub: "Laat alleen uw e-mailadres achter en wij nemen spoedig contact op.",
+      contactPh: "naam@bedrijf.nl",
+      contactBtn: "Neem contact op",
+      contactSending: "Verzenden...",
+      contactOk: "E-mailadres opgeslagen. Wij nemen snel contact op.",
+      contactErr: "Verbindingsfout. Probeer het opnieuw.",
+      close: "Sluiten ✕"
+    },
+    fr: {
+      dayBtn: "Mode clair",
+      darkBtn: "Mode sombre",
+      appLbl: "Télécharger l’App :",
+      regLbl: "Région :",
+      contactTitle: "Souhaitez-vous être contacté par un spécialiste ?",
+      contactSub: "Laissez simplement votre adresse e-mail et nous vous répondrons rapidement.",
+      contactPh: "nom@entreprise.lu",
+      contactBtn: "Être contacté",
+      contactSending: "Envoi...",
+      contactOk: "Adresse enregistrée. Nous vous contacterons sous peu.",
+      contactErr: "Erreur de connexion. Veuillez réessayer.",
+      close: "Fermer ✕"
+    }
+  };
+
   window.toggleMallenTheme = function () {
     const root = document.documentElement;
     const body = document.body;
