@@ -2966,211 +2966,296 @@ pub struct AdaptiveOutreachPayload {
 
 /// Matriz de Ingeniería de Ventas Psicológicas por Sector SCIAN (20 giros) y Tamaño de Empresa:
 /// Devuelve: (Nombre del Sector, Dolor Específico de Inspección, Solución Directa que Resuelve su Problema).
-pub fn build_scian_sector_hook(scian_code: &str, actividad_desc: &str, emp_count: u32) -> (&'static str, String, String) {
+fn humanize_company_display_name(raw: &str) -> String {
+    let mut s = raw.trim().to_string();
+    if let Some(idx) = s.find('(') {
+        s = s[..idx].trim().to_string();
+    }
+    for suffix in [
+        " S.A.P.I. DE C.V.", " S.A.P.I DE C.V.", " S.A. DE C.V.", " S.A DE C.V.",
+        " S. DE R.L. DE C.V.", " S. DE R.L.", " S.A.S. DE C.V.", " S.A.S.", " S.C.", " A.C.", " S.A."
+    ] {
+        let up = s.to_uppercase();
+        if up.ends_with(suffix) {
+            s = s[..s.len() - suffix.len()].trim().to_string();
+        }
+    }
+    let small = ["de", "del", "la", "las", "el", "los", "y", "e", "en", "para", "por", "con"];
+    s.split_whitespace()
+        .enumerate()
+        .map(|(i, w)| {
+            let low = w.to_lowercase();
+            if i > 0 && small.contains(&low.as_str()) {
+                low
+            } else {
+                let mut ch = low.chars();
+                match ch.next() {
+                    Some(c) => format!("{}{}", c.to_uppercase(), ch.as_str()),
+                    None => String::new(),
+                }
+            }
+        })
+        .collect::<Vec<_>>()
+        .join(" ")
+}
+
+pub fn build_scian_sector_hook(scian_code: &str, _actividad_desc: &str, emp_count: u32) -> (&'static str, String, String) {
     let sc = scian_code.trim();
     if sc.starts_with("722") {
         let pain = if emp_count <= 30 {
-            format!("en restaurantes y cocinas de {} (SCIAN {}) suelen coincidir revisiones sanitarias de COFEPRIS (NOM-251), seguridad en instalaciones de gas (NOM-020) y bitácoras de capacitación", actividad_desc, sc)
+            format!("en restaurantes y cocinas con operación diaria (SCIAN {}), los puntos que más suelen complicarse en una revisión son el control sanitario COFEPRIS y la seguridad básica en cocina", sc)
         } else {
-            format!("en operadoras de {} (SCIAN {}) la rotación de turnos y el ritmo operativo suelen detonar revisiones de riesgo psicosocial (NOM-035), ergonomía (NOM-036) y control sanitario COFEPRIS", actividad_desc, sc)
+            format!("en restaurantes de alto ritmo y rotación (SCIAN {}), los puntos que más suelen complicarse en una revisión son la rotación de turnos, ergonomía/riesgo psicosocial y el control sanitario", sc)
         };
-        let sol = "armamos una guía práctica con el protocolo ante visitas STPS/COFEPRIS, actas de comisión mixta (NOM-019), política NOM-035 y soporte para proveedores de insumos (Art. 69-B)".to_string();
+        let sol = "¿quién ve los temas laborales y sanitarios en el equipo?".to_string();
         ("Restaurantes y Gastronomía", pain, sol)
     } else if sc.starts_with("311") {
-        let pain = format!("en plantas de {} (SCIAN {}) se revisan con frecuencia la trazabilidad sanitaria NOM-251, seguridad en maquinaria de proceso (NOM-004) y comisiones mixtas (NOM-019)", actividad_desc, sc);
-        let sol = "integramos los protocolos sanitarios y laborales NOM-019/030/035 junto con el soporte documental de compras a proveedores de materia prima".to_string();
+        let pain = format!("en plantas de alimentos (SCIAN {}), el mayor foco de revisión suele estar en la trazabilidad sanitaria NOM-251 y la seguridad en líneas de proceso", sc);
+        let sol = "¿quién coordina calidad sanitaria y seguridad laboral en planta?".to_string();
         ("Industria Alimentaria", pain, sol)
     } else if sc.starts_with("312") {
-        let pain = format!("en empresas de {} (SCIAN {}) suelen revisarse etiquetado y sanidad COFEPRIS, seguridad en almacenes y estiba (NOM-006) y materialidad de distribución", actividad_desc, sc);
-        let sol = "reunimos las actas de seguridad e higiene, la guía de prevención en planta y el soporte contractual de distribución y proveedores".to_string();
+        let pain = format!("en operaciones de bebidas (SCIAN {}), lo que más suele revisarse es el cumplimiento sanitario COFEPRIS y la seguridad en almacén y distribución", sc);
+        let sol = "¿con quién podríamos validar sus controles sanitarios y de almacén?".to_string();
         ("Industria de Bebidas", pain, sol)
     } else if sc.starts_with("5112") || sc.starts_with("518") || sc.starts_with("5415") {
-        let pain = format!("en equipos de {} (SCIAN {}) hoy se revisan con especial atención la materialidad de servicios intangibles y desarrollo (Art. 69-B CFF), el teletrabajo (NOM-037) y la privacidad en la nube", actividad_desc, sc);
-        let sol = "reunimos el adendum de teletrabajo NOM-037, el contrato marco de servicios tecnológicos con fecha cierta y los lineamientos de privacidad de datos".to_string();
+        let pain = format!("en empresas de software y tecnología (SCIAN {}), los dos puntos que hoy se revisan con más lupa son la materialidad de servicios intangibles ante el SAT y los lineamientos de teletrabajo (NOM-037)", sc);
+        let sol = "¿quién lleva la parte administrativa o de cumplimiento en su equipo?".to_string();
         ("Tecnología, Software y Cloud", pain, sol)
     } else if sc.starts_with("517") || sc.starts_with("519") {
-        let pain = format!("en empresas de {} (SCIAN {}) cobran relevancia el resguardo de datos de usuarios (LFPDPPP), los contratos de infraestructura y las condiciones de trabajo remoto o en campo (NOM-037/029)", actividad_desc, sc);
-        let sol = "organizamos el aviso de privacidad integral, los acuerdos de confidencialidad y teletrabajo y el soporte contractual ante el SAT".to_string();
+        let pain = format!("en firmas de telecomunicaciones y servicios digitales (SCIAN {}), el foco principal suele estar en la protección de datos de usuarios y los contratos de infraestructura", sc);
+        let sol = "¿quién supervisa privacidad y cumplimiento regulatorio en el equipo?".to_string();
         ("Telecomunicaciones y Servicios Digitales", pain, sol)
     } else if sc.starts_with("23") {
-        let pain = format!("en proyectos de {} (SCIAN {}) el foco suele estar en la prima de riesgo IMSS (Clase V), la responsabilidad solidaria con subcontratistas en obra (REPSE) y la seguridad en alturas (NOM-009/031)", actividad_desc, sc);
-        let sol = "organizamos el expediente de control de contratistas REPSE (ICSOE/SISUB), las comisiones de seguridad NOM-019/030 y el contrato marco de obra con fecha cierta".to_string();
+        let pain = format!("en proyectos de edificación y esquemas con subcontratistas (SCIAN {}), el mayor foco de contingencia suele estar en la trazabilidad REPSE, el control de contratistas y la seguridad en obra", sc);
+        let sol = "¿quién coordina el control de contratistas y seguridad en obra?".to_string();
         ("Construcción e Infraestructura", pain, sol)
     } else if sc.starts_with("21") {
-        let pain = format!("en operaciones de {} (SCIAN {}) se revisan estrictamente la clasificación de riesgo máximo IMSS, los protocolos de seguridad industrial (NOM-023/030) y el padrón REPSE de contratistas", actividad_desc, sc);
-        let sol = "estructuramos el soporte de comisiones de seguridad e higiene, el control documental de contratistas especializados y la materialidad de contratos".to_string();
+        let pain = format!("en operaciones mineras y extractivas (SCIAN {}), el foco crítico suele concentrarse en la clasificación de riesgo IMSS, seguridad industrial y control REPSE de contratistas", sc);
+        let sol = "¿quién lidera seguridad industrial y control de terceros en su operación?".to_string();
         ("Minería e Industria Extractiva", pain, sol)
     } else if sc.starts_with("22") {
-        let pain = format!("en proyectos de {} (SCIAN {}) destacan la seguridad en instalaciones eléctricas (NOM-029), los servicios preventivos (NOM-030) y la acreditación de proveedores especializados", actividad_desc, sc);
-        let sol = "integramos los protocolos de seguridad operativa, las actas bipartitas NOM-019 y el expediente de materialidad para contratistas".to_string();
+        let pain = format!("en proyectos de energía e infraestructura (SCIAN {}), las auditorías suelen enfocarse en seguridad eléctrica (NOM-029) y acreditación documental de contratistas", sc);
+        let sol = "¿quién coordina cumplimiento operativo y proveedores en su equipo?".to_string();
         ("Energía y Servicios Públicos", pain, sol)
     } else if sc.starts_with("54194") {
-        let pain = format!("en clínicas de {} (SCIAN {}) suelen revisarse el manejo de insumos sanitarios, residuos biológico-infecciosos (RPBI), avisos de privacidad de clientes y condiciones laborales", actividad_desc, sc);
-        let sol = "preparamos el aviso de privacidad integral, los protocolos básicos de seguridad e higiene (NOM-019/030) y los contratos de servicios".to_string();
+        let pain = format!("en clínicas veterinarias (SCIAN {}), los puntos que más suelen revisarse son el manejo de residuos RPBI y la documentación laboral básica", sc);
+        let sol = "¿quién lleva la parte administrativa y sanitaria en la clínica?".to_string();
         ("Servicios Veterinarios", pain, sol)
+    } else if sc.starts_with("6215") {
+        let pain = format!("en laboratorios de análisis clínicos (SCIAN {}), el mayor foco está en el manejo de datos sensibles de pacientes (LFPDPPP) y el control sanitario de muestras y RPBI", sc);
+        let sol = "¿quién supervisa cumplimiento sanitario y privacidad en el laboratorio?".to_string();
+        ("Laboratorios de Análisis Clínicos", pain, sol)
     } else if sc.starts_with("6212") || sc.starts_with("33911") {
-        let pain = format!("en centros de {} (SCIAN {}) coinciden el tratamiento de datos de salud (Art. 9 LFPDPPP), los requisitos sanitarios COFEPRIS y el manejo seguro de residuos", actividad_desc, sc);
-        let sol = "reunimos el aviso de privacidad para datos sensibles, los formatos de consentimiento expreso y los protocolos laborales aplicables".to_string();
+        let pain = format!("en clínicas dentales y ópticas (SCIAN {}), lo que más suele revisarse es el consentimiento expreso de expedientes de salud y los requisitos COFEPRIS", sc);
+        let sol = "¿quién coordina los temas administrativos y sanitarios en su centro?".to_string();
         ("Laboratorios Dentales y Ópticas", pain, sol)
     } else if sc.starts_with("621") {
-        let pain = format!("en centros de {} (SCIAN {}) el manejo de expedientes clínicos y datos sensibles exige consentimiento expreso (Art. 9 LFPDPPP), además de vigilancia COFEPRIS y protocolos RPBI", actividad_desc, sc);
-        let sol = "integramos el aviso de privacidad para datos de salud, los formatos de consentimiento expreso y el protocolo sanitario y de honorarios médicos".to_string();
+        let pain = format!("en clínicas y consultorios (SCIAN {}), los dos frentes más sensibles en una revisión son el manejo de expedientes y datos de salud (LFPDPPP) y la vigilancia sanitaria COFEPRIS", sc);
+        let sol = "¿quién ve los temas administrativos y sanitarios en su clínica?".to_string();
         ("Clínicas y Consultorios", pain, sol)
-    } else if sc.starts_with("622") || sc.starts_with("623") {
-        let pain = format!("en instituciones de {} (SCIAN {}) convergen el manejo de datos sensibles de pacientes (LFPDPPP), los residuos biológico-infecciosos (NOM-087), la rotación de turnos (NOM-035) y proveedores REPSE", actividad_desc, sc);
-        let sol = "consolidamos la arquitectura de privacidad clínica, los protocolos NOM-019/035 y el control documental de servicios subcontratados".to_string();
+    } else if sc.starts_with("623") {
+        let pain = format!("en residencias y centros de asistencia (SCIAN {}), el foco prioritario suele estar en Protección Civil, manejo de expedientes médicos y control de turnos del personal", sc);
+        let sol = "¿quién coordina operación y cumplimiento normativo en su centro?".to_string();
+        ("Residencias y Asistencia Social", pain, sol)
+    } else if sc.starts_with("622") {
+        let pain = format!("en operaciones hospitalarias (SCIAN {}), el mayor foco de contingencia suele estar en la protección de datos clínicos sensibles, protocolos RPBI y trazabilidad de proveedores REPSE", sc);
+        let sol = "¿quién coordina cumplimiento clínico y control de terceros en la institución?".to_string();
         ("Hospitales y Asistencia Médica", pain, sol)
     } else if sc.starts_with("3254") || sc.starts_with("4641") {
-        let pain = format!("en empresas de {} (SCIAN {}) se vigilan de cerca la trazabilidad sanitaria COFEPRIS, el almacenamiento seguro, la privacidad de recetas/clientes y la materialidad de insumos", actividad_desc, sc);
-        let sol = "preparamos el soporte de privacidad, las actas de seguridad laboral y la documentación contractual de cadena de suministro".to_string();
+        let pain = format!("en operaciones farmacéuticas (SCIAN {}), las revisiones suelen concentrarse en trazabilidad sanitaria COFEPRIS y soporte documental de cadena de suministro", sc);
+        let sol = "¿quién lleva cumplimiento regulatorio y proveedores en su equipo?".to_string();
         ("Farmacéutica y Laboratorios", pain, sol)
     } else if sc.starts_with("484") || sc.starts_with("481") || sc.starts_with("482") || sc.starts_with("483") {
-        let pain = format!("en operaciones de {} (SCIAN {}) la autoridad cruza el Complemento Carta Porte 3.1 (Art. 29-A CFF) con bitácoras de operadores, exámenes médicos y maniobras de carga (NOM-006/036)", actividad_desc, sc);
-        let sol = "armamos el protocolo de soporte logístico y Carta Porte, las comisiones de seguridad para patios y operadores y la conciliación ante el IMSS".to_string();
+        let pain = format!("en operaciones de autotransporte y logística (SCIAN {}), el mayor foco de contingencia suele estar en el cruce de Carta Porte 3.1 con las bitácoras de operadores y seguridad en patios", sc);
+        let sol = "¿quién coordina cumplimiento logístico y seguridad operativa en su equipo?".to_string();
         ("Transporte de Carga y Logística", pain, sol)
     } else if sc.starts_with("488") {
-        let pain = format!("en firmas de {} (SCIAN {}) resultan clave el expediente de actividades vulnerables (LFPIORPI), la materialidad de operaciones de comercio exterior y la seguridad en patios", actividad_desc, sc);
-        let sol = "integramos los controles de cumplimiento PLD, el contrato marco con fecha cierta y los lineamientos laborales aplicables".to_string();
+        let pain = format!("en agencias aduanales y comercio exterior (SCIAN {}), el foco principal suele estar en los expedientes de actividades vulnerables (PLD) y la materialidad de operaciones", sc);
+        let sol = "¿quién coordina cumplimiento PLD y auditoría interna en la agencia?".to_string();
         ("Agencias Aduanales y Comercio Exterior", pain, sol)
+    } else if sc.starts_with("493") {
+        let pain = format!("en centros de distribución y almacenes (SCIAN {}), lo que más suele revisarse es la seguridad en estiba y montacargas (NOM-006) junto con Protección Civil", sc);
+        let sol = "¿quién lidera seguridad e higiene y operación en sus almacenes?".to_string();
+        ("Centros de Distribución (CEDIS)", pain, sol)
     } else if sc.starts_with("49") {
-        let pain = format!("en operaciones de {} (SCIAN {}) suelen revisarse la ergonomía y manejo de cargas (NOM-006/036), la Carta Porte en entregas y la privacidad de datos de destinatarios", actividad_desc, sc);
-        let sol = "reunimos los protocolos de almacén y reparto, las actas NOM-019/030 y el aviso de privacidad operativo".to_string();
+        let pain = format!("en mensajería y paquetería (SCIAN {}), los puntos clave en revisión suelen ser la ergonomía en manejo de cargas y el cumplimiento de Carta Porte en ruta", sc);
+        let sol = "¿quién coordina operaciones y cumplimiento laboral en su equipo?".to_string();
         ("Mensajería, Paquetería y Almacenaje", pain, sol)
     } else if sc.starts_with("4671") || sc.starts_with("4342") {
-        let pain = format!("en negocios de {} (SCIAN {}) se revisan el almacenamiento seguro de materiales (NOM-006/036), Protección Civil en piso y bodega (PIPC) y el soporte fiscal de compras", actividad_desc, sc);
-        let sol = "consolidamos la guía de Protección Civil, las actas NOM-019/030 y el contrato marco para proveedores mayoristas".to_string();
+        let pain = format!("en ferreterías y materiales de construcción (SCIAN {}), suelen revisarse con más frecuencia Protección Civil en bodega y el manejo seguro de cargas", sc);
+        let sol = "¿quién ve los temas de seguridad y administración en el negocio?".to_string();
         ("Ferreterías y Materiales de Construcción", pain, sol)
     } else if sc.starts_with("4682") || sc.starts_with("4353") {
-        let pain = format!("en distribuidoras de {} (SCIAN {}) destacan el control de inventarios y garantías ante PROFECO, la seguridad en almacén (NOM-006) y la materialidad de compras (Art. 69-B)", actividad_desc, sc);
-        let sol = "integramos los términos comerciales, el soporte de proveeduría y los protocolos preventivos de STPS".to_string();
+        let pain = format!("en distribuidoras de autopartes (SCIAN {}), el foco suele estar en la seguridad en almacén y la materialidad fiscal de compras a proveedores", sc);
+        let sol = "¿quién lleva administración y control de proveedores en su equipo?".to_string();
         ("Autopartes y Refaccionarias", pain, sol)
     } else if sc.starts_with("4684") {
-        let pain = format!("en estaciones de {} (SCIAN {}) son críticos los protocolos de seguridad contra incendios (NOM-002), manejo de sustancias inflamables (NOM-005), Protección Civil y controles volumétricos", actividad_desc, sc);
-        let sol = "reunimos las actas de comisión de seguridad NOM-019, el diagnóstico NOM-030 y la guía de Protección Civil".to_string();
+        let pain = format!("en estaciones de servicio (SCIAN {}), las inspecciones priorizan seguridad contra incendios (NOM-002), manejo de inflamables y Protección Civil", sc);
+        let sol = "¿quién coordina seguridad operativa y cumplimiento en la estación?".to_string();
         ("Gasolineras y Combustibles", pain, sol)
     } else if sc.starts_with("43") {
-        let pain = format!("en empresas de {} (SCIAN {}) las verificaciones suelen enfocarse en Protección Civil en bodega (PIPC), manejo de cargas (NOM-006/036) y soporte de compras a gran escala (Art. 69-B)", actividad_desc, sc);
-        let sol = "consolidamos la guía de Protección Civil, los instrumentos STPS (NOM-019/030/035) y el contrato marco de proveeduría".to_string();
+        let pain = format!("en comercio mayorista (SCIAN {}), los puntos que más suelen revisarse son Protección Civil en bodega y el soporte de materialidad con proveedores", sc);
+        let sol = "¿quién ve los temas administrativos y de operación en el equipo?".to_string();
         ("Comercio Mayorista", pain, sol)
     } else if sc.starts_with("454") {
-        let pain = format!("en tiendas de {} (SCIAN {}) son prioritarios el cumplimiento digital PROFECO (Art. 76 BIS), la seguridad y privacidad de datos de compradores y el soporte de proveedores logísticos", actividad_desc, sc);
-        let sol = "preparamos los términos de comercio electrónico, el aviso de privacidad web y los contratos de logística y proveeduría".to_string();
+        let pain = format!("en comercio electrónico (SCIAN {}), el foco suele concentrarse en los términos digitales ante PROFECO y el aviso de privacidad para compradores", sc);
+        let sol = "¿quién supervisa operación digital y cumplimiento en la tienda?".to_string();
         ("Comercio Electrónico", pain, sol)
     } else if sc.starts_with("46") {
-        let pain = format!("en negocios de {} (SCIAN {}) se revisan Protección Civil para locales (PIPC), avisos de privacidad en mostrador y sitio web, y términos comerciales ante PROFECO (Art. 76 BIS)", actividad_desc, sc);
-        let sol = "integramos los términos de venta PROFECO, el aviso de privacidad comercial y los instrumentos básicos de STPS".to_string();
+        let pain = format!("en comercio minorista (SCIAN {}), los dos frentes más revisados suelen ser Protección Civil en piso de venta y el aviso de privacidad/términos ante PROFECO", sc);
+        let sol = "¿quién lleva la parte administrativa y de tiendas en su equipo?".to_string();
         ("Comercio Minorista y Retail", pain, sol)
     } else if sc.starts_with("524") {
-        let pain = format!("en firmas de {} (SCIAN {}) cobran peso la protección de datos patrimoniales y sensibles (LFPDPPP), los controles de Beneficiario Controlador y las políticas de teletrabajo (NOM-037)", actividad_desc, sc);
-        let sol = "estructuramos el aviso de privacidad reforzado, el adendum de teletrabajo y los contratos marco con fecha cierta".to_string();
+        let pain = format!("en firmas de seguros y fianzas (SCIAN {}), el foco suele estar en la protección de datos patrimoniales y los controles de Beneficiario Controlador", sc);
+        let sol = "¿quién coordina cumplimiento y privacidad en su firma?".to_string();
         ("Seguros y Fianzas", pain, sol)
+    } else if sc.starts_with("522") {
+        let pain = format!("en financieras y SOFOMes (SCIAN {}), las revisiones priorizan los expedientes de Beneficiario Controlador y los controles antilavado (LFPIORPI)", sc);
+        let sol = "¿quién lleva la oficialía de cumplimiento o administración en su equipo?".to_string();
+        ("SOFOMes y Servicios de Crédito", pain, sol)
     } else if sc.starts_with("52") {
-        let pain = format!("en entidades de {} (SCIAN {}) suelen auditarse la identificación de Beneficiario Controlador (Art. 32-B Ter CFF), controles antilavado (LFPIORPI) y protección de datos financieros", actividad_desc, sc);
-        let sol = "estructuramos el manual de cumplimiento PLD/Beneficiario Controlador, la política de privacidad reforzada y los contratos marco".to_string();
+        let pain = format!("en servicios financieros y fintech (SCIAN {}), el mayor foco suele estar en Beneficiario Controlador, controles PLD y protección de datos financieros", sc);
+        let sol = "¿quién coordina cumplimiento regulatorio en su organización?".to_string();
         ("Fintech y Servicios Financieros", pain, sol)
     } else if sc.starts_with("532") {
-        let pain = format!("en empresas de {} (SCIAN {}) se revisan los contratos de adhesión ante PROFECO, la fecha cierta de contratos de arrendamiento (Art. 69-B) y la seguridad en patios de equipo", actividad_desc, sc);
-        let sol = "integramos el contrato marco con soporte de fecha cierta, el aviso de privacidad y los protocolos de seguridad laboral".to_string();
+        let pain = format!("en arrendamiento de autos y maquinaria (SCIAN {}), lo que más se revisa es la fecha cierta de contratos ante el SAT y los contratos de adhesión PROFECO", sc);
+        let sol = "¿quién ve los contratos y cumplimiento operativo en su equipo?".to_string();
         ("Arrendamiento de Autos y Maquinaria", pain, sol)
     } else if sc.starts_with("53") {
-        let pain = format!("en empresas de {} (SCIAN {}) destacan los expedientes de actividades vulnerables inmobiliarias (Art. 17 LFPIORPI), la fecha cierta en contratos de obra/venta y la privacidad de clientes", actividad_desc, sc);
-        let sol = "organizamos el expediente PLD inmobiliario, los contratos con soporte de fecha cierta y el aviso de privacidad integral".to_string();
+        let pain = format!("en desarrollos e inmobiliarias (SCIAN {}), los puntos críticos suelen ser los expedientes de actividades vulnerables (PLD) y la fecha cierta en contratos", sc);
+        let sol = "¿quién coordina cumplimiento PLD y contratos en su equipo?".to_string();
         ("Sector Inmobiliario y Desarrollos", pain, sol)
     } else if sc.starts_with("54112") {
-        let pain = format!("en oficinas de {} (SCIAN {}) son esenciales los expedientes de actividades vulnerables (LFPIORPI), el resguardo de datos biométricos/identificaciones y la NOM-035", actividad_desc, sc);
-        let sol = "consolidamos el aviso de privacidad para datos sensibles, los controles PLD y las políticas internas de cumplimiento laboral".to_string();
+        let pain = format!("en notarías y corredurías (SCIAN {}), el foco principal suele estar en el resguardo de datos sensibles/biométricos y los expedientes de actividades vulnerables", sc);
+        let sol = "¿quién coordina administración y cumplimiento interno en la oficina?".to_string();
         ("Notarías y Corredurías", pain, sol)
     } else if sc.starts_with("5413") {
-        let pain = format!("en despachos de {} (SCIAN {}) se revisan la materialidad de proyectos y entregables técnicos (Art. 69-B), la seguridad en visitas a obra y el teletrabajo (NOM-037)", actividad_desc, sc);
-        let sol = "preparamos el contrato marco con bitácora de entregables, el adendum NOM-037 y las actas de seguridad aplicables".to_string();
+        let pain = format!("en despachos de arquitectura e ingeniería (SCIAN {}), suelen revisarse la materialidad de entregables ante el SAT y los esquemas de trabajo híbrido (NOM-037)", sc);
+        let sol = "¿quién lleva la parte administrativa y contractual en el despacho?".to_string();
         ("Arquitectura e Ingeniería Civil", pain, sol)
     } else if sc.starts_with("5411") || sc.starts_with("5412") {
-        let pain = format!("en firmas de {} (SCIAN {}) cobran peso la acreditación de materialidad de servicios profesionales (Art. 69-B), el Beneficiario Controlador y los contratos de encargo de datos", actividad_desc, sc);
-        let sol = "reunimos el contrato marco de servicios con bitácora de entregables, los acuerdos de confidencialidad y el aviso de privacidad".to_string();
+        let pain = format!("en firmas legales y contables (SCIAN {}), el foco suele estar en la materialidad de servicios profesionales y la protección de datos confidenciales de clientes", sc);
+        let sol = "¿con quién podríamos compartir el resumen técnico en su firma?".to_string();
         ("Despachos Jurídicos y Contables", pain, sol)
+    } else if sc.starts_with("5613") {
+        let pain = format!("en firmas de reclutamiento y talento (SCIAN {}), el punto más sensible es mantener intacto el registro REPSE, los reportes ICSOE/SISUB y la privacidad de candidatos", sc);
+        let sol = "¿quién coordina cumplimiento REPSE y nómina en su equipo?".to_string();
+        ("Consultorías de RH y Reclutamiento", pain, sol)
     } else if sc.starts_with("5614") {
-        let pain = format!("en centros de {} (SCIAN {}) destacan la protección de bases de datos de clientes (LFPDPPP), la prevención de riesgo psicosocial por alta rotación (NOM-035) y el teletrabajo (NOM-037)", actividad_desc, sc);
-        let sol = "integramos la política NOM-035, el adendum NOM-037, el aviso de privacidad y los acuerdos de confidencialidad".to_string();
+        let pain = format!("en centros de contacto y BPO (SCIAN {}), los dos frentes críticos suelen ser el riesgo psicosocial por rotación (NOM-035) y la privacidad de bases de datos", sc);
+        let sol = "¿quién lleva recursos humanos y cumplimiento en su operación?".to_string();
         ("Call Centers y BPO", pain, sol)
+    } else if sc.starts_with("5615") {
+        let pain = format!("en agencias de viajes y turismo (SCIAN {}), suelen revisarse los términos de cancelación ante PROFECO y la protección de datos personales de viajeros", sc);
+        let sol = "¿quién lleva la parte administrativa y comercial en la agencia?".to_string();
+        ("Agencias de Viajes y Turismo", pain, sol)
     } else if sc.starts_with("5616") {
-        let pain = format!("en empresas de {} (SCIAN {}) es indispensable mantener vigente el registro REPSE, los reportes ICSOE/SISUB, el control de turnos (NOM-035) y la prima de riesgo IMSS", actividad_desc, sc);
-        let sol = "armamos el paquete de control REPSE, las actas de seguridad e higiene y los contratos de servicios especializados".to_string();
+        let pain = format!("en empresas de seguridad privada (SCIAN {}), el mayor foco suele estar en la vigencia del registro REPSE, los reportes ICSOE/SISUB y la prima de riesgo IMSS", sc);
+        let sol = "¿quién coordina cumplimiento REPSE y operaciones en su equipo?".to_string();
         ("Seguridad Privada", pain, sol)
     } else if sc.starts_with("5617") {
-        let pain = format!("en empresas de {} (SCIAN {}) se vigilan el registro REPSE y reportes cuatrimestrales (ICSOE/SISUB), el manejo seguro de productos químicos (NOM-005/018) y la seguridad en sitio", actividad_desc, sc);
-        let sol = "estructuramos el expediente REPSE, las comisiones NOM-019/030 y el contrato marco de servicios especializados".to_string();
+        let pain = format!("en servicios de limpieza y mantenimiento (SCIAN {}), lo que más se revisa es la vigencia REPSE y el manejo seguro de químicos en sitio", sc);
+        let sol = "¿quién lleva el control REPSE y seguridad laboral en su equipo?".to_string();
         ("Limpieza y Mantenimiento", pain, sol)
     } else if sc.starts_with("561") {
-        let pain = format!("en empresas de {} (SCIAN {}) el punto más sensible es mantener al día el registro REPSE, los reportes cuatrimestrales ICSOE/SISUB y la documentación laboral para evitar responsabilidad solidaria", actividad_desc, sc);
-        let sol = "armamos el paquete de control REPSE (ICSOE/SISUB), los contratos de servicios especializados con fecha cierta y los protocolos STPS".to_string();
+        let pain = format!("en servicios especializados (SCIAN {}), el punto más sensible suele ser mantener al día el REPSE y los reportes ICSOE/SISUB para evitar contingencias con clientes", sc);
+        let sol = "¿quién lleva cumplimiento REPSE y contratos en su equipo?".to_string();
         ("Servicios Especializados y REPSE", pain, sol)
+    } else if sc.starts_with("6244") {
+        let pain = format!("en guarderías y estancias infantiles (SCIAN {}), los dos puntos prioritarios en revisión son Protección Civil (PIPC) y el consentimiento de datos de menores", sc);
+        let sol = "¿quién coordina dirección y seguridad en el plantel?".to_string();
+        ("Guarderías y Estancias Infantiles", pain, sol)
     } else if sc.starts_with("71394") {
-        let pain = format!("en centros de {} (SCIAN {}) se revisan el Programa Interno de Protección Civil (PIPC), el consentimiento para datos biométricos/salud de socios (Art. 9 LFPDPPP) y contratos PROFECO", actividad_desc, sc);
-        let sol = "reunimos el aviso de privacidad para datos biométricos, la guía PIPC y los términos de membresía ante PROFECO".to_string();
+        let pain = format!("en gimnasios y centros deportivos (SCIAN {}), suelen revisarse Protección Civil (PIPC) y el consentimiento expreso para datos biométricos o de salud de socios", sc);
+        let sol = "¿quién lleva la administración y operación del centro?".to_string();
         ("Gimnasios y Centros Deportivos", pain, sol)
     } else if sc.starts_with("711") || sc.starts_with("713") {
-        let pain = format!("en empresas de {} (SCIAN {}) cobran relevancia Protección Civil para aforos (PIPC), los contratos con proveedores temporales (REPSE/69-B) y las políticas de cancelación PROFECO", actividad_desc, sc);
-        let sol = "integramos la guía de Protección Civil, los términos comerciales y el soporte contractual de proveedores".to_string();
+        let pain = format!("en entretenimiento y eventos (SCIAN {}), el foco suele estar en Protección Civil para aforos y los contratos con proveedores temporales", sc);
+        let sol = "¿quién coordina producción y cumplimiento en su equipo?".to_string();
         ("Entretenimiento y Eventos", pain, sol)
     } else if sc.starts_with("721") {
-        let pain = format!("en operaciones de {} (SCIAN {}) la atención continua exige tener al día Protección Civil y simulacros (PIPC), higiene COFEPRIS, proveedores REPSE y NOM-035", actividad_desc, sc);
-        let sol = "reunimos los protocolos PIPC de hospitalidad, el control de proveedores REPSE, la política NOM-035 y la privacidad de huéspedes".to_string();
+        let pain = format!("en hotelería y hospitalidad (SCIAN {}), los frentes más revisados suelen ser Protección Civil, higiene sanitaria y control REPSE de proveedores de apoyo", sc);
+        let sol = "¿quién coordina operaciones y cumplimiento en el hotel?".to_string();
         ("Hotelería y Hospitalidad", pain, sol)
     } else if sc.starts_with("8121") {
-        let pain = format!("en centros de {} (SCIAN {}) suelen revisarse las condiciones sanitarias COFEPRIS, el consentimiento de datos de clientes (LFPDPPP), los contratos de servicio y NOM-035", actividad_desc, sc);
-        let sol = "preparamos el aviso de privacidad integral, los términos comerciales y las políticas laborales preventivas".to_string();
+        let pain = format!("en estéticas, spas y bienestar (SCIAN {}), suelen revisarse las condiciones sanitarias COFEPRIS y el aviso de privacidad de clientes", sc);
+        let sol = "¿quién lleva la administración y cumplimiento en su centro?".to_string();
         ("Estéticas, Spas y Bienestar", pain, sol)
+    } else if sc.starts_with("8122") {
+        let pain = format!("en servicios funerarios (SCIAN {}), el foco suele estar en los contratos de adhesión PROFECO, protocolos sanitarios y manejo de datos sensibles", sc);
+        let sol = "¿quién lleva la parte administrativa y normativa en su equipo?".to_string();
+        ("Servicios Funerarios", pain, sol)
+    } else if sc.starts_with("8123") {
+        let pain = format!("en lavanderías industriales y tintorerías (SCIAN {}), suelen revisarse el manejo de solventes (NOM-005), seguridad en calderas y comisiones mixtas", sc);
+        let sol = "¿quién coordina seguridad y operación en planta?".to_string();
+        ("Lavanderías Industriales", pain, sol)
+    } else if sc.starts_with("8129") {
+        let pain = format!("en estacionamientos y pensiones (SCIAN {}), los puntos más revisados suelen ser Protección Civil, señalización y términos de responsabilidad PROFECO", sc);
+        let sol = "¿quién administra la operación y cumplimiento del sitio?".to_string();
+        ("Estacionamientos y Pensiones", pain, sol)
+    } else if sc.starts_with("512") {
+        let pain = format!("en productoras audiovisuales (SCIAN {}), el foco suele estar en la materialidad de entregables ante el SAT y los contratos con talento y proveedores temporales", sc);
+        let sol = "¿quién lleva administración y producción en su equipo?".to_string();
+        ("Productoras Audiovisuales", pain, sol)
+    } else if sc.starts_with("322") {
+        let pain = format!("en fabricación de empaques y cartón (SCIAN {}), destacan la seguridad en maquinaria (NOM-004), protección contra incendios (NOM-002) y prima de riesgo IMSS", sc);
+        let sol = "¿quién coordina seguridad e higiene en planta?".to_string();
+        ("Empaques, Papel y Cartón", pain, sol)
+    } else if sc.starts_with("316") {
+        let pain = format!("en talleres y plantas de calzado y piel (SCIAN {}), suelen revisarse el manejo de adhesivos y solventes (NOM-005), ergonomía y comisiones NOM-019", sc);
+        let sol = "¿quién lleva seguridad laboral y administración en planta?".to_string();
+        ("Calzado y Marroquinería", pain, sol)
     } else if sc.starts_with("323") || sc.starts_with("5111") {
-        let pain = format!("en talleres y firmas de {} (SCIAN {}) se revisan la seguridad en maquinaria de impresión (NOM-004), el manejo de tintas y solventes (NOM-005), las comisiones NOM-019 y la materialidad de pedidos", actividad_desc, sc);
-        let sol = "consolidamos las actas NOM-019/030, la política NOM-035 y el contrato marco de producción y proveeduría".to_string();
+        let pain = format!("en imprentas y editoriales (SCIAN {}), el foco suele estar en la seguridad en prensas/maquinaria y el manejo de tintas y solventes", sc);
+        let sol = "¿quién coordina producción y seguridad en el taller?".to_string();
         ("Imprentas y Editoriales", pain, sol)
     } else if sc.starts_with("313") || sc.starts_with("314") || sc.starts_with("315") {
-        let pain = format!("en talleres y plantas de {} (SCIAN {}) destacan la ergonomía y seguridad en maquinaria de costura (NOM-004/036), las comisiones NOM-019 y la conciliación de plantilla IMSS", actividad_desc, sc);
-        let sol = "integramos las actas bipartitas NOM-019, el diagnóstico NOM-030 y el soporte laboral y contractual".to_string();
+        let pain = format!("en industria textil y confección (SCIAN {}), suelen revisarse ergonomía en líneas de costura, comisiones NOM-019 y conciliación de plantilla IMSS", sc);
+        let sol = "¿quién coordina planta y recursos humanos en su equipo?".to_string();
         ("Industria Textil y Confección", pain, sol)
     } else if sc.starts_with("321") || sc.starts_with("337") {
-        let pain = format!("en talleres de {} (SCIAN {}) se revisan la protección contra incendios (NOM-002), seguridad en sierras y maquinaria (NOM-004), equipo de protección (NOM-017) y prima IMSS", actividad_desc, sc);
-        let sol = "reunimos las actas NOM-019, el diagnóstico preventivo NOM-030 y el contrato marco de proveeduría".to_string();
+        let pain = format!("en madera y fabricación de muebles (SCIAN {}), las inspecciones priorizan protección contra incendios (NOM-002) y seguridad en sierras y maquinaria", sc);
+        let sol = "¿quién lleva seguridad e higiene en su taller o planta?".to_string();
         ("Madera y Fabricación de Muebles", pain, sol)
     } else if sc.starts_with("332") {
-        let pain = format!("en plantas de {} (SCIAN {}) son prioritarios la seguridad en corte y soldadura (NOM-027), maquinaria (NOM-004), equipo de protección (NOM-017) y clasificación de riesgo IMSS", actividad_desc, sc);
-        let sol = "consolidamos las actas NOM-019/030, la política NOM-035 y el soporte documental de contratos industriales".to_string();
+        let pain = format!("en metalmecánica y estructuras (SCIAN {}), el foco crítico suele estar en seguridad en soldadura/corte (NOM-027), equipo de protección y prima IMSS", sc);
+        let sol = "¿quién coordina seguridad industrial en su planta?".to_string();
         ("Metalmecánica y Estructuras", pain, sol)
     } else if sc.starts_with("334") || sc.starts_with("335") {
-        let pain = format!("en plantas de {} (SCIAN {}) destacan la seguridad eléctrica (NOM-029), ergonomía en líneas de ensamble (NOM-036), comisiones NOM-019 y materialidad de componentes", actividad_desc, sc);
-        let sol = "integramos los protocolos NOM-019/030/035 y el contrato marco con fecha cierta para proveedores".to_string();
+        let pain = format!("en manufactura electrónica y equipos (SCIAN {}), suelen revisarse seguridad eléctrica, ergonomía en ensamble y materialidad de componentes", sc);
+        let sol = "¿quién coordina cumplimiento y seguridad en planta?".to_string();
         ("Manufactura Electrónica y Equipos", pain, sol)
     } else if sc.starts_with("336") {
-        let pain = format!("en plantas de {} (SCIAN {}) se revisan estrictamente seguridad en maquinaria (NOM-004), ruido y equipo de protección (NOM-017), comisiones NOM-019 y prima IMSS", actividad_desc, sc);
-        let sol = "integramos las actas bipartitas NOM-019, el diagnóstico NOM-030, la política NOM-035 y el soporte de proveeduría industrial".to_string();
+        let pain = format!("en manufactura automotriz (SCIAN {}), el mayor foco suele estar en seguridad en maquinaria, ruido/EPP y control de prima de riesgo IMSS", sc);
+        let sol = "¿quién lidera seguridad e higiene y cumplimiento en planta?".to_string();
         ("Manufactura Automotriz", pain, sol)
     } else if sc.starts_with("325") || sc.starts_with("326") {
-        let pain = format!("en plantas de {} (SCIAN {}) destacan el manejo seguro de sustancias químicas (NOM-005), las hojas de seguridad (NOM-018), Protección Civil y la clasificación IMSS", actividad_desc, sc);
-        let sol = "consolidamos los protocolos de seguridad en planta, las comisiones mixtas NOM-019/030 y el soporte documental ante inspecciones".to_string();
+        let pain = format!("en industria química y plásticos (SCIAN {}), las auditorías priorizan el manejo seguro de sustancias (NOM-005/018) y Protección Civil", sc);
+        let sol = "¿quién coordina seguridad industrial y normatividad en planta?".to_string();
         ("Industria Química y Plásticos", pain, sol)
     } else if sc.starts_with("31") || sc.starts_with("32") || sc.starts_with("33") {
-        let pain = format!("en plantas de {} (SCIAN {}) las inspecciones revisan seguridad en maquinaria (NOM-004), comisión de seguridad e higiene (NOM-019), diagnóstico NOM-030 y prima de riesgo IMSS", actividad_desc, sc);
-        let sol = "integramos las actas NOM-019, el diagnóstico preventivo NOM-030, la política NOM-035 y el soporte contractual de proveeduría".to_string();
+        let pain = format!("en manufactura industrial (SCIAN {}), los frentes principales en inspección son seguridad en maquinaria, comisiones NOM-019 y prima IMSS", sc);
+        let sol = "¿quién lleva seguridad laboral y cumplimiento en su planta?".to_string();
         ("Manufactura e Industria", pain, sol)
     } else if sc.starts_with("61") {
-        let pain = format!("en instituciones de {} (SCIAN {}) el enfoque suele estar en Protección Civil para planteles (PIPC), protección de datos de alumnos y familias (LFPDPPP) y clima laboral (NOM-035)", actividad_desc, sc);
-        let sol = "preparamos el aviso de privacidad educativo, la política NOM-035, la guía de Protección Civil y los contratos de servicios".to_string();
+        let pain = format!("en instituciones educativas (SCIAN {}), los puntos prioritarios suelen ser Protección Civil para planteles (PIPC) y protección de datos de alumnos y familias", sc);
+        let sol = "¿quién coordina administración y seguridad en el plantel?".to_string();
         ("Educación e Instituciones Académicas", pain, sol)
     } else if sc.starts_with("11") {
-        let pain = format!("en actividades de {} (SCIAN {}) se revisan el registro y seguridad de personal de campo, el manejo de insumos (COFEPRIS/NOM-005) y el soporte fiscal de compras y traslados", actividad_desc, sc);
-        let sol = "reunimos los protocolos de seguridad laboral, el control de proveedores y traslados y los avisos de privacidad patronal".to_string();
+        let pain = format!("en agroindustria (SCIAN {}), suelen revisarse la seguridad y registro de personal en campo junto con el soporte fiscal de traslados e insumos", sc);
+        let sol = "¿quién lleva la parte administrativa y laboral en su operación?".to_string();
         ("Agroindustria y Sector Primario", pain, sol)
     } else if sc.starts_with("811") {
-        let pain = format!("en talleres de {} (SCIAN {}) suelen revisarse el manejo de herramientas y sustancias (NOM-005/017), la comisión de seguridad (NOM-019), la prima IMSS y garantías ante PROFECO", actividad_desc, sc);
-        let sol = "consolidamos el diagnóstico NOM-030, las actas NOM-019, los términos de servicio ante PROFECO y el aviso de privacidad".to_string();
+        let pain = format!("en talleres automotrices y mantenimiento (SCIAN {}), el foco suele estar en seguridad con herramientas/sustancias, prima IMSS y garantías ante PROFECO", sc);
+        let sol = "¿quién lleva la administración y seguridad en el taller?".to_string();
         ("Talleres y Mantenimiento Automotriz", pain, sol)
-    } else if sc.starts_with("5418") || sc.starts_with("512") || sc.starts_with("5414") {
-        let pain = format!("en agencias de {} (SCIAN {}) el SAT revisa con lupa la materialidad y entregables de servicios creativos o de pauta (Art. 69-B), además de teletrabajo (NOM-037) y privacidad de bases", actividad_desc, sc);
-        let sol = "preparamos el contrato marco con bitácora de entregables y fecha cierta, el adendum de teletrabajo NOM-037 y el aviso de privacidad".to_string();
+    } else if sc.starts_with("5418") || sc.starts_with("5414") {
+        let pain = format!("en agencias creativas y de marketing (SCIAN {}), lo que más se revisa hoy es la materialidad de entregables ante el SAT y los esquemas de teletrabajo (NOM-037)", sc);
+        let sol = "¿quién lleva administración y contratos en la agencia?".to_string();
         ("Agencias Creativas, Marketing y Medios", pain, sol)
     } else {
-        let pain = format!("en empresas de {} (SCIAN {}) las revisiones preventivas suelen centrarse en comisiones mixtas (NOM-019), diagnóstico de seguridad (NOM-030), NOM-035, materialidad fiscal (Art. 69-B) y privacidad", actividad_desc, sc);
-        let sol = "organizamos en un solo expediente los instrumentos laborales, fiscales y de privacidad adaptados a su giro para que puedan revisarlos con calma".to_string();
+        let pain = format!("en empresas de servicios (SCIAN {}), los puntos que más suelen revisarse son las comisiones básicas STPS, la materialidad fiscal (Art. 69-B) y el aviso de privacidad", sc);
+        let sol = "¿quién ve los temas laborales y de cumplimiento en el equipo?".to_string();
         ("Servicios Empresariales", pain, sol)
     }
 }
@@ -3227,28 +3312,24 @@ pub fn build_adaptive_prospect_outreach(query_or_name: &str, domain_hint: Option
             message_body: msg,
         }
     } else if intel.estimated_employees > 250 {
-        let (_sector_label, scian_pain, scian_solution) =
+        let (_sector_label, scian_pain, closing_q) =
             build_scian_sector_hook(&intel.codigo_scian, &intel.actividad_desc, intel.estimated_employees);
         let pdf_link = format!("https://mallen.lat/api/micro_scan/{}", encoded_ref);
         let consult_link = format!(
             "https://mallen.lat/?calibrate=1&rfc={}&razon={}&scian={}&emp={}#express-check",
             encoded_ref, encoded_name, intel.codigo_scian, intel.estimated_employees
         );
-        let clean_name = intel.razon_social.trim().trim_end_matches('.');
+        let friendly_name = humanize_company_display_name(&intel.razon_social);
         let msg = format!(
-            "Hola, equipo de {}.\n\n\
-            Estuvimos revisando el entorno normativo actual para empresas de su tamaño (~{} personas) y notamos un par de puntos que hoy suelen revisarse con más detalle: {}.\n\n\
-            Por si les sirve como apoyo interno para validar que ya tienen todo cubierto, {}.\n\n\
-            1. Pueden descargar sin costo su Benchmark Sectorial y pre-diagnóstico en PDF:\n\
-               {}\n\
-            2. Si desean ajustar algún dato de su plantilla o revisarlo con calma por unidad operativa, pueden hacerlo aquí sin compromiso:\n\
-               {}",
-            clean_name,
-            intel.estimated_employees,
+            "Hola equipo de {},\n\n\
+            En operaciones de gran escala, {}.\n\n\
+            Armamos un Benchmark Sectorial con los puntos de control que hoy se revisan con más lupa en su industria. Les comparto el acceso sin costo aquí:\n\
+            {}\n\n\
+            Si desean contrastarlo contra su operación actual, {}",
+            friendly_name,
             scian_pain,
-            scian_solution,
             pdf_link,
-            consult_link
+            closing_q
         );
         AdaptiveOutreachPayload {
             prospect_tier: "NIVEL_2_CORPORATIVO_BENCHMARK_CONSULTIVO".to_string(),
@@ -3263,25 +3344,25 @@ pub fn build_adaptive_prospect_outreach(query_or_name: &str, domain_hint: Option
             message_body: msg,
         }
     } else {
-        let (_sector_label, scian_pain, scian_solution) =
+        let (_sector_label, scian_pain, closing_q) =
             build_scian_sector_hook(&intel.codigo_scian, &intel.actividad_desc, intel.estimated_employees);
         let pdf_link = format!("https://mallen.lat/api/micro_scan/{}", encoded_ref);
-        let checkout_link = format!("https://mallen.lat/checkout?ref={}", encoded_ref);
-        let clean_name = intel.razon_social.trim().trim_end_matches('.');
+        let cal_link = format!(
+            "https://mallen.lat/?calibrate=1&rfc={}&razon={}&scian={}&emp={}#express-check",
+            encoded_ref, encoded_name, intel.codigo_scian, intel.estimated_employees
+        );
+        let friendly_name = humanize_company_display_name(&intel.razon_social);
         let msg = format!(
-            "Hola, equipo de {}.\n\n\
-            Les escribimos porque, para un equipo de alrededor de {} personas en su giro, {}. Conviene tener esos puntos en orden antes de cualquier visita o requerimiento.\n\n\
-            Por si les resulta útil como referencia práctica interna, {}.\n\n\
-            1. Pueden descargar sin costo su pre-diagnóstico preventivo en PDF:\n\
-               {}\n\
-            2. Si desean ajustar el número de colaboradores o revisar el alcance completo sin compromiso, pueden verlo aquí:\n\
-               {}",
-            clean_name,
+            "Hola equipo de {},\n\n\
+            Para una operación de alrededor de {} personas, {}.\n\n\
+            Preparamos un pre-diagnóstico rápido con los puntos críticos a revisar antes de una visita de autoridad o auditoría interna. Pueden descargarlo aquí sin costo:\n\
+            {}\n\n\
+            Si quieren que revisemos cómo está su operación hoy, {}",
+            friendly_name,
             intel.estimated_employees,
             scian_pain,
-            scian_solution,
             pdf_link,
-            checkout_link
+            closing_q
         );
         AdaptiveOutreachPayload {
             prospect_tier: "NIVEL_1_PYME_CONVERSION_DIRECTA".to_string(),
@@ -3292,7 +3373,7 @@ pub fn build_adaptive_prospect_outreach(query_or_name: &str, domain_hint: Option
             detected_employees: intel.estimated_employees,
             exact_vemp_fine_mxn: intel.exact_vemp_fine_mxn,
             primary_link: pdf_link,
-            secondary_link: checkout_link,
+            secondary_link: cal_link,
             message_body: msg,
         }
     }
