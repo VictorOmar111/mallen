@@ -441,3 +441,17 @@ html.light-mode #mallen-wall-lamp {
   mix-blend-mode: normal !important;
   opacity: 0 !important;
 }
+
+/* v117: Eliminación global de sombras proyectadas y degradados hacia abajo */
+*, *::before, *::after {
+  box-shadow: none !important;
+  text-shadow: none !important;
+}
+body, html {
+  background-image: none !important;
+}
+section, header, footer, main, article,
+.mallen-surface-card, .mallen-glass-card, .mallen-btn-primary, .mallen-btn-secondary {
+  box-shadow: none !important;
+  background-image: none !important;
+}
