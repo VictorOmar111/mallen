@@ -2966,6 +2966,122 @@ pub struct AdaptiveOutreachPayload {
 
 /// Matriz de Ingeniería de Ventas Psicológicas por Sector SCIAN (20 giros) y Tamaño de Empresa:
 /// Devuelve: (Nombre del Sector, Dolor Específico de Inspección, Solución Directa que Resuelve su Problema).
+fn restore_spanish_accents(word_low: &str) -> &'static str {
+    match word_low {
+        "ingenieria" => "ingeniería",
+        "medico" => "médico",
+        "medica" => "médica",
+        "medicos" => "médicos",
+        "medicas" => "médicas",
+        "rehabilitacion" => "rehabilitación",
+        "edificacion" => "edificación",
+        "edificaciones" => "edificaciones",
+        "pacifico" => "pacífico",
+        "atlantico" => "atlántico",
+        "tecnologia" => "tecnología",
+        "tecnologias" => "tecnologías",
+        "tecnologico" => "tecnológico",
+        "tecnologica" => "tecnológica",
+        "electronica" => "electrónica",
+        "electronico" => "electrónico",
+        "logistica" => "logística",
+        "logistico" => "logístico",
+        "farmaceutica" => "farmacéutica",
+        "farmaceutico" => "farmacéutico",
+        "farmaceuticos" => "farmacéuticos",
+        "clinica" => "clínica",
+        "clinicas" => "clínicas",
+        "clinico" => "clínico",
+        "clinicos" => "clínicos",
+        "mexico" => "méxico",
+        "bajio" => "bajío",
+        "administracion" => "administración",
+        "consultoria" => "consultoría",
+        "consultorias" => "consultorías",
+        "construccion" => "construcción",
+        "energia" => "energía",
+        "energetica" => "energética",
+        "mineria" => "minería",
+        "hoteleria" => "hotelería",
+        "gastronomia" => "gastronomía",
+        "gastronomico" => "gastronómico",
+        "mecanica" => "mecánica",
+        "mecanico" => "mecánico",
+        "metalmecanica" => "metalmecánica",
+        "quimica" => "química",
+        "quimico" => "químico",
+        "quimicos" => "químicos",
+        "optica" => "óptica",
+        "opticas" => "ópticas",
+        "estetica" => "estética",
+        "esteticas" => "estéticas",
+        "notaria" => "notaría",
+        "correduria" => "correduría",
+        "ferreteria" => "ferretería",
+        "panaderia" => "panadería",
+        "cafeteria" => "cafetería",
+        "mensajeria" => "mensajería",
+        "paqueteria" => "paquetería",
+        "lavanderia" => "lavandería",
+        "tintoreria" => "tintorería",
+        "guarderia" => "guardería",
+        "marroquineria" => "marroquinería",
+        "juridico" => "jurídico",
+        "juridica" => "jurídica",
+        "publico" => "público",
+        "publica" => "pública",
+        "economico" => "económico",
+        "informatica" => "informática",
+        "diagnostico" => "diagnóstico",
+        "imagenologia" => "imagenología",
+        "audiologia" => "audiología",
+        "terapeutico" => "terapéutico",
+        "gestion" => "gestión",
+        "solucion" => "solución",
+        "innovacion" => "innovación",
+        "produccion" => "producción",
+        "distribucion" => "distribución",
+        "operacion" => "operación",
+        "fabricacion" => "fabricación",
+        "exportacion" => "exportación",
+        "importacion" => "importación",
+        "instalacion" => "instalación",
+        "reparacion" => "reparación",
+        "proteccion" => "protección",
+        "prevencion" => "prevención",
+        "educacion" => "educación",
+        "capacitacion" => "capacitación",
+        "investigacion" => "investigación",
+        "comunicacion" => "comunicación",
+        "alimentacion" => "alimentación",
+        "refrigeracion" => "refrigeración",
+        "iluminacion" => "iluminación",
+        "urbanizacion" => "urbanización",
+        "integracion" => "integración",
+        "certificacion" => "certificación",
+        "verificacion" => "verificación",
+        "inspeccion" => "inspección",
+        "calibracion" => "calibración",
+        "automatizacion" => "automatización",
+        "digitalizacion" => "digitalización",
+        "comercializacion" => "comercialización",
+        "credito" => "crédito",
+        "plastico" => "plástico",
+        "plasticos" => "plásticos",
+        "electrico" => "eléctrico",
+        "electrica" => "eléctrica",
+        "agricola" => "agrícola",
+        "ganaderia" => "ganadería",
+        "precision" => "precisión",
+        "leon" => "león",
+        "queretaro" => "querétaro",
+        "merida" => "mérida",
+        "cancun" => "cancún",
+        "san" => "san",
+        _ => "",
+    }
+}
+
 fn humanize_company_display_name(raw: &str) -> String {
     let mut s = raw.trim().to_string();
     if let Some(idx) = s.find('(') {
@@ -2985,10 +3101,12 @@ fn humanize_company_display_name(raw: &str) -> String {
         .enumerate()
         .map(|(i, w)| {
             let low = w.to_lowercase();
-            if i > 0 && small.contains(&low.as_str()) {
-                low
+            let fixed = restore_spanish_accents(&low);
+            let target = if !fixed.is_empty() { fixed } else { low.as_str() };
+            if i > 0 && small.contains(&target) {
+                target.to_string()
             } else {
-                let mut ch = low.chars();
+                let mut ch = target.chars();
                 match ch.next() {
                     Some(c) => format!("{}{}", c.to_uppercase(), ch.as_str()),
                     None => String::new(),
@@ -3001,36 +3119,52 @@ fn humanize_company_display_name(raw: &str) -> String {
 
 pub fn build_scian_sector_hook(scian_code: &str, _actividad_desc: &str, emp_count: u32) -> (&'static str, String, String) {
     let sc = scian_code.trim();
-    if sc.starts_with("722") {
+    if sc.starts_with("7224") || sc.starts_with("722515") {
+        let pain = format!("en cafeterías y bares (SCIAN {}), lo que más suele detonar observaciones es el control sanitario COFEPRIS y el cumplimiento laboral por turnos", sc);
+        let sol = "¿quién ve los temas laborales y sanitarios en el equipo?".to_string();
+        ("Cafeterías y Bares", pain, sol)
+    } else if sc.starts_with("722") {
         let pain = if emp_count <= 30 {
-            format!("en restaurantes y cocinas con operación diaria (SCIAN {}), los puntos que más suelen complicarse en una revisión son el control sanitario COFEPRIS y la seguridad básica en cocina", sc)
+            format!("en restaurantes con operación diaria (SCIAN {}), lo que más suele complicarse en una revisión es el control sanitario COFEPRIS y la seguridad básica en cocina", sc)
         } else {
-            format!("en restaurantes de alto ritmo y rotación (SCIAN {}), los puntos que más suelen complicarse en una revisión son la rotación de turnos, ergonomía/riesgo psicosocial y el control sanitario", sc)
+            format!("en restaurantes de alto ritmo y rotación (SCIAN {}), lo que más suele complicarse en una revisión es la rotación/cumplimiento laboral y el control sanitario", sc)
         };
         let sol = "¿quién ve los temas laborales y sanitarios en el equipo?".to_string();
         ("Restaurantes y Gastronomía", pain, sol)
     } else if sc.starts_with("311") {
-        let pain = format!("en plantas de alimentos (SCIAN {}), el mayor foco de revisión suele estar en la trazabilidad sanitaria NOM-251 y la seguridad en líneas de proceso", sc);
+        let pain = format!("en plantas de alimentos (SCIAN {}), el punto crítico en auditorías suele ser la trazabilidad sanitaria NOM-251 y la seguridad en líneas de proceso", sc);
         let sol = "¿quién coordina calidad sanitaria y seguridad laboral en planta?".to_string();
         ("Industria Alimentaria", pain, sol)
     } else if sc.starts_with("312") {
-        let pain = format!("en operaciones de bebidas (SCIAN {}), lo que más suele revisarse es el cumplimiento sanitario COFEPRIS y la seguridad en almacén y distribución", sc);
+        let pain = format!("en operaciones de bebidas (SCIAN {}), en revisiones recientes se pone foco sobre todo en el cumplimiento COFEPRIS y la seguridad en almacén", sc);
         let sol = "¿con quién podríamos validar sus controles sanitarios y de almacén?".to_string();
         ("Industria de Bebidas", pain, sol)
+    } else if sc.starts_with("5182") {
+        let pain = format!("en centros de datos y nube (SCIAN {}), el punto crítico suele ser la protección de datos en infraestructura (LFPDPPP) y la materialidad de contratos tecnológicos", sc);
+        let sol = "¿quién coordina cumplimiento y privacidad en su operación?".to_string();
+        ("Data Centers e Infraestructura Cloud", pain, sol)
+    } else if sc.starts_with("541519") {
+        let pain = format!("en firmas de ciberseguridad y SOC (SCIAN {}), lo que más suele detonar observaciones es la materialidad de servicios intangibles ante el SAT y los acuerdos de confidencialidad y teletrabajo", sc);
+        let sol = "¿quién lleva la parte contractual y de cumplimiento en el equipo?".to_string();
+        ("Ciberseguridad y SOC", pain, sol)
     } else if sc.starts_with("5112") || sc.starts_with("518") || sc.starts_with("5415") {
-        let pain = format!("en empresas de software y tecnología (SCIAN {}), los dos puntos que hoy se revisan con más lupa son la materialidad de servicios intangibles ante el SAT y los lineamientos de teletrabajo (NOM-037)", sc);
+        let pain = format!("en empresas de software y tecnología (SCIAN {}), lo que más suele detonar observaciones hoy es la materialidad de servicios intangibles ante el SAT y el teletrabajo (NOM-037)", sc);
         let sol = "¿quién lleva la parte administrativa o de cumplimiento en su equipo?".to_string();
         ("Tecnología, Software y Cloud", pain, sol)
     } else if sc.starts_with("517") || sc.starts_with("519") {
-        let pain = format!("en firmas de telecomunicaciones y servicios digitales (SCIAN {}), el foco principal suele estar en la protección de datos de usuarios y los contratos de infraestructura", sc);
+        let pain = format!("en firmas de telecomunicaciones y servicios digitales (SCIAN {}), en auditorías recientes se revisa sobre todo la protección de datos de usuarios y los contratos de infraestructura", sc);
         let sol = "¿quién supervisa privacidad y cumplimiento regulatorio en el equipo?".to_string();
         ("Telecomunicaciones y Servicios Digitales", pain, sol)
+    } else if sc.starts_with("221114") || sc.starts_with("221115") {
+        let pain = format!("en proyectos de energía solar y renovables (SCIAN {}), el punto crítico suele ser la seguridad eléctrica en sitio (NOM-029) y el control REPSE de instaladores", sc);
+        let sol = "¿quién coordina seguridad operativa y contratistas en sus proyectos?".to_string();
+        ("Energía Solar y Renovables", pain, sol)
     } else if sc.starts_with("23") {
-        let pain = format!("en proyectos de edificación y esquemas con subcontratistas (SCIAN {}), el mayor foco de contingencia suele estar en la trazabilidad REPSE, el control de contratistas y la seguridad en obra", sc);
+        let pain = format!("en proyectos de edificación y esquemas con subcontratistas (SCIAN {}), el mayor foco de contingencia suele estar en la trazabilidad REPSE y la seguridad en obra", sc);
         let sol = "¿quién coordina el control de contratistas y seguridad en obra?".to_string();
         ("Construcción e Infraestructura", pain, sol)
     } else if sc.starts_with("21") {
-        let pain = format!("en operaciones mineras y extractivas (SCIAN {}), el foco crítico suele concentrarse en la clasificación de riesgo IMSS, seguridad industrial y control REPSE de contratistas", sc);
+        let pain = format!("en operaciones mineras y extractivas (SCIAN {}), el punto crítico suele concentrarse en la clasificación de riesgo IMSS y el control REPSE de contratistas", sc);
         let sol = "¿quién lidera seguridad industrial y control de terceros en su operación?".to_string();
         ("Minería e Industria Extractiva", pain, sol)
     } else if sc.starts_with("22") {
@@ -3038,9 +3172,13 @@ pub fn build_scian_sector_hook(scian_code: &str, _actividad_desc: &str, emp_coun
         let sol = "¿quién coordina cumplimiento operativo y proveedores en su equipo?".to_string();
         ("Energía y Servicios Públicos", pain, sol)
     } else if sc.starts_with("54194") {
-        let pain = format!("en clínicas veterinarias (SCIAN {}), los puntos que más suelen revisarse son el manejo de residuos RPBI y la documentación laboral básica", sc);
+        let pain = format!("en clínicas veterinarias (SCIAN {}), lo que más suele revisarse es el manejo de residuos RPBI y la documentación laboral básica", sc);
         let sol = "¿quién lleva la parte administrativa y sanitaria en la clínica?".to_string();
         ("Servicios Veterinarios", pain, sol)
+    } else if sc.starts_with("621512") {
+        let pain = format!("en centros de imagenología y diagnóstico (SCIAN {}), el punto crítico suele ser la protección de expedientes clínicos sensibles y la vigilancia sanitaria COFEPRIS", sc);
+        let sol = "¿quién supervisa cumplimiento sanitario y privacidad en el centro?".to_string();
+        ("Centros de Imagenología", pain, sol)
     } else if sc.starts_with("6215") {
         let pain = format!("en laboratorios de análisis clínicos (SCIAN {}), el mayor foco está en el manejo de datos sensibles de pacientes (LFPDPPP) y el control sanitario de muestras y RPBI", sc);
         let sol = "¿quién supervisa cumplimiento sanitario y privacidad en el laboratorio?".to_string();
@@ -3050,21 +3188,25 @@ pub fn build_scian_sector_hook(scian_code: &str, _actividad_desc: &str, emp_coun
         let sol = "¿quién coordina los temas administrativos y sanitarios en su centro?".to_string();
         ("Laboratorios Dentales y Ópticas", pain, sol)
     } else if sc.starts_with("621") {
-        let pain = format!("en clínicas y consultorios (SCIAN {}), los dos frentes más sensibles en una revisión son el manejo de expedientes y datos de salud (LFPDPPP) y la vigilancia sanitaria COFEPRIS", sc);
+        let pain = format!("en clínicas y consultorios (SCIAN {}), el punto crítico en una revisión suele ser el manejo de expedientes y datos de salud (LFPDPPP) junto con la vigilancia COFEPRIS", sc);
         let sol = "¿quién ve los temas administrativos y sanitarios en su clínica?".to_string();
         ("Clínicas y Consultorios", pain, sol)
     } else if sc.starts_with("623") {
-        let pain = format!("en residencias y centros de asistencia (SCIAN {}), el foco prioritario suele estar en Protección Civil, manejo de expedientes médicos y control de turnos del personal", sc);
+        let pain = format!("en residencias y centros de asistencia (SCIAN {}), el foco prioritario suele estar en Protección Civil y el manejo de expedientes médicos", sc);
         let sol = "¿quién coordina operación y cumplimiento normativo en su centro?".to_string();
         ("Residencias y Asistencia Social", pain, sol)
     } else if sc.starts_with("622") {
-        let pain = format!("en operaciones hospitalarias (SCIAN {}), el mayor foco de contingencia suele estar en la protección de datos clínicos sensibles, protocolos RPBI y trazabilidad de proveedores REPSE", sc);
+        let pain = format!("en operaciones hospitalarias (SCIAN {}), el mayor foco de contingencia suele estar en la protección de datos clínicos sensibles y la trazabilidad de proveedores REPSE", sc);
         let sol = "¿quién coordina cumplimiento clínico y control de terceros en la institución?".to_string();
         ("Hospitales y Asistencia Médica", pain, sol)
     } else if sc.starts_with("3254") || sc.starts_with("4641") {
         let pain = format!("en operaciones farmacéuticas (SCIAN {}), las revisiones suelen concentrarse en trazabilidad sanitaria COFEPRIS y soporte documental de cadena de suministro", sc);
         let sol = "¿quién lleva cumplimiento regulatorio y proveedores en su equipo?".to_string();
         ("Farmacéutica y Laboratorios", pain, sol)
+    } else if sc.starts_with("4883") {
+        let pain = format!("en terminales y servicios portuarios (SCIAN {}), el punto crítico suele ser la seguridad operativa en maniobras y la trazabilidad documental de terceros", sc);
+        let sol = "¿quién coordina seguridad y cumplimiento en su terminal?".to_string();
+        ("Terminales y Servicios Portuarios", pain, sol)
     } else if sc.starts_with("484") || sc.starts_with("481") || sc.starts_with("482") || sc.starts_with("483") {
         let pain = format!("en operaciones de autotransporte y logística (SCIAN {}), el mayor foco de contingencia suele estar en el cruce de Carta Porte 3.1 con las bitácoras de operadores y seguridad en patios", sc);
         let sol = "¿quién coordina cumplimiento logístico y seguridad operativa en su equipo?".to_string();
@@ -3081,6 +3223,10 @@ pub fn build_scian_sector_hook(scian_code: &str, _actividad_desc: &str, emp_coun
         let pain = format!("en mensajería y paquetería (SCIAN {}), los puntos clave en revisión suelen ser la ergonomía en manejo de cargas y el cumplimiento de Carta Porte en ruta", sc);
         let sol = "¿quién coordina operaciones y cumplimiento laboral en su equipo?".to_string();
         ("Mensajería, Paquetería y Almacenaje", pain, sol)
+    } else if sc.starts_with("46842") {
+        let pain = format!("en distribuidoras de gas LP (SCIAN {}), en auditorías recientes se revisa sobre todo la seguridad contra incendios (NOM-002) y el manejo de recipientes a presión (NOM-020)", sc);
+        let sol = "¿quién coordina seguridad industrial y cumplimiento en su planta?".to_string();
+        ("Distribuidoras de Gas LP", pain, sol)
     } else if sc.starts_with("4671") || sc.starts_with("4342") {
         let pain = format!("en ferreterías y materiales de construcción (SCIAN {}), suelen revisarse con más frecuencia Protección Civil en bodega y el manejo seguro de cargas", sc);
         let sol = "¿quién ve los temas de seguridad y administración en el negocio?".to_string();
@@ -3090,11 +3236,11 @@ pub fn build_scian_sector_hook(scian_code: &str, _actividad_desc: &str, emp_coun
         let sol = "¿quién lleva administración y control de proveedores en su equipo?".to_string();
         ("Autopartes y Refaccionarias", pain, sol)
     } else if sc.starts_with("4684") {
-        let pain = format!("en estaciones de servicio (SCIAN {}), las inspecciones priorizan seguridad contra incendios (NOM-002), manejo de inflamables y Protección Civil", sc);
+        let pain = format!("en estaciones de servicio (SCIAN {}), las inspecciones priorizan seguridad contra incendios (NOM-002) y Protección Civil", sc);
         let sol = "¿quién coordina seguridad operativa y cumplimiento en la estación?".to_string();
         ("Gasolineras y Combustibles", pain, sol)
     } else if sc.starts_with("43") {
-        let pain = format!("en comercio mayorista (SCIAN {}), los puntos que más suelen revisarse son Protección Civil en bodega y el soporte de materialidad con proveedores", sc);
+        let pain = format!("en comercio mayorista (SCIAN {}), lo que más suele revisarse es Protección Civil en bodega y el soporte de materialidad con proveedores", sc);
         let sol = "¿quién ve los temas administrativos y de operación en el equipo?".to_string();
         ("Comercio Mayorista", pain, sol)
     } else if sc.starts_with("454") {
@@ -3102,7 +3248,7 @@ pub fn build_scian_sector_hook(scian_code: &str, _actividad_desc: &str, emp_coun
         let sol = "¿quién supervisa operación digital y cumplimiento en la tienda?".to_string();
         ("Comercio Electrónico", pain, sol)
     } else if sc.starts_with("46") {
-        let pain = format!("en comercio minorista (SCIAN {}), los dos frentes más revisados suelen ser Protección Civil en piso de venta y el aviso de privacidad/términos ante PROFECO", sc);
+        let pain = format!("en comercio minorista (SCIAN {}), en revisiones recientes destacan Protección Civil en piso de venta y el aviso de privacidad/términos ante PROFECO", sc);
         let sol = "¿quién lleva la parte administrativa y de tiendas en su equipo?".to_string();
         ("Comercio Minorista y Retail", pain, sol)
     } else if sc.starts_with("524") {
@@ -3114,17 +3260,21 @@ pub fn build_scian_sector_hook(scian_code: &str, _actividad_desc: &str, emp_coun
         let sol = "¿quién lleva la oficialía de cumplimiento o administración en su equipo?".to_string();
         ("SOFOMes y Servicios de Crédito", pain, sol)
     } else if sc.starts_with("52") {
-        let pain = format!("en servicios financieros y fintech (SCIAN {}), el mayor foco suele estar en Beneficiario Controlador, controles PLD y protección de datos financieros", sc);
+        let pain = format!("en servicios financieros y fintech (SCIAN {}), el mayor foco suele estar en Beneficiario Controlador y protección de datos financieros", sc);
         let sol = "¿quién coordina cumplimiento regulatorio en su organización?".to_string();
         ("Fintech y Servicios Financieros", pain, sol)
     } else if sc.starts_with("532") {
-        let pain = format!("en arrendamiento de autos y maquinaria (SCIAN {}), lo que más se revisa es la fecha cierta de contratos ante el SAT y los contratos de adhesión PROFECO", sc);
+        let pain = format!("en arrendamiento de autos y maquinaria (SCIAN {}), lo que más se revisa es la fecha cierta de contratos ante el SAT y los contratos PROFECO", sc);
         let sol = "¿quién ve los contratos y cumplimiento operativo en su equipo?".to_string();
         ("Arrendamiento de Autos y Maquinaria", pain, sol)
     } else if sc.starts_with("53") {
-        let pain = format!("en desarrollos e inmobiliarias (SCIAN {}), los puntos críticos suelen ser los expedientes de actividades vulnerables (PLD) y la fecha cierta en contratos", sc);
+        let pain = format!("en desarrollos e inmobiliarias (SCIAN {}), el punto crítico suele ser los expedientes de actividades vulnerables (PLD) y la fecha cierta en contratos", sc);
         let sol = "¿quién coordina cumplimiento PLD y contratos en su equipo?".to_string();
         ("Sector Inmobiliario y Desarrollos", pain, sol)
+    } else if sc.starts_with("54162") {
+        let pain = format!("en consultoras ambientales (SCIAN {}), lo que más suele revisarse es la materialidad documental de dictámenes ante el SAT y los esquemas de trabajo en campo", sc);
+        let sol = "¿quién coordina administración y proyectos en su consultora?".to_string();
+        ("Consultoras Ambientales", pain, sol)
     } else if sc.starts_with("54112") {
         let pain = format!("en notarías y corredurías (SCIAN {}), el foco principal suele estar en el resguardo de datos sensibles/biométricos y los expedientes de actividades vulnerables", sc);
         let sol = "¿quién coordina administración y cumplimiento interno en la oficina?".to_string();
@@ -3137,12 +3287,16 @@ pub fn build_scian_sector_hook(scian_code: &str, _actividad_desc: &str, emp_coun
         let pain = format!("en firmas legales y contables (SCIAN {}), el foco suele estar en la materialidad de servicios profesionales y la protección de datos confidenciales de clientes", sc);
         let sol = "¿con quién podríamos compartir el resumen técnico en su firma?".to_string();
         ("Despachos Jurídicos y Contables", pain, sol)
+    } else if sc.starts_with("562") {
+        let pain = format!("en empresas de reciclaje y manejo de residuos (SCIAN {}), el punto crítico suele ser la seguridad laboral en manejo de materiales y la trazabilidad ambiental y REPSE", sc);
+        let sol = "¿quién coordina seguridad operativa y cumplimiento en su planta?".to_string();
+        ("Reciclaje y Manejo de Residuos", pain, sol)
     } else if sc.starts_with("5613") {
-        let pain = format!("en firmas de reclutamiento y talento (SCIAN {}), el punto más sensible es mantener intacto el registro REPSE, los reportes ICSOE/SISUB y la privacidad de candidatos", sc);
+        let pain = format!("en firmas de reclutamiento y talento (SCIAN {}), el punto más sensible es mantener intacto el registro REPSE y la privacidad de candidatos", sc);
         let sol = "¿quién coordina cumplimiento REPSE y nómina en su equipo?".to_string();
         ("Consultorías de RH y Reclutamiento", pain, sol)
     } else if sc.starts_with("5614") {
-        let pain = format!("en centros de contacto y BPO (SCIAN {}), los dos frentes críticos suelen ser el riesgo psicosocial por rotación (NOM-035) y la privacidad de bases de datos", sc);
+        let pain = format!("en centros de contacto y BPO (SCIAN {}), lo que más suele detonar observaciones es el riesgo psicosocial por rotación (NOM-035) y la privacidad de bases de datos", sc);
         let sol = "¿quién lleva recursos humanos y cumplimiento en su operación?".to_string();
         ("Call Centers y BPO", pain, sol)
     } else if sc.starts_with("5615") {
@@ -3150,7 +3304,7 @@ pub fn build_scian_sector_hook(scian_code: &str, _actividad_desc: &str, emp_coun
         let sol = "¿quién lleva la parte administrativa y comercial en la agencia?".to_string();
         ("Agencias de Viajes y Turismo", pain, sol)
     } else if sc.starts_with("5616") {
-        let pain = format!("en empresas de seguridad privada (SCIAN {}), el mayor foco suele estar en la vigencia del registro REPSE, los reportes ICSOE/SISUB y la prima de riesgo IMSS", sc);
+        let pain = format!("en empresas de seguridad privada (SCIAN {}), el mayor foco suele estar en la vigencia del registro REPSE y la prima de riesgo IMSS", sc);
         let sol = "¿quién coordina cumplimiento REPSE y operaciones en su equipo?".to_string();
         ("Seguridad Privada", pain, sol)
     } else if sc.starts_with("5617") {
@@ -3161,8 +3315,12 @@ pub fn build_scian_sector_hook(scian_code: &str, _actividad_desc: &str, emp_coun
         let pain = format!("en servicios especializados (SCIAN {}), el punto más sensible suele ser mantener al día el REPSE y los reportes ICSOE/SISUB para evitar contingencias con clientes", sc);
         let sol = "¿quién lleva cumplimiento REPSE y contratos en su equipo?".to_string();
         ("Servicios Especializados y REPSE", pain, sol)
+    } else if sc.starts_with("6116") {
+        let pain = format!("en escuelas de idiomas y capacitación (SCIAN {}), en revisiones recientes se revisa sobre todo la privacidad de alumnos y los contratos de prestación de servicios", sc);
+        let sol = "¿quién lleva la administración y operación del plantel?".to_string();
+        ("Escuelas de Idiomas y Capacitación", pain, sol)
     } else if sc.starts_with("6244") {
-        let pain = format!("en guarderías y estancias infantiles (SCIAN {}), los dos puntos prioritarios en revisión son Protección Civil (PIPC) y el consentimiento de datos de menores", sc);
+        let pain = format!("en guarderías y estancias infantiles (SCIAN {}), el punto prioritario en revisión es Protección Civil (PIPC) y el consentimiento de datos de menores", sc);
         let sol = "¿quién coordina dirección y seguridad en el plantel?".to_string();
         ("Guarderías y Estancias Infantiles", pain, sol)
     } else if sc.starts_with("71394") {
@@ -3174,7 +3332,7 @@ pub fn build_scian_sector_hook(scian_code: &str, _actividad_desc: &str, emp_coun
         let sol = "¿quién coordina producción y cumplimiento en su equipo?".to_string();
         ("Entretenimiento y Eventos", pain, sol)
     } else if sc.starts_with("721") {
-        let pain = format!("en hotelería y hospitalidad (SCIAN {}), los frentes más revisados suelen ser Protección Civil, higiene sanitaria y control REPSE de proveedores de apoyo", sc);
+        let pain = format!("en hotelería y hospitalidad (SCIAN {}), los frentes más revisados suelen ser Protección Civil y el control REPSE de proveedores de apoyo", sc);
         let sol = "¿quién coordina operaciones y cumplimiento en el hotel?".to_string();
         ("Hotelería y Hospitalidad", pain, sol)
     } else if sc.starts_with("8121") {
@@ -3182,27 +3340,27 @@ pub fn build_scian_sector_hook(scian_code: &str, _actividad_desc: &str, emp_coun
         let sol = "¿quién lleva la administración y cumplimiento en su centro?".to_string();
         ("Estéticas, Spas y Bienestar", pain, sol)
     } else if sc.starts_with("8122") {
-        let pain = format!("en servicios funerarios (SCIAN {}), el foco suele estar en los contratos de adhesión PROFECO, protocolos sanitarios y manejo de datos sensibles", sc);
+        let pain = format!("en servicios funerarios (SCIAN {}), el foco suele estar en los contratos de adhesión PROFECO y el manejo de datos sensibles", sc);
         let sol = "¿quién lleva la parte administrativa y normativa en su equipo?".to_string();
         ("Servicios Funerarios", pain, sol)
     } else if sc.starts_with("8123") {
-        let pain = format!("en lavanderías industriales y tintorerías (SCIAN {}), suelen revisarse el manejo de solventes (NOM-005), seguridad en calderas y comisiones mixtas", sc);
+        let pain = format!("en lavanderías industriales y tintorerías (SCIAN {}), suelen revisarse el manejo de solventes (NOM-005) y la seguridad en calderas", sc);
         let sol = "¿quién coordina seguridad y operación en planta?".to_string();
         ("Lavanderías Industriales", pain, sol)
     } else if sc.starts_with("8129") {
-        let pain = format!("en estacionamientos y pensiones (SCIAN {}), los puntos más revisados suelen ser Protección Civil, señalización y términos de responsabilidad PROFECO", sc);
+        let pain = format!("en estacionamientos y pensiones (SCIAN {}), lo que más suele revisarse es Protección Civil y los términos de responsabilidad PROFECO", sc);
         let sol = "¿quién administra la operación y cumplimiento del sitio?".to_string();
         ("Estacionamientos y Pensiones", pain, sol)
     } else if sc.starts_with("512") {
-        let pain = format!("en productoras audiovisuales (SCIAN {}), el foco suele estar en la materialidad de entregables ante el SAT y los contratos con talento y proveedores temporales", sc);
+        let pain = format!("en productoras audiovisuales (SCIAN {}), el foco suele estar en la materialidad de entregables ante el SAT y los contratos con talento y proveedores", sc);
         let sol = "¿quién lleva administración y producción en su equipo?".to_string();
         ("Productoras Audiovisuales", pain, sol)
     } else if sc.starts_with("322") {
-        let pain = format!("en fabricación de empaques y cartón (SCIAN {}), destacan la seguridad en maquinaria (NOM-004), protección contra incendios (NOM-002) y prima de riesgo IMSS", sc);
+        let pain = format!("en fabricación de empaques y cartón (SCIAN {}), destacan la seguridad en maquinaria (NOM-004) y la protección contra incendios (NOM-002)", sc);
         let sol = "¿quién coordina seguridad e higiene en planta?".to_string();
         ("Empaques, Papel y Cartón", pain, sol)
     } else if sc.starts_with("316") {
-        let pain = format!("en talleres y plantas de calzado y piel (SCIAN {}), suelen revisarse el manejo de adhesivos y solventes (NOM-005), ergonomía y comisiones NOM-019", sc);
+        let pain = format!("en talleres y plantas de calzado y piel (SCIAN {}), suelen revisarse el manejo de adhesivos y solventes (NOM-005) y las comisiones NOM-019", sc);
         let sol = "¿quién lleva seguridad laboral y administración en planta?".to_string();
         ("Calzado y Marroquinería", pain, sol)
     } else if sc.starts_with("323") || sc.starts_with("5111") {
@@ -3210,7 +3368,7 @@ pub fn build_scian_sector_hook(scian_code: &str, _actividad_desc: &str, emp_coun
         let sol = "¿quién coordina producción y seguridad en el taller?".to_string();
         ("Imprentas y Editoriales", pain, sol)
     } else if sc.starts_with("313") || sc.starts_with("314") || sc.starts_with("315") {
-        let pain = format!("en industria textil y confección (SCIAN {}), suelen revisarse ergonomía en líneas de costura, comisiones NOM-019 y conciliación de plantilla IMSS", sc);
+        let pain = format!("en industria textil y confección (SCIAN {}), suelen revisarse ergonomía en líneas de costura y la conciliación de plantilla IMSS", sc);
         let sol = "¿quién coordina planta y recursos humanos en su equipo?".to_string();
         ("Industria Textil y Confección", pain, sol)
     } else if sc.starts_with("321") || sc.starts_with("337") {
@@ -3218,15 +3376,15 @@ pub fn build_scian_sector_hook(scian_code: &str, _actividad_desc: &str, emp_coun
         let sol = "¿quién lleva seguridad e higiene en su taller o planta?".to_string();
         ("Madera y Fabricación de Muebles", pain, sol)
     } else if sc.starts_with("332") {
-        let pain = format!("en metalmecánica y estructuras (SCIAN {}), el foco crítico suele estar en seguridad en soldadura/corte (NOM-027), equipo de protección y prima IMSS", sc);
+        let pain = format!("en metalmecánica y estructuras (SCIAN {}), el foco crítico suele estar en seguridad en soldadura/corte (NOM-027) y prima IMSS", sc);
         let sol = "¿quién coordina seguridad industrial en su planta?".to_string();
         ("Metalmecánica y Estructuras", pain, sol)
     } else if sc.starts_with("334") || sc.starts_with("335") {
-        let pain = format!("en manufactura electrónica y equipos (SCIAN {}), suelen revisarse seguridad eléctrica, ergonomía en ensamble y materialidad de componentes", sc);
+        let pain = format!("en manufactura electrónica y equipos (SCIAN {}), suelen revisarse seguridad eléctrica y materialidad de componentes", sc);
         let sol = "¿quién coordina cumplimiento y seguridad en planta?".to_string();
         ("Manufactura Electrónica y Equipos", pain, sol)
     } else if sc.starts_with("336") {
-        let pain = format!("en manufactura automotriz (SCIAN {}), el mayor foco suele estar en seguridad en maquinaria, ruido/EPP y control de prima de riesgo IMSS", sc);
+        let pain = format!("en manufactura automotriz (SCIAN {}), el mayor foco suele estar en seguridad en maquinaria y control de prima de riesgo IMSS", sc);
         let sol = "¿quién lidera seguridad e higiene y cumplimiento en planta?".to_string();
         ("Manufactura Automotriz", pain, sol)
     } else if sc.starts_with("325") || sc.starts_with("326") {
@@ -3234,27 +3392,39 @@ pub fn build_scian_sector_hook(scian_code: &str, _actividad_desc: &str, emp_coun
         let sol = "¿quién coordina seguridad industrial y normatividad en planta?".to_string();
         ("Industria Química y Plásticos", pain, sol)
     } else if sc.starts_with("31") || sc.starts_with("32") || sc.starts_with("33") {
-        let pain = format!("en manufactura industrial (SCIAN {}), los frentes principales en inspección son seguridad en maquinaria, comisiones NOM-019 y prima IMSS", sc);
+        let pain = format!("en manufactura industrial (SCIAN {}), los frentes principales en inspección son seguridad en maquinaria y prima IMSS", sc);
         let sol = "¿quién lleva seguridad laboral y cumplimiento en su planta?".to_string();
         ("Manufactura e Industria", pain, sol)
     } else if sc.starts_with("61") {
-        let pain = format!("en instituciones educativas (SCIAN {}), los puntos prioritarios suelen ser Protección Civil para planteles (PIPC) y protección de datos de alumnos y familias", sc);
+        let pain = format!("en instituciones educativas (SCIAN {}), los puntos prioritarios suelen ser Protección Civil para planteles (PIPC) y protección de datos de alumnos", sc);
         let sol = "¿quién coordina administración y seguridad en el plantel?".to_string();
         ("Educación e Instituciones Académicas", pain, sol)
+    } else if sc.starts_with("1114") {
+        let pain = format!("en invernaderos y viveros (SCIAN {}), lo que más suele revisarse es la seguridad en manejo de agroquímicos y el registro laboral de personal de temporada", sc);
+        let sol = "¿quién lleva la parte laboral y operativa en sus instalaciones?".to_string();
+        ("Invernaderos y Viveros", pain, sol)
+    } else if sc.starts_with("112") {
+        let pain = format!("en operaciones ganaderas y avícolas (SCIAN {}), el punto crítico suele ser la bioseguridad sanitaria y la afiliación y seguridad del personal en campo", sc);
+        let sol = "¿quién coordina operación y cumplimiento laboral en su empresa?".to_string();
+        ("Ganadería y Avicultura", pain, sol)
+    } else if sc.starts_with("114") {
+        let pain = format!("en operaciones pesqueras y acuícolas (SCIAN {}), en revisiones recientes destaca el control sanitario de producto y la seguridad laboral en planta", sc);
+        let sol = "¿quién coordina calidad sanitaria y cumplimiento en su equipo?".to_string();
+        ("Pesca y Acuacultura", pain, sol)
     } else if sc.starts_with("11") {
-        let pain = format!("en agroindustria (SCIAN {}), suelen revisarse la seguridad y registro de personal en campo junto con el soporte fiscal de traslados e insumos", sc);
+        let pain = format!("en agroindustria (SCIAN {}), suelen revisarse la seguridad de personal en campo y el soporte fiscal de traslados e insumos", sc);
         let sol = "¿quién lleva la parte administrativa y laboral en su operación?".to_string();
         ("Agroindustria y Sector Primario", pain, sol)
     } else if sc.starts_with("811") {
-        let pain = format!("en talleres automotrices y mantenimiento (SCIAN {}), el foco suele estar en seguridad con herramientas/sustancias, prima IMSS y garantías ante PROFECO", sc);
+        let pain = format!("en talleres automotrices y mantenimiento (SCIAN {}), el foco suele estar en seguridad con herramientas/sustancias y garantías ante PROFECO", sc);
         let sol = "¿quién lleva la administración y seguridad en el taller?".to_string();
         ("Talleres y Mantenimiento Automotriz", pain, sol)
     } else if sc.starts_with("5418") || sc.starts_with("5414") {
-        let pain = format!("en agencias creativas y de marketing (SCIAN {}), lo que más se revisa hoy es la materialidad de entregables ante el SAT y los esquemas de teletrabajo (NOM-037)", sc);
+        let pain = format!("en agencias creativas y de marketing (SCIAN {}), lo que más se revisa hoy es la materialidad de entregables ante el SAT y el teletrabajo (NOM-037)", sc);
         let sol = "¿quién lleva administración y contratos en la agencia?".to_string();
         ("Agencias Creativas, Marketing y Medios", pain, sol)
     } else {
-        let pain = format!("en empresas de servicios (SCIAN {}), los puntos que más suelen revisarse son las comisiones básicas STPS, la materialidad fiscal (Art. 69-B) y el aviso de privacidad", sc);
+        let pain = format!("en empresas de servicios (SCIAN {}), lo que más suele revisarse es el cumplimiento laboral básico STPS y la materialidad fiscal (Art. 69-B)", sc);
         let sol = "¿quién ve los temas laborales y de cumplimiento en el equipo?".to_string();
         ("Servicios Empresariales", pain, sol)
     }
@@ -3266,7 +3436,12 @@ pub fn build_scian_sector_hook(scian_code: &str, _actividad_desc: &str, emp_coun
 /// - Nivel 3 (`0` emp / Sin plantilla en padrón): Efecto Zeigarnik (Expediente pre-configurado al 90%, solo falta confirmar empleados).
 pub fn build_adaptive_prospect_outreach(query_or_name: &str, domain_hint: Option<&str>) -> AdaptiveOutreachPayload {
     let intel = extract_deep_denue_360_intelligence(query_or_name);
-    let clean_ref = if !intel.query_matched.trim().is_empty() {
+    let clean_ref = if !intel.razon_social.trim().is_empty()
+        && !intel.razon_social.starts_with("REGISTRO NO INDEXADO")
+        && !intel.razon_social.starts_with("RFC ")
+    {
+        intel.razon_social.trim().to_string()
+    } else if !intel.query_matched.trim().is_empty() {
         intel.query_matched.trim().to_string()
     } else {
         query_or_name.trim().to_uppercase()
