@@ -373,9 +373,7 @@ Dictamen pericial compilado específicamente para *"{{EMPRESA_NOMBRE}}"* (`{{EMP
     ],
     align(right + horizon)[
       #box(fill: rgb("#065f46"), stroke: 0.6pt + rgb("#34d399"), radius: 3pt, inset: 5pt)[
-        #text(size: 5.8pt, fill: rgb("#a7f3d0"))[VERIFICACIÓN QR + EXPEDIENTE .ZIP]
-        #linebreak()
-        #text(size: 7.4pt, weight: "bold", fill: rgb("#ffffff"))[\$ {{ACTIVATION_PRICE}} MXN]
+        #text(size: 5.8pt, fill: rgb("#a7f3d0"))[{{PAID_OR_PRICE_BADGE}}]
       ]
     ]
   )
@@ -384,4 +382,4 @@ Dictamen pericial compilado específicamente para *"{{EMPRESA_NOMBRE}}"* (`{{EMP
 #v(2pt)
 #align(right)[{{VECTOR_QR_SEAL}}]
 #v(2pt)
-#align(center)[#box(fill: rgb("#0f172a"), inset: (x: 10pt, y: 5pt), radius: 3pt)[#link("https://mallen.lat/checkout?ref={{EMPRESA_TAX_ID}}")[#text(fill: rgb("#38bdf8"), weight: "bold", size: 7.5pt)[⚡ ACTIVAR KIT DE BLINDAJE INTEGRAL 360° Y DESCARGAR 7 CONTRATOS EDITABLES ($3,000.00 MXN): https://mallen.lat/checkout?ref={{EMPRESA_TAX_ID}}]]]]
+{{FOOTER_CTA_BLOCK}}

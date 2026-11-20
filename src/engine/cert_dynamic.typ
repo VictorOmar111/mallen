@@ -139,9 +139,7 @@
     ],
     [
       #v(14pt)
-      #line(length: 85%, stroke: 0.6pt + rgb("#334155"))
-      #v(2pt)
-      #text(weight: "bold", size: 6.3pt)[REPRESENTACIÓN LEGAL]\
+      #text(weight: "bold", size: 6.3pt, fill: rgb("#0f172a"))[TITULAR DEL EXPEDIENTE ACREDITADO]\
       #box(width: 100%, clip: false)[#text(size: 5.8pt, fill: rgb("#475569"))[{{REPRESENTANTE_LEGAL}}]]\
       #box(width: 100%, clip: false)[#text(size: 5.4pt, fill: rgb("#64748b"))[{{EMPRESA_NOMBRE}} ({{EMPRESA_TAX_ID}})]]
     ],

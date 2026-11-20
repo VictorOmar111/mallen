@@ -805,45 +805,45 @@ pub async fn render_typst_from_strict_snapshot_async(snapshot_uuid: String) -> R
 
 /// Genera un Sello Matricial Vectorial (QR/DataMatrix determinístico en Typst nativo) a partir del Hash SHA-256.
 /// Al ser 100% vectorial (`#grid` de celdas geométricas), tiene nitidez infinita al 1000% de zoom y pesa 0 KB de imagen.
-pub fn render_vector_qr_seal_typst(audit_hash: &str) -> String {
-    let mut hasher = Sha256::new();
-    hasher.update(b"W16_MALLEN_QR_V2|");
-    hasher.update(audit_hash.trim().as_bytes());
-    let digest = hasher.finalize();
+pub fn render_vector_qr_seal_typst(url_or_hash: &str) -> String {
+    let payload = if url_or_hash.starts_with("http://") || url_or_hash.starts_with("https://") {
+        url_or_hash.trim().to_string()
+    } else {
+        format!("https://mallen.lat/verify/{}", url_or_hash.trim())
+    };
 
-    let n = 13usize;
-    let mut cells = String::with_capacity(3200);
-    for r in 0..n {
-        for c in 0..n {
-            let in_top_left = r < 5 && c < 5;
-            let in_top_right = r < 5 && c >= (n - 5);
-            let in_bottom_left = r >= (n - 5) && c < 5;
+    let code = match qrcode::QrCode::new(payload.as_bytes()) {
+        Ok(c) => c,
+        Err(_) => qrcode::QrCode::new(b"https://mallen.lat").expect("QR fallback"),
+    };
 
-            let is_dark = if in_top_left {
-                r == 0 || r == 4 || c == 0 || c == 4 || (r == 2 && c == 2)
-            } else if in_top_right {
-                let lc = c - (n - 5);
-                r == 0 || r == 4 || lc == 0 || lc == 4 || (r == 2 && lc == 2)
-            } else if in_bottom_left {
-                let lr = r - (n - 5);
-                lr == 0 || lr == 4 || c == 0 || c == 4 || (lr == 2 && c == 2)
+    let w = code.width();
+    let quiet = 2usize;
+    let total = w + quiet * 2;
+    let cell_pt = 54.0_f64 / (total as f64);
+
+    let mut cells = String::with_capacity(total * total * 48);
+    for r in 0..total {
+        for c in 0..total {
+            let is_dark = if r >= quiet && r < (w + quiet) && c >= quiet && c < (w + quiet) {
+                code[(c - quiet, r - quiet)] == qrcode::Color::Dark
             } else {
-                let bit_pos = (r * n + c) % 256;
-                let byte_val = digest[bit_pos / 8];
-                ((byte_val >> (bit_pos % 8)) & 1) == 1
+                false
             };
-
             let fill_hex = if is_dark { "#0f172a" } else { "#ffffff" };
             cells.push_str(&format!(
-                "rect(width: 1.85pt, height: 1.85pt, fill: rgb(\"{}\"), stroke: none),",
-                fill_hex
+                "rect(width: {pt:.3}pt, height: {pt:.3}pt, fill: rgb(\"{hex}\"), stroke: none),",
+                pt = cell_pt,
+                hex = fill_hex
             ));
         }
     }
 
     format!(
-        "#box(stroke: 0.45pt + rgb(\"#64748b\"), inset: 2pt, radius: 1.5pt, fill: white)[#grid(columns: (1.85pt,) * 13, row-gutter: 0pt, column-gutter: 0pt, {})]",
-        cells
+        "#box(stroke: 0.45pt + rgb(\"#cbd5e1\"), inset: 2pt, radius: 2pt, fill: white)[#grid(columns: ({pt:.3}pt,) * {tot}, row-gutter: 0pt, column-gutter: 0pt, {cells})]",
+        pt = cell_pt,
+        tot = total,
+        cells = cells
     )
 }
 
@@ -1911,7 +1911,7 @@ fn build_report_typst_markup_full(
     empresa: &EmpresaB2B,
     osint: &OsintResult,
     master_opt_in: Option<&AuditMasterJson>,
-    _is_accredited: bool,
+    is_accredited: bool,
     is_censored_micro_report: bool,
 ) -> String {
     let tax_id = empresa.tax_id.as_deref().unwrap_or(&empresa.id);
@@ -2333,7 +2333,17 @@ fn build_report_typst_markup_full(
         .replace("{{SCORE_PC}}", &(s_f * 0.10).round().to_string())
         .replace("{{SCORE_PROFECO}}", &(s_f * 0.10).round().to_string())
         .replace("{{REF_TAX}}", &tax_clean)
-        .replace("{{VECTOR_QR_SEAL}}", &render_vector_qr_seal_typst(&empresa.audit_hash))
+        .replace("{{PAID_OR_PRICE_BADGE}}", if !is_accredited {
+            "VERIFICACIÓN QR + EXPEDIENTE .ZIP\n#linebreak()\n#text(size: 7.4pt, weight: \"bold\", fill: rgb(\"#ffffff\"))[\\$ 3,000.00 MXN]"
+        } else {
+            "EXPEDIENTE ACREDITADO\n#linebreak()\n#text(size: 7.0pt, weight: \"bold\", fill: rgb(\"#ffffff\"))[VERIFICADO SHA-256]"
+        })
+        .replace("{{FOOTER_CTA_BLOCK}}", &if !is_accredited {
+            format!("#align(center)[#box(fill: rgb(\"#0f172a\"), inset: (x: 10pt, y: 5pt), radius: 3pt)[#link(\"https://mallen.lat/checkout?ref={}\")[#text(fill: rgb(\"#38bdf8\"), weight: \"bold\", size: 7.5pt)[ACTIVAR EXPEDIENTE INTEGRAL 360° Y DESCARGAR DOCUMENTOS EDITABLES: https://mallen.lat/checkout?ref={}]]]]", tax_clean, tax_clean)
+        } else {
+            format!("#align(center)[#box(fill: rgb(\"#0f172a\"), inset: (x: 10pt, y: 5pt), radius: 3pt)[#link(\"https://mallen.lat/verify/{}\")[#text(fill: rgb(\"#34d399\"), weight: \"bold\", size: 7.5pt)[VERIFICACIÓN PÚBLICA INMUTABLE DEL EXPEDIENTE: https://mallen.lat/verify/{}]]]]", tax_clean, tax_clean)
+        })
+        .replace("{{VECTOR_QR_SEAL}}", &render_vector_qr_seal_typst(&format!("https://mallen.lat/verify/{}", tax_clean)))
         .replace("{{VECTORS_37_TABLE_TYPST}}", &vectors_37_typst)
         .replace("{{BENCH_STPS_COST}}", if emp_count <= 10 { "14,000" } else if emp_count <= 50 { "25,000" } else if emp_count <= 250 { "48,000" } else { "95,000" })
         .replace("{{BENCH_SAT_COST}}", if emp_count <= 10 { "18,000" } else if emp_count <= 50 { "35,000" } else if emp_count <= 250 { "65,000" } else { "120,000" })
@@ -2612,7 +2622,7 @@ pub fn generate_pdf_report_with_session(
             .replace("{{NORMA_FOLIO_PREFIX}}", cert.folio_prefix)
             .replace("{{AUDIT_HASH}}", &empresa.audit_hash)
             .replace("{{REF_TAX}}", &tax_clean)
-        .replace("{{VECTOR_QR_SEAL}}", &render_vector_qr_seal_typst(&empresa.audit_hash));
+        .replace("{{VECTOR_QR_SEAL}}", &render_vector_qr_seal_typst(&format!("https://mallen.lat/verify/{}", tax_clean)));
 
         let cert_content = normalize_typst_dollars(&raw_cert);
         fs::write(&cert_typ_path, cert_content)?;

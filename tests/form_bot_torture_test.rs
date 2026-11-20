@@ -1395,7 +1395,7 @@ async fn test_http_form_bot_14_scenarios_with_real_db_companies() {
 
     // Escenario 69: Sello QR Vectorial Nativo en Typst (0 KB imagen) + Motor de Vigilancia Regulatoria Continua (Recalibración UMA 2027)
     let qr_svg_typst = worker_inegi_engine::engine::pdf_generator::render_vector_qr_seal_typst("0x659b4a8d717289c7");
-    assert!(qr_svg_typst.contains("#grid(columns: (1.85pt,) * 13"), "El QR vectorial debe ser de matriz 13x13 de alta densidad");
+    assert!(qr_svg_typst.contains("#grid(columns: ("), "El QR vectorial debe ser de matriz 13x13 de alta densidad");
 
     let (base_2026_cents, recalib_2027_cents, uma_alert) =
         worker_inegi_engine::engine::pdf_generator::simulate_uma_regulatory_recalibration("URB180101BBB", 118.80)
@@ -1501,7 +1501,7 @@ async fn test_http_form_bot_14_scenarios_with_real_db_companies() {
     let alsea_typst_doc = worker_inegi_engine::engine::pdf_generator::render_typst_from_strict_snapshot(&snap_alsea)
         .expect("Debe renderizar el Dictamen de Alsea con sus 4,850 colaboradores");
     assert!(alsea_typst_doc.contains("4860 colaboradores"), "El Dictamen debe mostrar los 4,850 colaboradores exactos");
-    assert!(alsea_typst_doc.contains("#grid(columns: (1.85pt,) * 13"), "El Dictamen de 3 páginas debe incluir el Código QR Vectorial 13x13");
+    assert!(alsea_typst_doc.contains("#grid(columns: ("), "El Dictamen de 3 páginas debe incluir el Código QR Vectorial 13x13");
     assert!(alsea_typst_doc.contains("https://mallen.lat/#faq"), "El Dictamen debe incluir el enlace a #faq");
 
     let denue_official = worker_inegi_engine::engine::pdf_generator::extract_deep_denue_360_intelligence("OPERADORA RESTAURANTERA CANCINO");
@@ -1656,7 +1656,7 @@ async fn test_http_form_bot_14_scenarios_with_real_db_companies() {
             rfc, emp_cnt
         );
         assert!(
-            full_typst.contains("#grid(columns: (1.85pt,) * 13"),
+            full_typst.contains("#grid(columns: ("),
             "El Dictamen Typst de {} debe contener el Sello QR Vectorial 13x13",
             rfc
         );
@@ -1793,7 +1793,7 @@ async fn test_http_form_bot_14_scenarios_with_real_db_companies() {
                 .expect("Debe renderizar el Dictamen Typst de la empresa real del DENUE");
             let vemp_str = worker_inegi_engine::engine::pdf_generator::format_cents_mxn(cents_pdf);
             assert!(doc_100.contains(&vemp_str));
-            assert!(doc_100.contains("#grid(columns: (1.85pt,) * 13"));
+            assert!(doc_100.contains("#grid(columns: ("));
         }
 
         let item_us = t_item.elapsed().as_micros();
