@@ -180,7 +180,7 @@ Dictamen pericial compilado específicamente para *"{{EMPRESA_NOMBRE}}"* (`{{EMP
 
   [#text(weight: "bold", size: 6.9pt, fill: rgb("#991b1b"))[CONTINGENCIA TOTAL AUDITADA:]],
   [#text(weight: "bold", size: 7.5pt, fill: rgb("#991b1b"))[\$ {{ESTIMATED_FINE}} MXN]],
-  [#text(weight: "bold", size: 6.3pt, fill: rgb("#7f1d1d"))[Suma determinística exacta de los 37 vectores evaluados en la Página 2 (UMA 2026: \$113.14 MXN).]]
+  [#text(weight: "bold", size: 6.3pt, fill: rgb("#7f1d1d"))[Suma determinística exacta de los 37 vectores (Página 2). Rango Legal UMA 2026: Mín. \$ {{MIN_FINE}} — Máx. \$ {{MAX_FINE}} MXN.]]
 )
 
 #v(0.08em)

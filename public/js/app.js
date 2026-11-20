@@ -312,9 +312,15 @@
                 setBadge("blk-laboral", isImmune ? "BLINDAJE PATRONAL 100%" : `${(data.findings || []).length} BRECHAS DETECTADAS`, !isImmune, false);
 
                 safeSetText("res-score", `${data.risk_score}/100 PUNTOS`);
+                const estFine = Number(data.total_estimated_fine_mxn || 0);
+                const minFine = Number(data.total_min_fine_mxn || (estFine * 0.35));
+                const maxFine = Number(data.total_max_fine_mxn || (estFine * 2.25));
+                const fmtMxn = (v) => "$" + v.toLocaleString("es-MX", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
                 safeSetText(
                     "res-fine",
-                    "$" + Number(data.total_estimated_fine_mxn || 0).toLocaleString("es-MX", { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + " MXN"
+                    estFine > 0
+                        ? `${fmtMxn(estFine)} MXN (Rango Legal: ${fmtMxn(minFine)} – ${fmtMxn(maxFine)})`
+                        : "$0.00 MXN"
                 );
                 safeSetText(
                     "res-findings-count",

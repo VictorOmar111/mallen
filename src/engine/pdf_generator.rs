@@ -2278,6 +2278,16 @@ fn build_report_typst_markup_full(
         .replace("{{ESTATUS_GLOBAL}}", estatus_texto)
         .replace("{{BADGE_ACCION}}", badge_accion)
         .replace("{{ESTIMATED_FINE}}", &format_cents_mxn(total_cents))
+        .replace("{{MIN_FINE}}", &{
+            let _est_s: &str = &format_cents_mxn(total_cents);
+            let _est_f: f64 = _est_s.replace([ ',', '$', ' ' ], "").parse().unwrap_or(0.0);
+            format_cents_mxn(((_est_f * 0.35) * 100.0).round() as u64)
+        })
+        .replace("{{MAX_FINE}}", &{
+            let _est_s: &str = &format_cents_mxn(total_cents);
+            let _est_f: f64 = _est_s.replace([ ',', '$', ' ' ], "").parse().unwrap_or(0.0);
+            format_cents_mxn(((_est_f * 2.25) * 100.0).round() as u64)
+        })
         .replace("{{TOTAL_FINE_MXN}}", &format_cents_mxn(total_cents))
         .replace("{{MULTA_STPS}}", &format_cents_mxn(c_stps))
         .replace("{{FINE_STPS}}", &format_cents_mxn(c_stps))
