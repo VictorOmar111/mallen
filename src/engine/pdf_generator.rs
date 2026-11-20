@@ -2974,7 +2974,7 @@ pub fn build_scian_sector_hook(scian_code: &str, actividad_desc: &str, emp_count
         } else {
             format!("en operadoras de {} (SCIAN {}) la rotación de turnos y el ritmo operativo suelen detonar revisiones de riesgo psicosocial (NOM-035), ergonomía (NOM-036) y control sanitario COFEPRIS", actividad_desc, sc)
         };
-        let sol = "preparamos una guía práctica con el protocolo ante visitas STPS/COFEPRIS, actas de comisión mixta (NOM-019), política NOM-035 y soporte para proveedores de insumos (Art. 69-B)".to_string();
+        let sol = "armamos una guía práctica con el protocolo ante visitas STPS/COFEPRIS, actas de comisión mixta (NOM-019), política NOM-035 y soporte para proveedores de insumos (Art. 69-B)".to_string();
         ("Restaurantes y Gastronomía", pain, sol)
     } else if sc.starts_with("311") {
         let pain = format!("en plantas de {} (SCIAN {}) se revisan con frecuencia la trazabilidad sanitaria NOM-251, seguridad en maquinaria de proceso (NOM-004) y comisiones mixtas (NOM-019)", actividad_desc, sc);
@@ -3004,6 +3004,14 @@ pub fn build_scian_sector_hook(scian_code: &str, actividad_desc: &str, emp_count
         let pain = format!("en proyectos de {} (SCIAN {}) destacan la seguridad en instalaciones eléctricas (NOM-029), los servicios preventivos (NOM-030) y la acreditación de proveedores especializados", actividad_desc, sc);
         let sol = "integramos los protocolos de seguridad operativa, las actas bipartitas NOM-019 y el expediente de materialidad para contratistas".to_string();
         ("Energía y Servicios Públicos", pain, sol)
+    } else if sc.starts_with("54194") {
+        let pain = format!("en clínicas de {} (SCIAN {}) suelen revisarse el manejo de insumos sanitarios, residuos biológico-infecciosos (RPBI), avisos de privacidad de clientes y condiciones laborales", actividad_desc, sc);
+        let sol = "preparamos el aviso de privacidad integral, los protocolos básicos de seguridad e higiene (NOM-019/030) y los contratos de servicios".to_string();
+        ("Servicios Veterinarios", pain, sol)
+    } else if sc.starts_with("6212") || sc.starts_with("33911") {
+        let pain = format!("en centros de {} (SCIAN {}) coinciden el tratamiento de datos de salud (Art. 9 LFPDPPP), los requisitos sanitarios COFEPRIS y el manejo seguro de residuos", actividad_desc, sc);
+        let sol = "reunimos el aviso de privacidad para datos sensibles, los formatos de consentimiento expreso y los protocolos laborales aplicables".to_string();
+        ("Laboratorios Dentales y Ópticas", pain, sol)
     } else if sc.starts_with("621") {
         let pain = format!("en centros de {} (SCIAN {}) el manejo de expedientes clínicos y datos sensibles exige consentimiento expreso (Art. 9 LFPDPPP), además de vigilancia COFEPRIS y protocolos RPBI", actividad_desc, sc);
         let sol = "integramos el aviso de privacidad para datos de salud, los formatos de consentimiento expreso y el protocolo sanitario y de honorarios médicos".to_string();
@@ -3028,34 +3036,110 @@ pub fn build_scian_sector_hook(scian_code: &str, actividad_desc: &str, emp_count
         let pain = format!("en operaciones de {} (SCIAN {}) suelen revisarse la ergonomía y manejo de cargas (NOM-006/036), la Carta Porte en entregas y la privacidad de datos de destinatarios", actividad_desc, sc);
         let sol = "reunimos los protocolos de almacén y reparto, las actas NOM-019/030 y el aviso de privacidad operativo".to_string();
         ("Mensajería, Paquetería y Almacenaje", pain, sol)
+    } else if sc.starts_with("4671") || sc.starts_with("4342") {
+        let pain = format!("en negocios de {} (SCIAN {}) se revisan el almacenamiento seguro de materiales (NOM-006/036), Protección Civil en piso y bodega (PIPC) y el soporte fiscal de compras", actividad_desc, sc);
+        let sol = "consolidamos la guía de Protección Civil, las actas NOM-019/030 y el contrato marco para proveedores mayoristas".to_string();
+        ("Ferreterías y Materiales de Construcción", pain, sol)
+    } else if sc.starts_with("4682") || sc.starts_with("4353") {
+        let pain = format!("en distribuidoras de {} (SCIAN {}) destacan el control de inventarios y garantías ante PROFECO, la seguridad en almacén (NOM-006) y la materialidad de compras (Art. 69-B)", actividad_desc, sc);
+        let sol = "integramos los términos comerciales, el soporte de proveeduría y los protocolos preventivos de STPS".to_string();
+        ("Autopartes y Refaccionarias", pain, sol)
+    } else if sc.starts_with("4684") {
+        let pain = format!("en estaciones de {} (SCIAN {}) son críticos los protocolos de seguridad contra incendios (NOM-002), manejo de sustancias inflamables (NOM-005), Protección Civil y controles volumétricos", actividad_desc, sc);
+        let sol = "reunimos las actas de comisión de seguridad NOM-019, el diagnóstico NOM-030 y la guía de Protección Civil".to_string();
+        ("Gasolineras y Combustibles", pain, sol)
     } else if sc.starts_with("43") {
         let pain = format!("en empresas de {} (SCIAN {}) las verificaciones suelen enfocarse en Protección Civil en bodega (PIPC), manejo de cargas (NOM-006/036) y soporte de compras a gran escala (Art. 69-B)", actividad_desc, sc);
         let sol = "consolidamos la guía de Protección Civil, los instrumentos STPS (NOM-019/030/035) y el contrato marco de proveeduría".to_string();
         ("Comercio Mayorista", pain, sol)
-    } else if sc.starts_with("46") {
-        let pain = format!("en negocios de {} (SCIAN {}) se revisan Protección Civil para locales (PIPC), avisos de privacidad en mostrador y sitio web, y términos comerciales ante PROFECO (Art. 76 BIS)", actividad_desc, sc);
-        let sol = "integramos los términos de venta PROFECO, el aviso de privacidad comercial y los instrumentos básicos de STPS".to_string();
-        ("Comercio Minorista y Retail", pain, sol)
     } else if sc.starts_with("454") {
         let pain = format!("en tiendas de {} (SCIAN {}) son prioritarios el cumplimiento digital PROFECO (Art. 76 BIS), la seguridad y privacidad de datos de compradores y el soporte de proveedores logísticos", actividad_desc, sc);
         let sol = "preparamos los términos de comercio electrónico, el aviso de privacidad web y los contratos de logística y proveeduría".to_string();
         ("Comercio Electrónico", pain, sol)
+    } else if sc.starts_with("46") {
+        let pain = format!("en negocios de {} (SCIAN {}) se revisan Protección Civil para locales (PIPC), avisos de privacidad en mostrador y sitio web, y términos comerciales ante PROFECO (Art. 76 BIS)", actividad_desc, sc);
+        let sol = "integramos los términos de venta PROFECO, el aviso de privacidad comercial y los instrumentos básicos de STPS".to_string();
+        ("Comercio Minorista y Retail", pain, sol)
+    } else if sc.starts_with("524") {
+        let pain = format!("en firmas de {} (SCIAN {}) cobran peso la protección de datos patrimoniales y sensibles (LFPDPPP), los controles de Beneficiario Controlador y las políticas de teletrabajo (NOM-037)", actividad_desc, sc);
+        let sol = "estructuramos el aviso de privacidad reforzado, el adendum de teletrabajo y los contratos marco con fecha cierta".to_string();
+        ("Seguros y Fianzas", pain, sol)
     } else if sc.starts_with("52") {
         let pain = format!("en entidades de {} (SCIAN {}) suelen auditarse la identificación de Beneficiario Controlador (Art. 32-B Ter CFF), controles antilavado (LFPIORPI) y protección de datos financieros", actividad_desc, sc);
         let sol = "estructuramos el manual de cumplimiento PLD/Beneficiario Controlador, la política de privacidad reforzada y los contratos marco".to_string();
         ("Fintech y Servicios Financieros", pain, sol)
+    } else if sc.starts_with("532") {
+        let pain = format!("en empresas de {} (SCIAN {}) se revisan los contratos de adhesión ante PROFECO, la fecha cierta de contratos de arrendamiento (Art. 69-B) y la seguridad en patios de equipo", actividad_desc, sc);
+        let sol = "integramos el contrato marco con soporte de fecha cierta, el aviso de privacidad y los protocolos de seguridad laboral".to_string();
+        ("Arrendamiento de Autos y Maquinaria", pain, sol)
     } else if sc.starts_with("53") {
         let pain = format!("en empresas de {} (SCIAN {}) destacan los expedientes de actividades vulnerables inmobiliarias (Art. 17 LFPIORPI), la fecha cierta en contratos de obra/venta y la privacidad de clientes", actividad_desc, sc);
         let sol = "organizamos el expediente PLD inmobiliario, los contratos con soporte de fecha cierta y el aviso de privacidad integral".to_string();
         ("Sector Inmobiliario y Desarrollos", pain, sol)
+    } else if sc.starts_with("54112") {
+        let pain = format!("en oficinas de {} (SCIAN {}) son esenciales los expedientes de actividades vulnerables (LFPIORPI), el resguardo de datos biométricos/identificaciones y la NOM-035", actividad_desc, sc);
+        let sol = "consolidamos el aviso de privacidad para datos sensibles, los controles PLD y las políticas internas de cumplimiento laboral".to_string();
+        ("Notarías y Corredurías", pain, sol)
+    } else if sc.starts_with("5413") {
+        let pain = format!("en despachos de {} (SCIAN {}) se revisan la materialidad de proyectos y entregables técnicos (Art. 69-B), la seguridad en visitas a obra y el teletrabajo (NOM-037)", actividad_desc, sc);
+        let sol = "preparamos el contrato marco con bitácora de entregables, el adendum NOM-037 y las actas de seguridad aplicables".to_string();
+        ("Arquitectura e Ingeniería Civil", pain, sol)
     } else if sc.starts_with("5411") || sc.starts_with("5412") {
         let pain = format!("en firmas de {} (SCIAN {}) cobran peso la acreditación de materialidad de servicios profesionales (Art. 69-B), el Beneficiario Controlador y los contratos de encargo de datos", actividad_desc, sc);
         let sol = "reunimos el contrato marco de servicios con bitácora de entregables, los acuerdos de confidencialidad y el aviso de privacidad".to_string();
         ("Despachos Jurídicos y Contables", pain, sol)
+    } else if sc.starts_with("5614") {
+        let pain = format!("en centros de {} (SCIAN {}) destacan la protección de bases de datos de clientes (LFPDPPP), la prevención de riesgo psicosocial por alta rotación (NOM-035) y el teletrabajo (NOM-037)", actividad_desc, sc);
+        let sol = "integramos la política NOM-035, el adendum NOM-037, el aviso de privacidad y los acuerdos de confidencialidad".to_string();
+        ("Call Centers y BPO", pain, sol)
+    } else if sc.starts_with("5616") {
+        let pain = format!("en empresas de {} (SCIAN {}) es indispensable mantener vigente el registro REPSE, los reportes ICSOE/SISUB, el control de turnos (NOM-035) y la prima de riesgo IMSS", actividad_desc, sc);
+        let sol = "armamos el paquete de control REPSE, las actas de seguridad e higiene y los contratos de servicios especializados".to_string();
+        ("Seguridad Privada", pain, sol)
+    } else if sc.starts_with("5617") {
+        let pain = format!("en empresas de {} (SCIAN {}) se vigilan el registro REPSE y reportes cuatrimestrales (ICSOE/SISUB), el manejo seguro de productos químicos (NOM-005/018) y la seguridad en sitio", actividad_desc, sc);
+        let sol = "estructuramos el expediente REPSE, las comisiones NOM-019/030 y el contrato marco de servicios especializados".to_string();
+        ("Limpieza y Mantenimiento", pain, sol)
+    } else if sc.starts_with("561") {
+        let pain = format!("en empresas de {} (SCIAN {}) el punto más sensible es mantener al día el registro REPSE, los reportes cuatrimestrales ICSOE/SISUB y la documentación laboral para evitar responsabilidad solidaria", actividad_desc, sc);
+        let sol = "armamos el paquete de control REPSE (ICSOE/SISUB), los contratos de servicios especializados con fecha cierta y los protocolos STPS".to_string();
+        ("Servicios Especializados y REPSE", pain, sol)
+    } else if sc.starts_with("71394") {
+        let pain = format!("en centros de {} (SCIAN {}) se revisan el Programa Interno de Protección Civil (PIPC), el consentimiento para datos biométricos/salud de socios (Art. 9 LFPDPPP) y contratos PROFECO", actividad_desc, sc);
+        let sol = "reunimos el aviso de privacidad para datos biométricos, la guía PIPC y los términos de membresía ante PROFECO".to_string();
+        ("Gimnasios y Centros Deportivos", pain, sol)
+    } else if sc.starts_with("711") || sc.starts_with("713") {
+        let pain = format!("en empresas de {} (SCIAN {}) cobran relevancia Protección Civil para aforos (PIPC), los contratos con proveedores temporales (REPSE/69-B) y las políticas de cancelación PROFECO", actividad_desc, sc);
+        let sol = "integramos la guía de Protección Civil, los términos comerciales y el soporte contractual de proveedores".to_string();
+        ("Entretenimiento y Eventos", pain, sol)
     } else if sc.starts_with("721") {
         let pain = format!("en operaciones de {} (SCIAN {}) la atención continua exige tener al día Protección Civil y simulacros (PIPC), higiene COFEPRIS, proveedores REPSE y NOM-035", actividad_desc, sc);
         let sol = "reunimos los protocolos PIPC de hospitalidad, el control de proveedores REPSE, la política NOM-035 y la privacidad de huéspedes".to_string();
         ("Hotelería y Hospitalidad", pain, sol)
+    } else if sc.starts_with("8121") {
+        let pain = format!("en centros de {} (SCIAN {}) suelen revisarse las condiciones sanitarias COFEPRIS, el consentimiento de datos de clientes (LFPDPPP), los contratos de servicio y NOM-035", actividad_desc, sc);
+        let sol = "preparamos el aviso de privacidad integral, los términos comerciales y las políticas laborales preventivas".to_string();
+        ("Estéticas, Spas y Bienestar", pain, sol)
+    } else if sc.starts_with("323") || sc.starts_with("5111") {
+        let pain = format!("en talleres y firmas de {} (SCIAN {}) se revisan la seguridad en maquinaria de impresión (NOM-004), el manejo de tintas y solventes (NOM-005), las comisiones NOM-019 y la materialidad de pedidos", actividad_desc, sc);
+        let sol = "consolidamos las actas NOM-019/030, la política NOM-035 y el contrato marco de producción y proveeduría".to_string();
+        ("Imprentas y Editoriales", pain, sol)
+    } else if sc.starts_with("313") || sc.starts_with("314") || sc.starts_with("315") {
+        let pain = format!("en talleres y plantas de {} (SCIAN {}) destacan la ergonomía y seguridad en maquinaria de costura (NOM-004/036), las comisiones NOM-019 y la conciliación de plantilla IMSS", actividad_desc, sc);
+        let sol = "integramos las actas bipartitas NOM-019, el diagnóstico NOM-030 y el soporte laboral y contractual".to_string();
+        ("Industria Textil y Confección", pain, sol)
+    } else if sc.starts_with("321") || sc.starts_with("337") {
+        let pain = format!("en talleres de {} (SCIAN {}) se revisan la protección contra incendios (NOM-002), seguridad en sierras y maquinaria (NOM-004), equipo de protección (NOM-017) y prima IMSS", actividad_desc, sc);
+        let sol = "reunimos las actas NOM-019, el diagnóstico preventivo NOM-030 y el contrato marco de proveeduría".to_string();
+        ("Madera y Fabricación de Muebles", pain, sol)
+    } else if sc.starts_with("332") {
+        let pain = format!("en plantas de {} (SCIAN {}) son prioritarios la seguridad en corte y soldadura (NOM-027), maquinaria (NOM-004), equipo de protección (NOM-017) y clasificación de riesgo IMSS", actividad_desc, sc);
+        let sol = "consolidamos las actas NOM-019/030, la política NOM-035 y el soporte documental de contratos industriales".to_string();
+        ("Metalmecánica y Estructuras", pain, sol)
+    } else if sc.starts_with("334") || sc.starts_with("335") {
+        let pain = format!("en plantas de {} (SCIAN {}) destacan la seguridad eléctrica (NOM-029), ergonomía en líneas de ensamble (NOM-036), comisiones NOM-019 y materialidad de componentes", actividad_desc, sc);
+        let sol = "integramos los protocolos NOM-019/030/035 y el contrato marco con fecha cierta para proveedores".to_string();
+        ("Manufactura Electrónica y Equipos", pain, sol)
     } else if sc.starts_with("336") {
         let pain = format!("en plantas de {} (SCIAN {}) se revisan estrictamente seguridad en maquinaria (NOM-004), ruido y equipo de protección (NOM-017), comisiones NOM-019 y prima IMSS", actividad_desc, sc);
         let sol = "integramos las actas bipartitas NOM-019, el diagnóstico NOM-030, la política NOM-035 y el soporte de proveeduría industrial".to_string();
@@ -3076,10 +3160,6 @@ pub fn build_scian_sector_hook(scian_code: &str, actividad_desc: &str, emp_count
         let pain = format!("en actividades de {} (SCIAN {}) se revisan el registro y seguridad de personal de campo, el manejo de insumos (COFEPRIS/NOM-005) y el soporte fiscal de compras y traslados", actividad_desc, sc);
         let sol = "reunimos los protocolos de seguridad laboral, el control de proveedores y traslados y los avisos de privacidad patronal".to_string();
         ("Agroindustria y Sector Primario", pain, sol)
-    } else if sc.starts_with("561") {
-        let pain = format!("en empresas de {} (SCIAN {}) el punto más sensible es mantener al día el registro REPSE, los reportes cuatrimestrales ICSOE/SISUB y la documentación laboral para evitar responsabilidad solidaria", actividad_desc, sc);
-        let sol = "armamos el paquete de control REPSE (ICSOE/SISUB), los contratos de servicios especializados con fecha cierta y los protocolos STPS".to_string();
-        ("Servicios Especializados y REPSE", pain, sol)
     } else if sc.starts_with("811") {
         let pain = format!("en talleres de {} (SCIAN {}) suelen revisarse el manejo de herramientas y sustancias (NOM-005/017), la comisión de seguridad (NOM-019), la prima IMSS y garantías ante PROFECO", actividad_desc, sc);
         let sol = "consolidamos el diagnóstico NOM-030, las actas NOM-019, los términos de servicio ante PROFECO y el aviso de privacidad".to_string();
@@ -3147,28 +3227,24 @@ pub fn build_adaptive_prospect_outreach(query_or_name: &str, domain_hint: Option
             message_body: msg,
         }
     } else if intel.estimated_employees > 250 {
-        let (sector_label, scian_pain, scian_solution) =
+        let (_sector_label, scian_pain, scian_solution) =
             build_scian_sector_hook(&intel.codigo_scian, &intel.actividad_desc, intel.estimated_employees);
         let pdf_link = format!("https://mallen.lat/api/micro_scan/{}", encoded_ref);
         let consult_link = format!(
             "https://mallen.lat/?calibrate=1&rfc={}&razon={}&scian={}&emp={}#express-check",
             encoded_ref, encoded_name, intel.codigo_scian, intel.estimated_employees
         );
+        let clean_name = intel.razon_social.trim().trim_end_matches('.');
         let msg = format!(
-            "Hola, equipo de {}.\n\
-            Revisando la actividad pública de su operación en el giro de {} (SCIAN {}, con una referencia de ~{} colaboradores en {} {}),\n\n\
-            notamos algunos frentes que hoy suelen revisarse con más detalle: {}.\n\n\
-            Por si les resulta útil como referencia interna: {}.\n\n\
-            1. Pueden consultar sin costo su Benchmark Sectorial y pre-diagnóstico en PDF (con sello SHA-256):\n\
+            "Hola, equipo de {}.\n\n\
+            Estuvimos revisando el entorno normativo actual para empresas de su tamaño (~{} personas) y notamos un par de puntos que hoy suelen revisarse con más detalle: {}.\n\n\
+            Por si les sirve como apoyo interno para validar que ya tienen todo cubierto, {}.\n\n\
+            1. Pueden descargar sin costo su Benchmark Sectorial y pre-diagnóstico en PDF:\n\
                {}\n\
             2. Si desean ajustar algún dato de su plantilla o revisarlo con calma por unidad operativa, pueden hacerlo aquí sin compromiso:\n\
                {}",
-            intel.razon_social,
-            sector_label,
-            intel.codigo_scian,
+            clean_name,
             intel.estimated_employees,
-            intel.branch_count,
-            if intel.branch_count > 1 { "unidades operativas" } else { "centro corporativo" },
             scian_pain,
             scian_solution,
             pdf_link,
@@ -3187,42 +3263,25 @@ pub fn build_adaptive_prospect_outreach(query_or_name: &str, domain_hint: Option
             message_body: msg,
         }
     } else {
-        let (sector_label, scian_pain, scian_solution) =
+        let (_sector_label, scian_pain, scian_solution) =
             build_scian_sector_hook(&intel.codigo_scian, &intel.actividad_desc, intel.estimated_employees);
-        let size_archetype = if intel.estimated_employees <= 30 {
-            "Blindaje Patrimonial PyME Llave en Mano"
-        } else {
-            "Blindaje de Crecimiento para Empresa Mediana (Umbral >30 Colaboradores)"
-        };
-        let trad_cost = if intel.estimated_employees <= 10 {
-            "$65,000"
-        } else if intel.estimated_employees <= 50 {
-            "$127,000"
-        } else {
-            "$225,000"
-        };
         let pdf_link = format!("https://mallen.lat/api/micro_scan/{}", encoded_ref);
-        let chk_link = format!("https://mallen.lat/checkout?ref={}", encoded_ref);
+        let checkout_link = format!("https://mallen.lat/checkout?ref={}", encoded_ref);
+        let clean_name = intel.razon_social.trim().trim_end_matches('.');
         let msg = format!(
             "Hola, equipo de {}.\n\n\
-            Vimos que operan en {} ({}) dentro de {} contra el padrón INEGI DENUE, detectamos que {}. \
-            Para un equipo de alrededor de {} personas, vale la pena tener estos puntos en orden para evitar contingencias (estimación referencial de ${:.2} MXN).\n\n\
-            Por si les sirve como apoyo práctico para validar estos puntos: {} (ahorrando los {} MXN que cobra una consultoría tradicional por elaborarlos desde cero).\n\n\
-            1. Pueden descargar sin costo su pre-diagnóstico preventivo en PDF (con sello SHA-256):\n\
+            Les escribimos porque, para un equipo de alrededor de {} personas en su giro, {}. Conviene tener esos puntos en orden antes de cualquier visita o requerimiento.\n\n\
+            Por si les resulta útil como referencia práctica interna, {}.\n\n\
+            1. Pueden descargar sin costo su pre-diagnóstico preventivo en PDF:\n\
                {}\n\
-            2. Si desean ajustar algún dato de su plantilla o revisar el alcance completo sin compromiso, pueden hacerlo aquí:\n\
+            2. Si desean ajustar el número de colaboradores o revisar el alcance completo sin compromiso, pueden verlo aquí:\n\
                {}",
-            intel.razon_social,
-            sector_label,
-            size_archetype,
-            intel.entidad_federativa,
-            scian_pain,
+            clean_name,
             intel.estimated_employees,
-            intel.exact_vemp_fine_mxn,
+            scian_pain,
             scian_solution,
-            trad_cost,
             pdf_link,
-            chk_link
+            checkout_link
         );
         AdaptiveOutreachPayload {
             prospect_tier: "NIVEL_1_PYME_CONVERSION_DIRECTA".to_string(),
@@ -3233,7 +3292,7 @@ pub fn build_adaptive_prospect_outreach(query_or_name: &str, domain_hint: Option
             detected_employees: intel.estimated_employees,
             exact_vemp_fine_mxn: intel.exact_vemp_fine_mxn,
             primary_link: pdf_link,
-            secondary_link: chk_link,
+            secondary_link: checkout_link,
             message_body: msg,
         }
     }

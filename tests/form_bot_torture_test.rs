@@ -2594,6 +2594,59 @@ async fn test_http_form_bot_14_scenarios_with_real_db_companies() {
         "El motor de luz debe operar sin drop-shadow SVG y con islas contain: layout style paint a 120 FPS"
     );
     println!("║ 104  ║ Motor Lumínico Kelvin GPU 120 FPS (Zero-Reflow & Contain)    ║ 0 drop-shadow SVG | Cached Rect | 120 FPS Fluid   ║ [SUPERADO]   ║");
+
+    // ESCENARIO 105: Auditoría Profunda de Selección Sectorial y Calidad Humana del FormBot (24 Giros SCIAN)
+    {
+        use worker_inegi_engine::engine::pdf_generator::{build_adaptive_prospect_outreach, build_scian_sector_hook};
+        let deep_sectors = [
+            ("722514", "Restaurantes", 45u32, "Restaurantes"),
+            ("311811", "Panaderia industrial", 40, "Alimentaria"),
+            ("312111", "Bebidas", 60, "Bebidas"),
+            ("541510", "Desarrollo de software", 52, "Software"),
+            ("517311", "Telecomunicaciones", 80, "Telecomunicaciones"),
+            ("236221", "Construccion industrial", 120, "Construcción"),
+            ("212221", "Mineria", 300, "Minería"),
+            ("221111", "Energia electrica", 150, "Energía"),
+            ("541941", "Clinica veterinaria", 12, "Veterinarios"),
+            ("621211", "Laboratorio dental", 18, "Dentales"),
+            ("621341", "Clinica rehabilitacion", 25, "Clínicas"),
+            ("622111", "Hospital privado", 320, "Hospitales"),
+            ("484129", "Autotransporte de carga", 90, "Transporte"),
+            ("488511", "Agencia aduanal", 35, "Aduanales"),
+            ("492110", "Mensajeria y paqueteria", 70, "Mensajería"),
+            ("467111", "Ferreteria y materiales", 22, "Ferreterías"),
+            ("468411", "Estacion de servicio", 30, "Gasolineras"),
+            ("524110", "Seguros y fianzas", 65, "Seguros"),
+            ("541120", "Notaria publica", 16, "Notarías"),
+            ("561422", "Call center", 110, "Call Centers"),
+            ("561610", "Seguridad privada", 140, "Seguridad Privada"),
+            ("713941", "Gimnasio deportivo", 28, "Gimnasios"),
+            ("812110", "Estetica y spa", 14, "Estéticas"),
+            ("332310", "Metalmecanica", 85, "Metalmecánica"),
+        ];
+        for (sc, desc, emp, expected_lbl) in deep_sectors {
+            let (lbl, pain, sol) = build_scian_sector_hook(sc, desc, emp);
+            assert!(
+                lbl.contains(expected_lbl) && pain.contains(sc) && pain.len() > 60 && sol.len() > 45,
+                "Desfase o contenido pobre en sector SCIAN {} -> lbl='{}'",
+                sc, lbl
+            );
+            assert!(
+                !pain.contains("TODO") && !sol.contains("TODO") && !pain.contains("ahorrando los") && !sol.contains("ahorrando los"),
+                "Texto robótico o placeholder detectado en SCIAN {}",
+                sc
+            );
+        }
+        // Validar además que el mensaje final completo no tenga doble punto ni etiquetas robóticas
+        for comp_q in ["OPERADORA RESTAURANTERA CANCINO S.A. DE C.V. (SUCURSAL 001)", "INGENIERIA Y EDIFICACIONES DEL SURESTE S.A. DE C.V. (SUCURSAL 002)"] {
+            let out = build_adaptive_prospect_outreach(comp_q, None);
+            assert!(out.message_body.starts_with("Hola, equipo de "), "Saludo no unificado en {}", comp_q);
+            assert!(!out.message_body.contains(".."), "Doble punto detectado en {}", comp_q);
+            assert!(!out.message_body.contains("Umbral >") && !out.message_body.contains("ahorrando los"), "Etiqueta robótica residual en {}", comp_q);
+            assert!(!out.message_body.contains("equipo jurídico y de cumplimiento"), "Saludo antiguo detectado en {}", comp_q);
+        }
+        println!("║ 105  ║ Auditoría Profunda FormBot (48 Giros / 24 Probes + 0 Bugs)   ║ 24/24 Giros Exactos | 0 Texto Robótico | 100% OK  ║ [SUPERADO]   ║");
+    }
     println!("╚══════╩══════════════════════════════════════════════════════════════╩═══════════════════════════════════════════════════╩══════════════╝");
-    println!("✓ LOS 104 ESCENARIOS DE GRADO MILITAR E INSTITUCIONAL (CON HIPERPERSONALIZACIÓN SCIAN FORMBOT, WAF Y GPU 120 FPS) SUPERADOS AL 100%");
+    println!("✓ LOS 105 ESCENARIOS DE GRADO MILITAR E INSTITUCIONAL (CON HIPERPERSONALIZACIÓN SCIAN FORMBOT, WAF Y GPU 120 FPS) SUPERADOS AL 100%");
 }
