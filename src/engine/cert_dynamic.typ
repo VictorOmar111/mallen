@@ -126,36 +126,34 @@
 
 #rect(width: 100%, fill: rgb("#f8fafc"), stroke: 0.4pt + rgb("#cbd5e1"), inset: 6pt, radius: 2.5pt)[
   #grid(
-    columns: (1fr, 1fr, 1fr),
+    columns: (1fr, 1fr, 1.45fr),
     column-gutter: 8pt,
-    align: center + bottom,
+    align: center + horizon,
     [
-      #v(14pt)
-      #line(length: 85%, stroke: 0.6pt + rgb("#334155"))
+      #text(weight: "bold", size: 6.3pt, fill: rgb("#0f172a"))[INFRAESTRUCTURA DE AUDITORÍA]\
       #v(2pt)
-      #text(weight: "bold", size: 6.3pt)[INFRAESTRUCTURA DE AUDITORÍA]\
-      #box(width: 100%, clip: false)[#text(size: 5.8pt, fill: rgb("#475569"))[{{AUDITOR_NOMBRE}}]]\
-      #box(width: 100%, clip: false)[#text(size: 5.4pt, fill: rgb("#64748b"))[{{AUDITOR_CEDULA}} • {{AUDITOR_DC5}}]]
+      #text(size: 5.8pt, fill: rgb("#334155"))[{{AUDITOR_NOMBRE}}]\
+      #text(size: 5.3pt, fill: rgb("#64748b"))[{{AUDITOR_CEDULA}} • {{AUDITOR_DC5}}]
     ],
     [
-      #v(14pt)
       #text(weight: "bold", size: 6.3pt, fill: rgb("#0f172a"))[TITULAR DEL EXPEDIENTE ACREDITADO]\
-      #box(width: 100%, clip: false)[#text(size: 5.8pt, fill: rgb("#475569"))[{{REPRESENTANTE_LEGAL}}]]\
-      #box(width: 100%, clip: false)[#text(size: 5.4pt, fill: rgb("#64748b"))[{{EMPRESA_NOMBRE}} ({{EMPRESA_TAX_ID}})]]
+      #v(2pt)
+      #text(size: 5.8pt, fill: rgb("#334155"))[{{REPRESENTANTE_LEGAL}}]\
+      #text(size: 5.3pt, fill: rgb("#64748b"))[{{EMPRESA_NOMBRE}} ({{EMPRESA_TAX_ID}})]
     ],
     [
-      #rect(width: 100%, fill: rgb("#ffffff"), stroke: 0.4pt + rgb("#94a3b8"), inset: 4pt, radius: 2pt)[
+      #rect(width: 100%, fill: rgb("#ffffff"), stroke: 0.4pt + rgb("#cbd5e1"), inset: 4pt, radius: 2pt)[
         #grid(
           columns: (auto, 1fr),
-          column-gutter: 5pt,
+          column-gutter: 6pt,
           align: horizon,
           [{{VECTOR_QR_SEAL}}],
           [
             #align(left)[
-              #text(size: 5.6pt, weight: "bold", fill: rgb("#0f172a"))[VERIFICACIÓN QR INMUTABLE]\
-              #text(size: 5.2pt, fill: rgb("#475569"))[UTC: {{FECHA_EMISION}}]\
-              #text(font: "DejaVu Sans Mono", size: 5.0pt, fill: rgb("#475569"))[#raw("{{AUDIT_HASH}}")]\
-              #text(font: "DejaVu Sans Mono", size: 5.1pt, weight: "bold", fill: rgb("#2563eb"))[mallen.lat/verify/{{REF_TAX}}]
+              #text(size: 5.8pt, weight: "bold", fill: rgb("#0f172a"))[VERIFICACIÓN DIGITAL]\
+              #text(size: 5.1pt, fill: rgb("#475569"))[UTC: {{FECHA_EMISION}}]\
+              #text(size: 5.0pt, fill: rgb("#64748b"))[SHA-256: {{AUDIT_HASH}}]\
+              #text(size: 5.2pt, weight: "bold", fill: rgb("#2563eb"))[mallen.lat/verify/{{REF_TAX}}]
             ]
           ]
         )

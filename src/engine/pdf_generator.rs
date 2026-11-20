@@ -805,7 +805,7 @@ pub async fn render_typst_from_strict_snapshot_async(snapshot_uuid: String) -> R
 
 /// Genera un Sello Matricial Vectorial (QR/DataMatrix determinístico en Typst nativo) a partir del Hash SHA-256.
 /// Al ser 100% vectorial (`#grid` de celdas geométricas), tiene nitidez infinita al 1000% de zoom y pesa 0 KB de imagen.
-pub fn render_vector_qr_seal_typst(url_or_hash: &str) -> String {
+pub fn render_vector_qr_seal_typst_sized(url_or_hash: &str, size_pt: f64) -> String {
     let payload = if url_or_hash.starts_with("http://") || url_or_hash.starts_with("https://") {
         url_or_hash.trim().to_string()
     } else {
@@ -818,11 +818,11 @@ pub fn render_vector_qr_seal_typst(url_or_hash: &str) -> String {
     };
 
     let w = code.width();
-    let quiet = 2usize;
+    let quiet = 4usize;
     let total = w + quiet * 2;
-    let cell_pt = 54.0_f64 / (total as f64);
+    let cell_pt = size_pt / (total as f64);
 
-    let mut cells = String::with_capacity(total * total * 48);
+    let mut cells = String::with_capacity(total * total * 56);
     for r in 0..total {
         for c in 0..total {
             let is_dark = if r >= quiet && r < (w + quiet) && c >= quiet && c < (w + quiet) {
@@ -830,21 +830,30 @@ pub fn render_vector_qr_seal_typst(url_or_hash: &str) -> String {
             } else {
                 false
             };
-            let fill_hex = if is_dark { "#0f172a" } else { "#ffffff" };
-            cells.push_str(&format!(
-                "rect(width: {pt:.3}pt, height: {pt:.3}pt, fill: rgb(\"{hex}\"), stroke: none),",
-                pt = cell_pt,
-                hex = fill_hex
-            ));
+            if is_dark {
+                cells.push_str(&format!(
+                    "rect(width: {pt:.3}pt, height: {pt:.3}pt, fill: rgb(\"#000000\"), stroke: 0.08pt + rgb(\"#000000\")),",
+                    pt = cell_pt
+                ));
+            } else {
+                cells.push_str(&format!(
+                    "rect(width: {pt:.3}pt, height: {pt:.3}pt, fill: rgb(\"#ffffff\"), stroke: none),",
+                    pt = cell_pt
+                ));
+            }
         }
     }
 
     format!(
-        "#box(stroke: 0.45pt + rgb(\"#cbd5e1\"), inset: 2pt, radius: 2pt, fill: white)[#grid(columns: ({pt:.3}pt,) * {tot}, row-gutter: 0pt, column-gutter: 0pt, {cells})]",
+        "#box(stroke: none, inset: 0pt, fill: white)[#grid(columns: ({pt:.3}pt,) * {tot}, row-gutter: 0pt, column-gutter: 0pt, {cells})]",
         pt = cell_pt,
         tot = total,
         cells = cells
     )
+}
+
+pub fn render_vector_qr_seal_typst(url_or_hash: &str) -> String {
+    render_vector_qr_seal_typst_sized(url_or_hash, 56.0)
 }
 
 /// Motor de Vigilancia Regulatoria Continua (Recalibración Anual de UMA — MRR SaaS):
@@ -2622,7 +2631,7 @@ pub fn generate_pdf_report_with_session(
             .replace("{{NORMA_FOLIO_PREFIX}}", cert.folio_prefix)
             .replace("{{AUDIT_HASH}}", &empresa.audit_hash)
             .replace("{{REF_TAX}}", &tax_clean)
-        .replace("{{VECTOR_QR_SEAL}}", &render_vector_qr_seal_typst(&format!("https://mallen.lat/verify/{}", tax_clean)));
+        .replace("{{VECTOR_QR_SEAL}}", &render_vector_qr_seal_typst_sized(&format!("https://mallen.lat/verify/{}", tax_clean), 44.0));
 
         let cert_content = normalize_typst_dollars(&raw_cert);
         fs::write(&cert_typ_path, cert_content)?;

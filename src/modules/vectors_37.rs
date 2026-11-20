@@ -144,7 +144,7 @@ pub fn render_vectors_37_typst_table(vectors: &[EvaluatedVector], censored_blur:
     let mut out = String::from(
         r##"#table(
   columns: (4.5%, 15%, 27.5%, 37%, 16%),
-  inset: (x: 3.2pt, y: 1.65pt),
+  inset: (x: 3.2pt, y: 1.45pt),
   stroke: 0.3pt + rgb("#cbd5e1"),
   fill: (x, y) => if y == 0 { rgb("#0f172a") } else if calc.odd(y) { rgb("#f8fafc") } else { rgb("#ffffff") },
   align: (center + horizon, left + horizon, left + horizon, left + horizon, right + horizon),
