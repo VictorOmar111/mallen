@@ -66,6 +66,7 @@ static IN_FLIGHT_DOMAINS: OnceLock<Mutex<HashSet<String>>> = OnceLock::new();
 static DB_SCHEMA_INITIALIZED: OnceLock<bool> = OnceLock::new();
 static GLOBAL_CONCURRENCY_SEMAPHORE: OnceLock<Semaphore> = OnceLock::new();
 static CIRCUIT_BREAKER_MAP: OnceLock<Mutex<HashMap<String, (u32, Instant)>>> = OnceLock::new();
+static PROXY_CLIENTS_CACHE: OnceLock<Vec<Client>> = OnceLock::new();
 
 static TELEMETRY_TOTAL_REQS: AtomicUsize = AtomicUsize::new(0);
 static TELEMETRY_IN_FLIGHT: AtomicUsize = AtomicUsize::new(0);
@@ -166,6 +167,23 @@ impl HttpFormBot {
         Ok(builder.build()?)
     }
 
+    /// Devuelve un cliente HTTP preconstruido en RAM del pool `MALLEN_PROXY_POOL` (O(1), sin recrear TLS por petición).
+    pub fn get_cached_proxy_client() -> Option<&'static Client> {
+        let pool = PROXY_CLIENTS_CACHE.get_or_init(|| {
+            let raw = std::env::var("MALLEN_PROXY_POOL").unwrap_or_default();
+            raw.split(',')
+                .map(|s| s.trim())
+                .filter(|s| !s.is_empty())
+                .filter_map(|p| Self::build_rotating_proxy_client(&[p.to_string()]).ok())
+                .collect()
+        });
+        if pool.is_empty() {
+            return None;
+        }
+        let idx = PROXY_COUNTER.fetch_add(1, Ordering::Relaxed) % pool.len();
+        Some(&pool[idx])
+    }
+
     /// Control de Rate-Limiting por dominio y Jitter ("Polite Prospecting"):
     /// Evita golpear el mismo host repetidamente en milisegundos y añade jitter para superar Time-Traps.
     pub async fn apply_domain_rate_limit_and_jitter(host: &str) {
@@ -210,6 +228,12 @@ impl HttpFormBot {
             || h.starts_with("169.254.")
             || h.starts_with("10.")
             || h.starts_with("192.168.")
+            || (h.starts_with("172.")
+                && h.split('.')
+                    .nth(1)
+                    .and_then(|o| o.parse::<u8>().ok())
+                    .map(|n| (16..=31).contains(&n))
+                    .unwrap_or(false))
             || h == "0.0.0.0"
             || h.ends_with(".internal")
             || h.ends_with(".local")
@@ -1066,8 +1090,18 @@ impl HttpFormBot {
         let _ = conn.execute("ALTER TABLE prospect_pipeline ADD COLUMN denue_email TEXT DEFAULT ''", []);
         let _ = conn.execute("ALTER TABLE prospect_pipeline ADD COLUMN scian_code TEXT DEFAULT ''", []);
 
-        let candidates = Self::fetch_pyme_prospect_chunk_from_denue(0, target_limit.min(500));
         let mut inserted_count = 0usize;
+        let mut offset = 0usize;
+        let mut candidates = Vec::new();
+        while offset < target_limit {
+            let step = (target_limit - offset).min(500);
+            let page = Self::fetch_pyme_prospect_chunk_from_denue(offset, step);
+            if page.is_empty() {
+                break;
+            }
+            offset += page.len();
+            candidates.extend(page);
+        }
 
         if let Ok(tx) = conn.transaction() {
             for (emp_name, norm_url, scian, kit_price) in candidates {
@@ -1149,31 +1183,46 @@ impl HttpFormBot {
                 break;
             }
 
+            let mut handles = Vec::with_capacity(pending_chunk.len());
             for (empresa, url, price_mxn) in pending_chunk {
-                // Si el dominio es red social o inválido, lo deriva a TIER_6 sin hacer petición HTTP
-                if let Some(dead_code) = Self::is_dead_or_social_directory_domain(&url) {
-                    Self::persist_detailed_operational_telemetry(
-                        &empresa, &url, &url, price_mxn, dead_code, "DEAD_DOMAIN_FILTER",
-                        0, 0, "N/A", 0, "", "", "", "Derivado a Tier 6 por filtro preventivo de dominio inútil"
-                    );
-                } else {
-                    let res = Self::submit_form_direct(&client, &url, &empresa, price_mxn).await;
-                    if res == "PROSPECCION_ENVIADA_EXITO" || res.starts_with("CANAL_ALTERNATIVO_") {
-                        success_or_harvested += 1;
+                let cli = client.clone();
+                handles.push(tokio::spawn(async move {
+                    if let Some(dead_code) = Self::is_dead_or_social_directory_domain(&url) {
+                        let e_c = empresa.clone();
+                        let u_c = url.clone();
+                        let _ = tokio::task::spawn_blocking(move || {
+                            Self::persist_detailed_operational_telemetry(
+                                &e_c, &u_c, &u_c, price_mxn, dead_code, "DEAD_DOMAIN_FILTER",
+                                0, 0, "N/A", 0, "", "", "", "Derivado a Tier 6 por filtro preventivo de dominio inútil"
+                            );
+                        }).await;
+                        false
+                    } else {
+                        let res = Self::submit_form_direct(&cli, &url, &empresa, price_mxn).await;
+                        res == "PROSPECCION_ENVIADA_EXITO" || res.starts_with("CANAL_ALTERNATIVO_")
                     }
+                }));
+            }
+
+            for handle in handles {
+                if let Ok(true) = handle.await {
+                    success_or_harvested += 1;
                 }
                 processed += 1;
 
                 // Mantenimiento profundo cada 2,500 registros procesados (PRAGMA wal_checkpoint(FULL) + incremental_vacuum)
                 if processed % 2500 == 0 {
-                    if let Ok(conn) = rusqlite::Connection::open(&db_path) {
-                        let _ = conn.execute_batch(
-                            "DELETE FROM prospect_logs WHERE id NOT IN (SELECT id FROM prospect_logs ORDER BY id DESC LIMIT 25000);
-                             PRAGMA incremental_vacuum(2500);
-                             PRAGMA wal_checkpoint(FULL);
-                             PRAGMA optimize;",
-                        );
-                    }
+                    let db_c = db_path.clone();
+                    let _ = tokio::task::spawn_blocking(move || {
+                        if let Ok(conn) = rusqlite::Connection::open(&db_c) {
+                            let _ = conn.execute_batch(
+                                "DELETE FROM prospect_logs WHERE id NOT IN (SELECT id FROM prospect_logs ORDER BY id DESC LIMIT 25000);
+                                 PRAGMA incremental_vacuum(2500);
+                                 PRAGMA wal_checkpoint(FULL);
+                                 PRAGMA optimize;",
+                            );
+                        }
+                    }).await;
                 }
             }
         }
@@ -1264,6 +1313,11 @@ impl HttpFormBot {
                 WHERE www IS NOT NULL
                   AND TRIM(www) != ''
                   AND (raz_social != '' OR nom_estab != '')
+                ORDER BY CASE
+                    WHEN per_ocu IN ('11 a 30 personas','31 a 50 personas','51 a 100 personas','101 a 250 personas') THEN 1
+                    WHEN per_ocu IN ('6 a 10 personas','0 a 5 personas') THEN 2
+                    ELSE 3
+                END ASC, rowid ASC
                 LIMIT ?1 OFFSET ?2
             ";
             if let Ok(mut stmt) = conn.prepare(sql) {
@@ -2348,13 +2402,8 @@ impl HttpFormBot {
         // Rate-limiting por dominio normalizado (sin 'www.')
         Self::apply_domain_rate_limit_and_jitter(&initial_host).await;
 
-        // Si existe MALLEN_PROXY_POOL o cada 50 peticiones, podemos rotar el cliente de transporte
-        let rotated_client_opt = if std::env::var("MALLEN_PROXY_POOL").map(|s| !s.is_empty()).unwrap_or(false) {
-            Self::build_rotating_proxy_client(&[]).ok()
-        } else {
-            None
-        };
-        let active_client = rotated_client_opt.as_ref().unwrap_or(client);
+        // Usar cliente HTTP preconstruido en RAM del pool MALLEN_PROXY_POOL (cero reconexión TLS por petición)
+        let active_client = Self::get_cached_proxy_client().unwrap_or(client);
 
         let (rotated_headers, chosen_ua) = Self::next_rotated_headers();
         let encoded_ref = Self::encode_url_ref(empresa_nombre);
@@ -2872,22 +2921,34 @@ impl HttpFormBot {
         }
         Self::record_circuit_breaker_outcome(&cb_key, &final_status);
 
-        Self::persist_detailed_operational_telemetry(
-            empresa_nombre,
-            page_url,
-            &tracked_final_url,
-            multa_estimada,
-            &final_status,
-            chosen_ua,
-            tracked_http_status,
-            elapsed_ms,
-            &tracked_charset,
-            tracked_retries,
-            &tracked_emails,
-            &tracked_whatsapps,
-            &final_socials,
-            &tracked_trace,
-        );
+        let emp_t = empresa_nombre.to_string();
+        let in_u_t = page_url.to_string();
+        let fin_u_t = tracked_final_url.clone();
+        let st_t = final_status.clone();
+        let ua_t = chosen_ua.to_string();
+        let ch_t = tracked_charset.clone();
+        let em_t = tracked_emails.clone();
+        let wa_t = tracked_whatsapps.clone();
+        let so_t = final_socials.clone();
+        let tr_t = tracked_trace.clone();
+        let _ = tokio::task::spawn_blocking(move || {
+            Self::persist_detailed_operational_telemetry(
+                &emp_t,
+                &in_u_t,
+                &fin_u_t,
+                multa_estimada,
+                &st_t,
+                &ua_t,
+                tracked_http_status,
+                elapsed_ms,
+                &ch_t,
+                tracked_retries,
+                &em_t,
+                &wa_t,
+                &so_t,
+                &tr_t,
+            );
+        }).await;
 
         final_status
     }
