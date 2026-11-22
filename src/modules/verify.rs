@@ -90,7 +90,7 @@ pub async fn render_verify(id: &str) -> Html<String> {
                         <div class="col-md-7 mb-3 mb-md-0">
                             <span class="badge bg-info text-dark mb-2 px-3 py-1">Kit de Expediente Pericial & Blindaje Normativo (.zip)</span>
                             <h5 class="fw-bold text-white mb-1">Activar Blindaje 360° & Descargar Expediente Criptográfico</h5>
-                            <p class="text-muted small mb-2">Incluye: Dictamen Ejecutivo PDF certificado por FIRMA MALLEN®, 10 Certificados Normativos PDF, 7 Kits Legales listos para firma autógrafa, Sello Fecha Cierta SCJN y Factura CFDI 4.0.</p>
+                            <p class="text-muted small mb-2">Incluye: Dictamen Ejecutivo PDF certificado por FIRMA MALLEN®, 10 Certificados Normativos PDF, 7 Kits Legales listos para firma autógrafa, Sello Fecha Cierta SCJN (Factura CFDI 4.0 disponible bajo solicitud).</p>
                             <span class="fs-2 fw-bold text-white">${} <small class="fs-6 text-muted">MXN (IVA Incluido)</small></span>
                         </div>
                         <div class="col-md-5 text-md-end">

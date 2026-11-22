@@ -1223,7 +1223,7 @@ async fn render_checkout_page_with_state(state: Arc<AppState>, raw_ref: String) 
 <html lang="es">
 <head>
     <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Activación de Blindaje Corporativo y CFDI 4.0 — FIRMA MALLEN®</title>
+    <title>Activación de Blindaje Corporativo — FIRMA MALLEN®</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
     <style>body {{ font-family: 'Inter', sans-serif; }} .font-mono-code {{ font-family: 'JetBrains Mono', monospace; }}</style>
@@ -1303,7 +1303,7 @@ async fn render_checkout_page_with_state(state: Arc<AppState>, raw_ref: String) 
                         <input id="pay_dom" type="text" required value="{pre_dom}" class="w-full bg-white/[0.05] shadow-[0_8px_32px_rgba(0,0,0,0.5)] border border-white/15 rounded-lg px-3.5 py-2.5 text-white">
                     </div>
                     <div>
-                        <label class="text-[10px] text-slate-400 block mb-1">Código Postal Fiscal (CFDI 4.0)</label>
+                        <label class="text-[10px] text-slate-400 block mb-1">Código Postal Fiscal (opcional, si solicita factura)</label>
                         <input id="pay_cp" type="text" maxlength="5" value="{pre_cp}" class="w-full bg-white/[0.05] shadow-[0_8px_32px_rgba(0,0,0,0.5)] border border-white/15 rounded-lg px-3.5 py-2.5 text-white">
                     </div>
                     <div>
@@ -1329,7 +1329,7 @@ async fn render_checkout_page_with_state(state: Arc<AppState>, raw_ref: String) 
                         <input id="pay_oficial" type="text" value="{pre_oficial}" class="w-full bg-white/[0.05] shadow-[0_8px_32px_rgba(0,0,0,0.5)] border border-white/15 rounded-lg px-3.5 py-2.5 text-white">
                     </div>
                     <div>
-                        <label class="text-[10px] text-slate-400 block mb-1">Correo Derechos ARCO y CFDI</label>
+                        <label class="text-[10px] text-slate-400 block mb-1">Correo Corporativo (ARCO y factura bajo solicitud)</label>
                         <input id="pay_email" type="email" value="{pre_email}" class="w-full bg-white/[0.05] shadow-[0_8px_32px_rgba(0,0,0,0.5)] border border-white/15 rounded-lg px-3.5 py-2.5 text-white">
                     </div>
                     <div>
@@ -1385,14 +1385,14 @@ async fn render_checkout_page_with_state(state: Arc<AppState>, raw_ref: String) 
                 <label class="flex items-start gap-2.5 cursor-pointer">
                     <input id="chk-disclaimer" type="checkbox" required checked class="mt-1 accent-emerald-500">
                     <span>
-                        <strong class="text-slate-200">Manifiesto de Alcance Pericial y Exactitud de Datos (Art. 89 C.Com):</strong> Confirmo los datos ingresados para la emisión de los 10 Certificados y Instrumentos Propietarios de Blindaje del RFC <b>{ref_code}</b> y su factura CFDI 4.0.
+                        <strong class="text-slate-200">Manifiesto de Alcance Pericial y Exactitud de Datos (Art. 89 C.Com):</strong> Confirmo los datos ingresados para la emisión de los 10 Certificados y Instrumentos Propietarios de Blindaje del RFC <b>{ref_code}</b>. Si requiere factura CFDI 4.0, podrá solicitarla con su Constancia de Situación Fiscal dentro del mes en curso.
                         <span class="block text-[9px] text-slate-600 mt-1">SHA-256 Disclaimer: {disclaimer_hash}</span>
                     </span>
                 </label>
             </div>
 
             <button id="btnPayNow" type="submit" class="w-full bg-gradient-to-r from-blue-600 to-emerald-600 hover:from-blue-500 hover:to-emerald-500 text-white font-bold py-4 rounded-xl transition shadow-lg shadow-emerald-600/20 uppercase tracking-wider">
-                Confirmar Datos, Timbrar CFDI 4.0 y Descargar Paquete ZIP
+                Confirmar Datos y Descargar Paquete ZIP
             </button>
         </form>
 
@@ -1410,7 +1410,7 @@ async fn render_checkout_page_with_state(state: Arc<AppState>, raw_ref: String) 
             e.preventDefault();
             const btn = document.getElementById("btnPayNow");
             btn.disabled = true;
-            btn.textContent = "Compilando Expediente Personalizado y Timbrando CFDI 4.0...";
+            btn.textContent = "Compilando Expediente Personalizado y Paquete ZIP...";
 
             const valOrNull = (id) => {{
                 const v = document.getElementById(id)?.value?.trim();
@@ -1655,7 +1655,12 @@ async fn handle_payment_webhook(
                 tax_bg
             ),
         };
-        if let Ok(cfdi) = SatBillingManager::issue_cfdi_40_complete(&inv).await {
+        let cfdi_opt = if std::env::var("MALLEN_AUTO_CFDI").map(|v| v == "1").unwrap_or(false) {
+            SatBillingManager::issue_cfdi_40_complete(&inv).await.ok()
+        } else {
+            None
+        };
+        if let Some(cfdi) = cfdi_opt {
             let cfdi_dir = format!("kits_blindaje/{}", tax_bg);
             let _ = fs::create_dir_all(&cfdi_dir);
             let _ = fs::write(
