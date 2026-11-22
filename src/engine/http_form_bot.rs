@@ -7,10 +7,19 @@
 //! 5. Soporte para Pool de Proxies Rotativos (HTTP / HTTPS / SOCKS5).
 //! 6. Protección Anti-SSRF, Límite de Memoria (Anti-Bombas HTML), Detección de `mailto:` y Captchas.
 
+use chacha20poly1305::{
+    aead::{Aead, AeadCore, KeyInit, OsRng, Payload},
+    XChaCha20Poly1305, XNonce,
+};
+use futures::stream::{self, StreamExt};
+use moka::sync::Cache;
 use sha2::{Digest, Sha256};
-use tokio::sync::Semaphore;
+use std::net::IpAddr;
+use std::sync::mpsc::{self, SyncSender};
+use tokio::sync::{oneshot, Semaphore};
+use zeroize::Zeroizing;
 use reqwest::{
-    header::{HeaderMap, HeaderValue, ACCEPT, ACCEPT_LANGUAGE, ORIGIN, REFERER, USER_AGENT},
+    header::{HeaderMap, HeaderValue, ACCEPT, ACCEPT_LANGUAGE, COOKIE, ORIGIN, REFERER, SET_COOKIE, USER_AGENT},
     redirect::Policy,
     Client, Proxy,
 };
@@ -61,12 +70,42 @@ const BROWSER_PROFILES: &[(&str, &str, &str)] = &[
 
 static UA_COUNTER: AtomicUsize = AtomicUsize::new(0);
 static PROXY_COUNTER: AtomicUsize = AtomicUsize::new(0);
-static DOMAIN_COOLDOWN_MAP: OnceLock<Mutex<HashMap<String, Instant>>> = OnceLock::new();
+const MAX_RESPONSE_BODY_BYTES: usize = 512 * 1024;
+const CHUNK_READ_TIMEOUT_SECS: u64 = 4;
+const PII_AAD_CONTEXT: &[u8] = b"FIRMA_MALLEN_PII_VAULT_V1_LFPDPPP_2025";
+
+static DOMAIN_COOLDOWN_CACHE: OnceLock<Cache<String, Instant>> = OnceLock::new();
+static CIRCUIT_BREAKER_CACHE: OnceLock<Cache<String, (u32, Instant)>> = OnceLock::new();
+static ROBOTS_ALLOW_CACHE: OnceLock<Cache<String, bool>> = OnceLock::new();
 static IN_FLIGHT_DOMAINS: OnceLock<Mutex<HashSet<String>>> = OnceLock::new();
 static DB_SCHEMA_INITIALIZED: OnceLock<bool> = OnceLock::new();
 static GLOBAL_CONCURRENCY_SEMAPHORE: OnceLock<Semaphore> = OnceLock::new();
-static CIRCUIT_BREAKER_MAP: OnceLock<Mutex<HashMap<String, (u32, Instant)>>> = OnceLock::new();
 static PROXY_CLIENTS_CACHE: OnceLock<Vec<Client>> = OnceLock::new();
+static SQLITE_WRITER_TX: OnceLock<SyncSender<TelemetryWriteMsg>> = OnceLock::new();
+
+enum WriterAck {
+    Async(oneshot::Sender<()>),
+    Sync(SyncSender<()>),
+}
+
+struct TelemetryWriteMsg {
+    db_path: String,
+    empresa_nombre: String,
+    input_url: String,
+    final_target_url: String,
+    multa_estimada: f64,
+    status_result: String,
+    user_agent_used: String,
+    http_status: u16,
+    latency_ms: u64,
+    charset_detected: String,
+    retry_count: u32,
+    emails: String,
+    whatsapps: String,
+    socials: String,
+    trace_detail: String,
+    ack: Option<WriterAck>,
+}
 
 static TELEMETRY_TOTAL_REQS: AtomicUsize = AtomicUsize::new(0);
 static TELEMETRY_IN_FLIGHT: AtomicUsize = AtomicUsize::new(0);
@@ -103,6 +142,301 @@ impl Drop for InFlightTelemetryGuard {
 pub struct HttpFormBot;
 
 impl HttpFormBot {
+    fn cooldown_cache() -> &'static Cache<String, Instant> {
+        DOMAIN_COOLDOWN_CACHE.get_or_init(|| {
+            Cache::builder().max_capacity(50_000).time_to_live(Duration::from_secs(600)).build()
+        })
+    }
+
+    fn circuit_breaker_cache() -> &'static Cache<String, (u32, Instant)> {
+        CIRCUIT_BREAKER_CACHE.get_or_init(|| {
+            Cache::builder().max_capacity(50_000).time_to_live(Duration::from_secs(48 * 3600)).build()
+        })
+    }
+
+    fn robots_cache() -> &'static Cache<String, bool> {
+        ROBOTS_ALLOW_CACHE.get_or_init(|| {
+            Cache::builder().max_capacity(50_000).time_to_live(Duration::from_secs(24 * 3600)).build()
+        })
+    }
+
+    fn configure_sqlite_connection(conn: &rusqlite::Connection) {
+        let _ = conn.execute_batch(
+            "PRAGMA journal_mode=WAL;
+             PRAGMA synchronous=NORMAL;
+             PRAGMA busy_timeout=5000;
+             PRAGMA wal_autocheckpoint=2000;
+             PRAGMA temp_store=MEMORY;
+             PRAGMA cache_size=-32000;",
+        );
+    }
+
+    fn sqlite_writer_sender() -> &'static SyncSender<TelemetryWriteMsg> {
+        SQLITE_WRITER_TX.get_or_init(|| {
+            let (tx, rx) = mpsc::sync_channel::<TelemetryWriteMsg>(4096);
+            std::thread::Builder::new()
+                .name("mallen-sqlite-writer".to_string())
+                .spawn(move || {
+                    let mut cached_path = String::new();
+                    let mut cached_conn: Option<rusqlite::Connection> = None;
+                    while let Ok(first) = rx.recv() {
+                        let mut batch = Vec::with_capacity(100);
+                        batch.push(first);
+                        while batch.len() < 100 {
+                            match rx.try_recv() {
+                                Ok(msg) => batch.push(msg),
+                                Err(_) => break,
+                            }
+                        }
+                        let target_path = batch[0].db_path.clone();
+                        if cached_path != target_path || cached_conn.is_none() {
+                            if let Ok(conn) = rusqlite::Connection::open(&target_path) {
+                                Self::configure_sqlite_connection(&conn);
+                                Self::ensure_db_schema_once(&conn);
+                                cached_path = target_path;
+                                cached_conn = Some(conn);
+                            }
+                        }
+                        if let Some(ref mut conn) = cached_conn {
+                            if let Ok(tx_sql) = conn.transaction_with_behavior(rusqlite::TransactionBehavior::Immediate) {
+                                for m in &batch {
+                                    Self::write_telemetry_row_in_tx(&tx_sql, m);
+                                }
+                                let _ = tx_sql.commit();
+                            }
+                        }
+                        for mut m in batch {
+                            if let Some(ack) = m.ack.take() {
+                                match ack {
+                                    WriterAck::Async(s) => { let _ = s.send(()); }
+                                    WriterAck::Sync(s) => { let _ = s.send(()); }
+                                }
+                            }
+                        }
+                    }
+                })
+                .expect("failed to spawn mallen-sqlite-writer");
+            tx
+        })
+    }
+
+    fn write_telemetry_row_in_tx(tx: &rusqlite::Transaction<'_>, m: &TelemetryWriteMsg) {
+        let primary_contact = if !m.emails.is_empty() {
+            format!("mailto:{}", m.emails.split(';').next().unwrap_or("").trim())
+        } else if !m.whatsapps.is_empty() {
+            m.whatsapps.split(';').next().unwrap_or("").trim().to_string()
+        } else if !m.socials.is_empty() {
+            m.socials.split(';').next().unwrap_or("").trim().to_string()
+        } else {
+            String::new()
+        };
+        let (stage, contact_tier, next_action) =
+            Self::classify_contact_method_tier(&m.status_result, &m.emails, &m.whatsapps, &m.socials);
+        let final_domain = Self::normalize_domain_host(&m.final_target_url);
+        let raw_vault = format!("emails={}|wa={}|soc={}", m.emails, m.whatsapps, m.socials);
+        let encrypted_vault = if !m.emails.is_empty() || !m.whatsapps.is_empty() || !m.socials.is_empty() {
+            Self::encrypt_pii_at_rest(&raw_vault)
+        } else {
+            String::new()
+        };
+        let _ = tx.execute(
+            "INSERT INTO prospect_logs (empresa_nombre, target_url, final_target_url, final_domain, multa_estimada_mxn, resultado_codigo, pipeline_stage, next_action_channel, extracted_contact, user_agent, http_status, latency_ms, charset_detected, retry_count, contact_method_tier, trace_detail) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13, ?14, ?15, ?16)",
+            rusqlite::params![m.empresa_nombre, m.input_url, m.final_target_url, final_domain, m.multa_estimada, m.status_result, stage, next_action, primary_contact, m.user_agent_used, m.http_status as i64, m.latency_ms as i64, m.charset_detected, m.retry_count as i64, contact_tier, m.trace_detail],
+        );
+        let _ = tx.execute(
+            "INSERT INTO prospect_pipeline (empresa_nombre, input_url, final_target_url, final_domain, multa_estimada_mxn, ultimo_resultado_codigo, pipeline_stage, next_action_channel, extracted_contact, contact_method_tier, extracted_emails, extracted_whatsapp, extracted_socials, last_http_status, last_latency_ms, last_charset, last_trace_detail, encrypted_contact_vault, attempts_count, updated_at_utc) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13, ?14, ?15, ?16, ?17, ?18, 1, datetime('now')) ON CONFLICT(empresa_nombre) DO UPDATE SET input_url = excluded.input_url, final_target_url = excluded.final_target_url, final_domain = excluded.final_domain, multa_estimada_mxn = excluded.multa_estimada_mxn, ultimo_resultado_codigo = excluded.ultimo_resultado_codigo, pipeline_stage = excluded.pipeline_stage, next_action_channel = excluded.next_action_channel, extracted_contact = CASE WHEN excluded.extracted_contact != '' THEN excluded.extracted_contact ELSE prospect_pipeline.extracted_contact END, contact_method_tier = excluded.contact_method_tier, extracted_emails = CASE WHEN excluded.extracted_emails != '' THEN excluded.extracted_emails ELSE prospect_pipeline.extracted_emails END, extracted_whatsapp = CASE WHEN excluded.extracted_whatsapp != '' THEN excluded.extracted_whatsapp ELSE prospect_pipeline.extracted_whatsapp END, extracted_socials = CASE WHEN excluded.extracted_socials != '' THEN excluded.extracted_socials ELSE prospect_pipeline.extracted_socials END, last_http_status = excluded.last_http_status, last_latency_ms = excluded.last_latency_ms, last_charset = excluded.last_charset, last_trace_detail = excluded.last_trace_detail, encrypted_contact_vault = CASE WHEN excluded.encrypted_contact_vault != '' THEN excluded.encrypted_contact_vault ELSE prospect_pipeline.encrypted_contact_vault END, attempts_count = prospect_pipeline.attempts_count + 1, updated_at_utc = datetime('now')",
+            rusqlite::params![m.empresa_nombre, m.input_url, m.final_target_url, final_domain, m.multa_estimada, m.status_result, stage, next_action, primary_contact, contact_tier, m.emails, m.whatsapps, m.socials, m.http_status as i64, m.latency_ms as i64, m.charset_detected, m.trace_detail, encrypted_vault],
+        );
+        if m.trace_detail.contains(" | STACK:") {
+            let st_part = m.trace_detail.split(" | STACK:").nth(1).unwrap_or("");
+            let stack_val = st_part.split(" | PITCH:").next().unwrap_or("");
+            let pitch_val = st_part.split(" | PITCH:").nth(1).unwrap_or("");
+            let _ = tx.execute("UPDATE prospect_pipeline SET tech_stack_detected = ?1, recommended_module = ?2 WHERE empresa_nombre = ?3", rusqlite::params![stack_val, pitch_val, m.empresa_nombre]);
+        }
+    }
+
+    fn ssrf_safe_redirect_policy() -> Policy {
+        Policy::custom(|attempt| {
+            if attempt.previous().len() >= 5 { return attempt.error("max_redirects_exceeded"); }
+            if !Self::is_url_ssrf_safe_sync(attempt.url()) { return attempt.error("ssrf_redirect_blocked"); }
+            attempt.follow()
+        })
+    }
+
+    pub fn is_private_or_forbidden_ip(ip: IpAddr, allow_local_test_loopback: bool) -> bool {
+        match ip {
+            IpAddr::V4(v4) => {
+                let oct = v4.octets();
+                if v4.is_loopback() { return !allow_local_test_loopback; }
+                v4.is_private() || v4.is_link_local() || v4.is_broadcast() || v4.is_documentation()
+                    || v4.is_unspecified() || v4.is_multicast()
+                    || (oct[0] == 100 && (oct[1] & 0b1100_0000) == 64) || oct[0] == 0
+            }
+            IpAddr::V6(v6) => {
+                if v6.is_loopback() { return !allow_local_test_loopback; }
+                if let Some(v4_m) = v6.to_ipv4_mapped() {
+                    return Self::is_private_or_forbidden_ip(IpAddr::V4(v4_m), allow_local_test_loopback);
+                }
+                let seg0 = v6.segments()[0];
+                v6.is_unspecified() || v6.is_multicast() || (seg0 & 0xfe00) == 0xfc00 || (seg0 & 0xffc0) == 0xfe80
+            }
+        }
+    }
+
+    pub fn is_url_ssrf_safe_sync(url: &Url) -> bool {
+        if url.scheme() != "http" && url.scheme() != "https" { return false; }
+        let Some(host) = url.host_str() else { return false; };
+        if Self::is_ssrf_forbidden_host(host) { return false; }
+        if host != "127.0.0.1" && host != "localhost" {
+            if let Some(port) = url.port() {
+                if port != 80 && port != 443 { return false; }
+            }
+        }
+        true
+    }
+
+    pub async fn validate_url_and_dns_ssrf(url: &Url) -> bool {
+        if !Self::is_url_ssrf_safe_sync(url) { return false; }
+        let Some(host) = url.host_str() else { return false; };
+        if host == "127.0.0.1" || host == "localhost" { return true; }
+        let port = url.port_or_known_default().unwrap_or(443);
+        if let Ok(Ok(addrs)) = timeout(Duration::from_secs(2), tokio::net::lookup_host((host, port))).await {
+            let mut saw_any = false;
+            for sock in addrs {
+                saw_any = true;
+                if Self::is_private_or_forbidden_ip(sock.ip(), false) { return false; }
+            }
+            return saw_any;
+        }
+        true
+    }
+
+    async fn read_bounded_body(mut resp: reqwest::Response, max_bytes: usize) -> Result<Vec<u8>, &'static str> {
+        let mut buf = Vec::with_capacity(max_bytes.min(65_536));
+        loop {
+            match timeout(Duration::from_secs(CHUNK_READ_TIMEOUT_SECS), resp.chunk()).await {
+                Ok(Ok(Some(chunk))) => {
+                    let rem = max_bytes.saturating_sub(buf.len());
+                    if rem == 0 { break; }
+                    buf.extend_from_slice(&chunk[..chunk.len().min(rem)]);
+                    if buf.len() >= max_bytes { break; }
+                }
+                Ok(Ok(None)) => break,
+                Ok(Err(_)) => return Err("ERR_READ_BODY"),
+                Err(_) => return Err("TIMEOUT_READ_BODY"),
+            }
+        }
+        Ok(buf)
+    }
+
+    fn extract_ephemeral_cookies(headers: &HeaderMap, jar: &mut HashMap<String, String>) {
+        for val in headers.get_all(SET_COOKIE) {
+            if let Ok(s) = val.to_str() {
+                if let Some(pair) = s.split(';').next() {
+                    if let Some((k, v)) = pair.split_once('=') {
+                        let key = k.trim();
+                        if !key.is_empty() && jar.len() < 32 { jar.insert(key.to_string(), v.trim().to_string()); }
+                    }
+                }
+            }
+        }
+    }
+
+    fn format_cookie_header(jar: &HashMap<String, String>) -> Option<HeaderValue> {
+        if jar.is_empty() { return None; }
+        let joined: String = jar.iter().map(|(k, v)| format!("{}={}", k, v)).collect::<Vec<_>>().join("; ");
+        HeaderValue::from_str(&joined).ok()
+    }
+
+    async fn is_allowed_by_robots_txt(client: &Client, target_url: &Url, headers: &HeaderMap) -> bool {
+        let Some(host) = target_url.host_str() else { return false; };
+        if host == "127.0.0.1" || host == "localhost" { return true; }
+        let origin_key = target_url.origin().ascii_serialization();
+        if let Some(allowed) = Self::robots_cache().get(&origin_key) { return allowed; }
+        let robots_url = format!("{}/robots.txt", origin_key);
+        let allowed = match timeout(Duration::from_secs(3), client.get(&robots_url).headers(headers.clone()).send()).await {
+            Ok(Ok(r)) => {
+                let code = r.status().as_u16();
+                if (400..500).contains(&code) { true }
+                else if code >= 500 { false }
+                else if let Ok(bytes) = Self::read_bounded_body(r, 500 * 1024).await {
+                    let txt = String::from_utf8_lossy(&bytes).to_lowercase();
+                    let (mut in_wc, mut dis_root) = (false, false);
+                    for raw_line in txt.lines() {
+                        let line = raw_line.split('#').next().unwrap_or("").trim();
+                        if let Some(ua) = line.strip_prefix("user-agent:") {
+                            let u = ua.trim();
+                            in_wc = u == "*" || u.contains("mallen");
+                        } else if in_wc {
+                            if let Some(dis) = line.strip_prefix("disallow:") {
+                                let p = dis.trim();
+                                if p == "/" || p == "/contacto" || p == "/contact" { dis_root = true; }
+                            }
+                        }
+                    }
+                    !dis_root
+                } else { true }
+            }
+            _ => true,
+        };
+        Self::robots_cache().insert(origin_key, allowed);
+        allowed
+    }
+
+    pub fn is_suppressed_arco(domain: &str, empresa_nombre: &str) -> bool {
+        let db_path = std::env::var("MALLEN_DB_PATH").unwrap_or_else(|_| "data/mallen_prod.db".to_string());
+        if let Ok(conn) = rusqlite::Connection::open(db_path) {
+            Self::configure_sqlite_connection(&conn);
+            Self::ensure_db_schema_once(&conn);
+            let cnt: i64 = conn.query_row(
+                "SELECT COUNT(*) FROM suppression_list WHERE LOWER(domain_or_company) = LOWER(?1) OR LOWER(domain_or_company) = LOWER(?2)",
+                rusqlite::params![domain.trim(), empresa_nombre.trim()],
+                |r| r.get(0),
+            ).unwrap_or(0);
+            return cnt > 0;
+        }
+        false
+    }
+
+    #[allow(clippy::too_many_arguments)]
+    async fn enqueue_telemetry_async(
+        empresa_nombre: String, input_url: String, final_target_url: String, multa_estimada: f64,
+        status_result: String, user_agent_used: String, http_status: u16, latency_ms: u64,
+        charset_detected: String, retry_count: u32, emails: String, whatsapps: String, socials: String, trace_detail: String,
+    ) {
+        let db_path = std::env::var("MALLEN_DB_PATH").unwrap_or_else(|_| "data/mallen_prod.db".to_string());
+        let (ack_tx, ack_rx) = oneshot::channel();
+        let msg = TelemetryWriteMsg {
+            db_path, empresa_nombre, input_url, final_target_url, multa_estimada, status_result, user_agent_used,
+            http_status, latency_ms, charset_detected, retry_count, emails, whatsapps, socials, trace_detail,
+            ack: Some(WriterAck::Async(ack_tx)),
+        };
+        if Self::sqlite_writer_sender().send(msg).is_ok() {
+            let _ = timeout(Duration::from_secs(3), ack_rx).await;
+        }
+    }
+
+    pub fn fetch_pyme_prospect_chunk_keyset(last_rowid: i64, chunk_size: usize) -> Vec<(i64, String, String, String, f64)> {
+        let bounded = chunk_size.clamp(1, 500);
+        let mut batch = Vec::with_capacity(bounded);
+        let db_path = std::env::var("MALLEN_DB_PATH").unwrap_or_else(|_| "data/mallen_prod.db".to_string());
+        if let Ok(conn) = rusqlite::Connection::open(db_path) {
+            Self::configure_sqlite_connection(&conn);
+            let sql = "SELECT rowid, COALESCE(NULLIF(TRIM(raz_social), ''), TRIM(nom_estab)), TRIM(www), COALESCE(NULLIF(TRIM(codigo_scian), ''), '541110'), COALESCE(per_ocu, '11 a 30 personas') FROM denue_units WHERE rowid > ?1 AND www IS NOT NULL AND TRIM(www) != '' AND (raz_social != '' OR nom_estab != '') ORDER BY rowid ASC LIMIT ?2";
+            if let Ok(mut stmt) = conn.prepare(sql) {
+                if let Ok(rows) = stmt.query_map(rusqlite::params![last_rowid, bounded as i64], |r| {
+                    Ok((r.get::<_, i64>(0)?, r.get::<_, String>(1)?, r.get::<_, String>(2)?, r.get::<_, String>(3)?, r.get::<_, String>(4)?))
+                }) {
+                    for (rid, emp_name, raw_www, scian, estrato) in rows.flatten() {
+                        let norm = if raw_www.starts_with("http://") || raw_www.starts_with("https://") { raw_www } else { format!("https://{}", raw_www.trim_start_matches('/')) };
+                        let (_, _, kit_price, _) = Self::classify_denue_capacity_and_scian_risk(&estrato, &scian);
+                        batch.push((rid, emp_name, norm, scian, kit_price));
+                    }
+                }
+            }
+        }
+        batch
+    }
     /// Selecciona el siguiente perfil de navegador del pool rotativo y construye sus cabeceras HTTP
     pub fn next_rotated_headers() -> (HeaderMap, &'static str) {
         let idx = UA_COUNTER.fetch_add(1, Ordering::Relaxed) % BROWSER_PROFILES.len();
@@ -136,12 +470,12 @@ impl HttpFormBot {
         let (default_headers, _) = Self::next_rotated_headers();
         let mut builder = Client::builder()
             .timeout(Duration::from_millis(Self::configured_timeout_ms()))
-            .connect_timeout(Duration::from_millis(4500))
+            .connect_timeout(Duration::from_millis(3000))
             .pool_idle_timeout(Duration::from_secs(15))
             .pool_max_idle_per_host(16)
             .tcp_keepalive(Duration::from_secs(30))
             .tcp_nodelay(true)
-            .redirect(Policy::limited(5))
+            .redirect(Self::ssrf_safe_redirect_policy())
             .danger_accept_invalid_certs(true)
             .default_headers(default_headers);
 
@@ -162,6 +496,8 @@ impl HttpFormBot {
             let idx = PROXY_COUNTER.fetch_add(1, Ordering::Relaxed) % active_pool.len();
             let chosen_proxy = &active_pool[idx];
             builder = builder.proxy(Proxy::all(chosen_proxy)?);
+        } else {
+            builder = builder.no_proxy();
         }
 
         Ok(builder.build()?)
@@ -197,17 +533,15 @@ impl HttpFormBot {
         let mut wait_needed = Duration::ZERO;
 
         {
-            let map_mutex = DOMAIN_COOLDOWN_MAP.get_or_init(|| Mutex::new(HashMap::new()));
-            if let Ok(mut map) = map_mutex.lock() {
-                let now = Instant::now();
-                if let Some(last_hit) = map.get(host) {
-                    let elapsed = now.duration_since(*last_hit);
-                    if elapsed < min_cooldown {
-                        wait_needed = min_cooldown - elapsed;
-                    }
+            let cache = Self::cooldown_cache();
+            let now = Instant::now();
+            if let Some(last_hit) = cache.get(host) {
+                let elapsed = now.duration_since(last_hit);
+                if elapsed < min_cooldown {
+                    wait_needed = min_cooldown - elapsed;
                 }
-                map.insert(host.to_string(), now + wait_needed);
             }
+            cache.insert(host.to_string(), now + wait_needed);
         }
 
         // Jitter pseudoaleatorio entre 140 ms y 420 ms basado en el reloj del sistema
@@ -223,22 +557,15 @@ impl HttpFormBot {
     /// Escudo Anti-SSRF: bloquea IPs de metadatos cloud (169.254.169.254) y redes privadas internas
     /// (permitiendo 127.0.0.1 únicamente durante tests locales de integración).
     pub fn is_ssrf_forbidden_host(host: &str) -> bool {
-        let h = host.trim().to_lowercase();
-        if h == "169.254.169.254"
-            || h.starts_with("169.254.")
-            || h.starts_with("10.")
-            || h.starts_with("192.168.")
-            || (h.starts_with("172.")
-                && h.split('.')
-                    .nth(1)
-                    .and_then(|o| o.parse::<u8>().ok())
-                    .map(|n| (16..=31).contains(&n))
-                    .unwrap_or(false))
-            || h == "0.0.0.0"
-            || h.ends_with(".internal")
-            || h.ends_with(".local")
+        let h = host.trim().trim_matches(|c| c == '[' || c == ']').to_lowercase();
+        if h.is_empty() || h == "169.254.169.254" || h == "metadata.google.internal"
+            || h == "0.0.0.0" || h.ends_with(".internal") || h.ends_with(".local") || h.ends_with(".localhost")
         {
             return true;
+        }
+        if h == "127.0.0.1" || h == "localhost" { return false; }
+        if let Ok(ip) = h.parse::<IpAddr>() {
+            return Self::is_private_or_forbidden_ip(ip, false);
         }
         false
     }
@@ -1090,21 +1417,18 @@ impl HttpFormBot {
         let _ = conn.execute("ALTER TABLE prospect_pipeline ADD COLUMN denue_email TEXT DEFAULT ''", []);
         let _ = conn.execute("ALTER TABLE prospect_pipeline ADD COLUMN scian_code TEXT DEFAULT ''", []);
 
+        Self::configure_sqlite_connection(&conn);
         let mut inserted_count = 0usize;
-        let mut offset = 0usize;
-        let mut candidates = Vec::new();
-        while offset < target_limit {
-            let step = (target_limit - offset).min(500);
-            let page = Self::fetch_pyme_prospect_chunk_from_denue(offset, step);
-            if page.is_empty() {
-                break;
-            }
-            offset += page.len();
-            candidates.extend(page);
-        }
-
-        if let Ok(tx) = conn.transaction() {
-            for (emp_name, norm_url, scian, kit_price) in candidates {
+        let mut scanned = 0usize;
+        let mut last_rowid = 0i64;
+        while scanned < target_limit {
+            let step = (target_limit - scanned).min(500);
+            let page = Self::fetch_pyme_prospect_chunk_keyset(last_rowid, step);
+            if page.is_empty() { break; }
+            if let Some(last) = page.last() { last_rowid = last.0; }
+            scanned += page.len();
+            if let Ok(tx) = conn.transaction_with_behavior(rusqlite::TransactionBehavior::Immediate) {
+                for (_rid, emp_name, norm_url, scian, kit_price) in page {
                 let dom = Self::normalize_domain_host(&norm_url);
                 // Si el dominio está en la Dead-Domain Blacklist, lo clasificamos de inmediato en TIER_6 sin gastar red
                 let (init_stage, init_code, init_tier, init_action) = if let Some(dead_reason) = Self::is_dead_or_social_directory_domain(&norm_url) {
@@ -1134,9 +1458,10 @@ impl HttpFormBot {
                         ],
                     )
                     .unwrap_or(0);
-                inserted_count += affected;
+                    inserted_count += affected;
+                }
+                let _ = tx.commit();
             }
-            let _ = tx.commit();
         }
         Ok(inserted_count)
     }
@@ -1183,47 +1508,36 @@ impl HttpFormBot {
                 break;
             }
 
-            let mut handles = Vec::with_capacity(pending_chunk.len());
-            for (empresa, url, price_mxn) in pending_chunk {
+            let concurrency = std::env::var("MALLEN_MAX_CONCURRENCY")
+                .ok()
+                .and_then(|v| v.trim().parse::<usize>().ok())
+                .filter(|&n| (1..=500).contains(&n))
+                .unwrap_or(32);
+
+            let results: Vec<bool> = stream::iter(pending_chunk.into_iter().map(|(empresa, url, price_mxn)| {
                 let cli = client.clone();
-                handles.push(tokio::spawn(async move {
+                async move {
                     if let Some(dead_code) = Self::is_dead_or_social_directory_domain(&url) {
-                        let e_c = empresa.clone();
-                        let u_c = url.clone();
-                        let _ = tokio::task::spawn_blocking(move || {
-                            Self::persist_detailed_operational_telemetry(
-                                &e_c, &u_c, &u_c, price_mxn, dead_code, "DEAD_DOMAIN_FILTER",
-                                0, 0, "N/A", 0, "", "", "", "Derivado a Tier 6 por filtro preventivo de dominio inútil"
-                            );
-                        }).await;
+                        Self::enqueue_telemetry_async(
+                            empresa, url.clone(), url, price_mxn, dead_code.to_string(),
+                            "DEAD_DOMAIN_FILTER".to_string(), 0, 0, "N/A".to_string(), 0,
+                            String::new(), String::new(), String::new(),
+                            "Derivado a Tier 6 por filtro preventivo de dominio inútil".to_string(),
+                        ).await;
                         false
                     } else {
                         let res = Self::submit_form_direct(&cli, &url, &empresa, price_mxn).await;
                         res == "PROSPECCION_ENVIADA_EXITO" || res.starts_with("CANAL_ALTERNATIVO_")
                     }
-                }));
-            }
-
-            for handle in handles {
-                if let Ok(true) = handle.await {
-                    success_or_harvested += 1;
                 }
+            }))
+            .buffer_unordered(concurrency)
+            .collect()
+            .await;
+
+            for ok in results {
+                if ok { success_or_harvested += 1; }
                 processed += 1;
-
-                // Mantenimiento profundo cada 2,500 registros procesados (PRAGMA wal_checkpoint(FULL) + incremental_vacuum)
-                if processed % 2500 == 0 {
-                    let db_c = db_path.clone();
-                    let _ = tokio::task::spawn_blocking(move || {
-                        if let Ok(conn) = rusqlite::Connection::open(&db_c) {
-                            let _ = conn.execute_batch(
-                                "DELETE FROM prospect_logs WHERE id NOT IN (SELECT id FROM prospect_logs ORDER BY id DESC LIMIT 25000);
-                                 PRAGMA incremental_vacuum(2500);
-                                 PRAGMA wal_checkpoint(FULL);
-                                 PRAGMA optimize;",
-                            );
-                        }
-                    }).await;
-                }
             }
         }
 
@@ -1487,60 +1801,42 @@ impl HttpFormBot {
     /// Verifica si el Circuit Breaker está abierto para un dominio (3 fallos 403/429/WAF consecutivos -> 48h de enfriamiento).
     pub fn check_circuit_breaker_open(domain: &str) -> bool {
         let cb_ttl = Duration::from_secs(48 * 3600);
-        let map_mutex = CIRCUIT_BREAKER_MAP.get_or_init(|| Mutex::new(HashMap::new()));
-        if let Ok(mut map) = map_mutex.lock() {
-            if let Some((fails, opened_at)) = map.get(domain).copied() {
-                if fails >= 3 {
-                    if opened_at.elapsed() < cb_ttl {
-                        return true;
-                    } else {
-                        map.remove(domain);
-                    }
-                }
+        let cache = Self::circuit_breaker_cache();
+        if let Some((fails, opened_at)) = cache.get(domain) {
+            if fails >= 3 {
+                if opened_at.elapsed() < cb_ttl { return true; }
+                else { cache.invalidate(domain); }
             }
         }
         false
     }
 
-    /// Actualiza el Circuit Breaker tras cada ejecución:
-    /// - Si hubo bloqueo 403 / 429 / WAF consecutivo, incrementa el contador (al llegar a 3 abre el circuito por 48h).
-    /// - Si la petición tuvo éxito o respuesta normal, reinicia el contador de fallos del dominio a 0.
     pub fn record_circuit_breaker_outcome(domain: &str, status_code: &str) {
-        let is_hostile_failure = status_code == "BLOQUEO_WAF_CLOUDFLARE_CHALLENGE"
+        let is_hostile = status_code == "BLOQUEO_WAF_CLOUDFLARE_CHALLENGE"
             || status_code == "HTTP_RATE_LIMIT_429"
             || status_code == "HTTP_POST_ERR_403"
             || status_code == "ERR_HTTP_GET_403";
-
-        let map_mutex = CIRCUIT_BREAKER_MAP.get_or_init(|| Mutex::new(HashMap::new()));
-        if let Ok(mut map) = map_mutex.lock() {
-            if is_hostile_failure {
-                let entry = map.entry(domain.to_string()).or_insert((0, Instant::now()));
-                entry.0 += 1;
-                entry.1 = Instant::now();
-            } else if status_code == "PROSPECCION_ENVIADA_EXITO" {
-                map.remove(domain);
-            }
+        let cache = Self::circuit_breaker_cache();
+        if is_hostile {
+            let prev = cache.get(domain).map(|(f, _)| f).unwrap_or(0);
+            cache.insert(domain.to_string(), (prev.saturating_add(1), Instant::now()));
+        } else if status_code == "PROSPECCION_ENVIADA_EXITO" {
+            cache.invalidate(domain);
         }
     }
 
-    /// Reinicia manualmente el Circuit Breaker de un dominio (útil en pruebas o recargas de proxies).
     pub fn reset_circuit_breaker(domain: &str) {
-        if let Some(map_mutex) = CIRCUIT_BREAKER_MAP.get() {
-            if let Ok(mut map) = map_mutex.lock() {
-                map.remove(domain);
-            }
-        }
+        Self::circuit_breaker_cache().invalidate(domain);
     }
 
     /// Construye un mensaje de contacto B2B cálido, humano, consultivo y de alta conversión
     /// (sin cifras intimidantes de multas en el primer contacto para evitar fricción con recepción/filtros).
     pub fn build_human_consultative_message(empresa_nombre: &str, _encoded_ref: &str) -> String {
-        let valid_link = Self::build_and_validate_checkout_link(empresa_nombre, None)
-            .unwrap_or_else(|_| format!("https://mallen.lat/checkout?ref={}", Self::encode_url_ref(empresa_nombre)));
+        let micro_link = format!("https://mallen.lat/api/micro_scan/{}", Self::encode_url_ref(empresa_nombre));
         format!(
-            "Estimado equipo directivo y area juridica de {}: Les saludamos cordialmente de FIRMA MALLEN®. Como parte de nuestro programa de apoyo al cumplimiento empresarial, generamos una pre-evaluacion tecnica preventiva basada en informacion publica (padrón INEGI DENUE, normatividad STPS y aviso de privacidad web) para ayudarles a fortalecer su blindaje documental y operativo. Pueden consultar y descargar sin costo su resumen tecnico confidencial en: {}",
+            "Estimado equipo directivo de {}: Les saludamos cordialmente de FIRMA MALLEN®. Generamos una pre-evaluación técnica preventiva (STPS, SAT, IMSS y LFPDPPP) y pueden consultar y descargar sin costo su resumen tecnico confidencial en: {} | Fuente: INEGI, DENUE. Aviso de Privacidad: https://mallen.lat/privacidad | Exclusión ARCO: https://mallen.lat/derechos-arco",
             empresa_nombre.trim(),
-            valid_link
+            micro_link
         )
     }
 
@@ -1638,7 +1934,7 @@ impl HttpFormBot {
         let _ = conn.execute_batch(
             "PRAGMA incremental_vacuum(2000);
              PRAGMA optimize;
-             PRAGMA wal_checkpoint(TRUNCATE);",
+             PRAGMA wal_checkpoint(PASSIVE);",
         );
 
         let page_count: i64 = conn.query_row("PRAGMA page_count;", [], |r| r.get(0)).unwrap_or(0);
@@ -1708,6 +2004,11 @@ impl HttpFormBot {
                      click_count INTEGER DEFAULT 1,
                      last_visitor_ip TEXT DEFAULT '',
                      last_user_agent TEXT DEFAULT ''
+                 );
+                 CREATE TABLE IF NOT EXISTS suppression_list (
+                     domain_or_company TEXT PRIMARY KEY,
+                     reason TEXT DEFAULT 'ARCO_OPTOUT',
+                     created_at_utc TEXT DEFAULT (datetime('now'))
                  );",
             );
 
@@ -1838,65 +2139,49 @@ impl HttpFormBot {
     /// Cifrado Simétrico en Reposo (Cumplimiento Art. 19 LFPDPPP y Art. 32 GDPR):
     /// Cifra datos de contacto sensibles usando un flujo XOR derivado por bloques con SHA-256 (Keystream CTR)
     /// gobernado por la llave `MALLEN_PII_SECRET_KEY`. Produce el formato `ENCv1:<hex>`.
-    pub fn encrypt_pii_at_rest(plaintext: &str) -> String {
-        let clean = plaintext.trim();
-        if clean.is_empty() {
-            return String::new();
-        }
+    fn derive_aead_key() -> Zeroizing<[u8; 32]> {
         let secret = std::env::var("MALLEN_PII_SECRET_KEY")
-            .unwrap_or_else(|_| "W16_MALLEN_DEFAULT_AES_SHA256_VAULT_KEY_2026".to_string());
-        let plain_bytes = clean.as_bytes();
-        let mut cipher_bytes = Vec::with_capacity(plain_bytes.len());
-
-        for (block_idx, chunk) in plain_bytes.chunks(32).enumerate() {
-            let mut hasher = Sha256::new();
-            hasher.update(secret.as_bytes());
-            hasher.update(b"|LFPDPPP_VAULT_BLOCK|");
-            hasher.update((block_idx as u64).to_le_bytes());
-            let keystream = hasher.finalize();
-            for (i, &b) in chunk.iter().enumerate() {
-                cipher_bytes.push(b ^ keystream[i]);
-            }
-        }
-
-        let mut hex_out = String::with_capacity(6 + cipher_bytes.len() * 2);
-        hex_out.push_str("ENCv1:");
-        for b in cipher_bytes {
-            hex_out.push_str(&format!("{:02x}", b));
-        }
-        hex_out
+            .unwrap_or_else(|_| "MALLEN_TEST_ONLY_SET_MALLEN_PII_SECRET_KEY_IN_ENV".to_string());
+        let mut hasher = Sha256::new();
+        hasher.update(secret.as_bytes());
+        hasher.update(b"|XCHACHA20POLY1305_KEY_DERIVATION_V1|");
+        let digest = hasher.finalize();
+        let mut key = Zeroizing::new([0u8; 32]);
+        key.copy_from_slice(&digest[..32]);
+        key
     }
 
-    /// Descifra en memoria RAM un campo previamente protegido con `encrypt_pii_at_rest` (`ENCv1:<hex>`).
-    pub fn decrypt_pii_from_rest(ciphertext: &str) -> Option<String> {
-        let hex_part = ciphertext.trim().strip_prefix("ENCv1:")?;
-        if hex_part.len() % 2 != 0 {
-            return None;
-        }
-        let mut cipher_bytes = Vec::with_capacity(hex_part.len() / 2);
-        let mut i = 0;
-        while i < hex_part.len() {
-            let b = u8::from_str_radix(&hex_part[i..i + 2], 16).ok()?;
-            cipher_bytes.push(b);
-            i += 2;
-        }
-
-        let secret = std::env::var("MALLEN_PII_SECRET_KEY")
-            .unwrap_or_else(|_| "W16_MALLEN_DEFAULT_AES_SHA256_VAULT_KEY_2026".to_string());
-        let mut plain_bytes = Vec::with_capacity(cipher_bytes.len());
-
-        for (block_idx, chunk) in cipher_bytes.chunks(32).enumerate() {
-            let mut hasher = Sha256::new();
-            hasher.update(secret.as_bytes());
-            hasher.update(b"|LFPDPPP_VAULT_BLOCK|");
-            hasher.update((block_idx as u64).to_le_bytes());
-            let keystream = hasher.finalize();
-            for (j, &b) in chunk.iter().enumerate() {
-                plain_bytes.push(b ^ keystream[j]);
+    pub fn encrypt_pii_at_rest(plaintext: &str) -> String {
+        let clean = plaintext.trim();
+        if clean.is_empty() { return String::new(); }
+        let key = Self::derive_aead_key();
+        let cipher = XChaCha20Poly1305::new_from_slice(&*key).expect("32-byte key");
+        let nonce = XChaCha20Poly1305::generate_nonce(&mut OsRng);
+        let payload = Payload { msg: clean.as_bytes(), aad: PII_AAD_CONTEXT };
+        match cipher.encrypt(&nonce, payload) {
+            Ok(ct) => {
+                let nh: String = nonce.iter().map(|b| format!("{:02x}", b)).collect();
+                let ch: String = ct.iter().map(|b| format!("{:02x}", b)).collect();
+                format!("ENCv1:{}:{}", nh, ch)
             }
+            Err(_) => String::new(),
         }
+    }
 
-        String::from_utf8(plain_bytes).ok()
+    pub fn decrypt_pii_from_rest(ciphertext: &str) -> Option<String> {
+        let rest = ciphertext.trim().strip_prefix("ENCv1:")?;
+        let (nh, ch) = rest.split_once(':')?;
+        let dec = |h: &str| -> Option<Vec<u8>> {
+            if h.len() % 2 != 0 { return None; }
+            (0..h.len()).step_by(2).map(|i| u8::from_str_radix(&h[i..i+2], 16).ok()).collect()
+        };
+        let nb = dec(nh)?;
+        if nb.len() != 24 { return None; }
+        let cb = dec(ch)?;
+        let key = Self::derive_aead_key();
+        let cipher = XChaCha20Poly1305::new_from_slice(&*key).ok()?;
+        let plain = cipher.decrypt(XNonce::from_slice(&nb), Payload { msg: &cb, aad: PII_AAD_CONTEXT }).ok()?;
+        String::from_utf8(plain).ok()
     }
 
     /// Detecta defensas avanzadas de Honeypots inyectados por JavaScript o formularios que exigen
@@ -2214,138 +2499,24 @@ impl HttpFormBot {
     /// Registra telemetría operativa completa (latencia ms, HTTP status, charset, reintentos, canales extraídos y Tier).
     #[allow(clippy::too_many_arguments)]
     pub fn persist_detailed_operational_telemetry(
-        empresa_nombre: &str,
-        input_url: &str,
-        final_target_url: &str,
-        multa_estimada: f64,
-        status_result: &str,
-        user_agent_used: &str,
-        http_status: u16,
-        latency_ms: u64,
-        charset_detected: &str,
-        retry_count: u32,
-        emails: &str,
-        whatsapps: &str,
-        socials: &str,
-        trace_detail: &str,
+        empresa_nombre: &str, input_url: &str, final_target_url: &str, multa_estimada: f64,
+        status_result: &str, user_agent_used: &str, http_status: u16, latency_ms: u64,
+        charset_detected: &str, retry_count: u32, emails: &str, whatsapps: &str, socials: &str, trace_detail: &str,
     ) {
-        let primary_contact = if !emails.is_empty() {
-            format!("mailto:{}", emails.split(';').next().unwrap_or("").trim())
-        } else if !whatsapps.is_empty() {
-            whatsapps.split(';').next().unwrap_or("").trim().to_string()
-        } else if !socials.is_empty() {
-            socials.split(';').next().unwrap_or("").trim().to_string()
-        } else {
-            String::new()
-        };
-
-        let (stage, contact_tier, next_action) = Self::classify_contact_method_tier(status_result, emails, whatsapps, socials);
-        let final_domain = Self::normalize_domain_host(final_target_url);
-        let raw_vault_payload = format!("emails={}|wa={}|soc={}", emails, whatsapps, socials);
-        let encrypted_vault = if !emails.is_empty() || !whatsapps.is_empty() || !socials.is_empty() {
-            Self::encrypt_pii_at_rest(&raw_vault_payload)
-        } else {
-            String::new()
-        };
         let db_path = std::env::var("MALLEN_DB_PATH").unwrap_or_else(|_| "data/mallen_prod.db".to_string());
-
-        if let Ok(mut conn) = rusqlite::Connection::open(db_path) {
-            Self::ensure_db_schema_once(&conn);
-            if let Ok(tx) = conn.transaction() {
-                let _ = tx.execute(
-                    "INSERT INTO prospect_logs (
-                        empresa_nombre, target_url, final_target_url, final_domain,
-                        multa_estimada_mxn, resultado_codigo, pipeline_stage,
-                        next_action_channel, extracted_contact, user_agent,
-                        http_status, latency_ms, charset_detected, retry_count,
-                        contact_method_tier, trace_detail
-                     ) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13, ?14, ?15, ?16)",
-                    rusqlite::params![
-                        empresa_nombre,
-                        input_url,
-                        final_target_url,
-                        final_domain,
-                        multa_estimada,
-                        status_result,
-                        stage,
-                        next_action,
-                        primary_contact,
-                        user_agent_used,
-                        http_status as i64,
-                        latency_ms as i64,
-                        charset_detected,
-                        retry_count as i64,
-                        contact_tier,
-                        trace_detail
-                    ],
-                );
-
-                let _ = tx.execute(
-                    "INSERT INTO prospect_pipeline (
-                        empresa_nombre, input_url, final_target_url, final_domain,
-                        multa_estimada_mxn, ultimo_resultado_codigo, pipeline_stage,
-                        next_action_channel, extracted_contact, contact_method_tier,
-                        extracted_emails, extracted_whatsapp, extracted_socials,
-                        last_http_status, last_latency_ms, last_charset, last_trace_detail,
-                        encrypted_contact_vault, attempts_count, updated_at_utc
-                     ) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13, ?14, ?15, ?16, ?17, ?18, 1, datetime('now'))
-                     ON CONFLICT(empresa_nombre) DO UPDATE SET
-                        input_url = excluded.input_url,
-                        final_target_url = excluded.final_target_url,
-                        final_domain = excluded.final_domain,
-                        multa_estimada_mxn = excluded.multa_estimada_mxn,
-                        ultimo_resultado_codigo = excluded.ultimo_resultado_codigo,
-                        pipeline_stage = excluded.pipeline_stage,
-                        next_action_channel = excluded.next_action_channel,
-                        extracted_contact = CASE WHEN excluded.extracted_contact != '' THEN excluded.extracted_contact ELSE prospect_pipeline.extracted_contact END,
-                        contact_method_tier = excluded.contact_method_tier,
-                        extracted_emails = CASE WHEN excluded.extracted_emails != '' THEN excluded.extracted_emails ELSE prospect_pipeline.extracted_emails END,
-                        extracted_whatsapp = CASE WHEN excluded.extracted_whatsapp != '' THEN excluded.extracted_whatsapp ELSE prospect_pipeline.extracted_whatsapp END,
-                        extracted_socials = CASE WHEN excluded.extracted_socials != '' THEN excluded.extracted_socials ELSE prospect_pipeline.extracted_socials END,
-                        last_http_status = excluded.last_http_status,
-                        last_latency_ms = excluded.last_latency_ms,
-                        last_charset = excluded.last_charset,
-                        last_trace_detail = excluded.last_trace_detail,
-                        encrypted_contact_vault = CASE WHEN excluded.encrypted_contact_vault != '' THEN excluded.encrypted_contact_vault ELSE prospect_pipeline.encrypted_contact_vault END,
-                        attempts_count = prospect_pipeline.attempts_count + 1,
-                        updated_at_utc = datetime('now')",
-                    rusqlite::params![
-                        empresa_nombre,
-                        input_url,
-                        final_target_url,
-                        final_domain,
-                        multa_estimada,
-                        status_result,
-                        stage,
-                        next_action,
-                        primary_contact,
-                        contact_tier,
-                        emails,
-                        whatsapps,
-                        socials,
-                        http_status as i64,
-                        latency_ms as i64,
-                        charset_detected,
-                        trace_detail,
-                        encrypted_vault
-                    ],
-                );
-
-                if trace_detail.contains(" | STACK:") {
-                    let st_part = trace_detail.split(" | STACK:").nth(1).unwrap_or("");
-                    let stack_val = st_part.split(" | PITCH:").next().unwrap_or("");
-                    let pitch_val = st_part.split(" | PITCH:").nth(1).unwrap_or("");
-                    let _ = tx.execute(
-                        "UPDATE prospect_pipeline SET tech_stack_detected = ?1, recommended_module = ?2 WHERE empresa_nombre = ?3",
-                        rusqlite::params![stack_val, pitch_val, empresa_nombre],
-                    );
-                }
-                let _ = tx.commit();
-            }
-
-            if UA_COUNTER.load(Ordering::Relaxed) % 250 == 0 {
-                let _ = Self::optimize_sqlite_storage_non_blocking(50_000);
-            }
+        let (ack_tx, ack_rx) = mpsc::sync_channel::<()>(1);
+        let msg = TelemetryWriteMsg {
+            db_path,
+            empresa_nombre: empresa_nombre.to_string(), input_url: input_url.to_string(),
+            final_target_url: final_target_url.to_string(), multa_estimada, status_result: status_result.to_string(),
+            user_agent_used: user_agent_used.to_string(), http_status, latency_ms,
+            charset_detected: charset_detected.to_string(), retry_count,
+            emails: emails.to_string(), whatsapps: whatsapps.to_string(),
+            socials: socials.to_string(), trace_detail: trace_detail.to_string(),
+            ack: Some(WriterAck::Sync(ack_tx)),
+        };
+        if Self::sqlite_writer_sender().send(msg).is_ok() {
+            let _ = ack_rx.recv_timeout(Duration::from_secs(3));
         }
     }
 
@@ -2363,10 +2534,12 @@ impl HttpFormBot {
             return link_err.to_string();
         }
         if let Some(dead_code) = Self::is_dead_or_social_directory_domain(page_url) {
-            Self::persist_detailed_operational_telemetry(
-                empresa_nombre, page_url, page_url, multa_estimada, dead_code, "DEAD_DOMAIN_FILTER",
-                0, 0, "N/A", 0, "", "", "", "Dominio de red social/directorio derivado automáticamente a Tier 6"
-            );
+            Self::enqueue_telemetry_async(
+                empresa_nombre.to_string(), page_url.to_string(), page_url.to_string(), multa_estimada,
+                dead_code.to_string(), "DEAD_DOMAIN_FILTER".to_string(), 0, 0, "N/A".to_string(), 0,
+                String::new(), String::new(), String::new(),
+                "Dominio de red social/directorio derivado automáticamente a Tier 6".to_string()
+            ).await;
             return dead_code.to_string();
         }
         let parsed_in = match Url::parse(page_url) {
@@ -2376,8 +2549,12 @@ impl HttpFormBot {
 
         TELEMETRY_TOTAL_REQS.fetch_add(1, Ordering::Relaxed);
         let initial_host = Self::normalize_domain_host(page_url);
-        if Self::is_ssrf_forbidden_host(&initial_host) || Self::is_ssrf_forbidden_host(parsed_in.host_str().unwrap_or("")) {
+        if !Self::validate_url_and_dns_ssrf(&parsed_in).await {
             return "BLOQUEO_SEGURIDAD_ANTI_SSRF".to_string();
+        }
+        let (h_chk, e_chk) = (initial_host.clone(), empresa_nombre.to_string());
+        if tokio::task::spawn_blocking(move || Self::is_suppressed_arco(&h_chk, &e_chk)).await.unwrap_or(false) {
+            return "OMITIDO_SUPRESION_ARCO".to_string();
         }
 
         // Clave del Circuit Breaker (en localhost incluye el path para aislar rutas simuladas en tests)
@@ -2388,24 +2565,26 @@ impl HttpFormBot {
         };
         if Self::check_circuit_breaker_open(&cb_key) {
             TELEMETRY_CB_TRIPS.fetch_add(1, Ordering::Relaxed);
-            Self::persist_detailed_operational_telemetry(
-                empresa_nombre, page_url, page_url, multa_estimada, "CIRCUIT_BREAKER_ABIERTO_48H",
-                "CIRCUIT_BREAKER_GUARD", 403, 0, "N/A", 0, "", "", "", "Dominio en enfriamiento de 48h por bloqueos previos"
-            );
+            Self::enqueue_telemetry_async(
+                empresa_nombre.to_string(), page_url.to_string(), page_url.to_string(), multa_estimada,
+                "CIRCUIT_BREAKER_ABIERTO_48H".to_string(), "CIRCUIT_BREAKER_GUARD".to_string(), 403, 0,
+                "N/A".to_string(), 0, String::new(), String::new(), String::new(),
+                "Dominio en enfriamiento de 48h por bloqueos previos".to_string()
+            ).await;
             return "CIRCUIT_BREAKER_ABIERTO_48H".to_string();
         }
 
-        // Adquirir permiso del Semáforo Global de Concurrencia (protege descriptores de archivo y red)
+        // Rate-limiting y jitter ANTES de adquirir el semáforo global
+        Self::apply_domain_rate_limit_and_jitter(&initial_host).await;
+
         let _sem_permit = Self::global_semaphore().acquire().await.ok();
         let _in_flight_guard = InFlightTelemetryGuard::new();
 
-        // Rate-limiting por dominio normalizado (sin 'www.')
-        Self::apply_domain_rate_limit_and_jitter(&initial_host).await;
-
-        // Usar cliente HTTP preconstruido en RAM del pool MALLEN_PROXY_POOL (cero reconexión TLS por petición)
         let active_client = Self::get_cached_proxy_client().unwrap_or(client);
-
         let (rotated_headers, chosen_ua) = Self::next_rotated_headers();
+        if !Self::is_allowed_by_robots_txt(active_client, &parsed_in, &rotated_headers).await {
+            return "OMITIDO_ROBOTS_TXT".to_string();
+        }
         let encoded_ref = Self::encode_url_ref(empresa_nombre);
 
         let mensaje_utf8 = Self::build_human_consultative_message(empresa_nombre, &encoded_ref);
@@ -2421,11 +2600,18 @@ impl HttpFormBot {
             initial_host.clone()
         };
         if enforce_dedup {
-            if let Err(dup_code) = Self::try_acquire_domain_lock(&dedup_key, true) {
-                Self::persist_detailed_operational_telemetry(
-                    empresa_nombre, page_url, page_url, multa_estimada, dup_code, "DEDUP_GUARD",
-                    0, start_instant.elapsed().as_millis() as u64, "N/A", 0, "", "", "", "Omitido por huella de dominio duplicada en campaña"
-                );
+            let dk = dedup_key.clone();
+            let lock_res = tokio::task::spawn_blocking(move || Self::try_acquire_domain_lock(&dk, true))
+                .await
+                .unwrap_or(Ok(false));
+            if let Err(dup_code) = lock_res {
+                Self::enqueue_telemetry_async(
+                    empresa_nombre.to_string(), page_url.to_string(), page_url.to_string(), multa_estimada,
+                    dup_code.to_string(), "DEDUP_GUARD".to_string(), 0,
+                    start_instant.elapsed().as_millis() as u64, "N/A".to_string(), 0,
+                    String::new(), String::new(), String::new(),
+                    "Omitido por huella de dominio duplicada en campaña".to_string()
+                ).await;
                 return dup_code.to_string();
             }
         }
@@ -2438,6 +2624,7 @@ impl HttpFormBot {
         let tracked_trace: String;
         let timeout_ms = Self::configured_timeout_ms();
         let task = timeout(Duration::from_millis(timeout_ms), async {
+            let mut ephemeral_cookies: HashMap<String, String> = HashMap::new();
             // 1. GET inicial con Reintentos Exponenciales + Jitter (supera microcortes o 502/503 transitorios)
             let mut resp_opt = None;
             let mut last_get_err = "ERR_HTTP_GET".to_string();
@@ -2450,6 +2637,7 @@ impl HttpFormBot {
                 match active_client.get(page_url).headers(rotated_headers.clone()).send().await {
                     Ok(r) => {
                         let code = r.status().as_u16();
+                        Self::extract_ephemeral_cookies(r.headers(), &mut ephemeral_cookies);
                         if code == 403 || code == 503 {
                             let srv = r.headers().get("server").and_then(|v| v.to_str().ok()).unwrap_or("").to_lowercase();
                             if srv.contains("cloudflare") || r.headers().contains_key("cf-mitigated") {
@@ -2504,12 +2692,11 @@ impl HttpFormBot {
                 return ("BLOQUEO_SEGURIDAD_ANTI_SSRF".to_string(), current_target_url.to_string(), None);
             }
 
-            let bytes = match resp.bytes().await {
+            let bytes = match Self::read_bounded_body(resp, MAX_RESPONSE_BODY_BYTES).await {
                 Ok(b) => b,
-                Err(_) => return ("ERR_READ_BODY".to_string(), current_target_url.to_string(), None),
+                Err(code) => return (code.to_string(), current_target_url.to_string(), None),
             };
-            let slice = if bytes.len() > 1_500_000 { &bytes[..1_500_000] } else { &bytes[..] };
-            let (mut html_text, active_charset) = Self::decode_response_bytes_smart(&ctype_saved, slice);
+            let (mut html_text, active_charset) = Self::decode_response_bytes_smart(&ctype_saved, &bytes);
 
             // Si la portada tiene una redirección <meta http-equiv="refresh" content="0; url=...">, seguirla
             if !html_text.to_lowercase().contains("<form") {
@@ -2735,7 +2922,7 @@ impl HttpFormBot {
                             || name_lower.contains("tel")
                             || name_lower.contains("whatsapp")
                         {
-                            params.insert(name.to_string(), "5550000000".to_string());
+                            params.insert(name.to_string(), std::env::var("MALLEN_CONTACT_PHONE").ok().filter(|s| !s.trim().is_empty()).unwrap_or_else(|| "5550000000".to_string()));
                         } else if name_lower.contains("company")
                             || name_lower.contains("empresa")
                             || name_lower.contains("organiza")
@@ -2758,11 +2945,18 @@ impl HttpFormBot {
                             continue;
                         }
 
-                        // Resolver action estrictamente sobre current_target_url (ya actualizado tras redirecciones 301/302)
-                        if !form_action_raw.is_empty()
-                            && !form_action_raw.starts_with('#')
-                            && !form_action_raw.starts_with("javascript:")
-                        {
+                        // Adaptadores CMS reales (CF7 REST, Elementor Pro, WPForms) solo si action es vacío/#ancla/#wpcf7
+                        let origin_base = current_target_url.origin().ascii_serialization();
+                        let is_cms_anchor = form_action_raw.is_empty() || form_action_raw.starts_with('#') || act_lower.contains("#wpcf7") || act_lower.starts_with("javascript:");
+                        if is_cms_anchor && params.get("_wpcf7").map(|id| !id.trim().is_empty()).unwrap_or(false) {
+                            chosen_action = format!("{}/wp-json/contact-form-7/v1/contact-forms/{}/feedback", origin_base, params.get("_wpcf7").unwrap().trim());
+                        } else if is_cms_anchor && (form_class.contains("elementor-form") || params.contains_key("form_id")) && html_lower.contains("wp-admin/admin-ajax.php") {
+                            params.entry("action".to_string()).or_insert_with(|| "elementor_pro_forms_send_form".to_string());
+                            chosen_action = format!("{}/wp-admin/admin-ajax.php", origin_base);
+                        } else if is_cms_anchor && form_class.contains("wpforms-form") && html_lower.contains("wp-admin/admin-ajax.php") {
+                            params.entry("action".to_string()).or_insert_with(|| "wpforms_submit".to_string());
+                            chosen_action = format!("{}/wp-admin/admin-ajax.php", origin_base);
+                        } else if !form_action_raw.is_empty() && !form_action_raw.starts_with('#') && !act_lower.starts_with("javascript:") {
                             if let Ok(abs_url) = current_target_url.join(form_action_raw) {
                                 chosen_action = abs_url.to_string();
                             }
@@ -2811,6 +3005,9 @@ impl HttpFormBot {
                 }
                 if let Ok(orig_val) = HeaderValue::from_str(&origin_str) {
                     post_headers.insert(ORIGIN, orig_val);
+                }
+                if let Some(ck) = Self::format_cookie_header(&ephemeral_cookies) {
+                    post_headers.insert(COOKIE, ck);
                 }
 
                 let req_builder = if form_method_is_get {
@@ -2931,24 +3128,11 @@ impl HttpFormBot {
         let wa_t = tracked_whatsapps.clone();
         let so_t = final_socials.clone();
         let tr_t = tracked_trace.clone();
-        let _ = tokio::task::spawn_blocking(move || {
-            Self::persist_detailed_operational_telemetry(
-                &emp_t,
-                &in_u_t,
-                &fin_u_t,
-                multa_estimada,
-                &st_t,
-                &ua_t,
-                tracked_http_status,
-                elapsed_ms,
-                &ch_t,
-                tracked_retries,
-                &em_t,
-                &wa_t,
-                &so_t,
-                &tr_t,
-            );
-        }).await;
+        Self::enqueue_telemetry_async(
+            emp_t, in_u_t, fin_u_t, multa_estimada, st_t, ua_t,
+            tracked_http_status, elapsed_ms, ch_t, tracked_retries,
+            em_t, wa_t, so_t, tr_t,
+        ).await;
 
         final_status
     }
