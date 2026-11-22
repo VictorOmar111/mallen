@@ -1459,15 +1459,19 @@ async fn render_checkout_page_with_state(state: Arc<AppState>, raw_ref: String) 
                 return;
             }}
 
-            await fetch("/api/webhook_stripe", {{
+            const whRes = await fetch("/api/webhook_stripe", {{
                 method: "POST",
                 headers: {{ "Content-Type": "application/json" }},
                 body: JSON.stringify({{
-                    id: "evt_live_" + Date.now(),
+                    id: "evt_test_" + Date.now(),
                     tax_id: "{ref_code}",
                     data: {{ object: {{ client_reference_id: "{ref_code}" }} }}
                 }})
             }});
+            if (!whRes.ok) {{
+                alert("La pasarela Stripe requiere pago verificado. Intente nuevamente.");
+                return;
+            }}
 
             document.getElementById("checkoutForm").classList.add("hidden");
             document.getElementById("paymentSuccessBox").classList.remove("hidden");
@@ -1535,7 +1539,13 @@ async fn create_payment_session(
     let _dispute_armor =
         StripeDisputeGuard::build_dispute_armor(&clean_tax, "PENDING_SEAL", &meta);
 
-    let session = create_checkout_session(&state.http_client, &clean_tax, 5940)
+    let kit_price_mxn: u32 = std::env::var("MALLEN_KIT_PRICE_MXN")
+        .ok()
+        .and_then(|v| v.trim().parse::<f64>().ok())
+        .map(|v| v.round() as u32)
+        .filter(|&v| v > 0)
+        .unwrap_or(3000);
+    let session = create_checkout_session(&state.http_client, &clean_tax, kit_price_mxn)
         .await
         .unwrap_or(worker_inegi_engine::engine::payment::CheckoutSession {
             checkout_url: format!("/verify/{}", clean_tax),
@@ -1566,19 +1576,24 @@ async fn handle_payment_webhook(
     headers: HeaderMap,
     body_text: String,
 ) -> impl IntoResponse {
-    if let Ok(webhook_secret) = std::env::var("STRIPE_WEBHOOK_SECRET") {
-        if !webhook_secret.trim().is_empty() {
-            let sig = headers
-                .get("stripe-signature")
-                .and_then(|v| v.to_str().ok())
-                .unwrap_or("");
-            if !StripeDisputeGuard::verify_webhook_signature(&body_text, sig, &webhook_secret) {
-                return (
-                    StatusCode::UNAUTHORIZED,
-                    Json(json!({"error": "Firma Stripe-Signature inválida"})),
-                );
-            }
+    let stripe_key = std::env::var("STRIPE_SECRET_KEY").unwrap_or_default();
+    let webhook_secret = std::env::var("STRIPE_WEBHOOK_SECRET").unwrap_or_default();
+    if !webhook_secret.trim().is_empty() {
+        let sig = headers
+            .get("stripe-signature")
+            .and_then(|v| v.to_str().ok())
+            .unwrap_or("");
+        if !StripeDisputeGuard::verify_webhook_signature(&body_text, sig, webhook_secret.trim()) {
+            return (
+                StatusCode::UNAUTHORIZED,
+                Json(json!({"error": "Firma Stripe-Signature inválida"})),
+            );
         }
+    } else if !stripe_key.trim().is_empty() {
+        return (
+            StatusCode::SERVICE_UNAVAILABLE,
+            Json(json!({"error": "STRIPE_WEBHOOK_SECRET obligatorio cuando STRIPE_SECRET_KEY está activo"})),
+        );
     }
 
     let parsed: Value = serde_json::from_str(&body_text).unwrap_or_else(|_| json!({}));
@@ -1630,7 +1645,11 @@ async fn handle_payment_webhook(
             razon_social: emp.nombre.clone(),
             codigo_postal: cp_receptor,
             uso_cfdi: "G03".to_string(),
-            monto_total: 5940.00,
+            monto_total: std::env::var("MALLEN_KIT_PRICE_MXN")
+                .ok()
+                .and_then(|v| v.trim().parse::<f64>().ok())
+                .filter(|&v| v > 0.0)
+                .unwrap_or(3000.00),
             concepto: format!(
                 "Dictamen Pericial de Cumplimiento 360° y Kit de Blindaje Legal Personalizado ({})",
                 tax_bg
