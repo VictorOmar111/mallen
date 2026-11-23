@@ -973,7 +973,26 @@ async fn build_empresa_and_session(
     };
 
     if !is_mallen {
-        evaluate_risk(&mut emp);
+        let intel = worker_inegi_engine::engine::pdf_generator::extract_deep_denue_360_intelligence(clean_tax);
+        if intel.estimated_employees > 0
+            && intel.exact_vemp_fine_mxn > 0.0
+            && !intel.razon_social.starts_with("RFC ")
+        {
+            emp.nombre = intel.razon_social.clone();
+            if !intel.codigo_scian.is_empty() {
+                emp.actividad = format!("{} - {}", intel.codigo_scian, intel.actividad_desc);
+            }
+            if !intel.domicilio_completo.is_empty() {
+                emp.direccion = format!(
+                    "{} ({} colaboradores)",
+                    intel.domicilio_completo, intel.estimated_employees
+                );
+            }
+            emp.risk_score = intel.exact_risk_score as _;
+            emp.estimated_fine_mxn = intel.exact_vemp_fine_mxn;
+        } else {
+            evaluate_risk(&mut emp);
+        }
     }
     (emp, None)
 }
