@@ -932,6 +932,20 @@ pub fn classify_scian_32_taxonomic_profile(scian_raw: &str) -> ScianTaxonomicPro
             requires_sct_carta_porte: false,
             requires_industrial_hazmat: false,
         },
+        "54" => ScianTaxonomicProfile {
+            sector_code: sc.clone(),
+            sector_title: "Sector 54 — Servicios Profesionales, Ingeniería, Arquitectura, Diseño, Publicidad e Investigación",
+            imss_class: "Clase I / II (Servicios Técnicos, Creativos y Profesionales — Art. 196 RACERF)",
+            imss_prime_pct: "0.54355% - 1.13065%",
+            primary_noms: "NOM-037-STPS-2023 (Teletrabajo y Desconexión), NOM-035-STPS-2018 (Riesgo Psicosocial), NOM-025-STPS-2008 y Art. 163 LFPPI (Propiedad Intelectual)",
+            sector_agency_focus: "SAT Art. 69-B y 5-A CFF (Materialidad de Entregables y Fecha Cierta), LFPDPPP (SABG) y PROFECO Contratos de Prestación de Servicios",
+            excluded_irrelevant_clauses: "Suprime COFEPRIS alimentario NOM-251, trampas de grasa, calderas industriales y autotransporte federal",
+            requires_food_cofepris_nom251: false,
+            requires_clinical_rpbi_nom087: s.starts_with("54194"),
+            requires_pld_lfpiorpi: s.starts_with("5411") || s.starts_with("5412"),
+            requires_sct_carta_porte: false,
+            requires_industrial_hazmat: s.starts_with("54138") || s.starts_with("5417"),
+        },
         "55" | "56" => ScianTaxonomicProfile {
             sector_code: sc.clone(),
             sector_title: "Sectores 55–56 — Corporativos Holding y Servicios de Apoyo a los Negocios / Limpieza / Seguridad (REPSE)",
@@ -974,17 +988,31 @@ pub fn classify_scian_32_taxonomic_profile(scian_raw: &str) -> ScianTaxonomicPro
             requires_sct_carta_porte: false,
             requires_industrial_hazmat: true,
         },
-        "71" | "72" => ScianTaxonomicProfile {
+        "71" => ScianTaxonomicProfile {
             sector_code: sc.clone(),
-            sector_title: "Sectores 71–72 — Hotelería, Alojamiento Temporal, Esparcimiento, Cultura y Deporte",
-            imss_class: "Clase II / III (Hotelería y Centros de Espectáculos — Art. 196 RACERF)",
+            sector_title: "Sector 71 — Servicios de Esparcimiento, Culturales, Deportivos y Centros Recreativos",
+            imss_class: "Clase II (Centros Deportivos, Culturales y de Espectáculos — Art. 196 RACERF)",
+            imss_prime_pct: "1.13065%",
+            primary_noms: "Programa Interno de Protección Civil (PIPC Aforos), NOM-002-STPS-2010 (Incendios), NOM-001-STPS-2008, NOM-035-STPS-2018 y LFPDPPP (Biométricos/Salud de Socios)",
+            sector_agency_focus: "Protección Civil Local (Aforos y Primeros Auxilios), PROFECO (Membresías, Boletaje y Tarifas Art. 7 BIS) y SABG/LFPDPPP",
+            excluded_irrelevant_clauses: "Suprime COFEPRIS de cocinas industriales (NOM-251), trampas de grasa, calderas hoteleras NOM-020 y minería",
+            requires_food_cofepris_nom251: false,
+            requires_clinical_rpbi_nom087: false,
+            requires_pld_lfpiorpi: s.starts_with("7132"),
+            requires_sct_carta_porte: false,
+            requires_industrial_hazmat: false,
+        },
+        "72" => ScianTaxonomicProfile {
+            sector_code: sc.clone(),
+            sector_title: "Sector 72 — Servicios de Alojamiento Temporal y Hotelería",
+            imss_class: "Clase II / III (Hotelería y Hospedaje — Art. 196 RACERF)",
             imss_prime_pct: "2.59840%",
             primary_noms: "Registro Nacional de Turismo (RNT SECTUR), NOM-06-TUR, NOM-002-STPS-2010, NOM-020-STPS-2011 (Calderas de Hotel) y NOM-251-SSA1-2009",
-            sector_agency_focus: "SECTUR, PROFECO (Reservaciones y Tarifas Totales Art. 7 BIS), Protección Civil de Aforo Masivo y COFEPRIS",
+            sector_agency_focus: "SECTUR, PROFECO (Reservaciones y Tarifas Totales Art. 7 BIS), Protección Civil de Aforo y COFEPRIS",
             excluded_irrelevant_clauses: "Excluye minería y manufactura pesada",
             requires_food_cofepris_nom251: true,
             requires_clinical_rpbi_nom087: false,
-            requires_pld_lfpiorpi: s.starts_with("7132"),
+            requires_pld_lfpiorpi: false,
             requires_sct_carta_porte: false,
             requires_industrial_hazmat: false,
         },
@@ -1001,6 +1029,20 @@ pub fn classify_scian_32_taxonomic_profile(scian_raw: &str) -> ScianTaxonomicPro
             requires_pld_lfpiorpi: s.starts_with("813"),
             requires_sct_carta_porte: false,
             requires_industrial_hazmat: s.starts_with("811"),
+        },
+        "93" => ScianTaxonomicProfile {
+            sector_code: sc.clone(),
+            sector_title: "Sector 93 — Actividades Legislativas, Gubernamentales y Organismos Internacionales",
+            imss_class: "Régimen Institucional / Seguridad Social Aplicable",
+            imss_prime_pct: "0.54355%",
+            primary_noms: "LGPDPPSO (Protección de Datos en Posesión de Sujetos Obligados), Protección Civil de Inmuebles Públicos y Seguridad Laboral STPS",
+            sector_agency_focus: "Órganos Internos de Control, Protección Civil Local y Cumplimiento Institucional de Archivos y Datos",
+            excluded_irrelevant_clauses: "Excluye obligaciones mercantiles privadas no aplicables a entes públicos",
+            requires_food_cofepris_nom251: false,
+            requires_clinical_rpbi_nom087: false,
+            requires_pld_lfpiorpi: false,
+            requires_sct_carta_porte: false,
+            requires_industrial_hazmat: false,
         },
         _ => ScianTaxonomicProfile {
             sector_code: sc.clone(),
@@ -1169,7 +1211,16 @@ pub fn build_all_compliance_documents_with_session(
         .unwrap_or_else(|| empresa.id.clone());
     let emp_count = master_opt
         .and_then(|m| m.calibration_applied.exact_employee_count.or(Some(m.estimated_employees)))
-        .unwrap_or(1)
+        .filter(|&e| e > 0)
+        .unwrap_or_else(|| {
+            let intel = crate::engine::pdf_generator::extract_deep_denue_360_intelligence(&rfc);
+            if intel.estimated_employees > 0 {
+                intel.estimated_employees
+            } else {
+                let intel_nom = crate::engine::pdf_generator::extract_deep_denue_360_intelligence(&razon_social);
+                if intel_nom.estimated_employees > 0 { intel_nom.estimated_employees } else { 4 }
+            }
+        })
         .max(1);
     let jurisdiccion = dossier
         .entidad_jurisdiccion
