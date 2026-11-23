@@ -3691,8 +3691,8 @@ pub fn build_adaptive_prospect_outreach(query_or_name: &str, domain_hint: Option
         let friendly_name = humanize_company_display_name(&intel.razon_social);
         let msg = format!(
             "Hola equipo de {},\n\n\
-            En operaciones de gran escala, {}.\n\n\
-            Armamos un Benchmark Sectorial con los puntos de control que hoy se revisan con más lupa en su industria. Les comparto el acceso sin costo aquí:\n\
+            Ayudamos a equipos directivos a blindar su deducibilidad fiscal, agilizar auditorías internas y mantener su expediente normativo listo para cualquier revisión, especialmente porque {}.\n\n\
+            Preparamos un Benchmark Sectorial sin costo con los puntos clave para su industria. Pueden descargarlo aquí:\n\
             {}",
             friendly_name,
             scian_pain,
@@ -3721,8 +3721,8 @@ pub fn build_adaptive_prospect_outreach(query_or_name: &str, domain_hint: Option
         let friendly_name = humanize_company_display_name(&intel.razon_social);
         let msg = format!(
             "Hola equipo de {},\n\n\
-            Para una operación de alrededor de {} personas, {}.\n\n\
-            Preparamos un pre-diagnóstico rápido con los puntos críticos a revisar antes de una visita de autoridad o auditoría interna. Pueden descargarlo aquí sin costo:\n\
+            Para una operación de alrededor de {} personas, contar con su expediente documental al día protege su deducibilidad, facilita licitaciones y evita contratiempos operativos, sobre todo porque {}.\n\n\
+            Preparamos un pre-diagnóstico sin costo con acciones concretas para su giro. Pueden descargarlo aquí:\n\
             {}",
             friendly_name,
             intel.estimated_employees,

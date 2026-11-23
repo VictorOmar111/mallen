@@ -422,7 +422,7 @@ impl HttpFormBot {
         let db_path = std::env::var("MALLEN_DB_PATH").unwrap_or_else(|_| "data/mallen_prod.db".to_string());
         if let Ok(conn) = rusqlite::Connection::open(db_path) {
             Self::configure_sqlite_connection(&conn);
-            let sql = "SELECT rowid, COALESCE(NULLIF(TRIM(raz_social), ''), TRIM(nom_estab)), TRIM(www), COALESCE(NULLIF(TRIM(codigo_scian), ''), '541110'), COALESCE(per_ocu, '11 a 30 personas') FROM denue_units WHERE rowid > ?1 AND www IS NOT NULL AND TRIM(www) != '' AND (raz_social != '' OR nom_estab != '') ORDER BY rowid ASC LIMIT ?2";
+            let sql = "SELECT rowid, COALESCE(NULLIF(TRIM(raz_social), ''), TRIM(nom_estab)), TRIM(www), COALESCE(NULLIF(TRIM(codigo_scian), ''), '541110'), COALESCE(per_ocu, '11 a 30 personas') FROM denue_units WHERE rowid > ?1 AND www IS NOT NULL AND TRIM(www) != '' AND (raz_social != '' OR nom_estab != '') AND COALESCE(codigo_scian,'') NOT LIKE '93%' AND COALESCE(codigo_scian,'') NOT LIKE '5221%' AND UPPER(COALESCE(nom_estab,'')) NOT LIKE '%ALCALDIA%' AND UPPER(COALESCE(nom_estab,'')) NOT LIKE '%SECRETARIA DE%' AND UPPER(COALESCE(nom_estab,'')) NOT LIKE '%GOBIERNO%' AND UPPER(COALESCE(nom_estab,'')) NOT LIKE '%FISCALIA%' AND UPPER(COALESCE(nom_estab,'')) NOT LIKE '%TRIBUNAL%' AND LOWER(www) NOT LIKE '%banamex%' AND LOWER(www) NOT LIKE '%bbva%' AND LOWER(www) NOT LIKE '%santander%' AND LOWER(www) NOT LIKE '%banorte%' AND LOWER(www) NOT LIKE '%hsbc%' AND LOWER(www) NOT LIKE '%scotiabank%' ORDER BY rowid ASC LIMIT ?2";
             if let Ok(mut stmt) = conn.prepare(sql) {
                 if let Ok(rows) = stmt.query_map(rusqlite::params![last_rowid, bounded as i64], |r| {
                     Ok((r.get::<_, i64>(0)?, r.get::<_, String>(1)?, r.get::<_, String>(2)?, r.get::<_, String>(3)?, r.get::<_, String>(4)?))
@@ -1627,6 +1627,19 @@ impl HttpFormBot {
                 WHERE www IS NOT NULL
                   AND TRIM(www) != ''
                   AND (raz_social != '' OR nom_estab != '')
+                  AND COALESCE(codigo_scian,'') NOT LIKE '93%'
+                  AND COALESCE(codigo_scian,'') NOT LIKE '5221%'
+                  AND UPPER(COALESCE(nom_estab,'')) NOT LIKE '%ALCALDIA%'
+                  AND UPPER(COALESCE(nom_estab,'')) NOT LIKE '%SECRETARIA DE%'
+                  AND UPPER(COALESCE(nom_estab,'')) NOT LIKE '%GOBIERNO%'
+                  AND UPPER(COALESCE(nom_estab,'')) NOT LIKE '%FISCALIA%'
+                  AND UPPER(COALESCE(nom_estab,'')) NOT LIKE '%TRIBUNAL%'
+                  AND LOWER(www) NOT LIKE '%banamex%'
+                  AND LOWER(www) NOT LIKE '%bbva%'
+                  AND LOWER(www) NOT LIKE '%santander%'
+                  AND LOWER(www) NOT LIKE '%banorte%'
+                  AND LOWER(www) NOT LIKE '%hsbc%'
+                  AND LOWER(www) NOT LIKE '%scotiabank%' 
                 ORDER BY CASE
                     WHEN per_ocu IN ('11 a 30 personas','31 a 50 personas','51 a 100 personas','101 a 250 personas') THEN 1
                     WHEN per_ocu IN ('6 a 10 personas','0 a 5 personas') THEN 2
@@ -1832,10 +1845,45 @@ impl HttpFormBot {
     /// Construye un mensaje de contacto B2B cálido, humano, consultivo y de alta conversión
     /// (sin cifras intimidantes de multas en el primer contacto para evitar fricción con recepción/filtros).
     pub fn build_human_consultative_message(empresa_nombre: &str, _encoded_ref: &str) -> String {
-        let micro_link = format!("https://mallen.lat/api/micro_scan/{}", Self::encode_url_ref(empresa_nombre));
+        let emp_clean = empresa_nombre.trim();
+        let micro_link = format!("https://mallen.lat/api/micro_scan/{}", Self::encode_url_ref(emp_clean));
+        let db_path = std::env::var("MALLEN_DB_PATH").unwrap_or_else(|_| "data/mallen_prod.db".to_string());
+        let (scian_code, actividad_desc, emp_count): (String, String, u32) = rusqlite::Connection::open(db_path)
+            .ok()
+            .and_then(|conn| {
+                conn.query_row(
+                    "SELECT COALESCE(NULLIF(TRIM(codigo_scian), ''), '541110'), COALESCE(NULLIF(TRIM(nombre_act), ''), ''), COALESCE(per_ocu, '11 a 30 personas') FROM denue_units WHERE UPPER(TRIM(raz_social)) = UPPER(?1) OR UPPER(TRIM(nom_estab)) = UPPER(?1) LIMIT 1",
+                    rusqlite::params![emp_clean],
+                    |r| {
+                        let sc: String = r.get(0)?;
+                        let act: String = r.get(1)?;
+                        let estrato: String = r.get(2)?;
+                        let emps = if estrato.contains("251") {
+                            300
+                        } else if estrato.contains("101") {
+                            150
+                        } else if estrato.contains("51") {
+                            75
+                        } else if estrato.contains("31") {
+                            40
+                        } else if estrato.contains("11") {
+                            20
+                        } else {
+                            8
+                        };
+                        Ok((sc, act, emps))
+                    },
+                ).ok()
+            })
+            .unwrap_or_else(|| ("541110".to_string(), String::new(), 25));
+
+        let (_sector_label, scian_pain, _closing_q) =
+            crate::engine::pdf_generator::build_scian_sector_hook(&scian_code, &actividad_desc, emp_count);
+
         format!(
-            "Estimado equipo directivo de {}: Les saludamos cordialmente de FIRMA MALLEN®. Generamos una pre-evaluación técnica preventiva (STPS, SAT, IMSS y LFPDPPP) y pueden consultar y descargar sin costo su resumen tecnico confidencial en: {} | Fuente: INEGI, DENUE. Aviso de Privacidad: https://mallen.lat/privacidad | Exclusión ARCO: https://mallen.lat/derechos-arco",
-            empresa_nombre.trim(),
+            "Estimado equipo directivo de {}: Les saludamos cordialmente de FIRMA MALLEN®. Ayudamos a empresas de su sector a proteger su deducibilidad fiscal, agilizar auditorías internas y mantener su expediente normativo listo para cualquier revisión, especialmente porque {}. Pueden consultar y descargar sin costo su resumen tecnico confidencial con acciones prácticas para su giro en: {} | Fuente: INEGI, DENUE. Aviso de Privacidad: https://mallen.lat/privacidad | Exclusión ARCO: https://mallen.lat/derechos-arco",
+            emp_clean,
+            scian_pain,
             micro_link
         )
     }

@@ -13,3 +13,4 @@ data/*.csv
 
 .aider*
 
+.env.*

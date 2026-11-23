@@ -8,7 +8,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
   <style>
     html { scroll-behavior: smooth; }
-    body { font-family: 'Inter', sans-serif; background-color: #020617; background-image: radial-gradient(at 12% 12%, rgba(37, 99, 235, 0.32) 0px, transparent 48%), radial-gradient(at 88% 18%, rgba(16, 185, 129, 0.25) 0px, transparent 48%), radial-gradient(at 50% 82%, rgba(99, 102, 241, 0.28) 0px, transparent 52%); background-attachment: fixed; }
+    body { font-family: 'Inter', sans-serif; background-color: #020617; background-image: none; }
     .font-mono-code { font-family: 'JetBrains Mono', monospace; }
   
   html.light-mode #faq details {
@@ -67,7 +67,7 @@
 </header>
 
   <!-- Hero de Alta Conversión Corporativo -->
-  <section class="py-20 border-b border-slate-900 relative overflow-hidden bg-gradient-to-b from-slate-950 via-slate-900/50 to-slate-950">
+  <section class="py-20 border-b border-slate-900 relative overflow-hidden bg-slate-950">
     <div class="max-w-7xl mx-auto px-6 text-center relative z-10">
       <span class="bg-blue-950/80 border border-blue-800/80 text-blue-300 text-[11px] font-mono-code px-4 py-1.5 rounded-full uppercase tracking-wider mb-6 inline-block shadow-inner">
         Garantía Técnica & Prueba Pericial Preventiva
@@ -82,7 +82,7 @@
         <a href="#express-check" class="w-full sm:w-auto bg-gradient-to-r from-blue-600 to-emerald-600 hover:from-blue-500 hover:to-emerald-500 text-white font-bold text-xs sm:text-sm px-8 py-4 rounded-xl transition shadow-xl shadow-blue-600/20 uppercase tracking-wider font-mono-code">
           Auditar RFC o Ingresar Folio
         </a>
-        <a href="/normativa" class="w-full sm:w-auto bg-white/[0.05] shadow-[0_8px_32px_rgba(0,0,0,0.5)] hover:bg-slate-800 text-slate-300 border border-white/15 font-bold text-xs sm:text-sm px-8 py-4 rounded-xl transition font-mono-code">
+        <a href="/normativa" class="w-full sm:w-auto bg-white/[0.05] hover:bg-slate-800 text-slate-300 border border-white/15 font-bold text-xs sm:text-sm px-8 py-4 rounded-xl transition font-mono-code">
           Ver Directorio Regulatorio
         </a>
       </div>
@@ -275,7 +275,7 @@
       </div>
 
       <div class="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
-        <a href="/validez/nom-151" class="bg-white/[0.04] shadow-[0_8px_32px_rgba(0,0,0,0.5)] border border-white/15 rounded-2xl p-6 hover:border-blue-500/50 transition group flex flex-col justify-between">
+        <a href="/validez/nom-151" class="bg-white/[0.04] border border-white/15 rounded-2xl p-6 hover:border-blue-500/50 transition group flex flex-col justify-between">
           <div>
             <h3 class="text-sm font-bold text-white mb-2">Integridad Criptográfica & Fecha Cierta</h3>
             <p class="text-xs text-slate-400 font-mono-code leading-relaxed mb-4">
@@ -285,7 +285,7 @@
           <span class="text-[10px] font-bold font-mono-code text-blue-400 group-hover:translate-x-1 transition">Ver marco procesal →</span>
         </a>
 
-        <a href="/validez/dictamen-pericial" class="bg-white/[0.04] shadow-[0_8px_32px_rgba(0,0,0,0.5)] border border-white/15 rounded-2xl p-6 hover:border-emerald-500/50 transition group flex flex-col justify-between">
+        <a href="/validez/dictamen-pericial" class="bg-white/[0.04] border border-white/15 rounded-2xl p-6 hover:border-emerald-500/50 transition group flex flex-col justify-between">
           <div>
             
             <h3 class="text-sm font-bold text-white mb-2">Auditoría Algorítmica Determinista</h3>
@@ -296,7 +296,7 @@
           <span class="text-[10px] font-bold font-mono-code text-emerald-400 group-hover:translate-x-1 transition">Ver estándar ISO 19011 →</span>
         </a>
 
-        <a href="/validez/cifrado-sha256" class="bg-white/[0.04] shadow-[0_8px_32px_rgba(0,0,0,0.5)] border border-white/15 rounded-2xl p-6 hover:border-indigo-500/50 transition group flex flex-col justify-between">
+        <a href="/validez/cifrado-sha256" class="bg-white/[0.04] border border-white/15 rounded-2xl p-6 hover:border-indigo-500/50 transition group flex flex-col justify-between">
           <div>
             
             <h3 class="text-sm font-bold text-white mb-2">Cifrado Merkle SHA-256</h3>
@@ -307,7 +307,7 @@
           <span class="text-[10px] font-bold font-mono-code text-indigo-400 group-hover:translate-x-1 transition">Ver protocolo Merkle →</span>
         </a>
 
-        <a href="/validez/lfpdppp-privacidad" class="bg-white/[0.04] shadow-[0_8px_32px_rgba(0,0,0,0.5)] border border-white/15 rounded-2xl p-6 hover:border-sky-500/50 transition group flex flex-col justify-between">
+        <a href="/validez/lfpdppp-privacidad" class="bg-white/[0.04] border border-white/15 rounded-2xl p-6 hover:border-sky-500/50 transition group flex flex-col justify-between">
           <div>
             <h3 class="text-sm font-bold text-white mb-2">Gobernanza de Datos & Cifrado en Reposo</h3>
             <p class="text-xs text-slate-400 font-mono-code leading-relaxed mb-4">
@@ -323,7 +323,7 @@
   <!-- Módulo Express Check + Cuestionario de Certeza Pericial -->
   <section id="express-check" class="py-20 bg-transparent">
     <div class="max-w-4xl mx-auto px-6">
-      <div class="bg-white/[0.05] shadow-[0_8px_32px_rgba(0,0,0,0.5)] border border-white/15 rounded-2xl p-8 sm:p-12 shadow-2xl relative overflow-hidden">
+      <div class="bg-white/[0.05] border border-white/15 rounded-2xl p-8 sm:p-12 shadow-2xl relative overflow-hidden">
         <div class="text-center mb-8">
           <span class="text-xs font-bold text-blue-400 uppercase tracking-widest font-mono-code">Diagnóstico Normativo Automatizado</span>
           <h2 class="text-2xl sm:text-3xl font-extrabold text-white mt-1 tracking-tight">Auditoría Exprés por RFC y Dominio</h2>
@@ -345,47 +345,47 @@
               Calibración Pericial de Variables Internas y Operativas
             </summary>
             <div class="grid sm:grid-cols-2 gap-3 mt-4 pt-4 border-t border-white/15 text-[11px]">
-              <label class="flex items-center justify-between bg-white/[0.05] shadow-[0_8px_32px_rgba(0,0,0,0.5)] p-2.5 rounded-lg border border-white/15">
+              <label class="flex items-center justify-between bg-white/[0.05] p-2.5 rounded-lg border border-white/15">
                 <span>Plantilla exacta de empleados:</span>
                 <input id="cal_emp" type="number" value="" placeholder="" min="1" class="w-20 bg-slate-950 border border-slate-700 rounded px-2 py-1 text-right text-emerald-400 font-bold">
               </label>
-              <label class="flex items-center gap-2 bg-white/[0.05] shadow-[0_8px_32px_rgba(0,0,0,0.5)] p-2.5 rounded-lg border border-white/15 cursor-pointer">
+              <label class="flex items-center gap-2 bg-white/[0.05] p-2.5 rounded-lg border border-white/15 cursor-pointer">
                 <input id="cal_nom037" type="checkbox" checked class="accent-blue-500">
                 <span>Personal en Home Office >40% (NOM-037)</span>
               </label>
-              <label class="flex items-center gap-2 bg-white/[0.05] shadow-[0_8px_32px_rgba(0,0,0,0.5)] p-2.5 rounded-lg border border-white/15 cursor-pointer">
+              <label class="flex items-center gap-2 bg-white/[0.05] p-2.5 rounded-lg border border-white/15 cursor-pointer">
                 <input id="cal_repse" type="checkbox" checked class="accent-blue-500">
                 <span>Contrata limpieza/vigilancia/terceros (REPSE)</span>
               </label>
-              <label class="flex items-center gap-2 bg-white/[0.05] shadow-[0_8px_32px_rgba(0,0,0,0.5)] p-2.5 rounded-lg border border-white/15 cursor-pointer">
+              <label class="flex items-center gap-2 bg-white/[0.05] p-2.5 rounded-lg border border-white/15 cursor-pointer">
                 <input id="cal_bio" type="checkbox" checked class="accent-blue-500">
                 <span>Usa reloj checador biométrico / datos salud</span>
               </label>
-              <label class="flex items-center gap-2 bg-white/[0.05] shadow-[0_8px_32px_rgba(0,0,0,0.5)] p-2.5 rounded-lg border border-white/15 cursor-pointer">
+              <label class="flex items-center gap-2 bg-white/[0.05] p-2.5 rounded-lg border border-white/15 cursor-pointer">
                 <input id="cal_69b" type="checkbox" checked class="accent-blue-500">
                 <span>Paga servicios intangibles Corporativo (Art. 69-B)</span>
               </label>
-              <label class="flex items-center gap-2 bg-white/[0.05] shadow-[0_8px_32px_rgba(0,0,0,0.5)] p-2.5 rounded-lg border border-white/15 cursor-pointer">
+              <label class="flex items-center gap-2 bg-white/[0.05] p-2.5 rounded-lg border border-white/15 cursor-pointer">
                 <input id="cal_nom006" type="checkbox" checked class="accent-blue-500">
                 <span>Manejo de cargas / almacén (NOM-006/036)</span>
               </label>
-              <label class="flex items-center gap-2 bg-white/[0.05] shadow-[0_8px_32px_rgba(0,0,0,0.5)] p-2.5 rounded-lg border border-white/15 cursor-pointer">
+              <label class="flex items-center gap-2 bg-white/[0.05] p-2.5 rounded-lg border border-white/15 cursor-pointer">
                 <input id="cal_nom020" type="checkbox" class="accent-blue-500">
                 <span>Usa compresores o calderas (NOM-020)</span>
               </label>
-              <label class="flex items-center gap-2 bg-white/[0.05] shadow-[0_8px_32px_rgba(0,0,0,0.5)] p-2.5 rounded-lg border border-white/15 cursor-pointer">
+              <label class="flex items-center gap-2 bg-white/[0.05] p-2.5 rounded-lg border border-white/15 cursor-pointer">
                 <input id="cal_nom005" type="checkbox" class="accent-blue-500">
                 <span>Sustancias químicas peligrosas (NOM-005/018)</span>
               </label>
-              <label class="flex items-center gap-2 bg-white/[0.05] shadow-[0_8px_32px_rgba(0,0,0,0.5)] p-2.5 rounded-lg border border-white/15 cursor-pointer">
+              <label class="flex items-center gap-2 bg-white/[0.05] p-2.5 rounded-lg border border-white/15 cursor-pointer">
                 <input id="cal_transfer" type="checkbox" checked class="accent-blue-500">
                 <span>Comparte datos con despachos/nube (Art. 36)</span>
               </label>
-              <label class="flex items-center gap-2 bg-white/[0.05] shadow-[0_8px_32px_rgba(0,0,0,0.5)] p-2.5 rounded-lg border border-white/15 cursor-pointer">
+              <label class="flex items-center gap-2 bg-white/[0.05] p-2.5 rounded-lg border border-white/15 cursor-pointer">
                 <input id="cal_cartaporte" type="checkbox" class="accent-blue-500">
                 <span>Transporte en tramos federales (Carta Porte)</span>
               </label>
-              <label class="flex items-center gap-2 bg-white/[0.05] shadow-[0_8px_32px_rgba(0,0,0,0.5)] p-2.5 rounded-lg border border-white/15 cursor-pointer sm:col-span-2">
+              <label class="flex items-center gap-2 bg-white/[0.05] p-2.5 rounded-lg border border-white/15 cursor-pointer sm:col-span-2">
                 <input id="cal_pld" type="checkbox" class="accent-blue-500">
                 <span>Realiza Actividades Vulnerables Antilavado (Art. 17 LFPIORPI: mutuo, inmuebles, blindaje, activos)</span>
               </label>
@@ -404,69 +404,69 @@
             <div class="grid sm:grid-cols-2 gap-3 pt-2 border-t border-white/15 text-[11px]">
               <div>
                 <label class="text-[10px] text-slate-400 block mb-1">Denominación o Razón Social</label>
-                <input id="dos_razon" type="text" placeholder="" class="w-full bg-white/[0.05] shadow-[0_8px_32px_rgba(0,0,0,0.5)] border border-white/15 rounded-lg px-3 py-2 text-white">
+                <input id="dos_razon" type="text" placeholder="" class="w-full bg-white/[0.05] border border-white/15 rounded-lg px-3 py-2 text-white">
               </div>
               <div>
                 <label class="text-[10px] text-slate-400 block mb-1">Giro o Actividad Económica (SCIAN)</label>
-                <input id="dos_giro" type="text" placeholder="" class="w-full bg-white/[0.05] shadow-[0_8px_32px_rgba(0,0,0,0.5)] border border-white/15 rounded-lg px-3 py-2 text-white">
+                <input id="dos_giro" type="text" placeholder="" class="w-full bg-white/[0.05] border border-white/15 rounded-lg px-3 py-2 text-white">
               </div>
               <div>
                 <label class="text-[10px] text-slate-400 block mb-1">Domicilio del Centro de Trabajo</label>
-                <input id="dos_domicilio" type="text" placeholder="" class="w-full bg-white/[0.05] shadow-[0_8px_32px_rgba(0,0,0,0.5)] border border-white/15 rounded-lg px-3 py-2 text-white">
+                <input id="dos_domicilio" type="text" placeholder="" class="w-full bg-white/[0.05] border border-white/15 rounded-lg px-3 py-2 text-white">
               </div>
               <div class="grid grid-cols-2 gap-2">
                 <div>
                   <label class="text-[10px] text-slate-400 block mb-1">Código Postal Fiscal</label>
-                  <input id="dos_cp" type="text" maxlength="5" placeholder="" class="w-full bg-white/[0.05] shadow-[0_8px_32px_rgba(0,0,0,0.5)] border border-white/15 rounded-lg px-3 py-2 text-white">
+                  <input id="dos_cp" type="text" maxlength="5" placeholder="" class="w-full bg-white/[0.05] border border-white/15 rounded-lg px-3 py-2 text-white">
                 </div>
                 <div>
                   <label class="text-[10px] text-slate-400 block mb-1">Entidad / Jurisdicción</label>
-                  <input id="dos_estado" type="text" placeholder="" class="w-full bg-white/[0.05] shadow-[0_8px_32px_rgba(0,0,0,0.5)] border border-white/15 rounded-lg px-3 py-2 text-white">
+                  <input id="dos_estado" type="text" placeholder="" class="w-full bg-white/[0.05] border border-white/15 rounded-lg px-3 py-2 text-white">
                 </div>
               </div>
               <div>
                 <label class="text-[10px] text-slate-400 block mb-1">Correo de Atención a Derechos ARCO</label>
-                <input id="dos_email" type="email" placeholder="" class="w-full bg-white/[0.05] shadow-[0_8px_32px_rgba(0,0,0,0.5)] border border-white/15 rounded-lg px-3 py-2 text-white">
+                <input id="dos_email" type="email" placeholder="" class="w-full bg-white/[0.05] border border-white/15 rounded-lg px-3 py-2 text-white">
               </div>
               <div>
                 <label class="text-[10px] text-slate-400 block mb-1">Teléfono Corporativo</label>
-                <input id="dos_tel" type="text" placeholder="" class="w-full bg-white/[0.05] shadow-[0_8px_32px_rgba(0,0,0,0.5)] border border-white/15 rounded-lg px-3 py-2 text-white">
+                <input id="dos_tel" type="text" placeholder="" class="w-full bg-white/[0.05] border border-white/15 rounded-lg px-3 py-2 text-white">
               </div>
               <div>
                 <label class="text-[10px] text-slate-400 block mb-1">Nombre del Representante Legal</label>
-                <input id="dos_rep_nombre" type="text" placeholder="" class="w-full bg-white/[0.05] shadow-[0_8px_32px_rgba(0,0,0,0.5)] border border-white/15 rounded-lg px-3 py-2 text-white">
+                <input id="dos_rep_nombre" type="text" placeholder="" class="w-full bg-white/[0.05] border border-white/15 rounded-lg px-3 py-2 text-white">
               </div>
               <div>
                 <label class="text-[10px] text-slate-400 block mb-1">Cargo del Representante Legal</label>
-                <input id="dos_rep_cargo" type="text" placeholder="" class="w-full bg-white/[0.05] shadow-[0_8px_32px_rgba(0,0,0,0.5)] border border-white/15 rounded-lg px-3 py-2 text-white">
+                <input id="dos_rep_cargo" type="text" placeholder="" class="w-full bg-white/[0.05] border border-white/15 rounded-lg px-3 py-2 text-white">
               </div>
               <div>
                 <label class="text-[10px] text-slate-400 block mb-1">Oficial de Privacidad (Art. 17 LFPDPPP)</label>
-                <input id="dos_oficial_priv" type="text" placeholder="" class="w-full bg-white/[0.05] shadow-[0_8px_32px_rgba(0,0,0,0.5)] border border-white/15 rounded-lg px-3 py-2 text-white">
+                <input id="dos_oficial_priv" type="text" placeholder="" class="w-full bg-white/[0.05] border border-white/15 rounded-lg px-3 py-2 text-white">
               </div>
               <div>
                 <label class="text-[10px] text-slate-400 block mb-1">Registro Patronal IMSS</label>
-                <input id="dos_reg_patronal" type="text" placeholder="" class="w-full bg-white/[0.05] shadow-[0_8px_32px_rgba(0,0,0,0.5)] border border-white/15 rounded-lg px-3 py-2 text-white">
+                <input id="dos_reg_patronal" type="text" placeholder="" class="w-full bg-white/[0.05] border border-white/15 rounded-lg px-3 py-2 text-white">
               </div>
               <div>
                 <label class="text-[10px] text-slate-400 block mb-1">Coordinador Comisión Mixta (NOM-019 / NOM-030)</label>
-                <input id="dos_csh_coord" type="text" placeholder="" class="w-full bg-white/[0.05] shadow-[0_8px_32px_rgba(0,0,0,0.5)] border border-white/15 rounded-lg px-3 py-2 text-white">
+                <input id="dos_csh_coord" type="text" placeholder="" class="w-full bg-white/[0.05] border border-white/15 rounded-lg px-3 py-2 text-white">
               </div>
               <div>
                 <label class="text-[10px] text-slate-400 block mb-1">Secretario Comisión Mixta (NOM-019)</label>
-                <input id="dos_csh_sec" type="text" placeholder="" class="w-full bg-white/[0.05] shadow-[0_8px_32px_rgba(0,0,0,0.5)] border border-white/15 rounded-lg px-3 py-2 text-white">
+                <input id="dos_csh_sec" type="text" placeholder="" class="w-full bg-white/[0.05] border border-white/15 rounded-lg px-3 py-2 text-white">
               </div>
               <div>
                 <label class="text-[10px] text-slate-400 block mb-1">Razón Social del Proveedor (Contrato Art. 69-B)</label>
-                <input id="dos_prov_nombre" type="text" placeholder="" class="w-full bg-white/[0.05] shadow-[0_8px_32px_rgba(0,0,0,0.5)] border border-white/15 rounded-lg px-3 py-2 text-white">
+                <input id="dos_prov_nombre" type="text" placeholder="" class="w-full bg-white/[0.05] border border-white/15 rounded-lg px-3 py-2 text-white">
               </div>
               <div>
                 <label class="text-[10px] text-slate-400 block mb-1">RFC del Proveedor (Contrato Art. 69-B)</label>
-                <input id="dos_prov_rfc" type="text" placeholder="" class="w-full bg-white/[0.05] shadow-[0_8px_32px_rgba(0,0,0,0.5)] border border-white/15 rounded-lg px-3 py-2 text-white">
+                <input id="dos_prov_rfc" type="text" placeholder="" class="w-full bg-white/[0.05] border border-white/15 rounded-lg px-3 py-2 text-white">
               </div>
               <div class="sm:col-span-2">
                 <label class="text-[10px] text-slate-400 block mb-1">Objeto / Servicio del Contrato de Materialidad (Art. 69-B CFF)</label>
-                <input id="dos_prov_obj" type="text" placeholder="" class="w-full bg-white/[0.05] shadow-[0_8px_32px_rgba(0,0,0,0.5)] border border-white/15 rounded-lg px-3 py-2 text-white">
+                <input id="dos_prov_obj" type="text" placeholder="" class="w-full bg-white/[0.05] border border-white/15 rounded-lg px-3 py-2 text-white">
               </div>
             </div>
           </details>
