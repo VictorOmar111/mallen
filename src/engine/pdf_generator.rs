@@ -1118,8 +1118,24 @@ pub fn extract_deep_denue_360_intelligence(query_rfc_or_name: &str) -> Corporate
 
                 let first = &branch_rows[0];
                 out.razon_social = first.0.clone();
-                out.codigo_scian = first.1.clone();
-                out.actividad_desc = first.2.clone();
+
+                // Elegir el giro SCIAN predominante (moda por número de sucursales) para evitar que una oficina secundaria eclipse el giro real
+                let mut scian_counts: std::collections::HashMap<&str, (usize, &str)> = std::collections::HashMap::new();
+                for b in &branch_rows {
+                    let sc_k = b.1.trim();
+                    if sc_k.len() >= 4 {
+                        let entry = scian_counts.entry(sc_k).or_insert((0, b.2.as_str()));
+                        entry.0 += 1;
+                    }
+                }
+                let (dom_scian, dom_act) = scian_counts
+                    .into_iter()
+                    .max_by(|(k1, (c1, _)), (k2, (c2, _))| c1.cmp(c2).then_with(|| k2.cmp(k1)))
+                    .map(|(k, (_, act))| (k.to_string(), act.to_string()))
+                    .unwrap_or_else(|| (first.1.clone(), first.2.clone()));
+
+                out.codigo_scian = dom_scian;
+                out.actividad_desc = dom_act;
                 out.entidad_federativa = first.4.clone();
                 if !first.5.is_empty() {
                     out.domicilio_completo = format!("{}, {}", first.5, out.entidad_federativa);
