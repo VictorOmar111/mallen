@@ -3157,7 +3157,7 @@ fn humanize_company_display_name(raw: &str) -> String {
         .join(" ")
 }
 
-pub fn build_scian_sector_hook(scian_code: &str, _actividad_desc: &str, emp_count: u32) -> (&'static str, String, String) {
+pub fn build_scian_sector_hook(scian_code: &str, actividad_desc: &str, emp_count: u32) -> (&'static str, String, String) {
     let sc = scian_code.trim();
     if sc.starts_with("4681") {
         let pain = "en agencias automotrices, lo que más suele revisarse es la trazabilidad de operaciones vulnerables (LFPIORPI) y los contratos de adhesión ante PROFECO".to_string();
@@ -3363,6 +3363,22 @@ pub fn build_scian_sector_hook(scian_code: &str, _actividad_desc: &str, emp_coun
         let pain = "en servicios financieros y fintech, el mayor foco suele estar en Beneficiario Controlador y protección de datos financieros".to_string();
         let sol = "¿quién coordina cumplimiento regulatorio en su organización?".to_string();
         ("Fintech y Servicios Financieros", pain, sol)
+    } else if sc.starts_with("531115") {
+        let pain = "en recintos, teatros, auditorios y salones de eventos, el punto crítico suele ser Protección Civil para aforos (PIPC) y los contratos con proveedores y organizadores".to_string();
+        let sol = "¿quién coordina operación y cumplimiento de recintos en su equipo?".to_string();
+        ("Recintos, Auditorios y Salones de Eventos", pain, sol)
+    } else if sc.starts_with("5322") {
+        let pain = "en alquiler de mobiliario, juegos y equipo para eventos, lo que más suele revisarse es la seguridad en montaje/operación y los contratos de adhesión ante PROFECO".to_string();
+        let sol = "¿quién coordina contratos y operación en su equipo?".to_string();
+        ("Alquiler de Equipo Recreativo y Mobiliario", pain, sol)
+    } else if sc.starts_with("61162") {
+        let pain = "en escuelas y academias deportivas, las revisiones priorizan Protección Civil, primeros auxilios y el consentimiento expreso de datos de salud de alumnos y menores".to_string();
+        let sol = "¿quién lleva la administración y operación de la academia?".to_string();
+        ("Escuelas y Academias Deportivas", pain, sol)
+    } else if sc.starts_with("61161") {
+        let pain = "en escuelas de arte, música y danza, suele revisarse Protección Civil en instalaciones y la protección de datos personales de alumnos y padres de familia".to_string();
+        let sol = "¿quién coordina administración y cumplimiento en la escuela?".to_string();
+        ("Escuelas de Arte, Música y Danza", pain, sol)
     } else if sc.starts_with("532") {
         let pain = "en arrendamiento de autos y maquinaria, lo que más se revisa es la fecha cierta de contratos ante el SAT y los contratos PROFECO".to_string();
         let sol = "¿quién ve los contratos y cumplimiento operativo en su equipo?".to_string();
@@ -3619,7 +3635,19 @@ pub fn build_scian_sector_hook(scian_code: &str, _actividad_desc: &str, emp_coun
             "813" => ("Asociaciones y Organizaciones", "la protección de datos de agremiados y cumplimiento laboral básico"),
             _ => ("Servicios Empresariales", "el cumplimiento laboral básico STPS y la materialidad fiscal (Art. 69-B)"),
         };
-        let pain = format!("en empresas de {}, lo que más suele revisarse hoy es {}", lbl.to_lowercase(), focus);
+        let clean_act = actividad_desc
+            .trim()
+            .replace(" del sector privado", "")
+            .replace(" sin intermediación", "")
+            .replace(" por el sector privado", "")
+            .trim()
+            .to_lowercase();
+        let tipo_empresa = if clean_act.len() >= 8 && clean_act.len() <= 72 {
+            clean_act
+        } else {
+            lbl.to_lowercase()
+        };
+        let pain = format!("en empresas dedicadas a {}, lo que más suele revisarse hoy es {}", tipo_empresa, focus);
         (lbl, pain, String::new())
     }
 }

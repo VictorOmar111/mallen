@@ -188,21 +188,39 @@ impl HttpFormBot {
                                 Err(_) => break,
                             }
                         }
-                        let target_path = batch[0].db_path.clone();
-                        if cached_path != target_path || cached_conn.is_none() {
-                            if let Ok(conn) = rusqlite::Connection::open(&target_path) {
-                                Self::configure_sqlite_connection(&conn);
-                                Self::ensure_db_schema_once(&conn);
-                                cached_path = target_path;
-                                cached_conn = Some(conn);
-                            }
+                        let mut by_path: std::collections::BTreeMap<String, Vec<usize>> = std::collections::BTreeMap::new();
+                        for (i, m) in batch.iter().enumerate() {
+                            by_path.entry(m.db_path.clone()).or_default().push(i);
                         }
-                        if let Some(ref mut conn) = cached_conn {
-                            if let Ok(tx_sql) = conn.transaction_with_behavior(rusqlite::TransactionBehavior::Immediate) {
-                                for m in &batch {
-                                    Self::write_telemetry_row_in_tx(&tx_sql, m);
+                        for (target_path, idxs) in by_path {
+                            if cached_path != target_path || cached_conn.is_none() {
+                                match rusqlite::Connection::open(&target_path) {
+                                    Ok(conn) => {
+                                        Self::configure_sqlite_connection(&conn);
+                                        Self::ensure_db_schema_once(&conn);
+                                        cached_path = target_path;
+                                        cached_conn = Some(conn);
+                                    }
+                                    Err(e) => {
+                                        eprintln!("[SQLITE-WRITER][WARN] Error abriendo {}: {}", target_path, e);
+                                        continue;
+                                    }
                                 }
-                                let _ = tx_sql.commit();
+                            }
+                            if let Some(ref mut conn) = cached_conn {
+                                match conn.transaction_with_behavior(rusqlite::TransactionBehavior::Immediate) {
+                                    Ok(tx_sql) => {
+                                        for i in idxs {
+                                            Self::write_telemetry_row_in_tx(&tx_sql, &batch[i]);
+                                        }
+                                        if let Err(e) = tx_sql.commit() {
+                                            eprintln!("[SQLITE-WRITER][WARN] Error en commit SQLite: {}", e);
+                                        }
+                                    }
+                                    Err(e) => {
+                                        eprintln!("[SQLITE-WRITER][WARN] Error iniciando transacción SQLite: {}", e);
+                                    }
+                                }
                             }
                         }
                         for mut m in batch {
@@ -239,14 +257,14 @@ impl HttpFormBot {
         } else {
             String::new()
         };
-        let _ = tx.execute(
+        if let Err(e) = tx.execute(
             "INSERT INTO prospect_logs (empresa_nombre, target_url, final_target_url, final_domain, multa_estimada_mxn, resultado_codigo, pipeline_stage, next_action_channel, extracted_contact, user_agent, http_status, latency_ms, charset_detected, retry_count, contact_method_tier, trace_detail) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13, ?14, ?15, ?16)",
             rusqlite::params![m.empresa_nombre, m.input_url, m.final_target_url, final_domain, m.multa_estimada, m.status_result, stage, next_action, primary_contact, m.user_agent_used, m.http_status as i64, m.latency_ms as i64, m.charset_detected, m.retry_count as i64, contact_tier, m.trace_detail],
-        );
-        let _ = tx.execute(
+        ) { eprintln!("[SQLITE-WRITER][WARN] INSERT prospect_logs ({}): {}", m.empresa_nombre, e); }
+        if let Err(e) = tx.execute(
             "INSERT INTO prospect_pipeline (empresa_nombre, input_url, final_target_url, final_domain, multa_estimada_mxn, ultimo_resultado_codigo, pipeline_stage, next_action_channel, extracted_contact, contact_method_tier, extracted_emails, extracted_whatsapp, extracted_socials, last_http_status, last_latency_ms, last_charset, last_trace_detail, encrypted_contact_vault, attempts_count, updated_at_utc) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13, ?14, ?15, ?16, ?17, ?18, 1, datetime('now')) ON CONFLICT(empresa_nombre) DO UPDATE SET input_url = excluded.input_url, final_target_url = excluded.final_target_url, final_domain = excluded.final_domain, multa_estimada_mxn = excluded.multa_estimada_mxn, ultimo_resultado_codigo = excluded.ultimo_resultado_codigo, pipeline_stage = excluded.pipeline_stage, next_action_channel = excluded.next_action_channel, extracted_contact = CASE WHEN excluded.extracted_contact != '' THEN excluded.extracted_contact ELSE prospect_pipeline.extracted_contact END, contact_method_tier = excluded.contact_method_tier, extracted_emails = CASE WHEN excluded.extracted_emails != '' THEN excluded.extracted_emails ELSE prospect_pipeline.extracted_emails END, extracted_whatsapp = CASE WHEN excluded.extracted_whatsapp != '' THEN excluded.extracted_whatsapp ELSE prospect_pipeline.extracted_whatsapp END, extracted_socials = CASE WHEN excluded.extracted_socials != '' THEN excluded.extracted_socials ELSE prospect_pipeline.extracted_socials END, last_http_status = excluded.last_http_status, last_latency_ms = excluded.last_latency_ms, last_charset = excluded.last_charset, last_trace_detail = excluded.last_trace_detail, encrypted_contact_vault = CASE WHEN excluded.encrypted_contact_vault != '' THEN excluded.encrypted_contact_vault ELSE prospect_pipeline.encrypted_contact_vault END, attempts_count = prospect_pipeline.attempts_count + 1, updated_at_utc = datetime('now')",
             rusqlite::params![m.empresa_nombre, m.input_url, m.final_target_url, final_domain, m.multa_estimada, m.status_result, stage, next_action, primary_contact, contact_tier, m.emails, m.whatsapps, m.socials, m.http_status as i64, m.latency_ms as i64, m.charset_detected, m.trace_detail, encrypted_vault],
-        );
+        ) { eprintln!("[SQLITE-WRITER][WARN] UPSERT prospect_pipeline ({}): {}", m.empresa_nombre, e); }
         if m.trace_detail.contains(" | STACK:") {
             let st_part = m.trace_detail.split(" | STACK:").nth(1).unwrap_or("");
             let stack_val = st_part.split(" | PITCH:").next().unwrap_or("");
@@ -422,7 +440,7 @@ impl HttpFormBot {
         let db_path = std::env::var("MALLEN_DB_PATH").unwrap_or_else(|_| "data/mallen_prod.db".to_string());
         if let Ok(conn) = rusqlite::Connection::open(db_path) {
             Self::configure_sqlite_connection(&conn);
-            let sql = "SELECT rowid, COALESCE(NULLIF(TRIM(raz_social), ''), TRIM(nom_estab)), TRIM(www), COALESCE(NULLIF(TRIM(codigo_scian), ''), '541110'), COALESCE(per_ocu, '11 a 30 personas') FROM denue_units WHERE rowid > ?1 AND www IS NOT NULL AND TRIM(www) != '' AND (raz_social != '' OR nom_estab != '') AND COALESCE(codigo_scian,'') NOT LIKE '93%' AND COALESCE(codigo_scian,'') NOT LIKE '5221%' AND UPPER(COALESCE(nom_estab,'')) NOT LIKE '%ALCALDIA%' AND UPPER(COALESCE(nom_estab,'')) NOT LIKE '%SECRETARIA DE%' AND UPPER(COALESCE(nom_estab,'')) NOT LIKE '%GOBIERNO%' AND UPPER(COALESCE(nom_estab,'')) NOT LIKE '%FISCALIA%' AND UPPER(COALESCE(nom_estab,'')) NOT LIKE '%TRIBUNAL%' AND LOWER(www) NOT LIKE '%banamex%' AND LOWER(www) NOT LIKE '%bbva%' AND LOWER(www) NOT LIKE '%santander%' AND LOWER(www) NOT LIKE '%banorte%' AND LOWER(www) NOT LIKE '%hsbc%' AND LOWER(www) NOT LIKE '%scotiabank%' AND LOWER(www) NOT LIKE '%.gob.mx%' ORDER BY rowid ASC LIMIT ?2";
+            let sql = "SELECT rowid, COALESCE(NULLIF(TRIM(raz_social), ''), TRIM(nom_estab)), TRIM(www), COALESCE(NULLIF(TRIM(codigo_scian), ''), '541110'), COALESCE(per_ocu, '11 a 30 personas') FROM denue_units WHERE rowid > ?1 AND www IS NOT NULL AND TRIM(www) != '' AND (raz_social != '' OR nom_estab != '') AND COALESCE(codigo_scian,'') NOT LIKE '93%' AND COALESCE(codigo_scian,'') NOT LIKE '5221%' AND UPPER(COALESCE(nom_estab,'')) NOT LIKE '%ALCALDIA%' AND UPPER(COALESCE(nom_estab,'')) NOT LIKE '%SECRETARIA DE%' AND UPPER(COALESCE(nom_estab,'')) NOT LIKE '%GOBIERNO%' AND UPPER(COALESCE(nom_estab,'')) NOT LIKE '%FISCALIA%' AND UPPER(COALESCE(nom_estab,'')) NOT LIKE '%TRIBUNAL%' AND LOWER(www) NOT LIKE '%banamex%' AND LOWER(www) NOT LIKE '%bbva%' AND LOWER(www) NOT LIKE '%santander%' AND LOWER(www) NOT LIKE '%banorte%' AND LOWER(www) NOT LIKE '%hsbc%' AND LOWER(www) NOT LIKE '%scotiabank%' AND LOWER(www) NOT LIKE '%.gob.mx%' AND LOWER(www) NOT LIKE '%walmart%' AND LOWER(www) NOT LIKE '%oxxo%' AND LOWER(www) NOT LIKE '%soriana%' AND LOWER(www) NOT LIKE '%coppel%' AND LOWER(www) NOT LIKE '%chedraui%' AND LOWER(www) NOT LIKE '%liverpool%' ORDER BY rowid ASC LIMIT ?2";
             if let Ok(mut stmt) = conn.prepare(sql) {
                 if let Ok(rows) = stmt.query_map(rusqlite::params![last_rowid, bounded as i64], |r| {
                     Ok((r.get::<_, i64>(0)?, r.get::<_, String>(1)?, r.get::<_, String>(2)?, r.get::<_, String>(3)?, r.get::<_, String>(4)?))
