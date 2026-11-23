@@ -146,6 +146,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .nest_service("/css", axum::routing::get_service(tower_http::services::ServeDir::new("public/css")))
         .nest_service("/js", axum::routing::get_service(tower_http::services::ServeDir::new("public/js")))
         .fallback_service(ServeDir::new("public"))
+        .layer(axum::middleware::from_fn(funnel_telemetry_middleware))
         .layer(CorsLayer::permissive())
         .with_state(state);
 
@@ -2232,4 +2233,32 @@ pub async fn handle_list_quick_contacts() -> (axum::http::StatusCode, axum::Json
             axum::Json(serde_json::json!({ "ok": false, "contacts": [] })),
         ),
     }
+}
+
+
+async fn funnel_telemetry_middleware(
+    req: axum::extract::Request,
+    next: axum::middleware::Next,
+) -> axum::response::Response {
+    let method = req.method().clone();
+    let path = req.uri().path().to_string();
+    let is_funnel = path.starts_with("/api/micro_scan")
+        || path.starts_with("/api/scan")
+        || path.starts_with("/api/calibrate")
+        || path.starts_with("/checkout")
+        || path.starts_with("/api/checkout")
+        || path.starts_with("/api/webhook")
+        || path.starts_with("/download/zip")
+        || path.starts_with("/verify")
+        || path.starts_with("/api/arco");
+
+    let t0 = std::time::Instant::now();
+    let resp = next.run(req).await;
+    let status = resp.status().as_u16();
+    let ms = t0.elapsed().as_millis();
+
+    if is_funnel || status >= 400 {
+        println!("[FUNNEL] {} {} -> HTTP {} | {}ms", method, path, status, ms);
+    }
+    resp
 }
