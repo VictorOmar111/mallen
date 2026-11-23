@@ -440,7 +440,7 @@ impl HttpFormBot {
         let db_path = std::env::var("MALLEN_DB_PATH").unwrap_or_else(|_| "data/mallen_prod.db".to_string());
         if let Ok(conn) = rusqlite::Connection::open(db_path) {
             Self::configure_sqlite_connection(&conn);
-            let sql = "SELECT rowid, COALESCE(NULLIF(TRIM(raz_social), ''), TRIM(nom_estab)), TRIM(www), COALESCE(NULLIF(TRIM(codigo_scian), ''), '541110'), COALESCE(per_ocu, '11 a 30 personas') FROM denue_units WHERE rowid > ?1 AND www IS NOT NULL AND TRIM(www) != '' AND (raz_social != '' OR nom_estab != '') AND COALESCE(codigo_scian,'') NOT LIKE '93%' AND LOWER(COALESCE(nombre_act,'')) NOT LIKE '%sector público%' AND LOWER(COALESCE(nombre_act,'')) NOT LIKE '%sector publico%' AND LOWER(COALESCE(www,'')) NOT LIKE '%gob.mx%' AND UPPER(COALESCE(raz_social,'')) NOT LIKE '%SECRETARIA DE%' AND UPPER(COALESCE(raz_social,'')) NOT LIKE '%GOBIERNO%' AND UPPER(COALESCE(raz_social,'')) NOT LIKE '%AYUNTAMIENTO%' AND COALESCE(codigo_scian,'') NOT LIKE '5221%' AND UPPER(COALESCE(nom_estab,'')) NOT LIKE '%ALCALDIA%' AND UPPER(COALESCE(nom_estab,'')) NOT LIKE '%SECRETARIA DE%' AND UPPER(COALESCE(nom_estab,'')) NOT LIKE '%GOBIERNO%' AND UPPER(COALESCE(nom_estab,'')) NOT LIKE '%FISCALIA%' AND UPPER(COALESCE(nom_estab,'')) NOT LIKE '%TRIBUNAL%' AND LOWER(www) NOT LIKE '%banamex%' AND LOWER(www) NOT LIKE '%bbva%' AND LOWER(www) NOT LIKE '%santander%' AND LOWER(www) NOT LIKE '%banorte%' AND LOWER(www) NOT LIKE '%hsbc%' AND LOWER(www) NOT LIKE '%scotiabank%' AND LOWER(www) NOT LIKE '%.gob.mx%' AND LOWER(www) NOT LIKE '%walmart%' AND LOWER(www) NOT LIKE '%oxxo%' AND LOWER(www) NOT LIKE '%soriana%' AND LOWER(www) NOT LIKE '%coppel%' AND LOWER(www) NOT LIKE '%chedraui%' AND LOWER(www) NOT LIKE '%liverpool%' ORDER BY rowid ASC LIMIT ?2";
+            let sql = "SELECT rowid, COALESCE(NULLIF(TRIM(raz_social), ''), TRIM(nom_estab)), TRIM(www), COALESCE(NULLIF(TRIM(codigo_scian), ''), '541110'), COALESCE(per_ocu, '11 a 30 personas') FROM denue_units WHERE rowid > ?1 AND www IS NOT NULL AND TRIM(www) != '' AND (raz_social != '' OR nom_estab != '') AND COALESCE(codigo_scian,'') NOT LIKE '93%' AND LOWER(COALESCE(nombre_act,'')) NOT LIKE '%sector público%' AND LOWER(COALESCE(nombre_act,'')) NOT LIKE '%sector publico%' AND LOWER(COALESCE(www,'')) NOT LIKE '%gob.mx%' AND UPPER(COALESCE(raz_social,'')) NOT LIKE '%SECRETARIA DE%' AND UPPER(COALESCE(raz_social,'')) NOT LIKE '%GOBIERNO%' AND UPPER(COALESCE(raz_social,'')) NOT LIKE '%AYUNTAMIENTO%' AND UPPER(COALESCE(raz_social,'')) NOT LIKE '%INFONAVIT%' AND UPPER(COALESCE(raz_social,'')) NOT LIKE '%FONDO NACIONAL%' AND UPPER(COALESCE(raz_social,'')) NOT LIKE '%INSTITUTO MEXICANO%' AND UPPER(COALESCE(raz_social,'')) NOT LIKE '%INSTITUTO NACIONAL%' AND UPPER(COALESCE(raz_social,'')) NOT LIKE '%COMISION FEDERAL%' AND UPPER(COALESCE(raz_social,'')) NOT LIKE '%COMISION NACIONAL%' AND UPPER(COALESCE(raz_social,'')) NOT LIKE '%PETROLEOS MEXICANOS%' AND UPPER(COALESCE(raz_social,'')) NOT LIKE '%BANCO DE MEXICO%' AND UPPER(COALESCE(raz_social,'')) NOT LIKE '%PROCURADURIA%' AND UPPER(COALESCE(raz_social,'')) NOT LIKE '%PODER JUDICIAL%' AND LOWER(COALESCE(www,'')) NOT LIKE '%infonavit%' AND LOWER(COALESCE(www,'')) NOT LIKE '%imss.gob%' AND LOWER(COALESCE(www,'')) NOT LIKE '%issste%' AND LOWER(COALESCE(www,'')) NOT LIKE '%pemex.com%' AND LOWER(COALESCE(www,'')) NOT LIKE '%cfe.mx%' AND LOWER(COALESCE(www,'')) NOT LIKE '%banxico%' AND COALESCE(codigo_scian,'') NOT LIKE '5221%' AND UPPER(COALESCE(nom_estab,'')) NOT LIKE '%ALCALDIA%' AND UPPER(COALESCE(nom_estab,'')) NOT LIKE '%SECRETARIA DE%' AND UPPER(COALESCE(nom_estab,'')) NOT LIKE '%GOBIERNO%' AND UPPER(COALESCE(nom_estab,'')) NOT LIKE '%FISCALIA%' AND UPPER(COALESCE(nom_estab,'')) NOT LIKE '%TRIBUNAL%' AND LOWER(www) NOT LIKE '%banamex%' AND LOWER(www) NOT LIKE '%bbva%' AND LOWER(www) NOT LIKE '%santander%' AND LOWER(www) NOT LIKE '%banorte%' AND LOWER(www) NOT LIKE '%hsbc%' AND LOWER(www) NOT LIKE '%scotiabank%' AND LOWER(www) NOT LIKE '%.gob.mx%' AND LOWER(www) NOT LIKE '%walmart%' AND LOWER(www) NOT LIKE '%oxxo%' AND LOWER(www) NOT LIKE '%soriana%' AND LOWER(www) NOT LIKE '%coppel%' AND LOWER(www) NOT LIKE '%chedraui%' AND LOWER(www) NOT LIKE '%liverpool%' ORDER BY rowid ASC LIMIT ?2";
             if let Ok(mut stmt) = conn.prepare(sql) {
                 if let Ok(rows) = stmt.query_map(rusqlite::params![last_rowid, bounded as i64], |r| {
                     Ok((r.get::<_, i64>(0)?, r.get::<_, String>(1)?, r.get::<_, String>(2)?, r.get::<_, String>(3)?, r.get::<_, String>(4)?))
@@ -1228,7 +1228,7 @@ impl HttpFormBot {
         let scian = scian_code.trim();
         let scian_argument = if scian.starts_with("52") || scian.starts_with("53") {
             "ALTO_RIESGO_FINTECH_PLD: Sujeto a auditoría LFPIORPI (Art. 17/18 UIF), Beneficiario Controlador y cifrado de datos patrimoniales LFPDPPP."
-        } else if scian.starts_with("62") || scian.starts_with("464") {
+        } else if (scian.starts_with("62") && !scian.starts_with("624")) || scian.starts_with("464") {
             "ALTO_RIESGO_SALUD_COFEPRIS: Sujeto a Aviso de Responsable Sanitario, RPBI (NOM-087-SEMARNAT), Expediente Clínico (NOM-004) y Datos Sensibles Art. 9 LFPDPPP."
         } else if scian.starts_with("722") || scian.starts_with("311") || scian.starts_with("461") {
             "ALTO_RIESGO_ALIMENTOS_CONSUMO: Sujeto a inspección COFEPRIS (NOM-251), Protección Civil PIPC, STPS NOM-002 Incendios y PROFECO Precios Totales."
@@ -1645,7 +1645,7 @@ impl HttpFormBot {
                 WHERE www IS NOT NULL
                   AND TRIM(www) != ''
                   AND (raz_social != '' OR nom_estab != '')
-                  AND COALESCE(codigo_scian,'') NOT LIKE '93%' AND LOWER(COALESCE(nombre_act,'')) NOT LIKE '%sector público%' AND LOWER(COALESCE(nombre_act,'')) NOT LIKE '%sector publico%' AND LOWER(COALESCE(www,'')) NOT LIKE '%gob.mx%' AND UPPER(COALESCE(raz_social,'')) NOT LIKE '%SECRETARIA DE%' AND UPPER(COALESCE(raz_social,'')) NOT LIKE '%GOBIERNO%' AND UPPER(COALESCE(raz_social,'')) NOT LIKE '%AYUNTAMIENTO%'
+                  AND COALESCE(codigo_scian,'') NOT LIKE '93%' AND LOWER(COALESCE(nombre_act,'')) NOT LIKE '%sector público%' AND LOWER(COALESCE(nombre_act,'')) NOT LIKE '%sector publico%' AND LOWER(COALESCE(www,'')) NOT LIKE '%gob.mx%' AND UPPER(COALESCE(raz_social,'')) NOT LIKE '%SECRETARIA DE%' AND UPPER(COALESCE(raz_social,'')) NOT LIKE '%GOBIERNO%' AND UPPER(COALESCE(raz_social,'')) NOT LIKE '%AYUNTAMIENTO%' AND UPPER(COALESCE(raz_social,'')) NOT LIKE '%INFONAVIT%' AND UPPER(COALESCE(raz_social,'')) NOT LIKE '%FONDO NACIONAL%' AND UPPER(COALESCE(raz_social,'')) NOT LIKE '%INSTITUTO MEXICANO%' AND UPPER(COALESCE(raz_social,'')) NOT LIKE '%INSTITUTO NACIONAL%' AND UPPER(COALESCE(raz_social,'')) NOT LIKE '%COMISION FEDERAL%' AND UPPER(COALESCE(raz_social,'')) NOT LIKE '%COMISION NACIONAL%' AND UPPER(COALESCE(raz_social,'')) NOT LIKE '%PETROLEOS MEXICANOS%' AND UPPER(COALESCE(raz_social,'')) NOT LIKE '%BANCO DE MEXICO%' AND UPPER(COALESCE(raz_social,'')) NOT LIKE '%PROCURADURIA%' AND UPPER(COALESCE(raz_social,'')) NOT LIKE '%PODER JUDICIAL%' AND LOWER(COALESCE(www,'')) NOT LIKE '%infonavit%' AND LOWER(COALESCE(www,'')) NOT LIKE '%imss.gob%' AND LOWER(COALESCE(www,'')) NOT LIKE '%issste%' AND LOWER(COALESCE(www,'')) NOT LIKE '%pemex.com%' AND LOWER(COALESCE(www,'')) NOT LIKE '%cfe.mx%' AND LOWER(COALESCE(www,'')) NOT LIKE '%banxico%'
                   AND COALESCE(codigo_scian,'') NOT LIKE '5221%'
                   AND UPPER(COALESCE(nom_estab,'')) NOT LIKE '%ALCALDIA%'
                   AND UPPER(COALESCE(nom_estab,'')) NOT LIKE '%SECRETARIA DE%'
@@ -1895,11 +1895,27 @@ impl HttpFormBot {
             })
             .unwrap_or_else(|| ("541110".to_string(), String::new(), 25));
 
+        let intel_dom = crate::engine::pdf_generator::extract_deep_denue_360_intelligence(emp_clean);
+        let effective_scian = if intel_dom.codigo_scian.trim().len() == 6 {
+            intel_dom.codigo_scian.as_str()
+        } else {
+            scian_code.as_str()
+        };
+        let effective_act = if !intel_dom.actividad_desc.trim().is_empty() && !intel_dom.actividad_desc.starts_with("Pendiente") {
+            intel_dom.actividad_desc.as_str()
+        } else {
+            actividad_desc.as_str()
+        };
+        let effective_emp = if intel_dom.estimated_employees > 0 {
+            intel_dom.estimated_employees
+        } else {
+            emp_count
+        };
         let (_sector_label, scian_pain, _closing_q) =
-            crate::engine::pdf_generator::build_scian_sector_hook(&scian_code, &actividad_desc, emp_count);
+            crate::engine::pdf_generator::build_scian_sector_hook(effective_scian, effective_act, effective_emp);
 
         format!(
-            "Estimado equipo directivo de {}: Les saludamos cordialmente de FIRMA MALLEN®. Ayudamos a empresas de su sector a proteger su deducibilidad fiscal, agilizar auditorías internas y mantener su expediente normativo listo para cualquier revisión, especialmente porque {}. Pueden consultar y descargar sin costo su resumen tecnico confidencial con acciones prácticas para su giro en: {} | Fuente: INEGI, DENUE. Aviso de Privacidad: https://mallen.lat/privacidad | Exclusión ARCO: https://mallen.lat/derechos-arco",
+            "Estimado equipo directivo de {}: Les saludamos cordialmente de FIRMA MALLEN®. Ayudamos a empresas de su sector a proteger su deducibilidad fiscal, agilizar auditorías internas y mantener su expediente normativo listo para cualquier revisión, especialmente porque {}. Pueden consultar y descargar sin costo su resumen técnico confidencial con acciones prácticas para su giro en: {} | Fuente: INEGI, DENUE. Aviso de Privacidad: https://mallen.lat/privacidad | Exclusión ARCO: https://mallen.lat/derechos-arco",
             emp_clean,
             scian_pain,
             micro_link
