@@ -2041,7 +2041,7 @@ fn build_report_typst_markup_full(
             (m.razon_social.starts_with("REGISTRO NO INDEXADO") || m.domicilio_fiscal_o_denue.contains("Territorio Nacional")) && m.web_telemetry.target_url.is_empty(),
         )
     } else {
-        let (fb_scian, fb_emp, fb_priv) = lookup_formbot_and_denue_context(&empresa.nombre, tax_id);
+        let (fb_scian, fb_emp, _fb_priv) = lookup_formbot_and_denue_context(&empresa.nombre, tax_id);
         let tokens: Vec<&str> = empresa
             .actividad
             .split(|c: char| !c.is_ascii_digit())
@@ -2062,8 +2062,8 @@ fn build_report_typst_markup_full(
             clean_scian.clone(),
             resolved_emp,
             true,
-            fb_priv,
-            fb_priv,
+            true,
+            true,
             true,
             true,
             clean_scian.starts_with("31") || clean_scian.starts_with("32") || clean_scian.starts_with("33") || clean_scian.starts_with("722"),
