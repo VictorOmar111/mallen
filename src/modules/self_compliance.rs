@@ -10,19 +10,21 @@ pub fn render_mallen_privacy_notice() -> Html<String> {
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
     <style>body { font-family: 'Inter', sans-serif; } .font-mono-code { font-family: 'JetBrains Mono', monospace; }</style>
-<link rel="stylesheet" href="/css/mallen-high-impact.css?v=2026.103">
+<link rel="stylesheet" href="/css/mallen-high-impact.css?v=2026.128">
+  <script src="/js/theme-init.js?v=2026.128"></script>
+  <link rel="stylesheet" href="/css/mallen-high-impact.css?v=2026.128">
 </head>
-<body class="bg-slate-50 text-slate-900 min-h-screen p-6 sm:p-10 border-t-4 border-emerald-500">
+<body class="bg-slate-950 text-slate-100 min-h-screen p-6 sm:p-10 border-t-4 border-emerald-500">
     <div class="max-w-4xl mx-auto">
-        <div class="flex items-center justify-between pb-5 mb-6 border-b border-slate-200">
+        <div class="flex items-center justify-between pb-5 mb-6 border-b border-white/15">
             <div>
                 <span class="text-xs font-bold text-emerald-400 font-mono-code uppercase block">CUMPLIMIENTO NORMATIVO PROPIO • LFPDPPP Y LINEAMIENTOS DOF</span>
                 <h1 class="text-2xl sm:text-3xl font-extrabold text-white mt-1">Aviso de Privacidad Integral de mallen.lat</h1>
             </div>
-            <a href="/" class="px-4 py-2 rounded-xl bg-white border border-slate-200 text-xs font-mono-code text-emerald-700 hover:bg-slate-100 transition">← Portal Principal</a>
+            <a href="/" class="px-4 py-2 rounded-xl bg-slate-900 border border-white/15 text-xs font-mono-code text-emerald-300 hover:bg-slate-800 transition">← Portal Principal</a>
         </div>
 
-        <div class="quantum-laser-console rounded-2xl p-6 sm:p-8 space-y-5 text-xs sm:text-sm text-slate-700 leading-relaxed font-mono-code">
+        <div class="quantum-laser-console rounded-2xl p-6 sm:p-8 space-y-5 text-xs sm:text-sm text-slate-300 leading-relaxed font-mono-code">
             <div>
                 <h2 class="text-sm font-bold text-emerald-400 uppercase mb-1">I. Identidad y Domicilio del Responsable (Art. 16 Fracc. I LFPDPPP)</h2>
                 <p><strong>FIRMA MALLEN® — Sistemas de Inteligencia Regulatoria y Auditoría Preventiva 360°</strong> (en lo sucesivo, "EL RESPONSABLE"), con portal oficial en <strong>https://mallen.lat</strong>, domicilio para oír y recibir notificaciones de privacidad en Ciudad de México, Estados Unidos Mexicanos, y Oficialía de Datos Personales en <strong>privacidad@mallen.lat</strong>, es responsable del uso, tratamiento y protección de los datos que se recaben a través de esta plataforma, en estricto apego a la Ley Federal de Protección de Datos Personales en Posesión de los Particulares (LFPDPPP), su Reglamento y los Lineamientos del Aviso de Privacidad publicados en el Diario Oficial de la Federación.</p>
@@ -66,19 +68,21 @@ pub fn render_mallen_terms() -> Html<String> {
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
     <style>body { font-family: 'Inter', sans-serif; } .font-mono-code { font-family: 'JetBrains Mono', monospace; }</style>
-<link rel="stylesheet" href="/css/mallen-high-impact.css?v=2026.103">
+<link rel="stylesheet" href="/css/mallen-high-impact.css?v=2026.128">
+  <script src="/js/theme-init.js?v=2026.128"></script>
+  <link rel="stylesheet" href="/css/mallen-high-impact.css?v=2026.128">
 </head>
-<body class="bg-slate-50 text-slate-900 min-h-screen p-6 sm:p-10 border-t-4 border-blue-500">
+<body class="bg-slate-950 text-slate-100 min-h-screen p-6 sm:p-10 border-t-4 border-blue-500">
     <div class="max-w-4xl mx-auto">
-        <div class="flex items-center justify-between pb-5 mb-6 border-b border-slate-200">
+        <div class="flex items-center justify-between pb-5 mb-6 border-b border-white/15">
             <div>
                 <span class="text-xs font-bold text-blue-400 font-mono-code uppercase block">CÓDIGO DE COMERCIO ARTS. 89–93 • LFPC ART. 76 BIS • DATOS ABIERTOS</span>
                 <h1 class="text-2xl sm:text-3xl font-extrabold text-white mt-1">Términos de Servicio, Alcance Pericial y Propiedad Intelectual</h1>
             </div>
-            <a href="/" class="px-4 py-2 rounded-xl bg-white border border-slate-200 text-xs font-mono-code text-blue-700 hover:bg-slate-100 transition">← Portal Principal</a>
+            <a href="/" class="px-4 py-2 rounded-xl bg-slate-900 border border-white/15 text-xs font-mono-code text-blue-300 hover:bg-slate-800 transition">← Portal Principal</a>
         </div>
 
-        <div class="quantum-laser-console rounded-2xl p-6 sm:p-8 space-y-5 text-xs sm:text-sm text-slate-700 leading-relaxed font-mono-code">
+        <div class="quantum-laser-console rounded-2xl p-6 sm:p-8 space-y-5 text-xs sm:text-sm text-slate-300 leading-relaxed font-mono-code">
             <div>
                 <h2 class="text-sm font-bold text-blue-400 uppercase mb-1">1. Naturaleza Preventiva del Diagnóstico y Deslinde de Responsabilidad Oficial</h2>
                 <p>Los diagnósticos, matrices de multas en UMAs, dictámenes ejecutivos, certificados privados de auditoría y modelos contractuales generados por <strong>FIRMA MALLEN® (mallen.lat)</strong> constituyen una <strong>herramienta tecnológica de autodiagnóstico preventivo y de apoyo al cumplimiento corporativo (Compliance GRC)</strong> basada en la telemetría pública del dominio evaluado, los padrones públicos de datos abiertos y las declaraciones proporcionadas bajo protesta de decir verdad por el propio usuario en la Cédula de Calibración.</p>
@@ -116,37 +120,39 @@ pub fn render_mallen_arco_portal() -> Html<String> {
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
     <style>body { font-family: 'Inter', sans-serif; } .font-mono-code { font-family: 'JetBrains Mono', monospace; }</style>
-<link rel="stylesheet" href="/css/mallen-high-impact.css?v=2026.103">
+<link rel="stylesheet" href="/css/mallen-high-impact.css?v=2026.128">
+  <script src="/js/theme-init.js?v=2026.128"></script>
+  <link rel="stylesheet" href="/css/mallen-high-impact.css?v=2026.128">
 </head>
-<body class="bg-slate-50 text-slate-900 min-h-screen p-6 sm:p-10 border-t-4 border-cyan-500">
+<body class="bg-slate-950 text-slate-100 min-h-screen p-6 sm:p-10 border-t-4 border-cyan-500">
     <div class="max-w-3xl mx-auto">
-        <div class="flex items-center justify-between pb-5 mb-6 border-b border-slate-200">
+        <div class="flex items-center justify-between pb-5 mb-6 border-b border-white/15">
             <div>
                 <span class="text-xs font-bold text-cyan-400 font-mono-code uppercase block">ARTÍCULOS 22 A 35 LFPDPPP • AUTORIDAD GARANTE SABG</span>
                 <h1 class="text-2xl sm:text-3xl font-extrabold text-white mt-1">Ventanilla Automatizada de Derechos ARCO y Baja de Caché</h1>
             </div>
-            <a href="/" class="px-4 py-2 rounded-xl bg-white border border-slate-200 text-xs font-mono-code text-cyan-700 hover:bg-slate-100 transition">← Portal Principal</a>
+            <a href="/" class="px-4 py-2 rounded-xl bg-slate-900 border border-white/15 text-xs font-mono-code text-cyan-300 hover:bg-slate-800 transition">← Portal Principal</a>
         </div>
 
         <div class="quantum-laser-console rounded-2xl p-6 sm:p-8 font-mono-code text-xs">
-            <p class="text-slate-700 leading-relaxed mb-6">
+            <p class="text-slate-300 leading-relaxed mb-6">
                 En cumplimiento estricto a los Artículos 22 al 35 de la LFPDPPP, si usted es titular de un RFC (Persona Física con Actividad Empresarial) o representante de un dominio evaluado y desea <strong>cancelar/eliminar de inmediato cualquier diagnóstico temporal almacenado en el caché de este servidor</strong> o ejercer sus derechos de Acceso, Rectificación, Cancelación u Oposición, ingrese el identificador a continuación:
             </p>
 
             <form onsubmit="submitArcoOptout(event)" class="space-y-4">
                 <div>
-                    <label class="block text-[10px] text-cyan-700 uppercase font-bold mb-1">RFC, Razón Social o Dominio Web a Purgar de Caché *</label>
+                    <label class="block text-[10px] text-cyan-300 uppercase font-bold mb-1">RFC, Razón Social o Dominio Web a Purgar de Caché *</label>
                     <input id="arcoTarget" type="text" required placeholder="Ej. GOMA850101XXX o midominio.com.mx"
-                        class="w-full rounded-xl px-4 py-3 text-xs text-slate-900">
+                        class="w-full rounded-xl px-4 py-3 text-xs text-white">
                 </div>
                 <div>
-                    <label class="block text-[10px] text-cyan-700 uppercase font-bold mb-1">Correo Electrónico para Recibir su Folio de Cancelación *</label>
+                    <label class="block text-[10px] text-cyan-300 uppercase font-bold mb-1">Correo Electrónico para Recibir su Folio de Cancelación *</label>
                     <input id="arcoEmail" type="email" required placeholder="titular@empresa.com.mx"
-                        class="w-full rounded-xl px-4 py-3 text-xs text-slate-900">
+                        class="w-full rounded-xl px-4 py-3 text-xs text-white">
                 </div>
                 <div>
-                    <label class="block text-[10px] text-cyan-700 uppercase font-bold mb-1">Tipo de Solicitud ARCO</label>
-                    <select id="arcoType" class="w-full bg-white border border-slate-200 rounded-xl px-4 py-3 text-xs text-slate-900">
+                    <label class="block text-[10px] text-cyan-300 uppercase font-bold mb-1">Tipo de Solicitud ARCO</label>
+                    <select id="arcoType" class="w-full bg-slate-900 border border-white/15 rounded-xl px-4 py-3 text-xs text-white">
                         <option value="CANCELACION_PURGA_CACHE">Cancelación y Purga Inmediata de Diagnóstico en Caché</option>
                         <option value="OPOSICION_TRATAMIENTO">Oposición a Futuros Escaneos de Telemetría Web (Opt-Out)</option>
                         <option value="ACCESO_RECTIFICACION">Acceso o Rectificación de Datos en Cédula</option>
@@ -181,11 +187,11 @@ pub fn render_mallen_arco_portal() -> Html<String> {
                     <strong class="text-emerald-400 block uppercase mb-1">Solicitud Procesada y Caché Purgado con Éxito</strong>
                     <div>Folio Oficial ARCO: <span class="text-white font-bold">${data.folio}</span></div>
                     <div>Identificador Purgado: <span class="text-white">${data.purged_target}</span></div>
-                    <div>Estampa UTC: <span class="text-slate-700">${data.timestamp_utc}</span></div>
-                    <div class="mt-1 text-[11px] text-emerald-700">Se ha eliminado cualquier copia temporal del diagnóstico en <code>audit_cache</code> y registrado su acuse conforme al Art. 32 LFPDPPP.</div>
+                    <div>Estampa UTC: <span class="text-slate-300">${data.timestamp_utc}</span></div>
+                    <div class="mt-1 text-[11px] text-emerald-300">Se ha eliminado cualquier copia temporal del diagnóstico en <code>audit_cache</code> y registrado su acuse conforme al Art. 32 LFPDPPP.</div>
                 `;
             } catch (err) {
-                box.innerHTML = `<strong class="text-red-400 block uppercase mb-1">Error al procesar la solicitud ARCO</strong><div class="text-slate-700 text-xs">Verifique su conexión e intente nuevamente o escriba a soporte@mallen.lat.</div>`;
+                box.innerHTML = `<strong class="text-red-400 block uppercase mb-1">Error al procesar la solicitud ARCO</strong><div class="text-slate-300 text-xs">Verifique su conexión e intente nuevamente o escriba a soporte@mallen.lat.</div>`;
             }
         }
     </script>

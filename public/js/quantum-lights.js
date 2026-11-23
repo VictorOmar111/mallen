@@ -180,7 +180,7 @@
     function syncScrollDimAndCursorBoost() {
         const docH = Math.max(1, document.documentElement.scrollHeight - window.innerHeight);
         const ratio = Math.min(1, Math.max(0, window.scrollY / docH));
-        document.documentElement.style.setProperty("--scroll-dim-alpha", (ratio * 0.78).toFixed(3));
+        document.documentElement.style.setProperty("--scroll-dim-alpha", "0");
         document.documentElement.style.setProperty("--cursor-beam-boost", (1.0 + ratio * 0.65).toFixed(3));
     }
 

@@ -23,21 +23,21 @@ pub async fn render_verify(id: &str) -> Html<String> {
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
     <style>
-        body {{ background-color: #f8fafc; color: #0f172a; font-family: 'Segoe UI', system-ui, sans-serif; }}
-        .card-feature {{ background: #ffffff; border: 1px solid #e2e8f0; border-radius: 12px; box-shadow: 0 10px 30px rgba(0,0,0,0.4); }}
-        .inst-box {{ background: #ffffff; border: 1px solid #e2e8f0; box-shadow: 0 1px 3px rgba(15,23,42,0.06); border-radius: 10px; transition: border-color 0.2s; }}
+        body {{ background-color: #0b132b; color: #e2e8f0; font-family: 'Segoe UI', system-ui, sans-serif; }}
+        .card-feature {{ background: #1c2541; border: 1px solid #3a506b; border-radius: 12px; box-shadow: 0 10px 30px rgba(0,0,0,0.4); }}
+        .inst-box {{ background: #0b132b; border: 1px solid #3a506b; border-radius: 10px; transition: border-color 0.2s; }}
         .inst-box:hover {{ border-color: #48cae4; }}
         .risk-card {{ background: #1b263b; border: 1px solid #e63946; border-radius: 10px; }}
-        .hash-box {{ background: #f1f5f9; border: 1px solid #cbd5e1; color: #0369a1; font-family: monospace; padding: 0.75rem; border-radius: 8px; word-break: break-all; font-size: 0.85rem; }}
+        .hash-box {{ background: #0b132b; border: 1px solid #3a506b; color: #48cae4; font-family: monospace; padding: 0.75rem; border-radius: 8px; word-break: break-all; font-size: 0.85rem; }}
         .btn-proceed {{ background: linear-gradient(135deg, #0077b6 0%, #023e8a 100%); color: #ffffff; border: 1px solid #48cae4; font-weight: 700; border-radius: 8px; padding: 0.85rem 1.75rem; transition: all 0.2s; }}
         .btn-proceed:hover {{ background: linear-gradient(135deg, #0096c7 0%, #0077b6 100%); color: #ffffff; transform: translateY(-2px); box-shadow: 0 6px 20px rgba(0,119,182,0.4); }}
     </style>
-<link rel="stylesheet" href="/css/pure-light-mode.css?v=2026.140"><script src="/js/theme-init.js?v=2026.140"></script></head>
+<script src="/js/theme-init.js?v=2026.140"></script></head>
 <body>
 
-<nav class="navbar navbar-light border-bottom" style="background: #ffffff;">
+<nav class="navbar navbar-dark border-bottom border-secondary" style="background: #0b132b;">
     <div class="container">
-        <a class="navbar-brand fw-bold text-dark fs-4" href="/">FIRMA MALLEN®</a>
+        <a class="navbar-brand fw-bold text-white fs-4" href="/">FIRMA MALLEN®</a>
         <span class="badge bg-dark border border-secondary text-info"><i class="bi bi-shield-check me-1"></i> Expediente Consultivo OSINT</span>
     </div>
 </nav>
@@ -50,9 +50,9 @@ pub async fn render_verify(id: &str) -> Html<String> {
                 <div class="d-flex flex-wrap justify-content-between align-items-center mb-4 pb-3 border-bottom border-secondary gap-2">
                     <div>
                         <span class="text-uppercase text-muted fw-bold" style="font-size: 0.8rem;">Consulta Registral Pública 360°</span>
-                        <h3 class="mb-0 fw-bold text-dark">Dictamen Pericial de Invariabilidad</h3>
+                        <h3 class="mb-0 fw-bold text-white">Dictamen Pericial de Invariabilidad</h3>
                     </div>
-                    <span class="badge bg-success text-dark px-3 py-2 rounded-pill"><i class="bi bi-check-circle-fill me-1"></i> EVALUACIÓN CONCLUIDA</span>
+                    <span class="badge bg-success text-white px-3 py-2 rounded-pill"><i class="bi bi-check-circle-fill me-1"></i> EVALUACIÓN CONCLUIDA</span>
                 </div>
 
                 <div class="row g-3 mb-4">
@@ -69,8 +69,8 @@ pub async fn render_verify(id: &str) -> Html<String> {
                 <div class="risk-card p-4 mb-4">
                     <div class="row align-items-center">
                         <div class="col-md-8">
-                            <span class="badge bg-danger text-dark mb-2"><i class="bi bi-exclamation-triangle-fill me-1"></i> Estimación Pericial en UMAs 2026</span>
-                            <h5 class="fw-bold text-dark mb-1">Riesgo Fiscal, Laboral y Administrativo Detectado</h5>
+                            <span class="badge bg-danger text-white mb-2"><i class="bi bi-exclamation-triangle-fill me-1"></i> Estimación Pericial en UMAs 2026</span>
+                            <h5 class="fw-bold text-white mb-1">Riesgo Fiscal, Laboral y Administrativo Detectado</h5>
                             <p class="text-muted small mb-0">Basado en la evaluación de vulnerabilidades registrales (SAT Art. 69-B, 39 NOMs STPS, IMSS 32-D/REPSE, SABG LFPDPPP y PROFECO Art. 76 BIS):</p>
                         </div>
                         <div class="col-md-4 text-md-end mt-3 mt-md-0">
@@ -85,13 +85,13 @@ pub async fn render_verify(id: &str) -> Html<String> {
                     <div class="hash-box">{}</div>
                 </div>
 
-                <div class="p-4 rounded-3 border border-secondary mb-4" style="background: #ffffff;">
+                <div class="p-4 rounded-3 border border-secondary mb-4" style="background: #0b132b;">
                     <div class="row align-items-center">
                         <div class="col-md-7 mb-3 mb-md-0">
                             <span class="badge bg-info text-dark mb-2 px-3 py-1">Kit de Expediente Pericial & Blindaje Normativo (.zip)</span>
-                            <h5 class="fw-bold text-dark mb-1">Activar Blindaje 360° & Descargar Expediente Criptográfico</h5>
+                            <h5 class="fw-bold text-white mb-1">Activar Blindaje 360° & Descargar Expediente Criptográfico</h5>
                             <p class="text-muted small mb-2">Incluye: Dictamen Ejecutivo PDF certificado por FIRMA MALLEN®, 10 Certificados Normativos PDF, 7 Kits Legales listos para firma autógrafa, Sello Fecha Cierta SCJN (Factura CFDI 4.0 disponible bajo solicitud).</p>
-                            <span class="fs-2 fw-bold text-dark">${} <small class="fs-6 text-muted">MXN (IVA Incluido)</small></span>
+                            <span class="fs-2 fw-bold text-white">${} <small class="fs-6 text-muted">MXN (IVA Incluido)</small></span>
                         </div>
                         <div class="col-md-5 text-md-end">
                             <a href="/checkout?ref={}" class="btn btn-proceed w-100 fs-5 shadow text-center text-decoration-none d-block">
@@ -106,7 +106,7 @@ pub async fn render_verify(id: &str) -> Html<String> {
     </div>
 </div>
 
-<footer class="text-center py-4 text-muted border-top border-secondary mt-5" style="background: #ffffff;">
+<footer class="text-center py-4 text-muted border-top border-secondary mt-5" style="background: #0b132b;">
     <small>© 2026 FIRMA MALLEN® (mallen.lat) • Todos los derechos reservados</small>
 </footer>
 

@@ -1249,24 +1249,25 @@ async fn render_checkout_page_with_state(state: Arc<AppState>, raw_ref: String) 
     <style>body {{ font-family: 'Inter', sans-serif; }} .font-mono-code {{ font-family: 'JetBrains Mono', monospace; }}</style>
     <link rel="stylesheet" href="/css/quantum-glass.css?v=2026.25">
     <script src="/js/quantum-lights.js?v=2026.25" defer></script>
-<link rel="stylesheet" href="/css/pure-light-mode.css?v=2026.140"><script src="/js/theme-init.js?v=2026.140"></script>    <link rel="stylesheet" href="/css/enterprise-linear.css?v=2026.77">
-  <link rel="stylesheet" href="/css/mallen-high-impact.css?v=2026.95">
+<script src="/js/theme-init.js?v=2026.140"></script>    <link rel="stylesheet" href="/css/enterprise-linear.css?v=2026.77">
+  <script src="/js/theme-init.js?v=2026.128"></script>
+  <link rel="stylesheet" href="/css/mallen-high-impact.css?v=2026.128">
 </head>
-<body class="bg-slate-50 text-slate-900 min-h-screen p-6 flex items-center justify-center selection:bg-blue-600 selection:text-white">
-    <div class="max-w-3xl w-full bg-white/[0.05] shadow-[0_8px_32px_rgba(0,0,0,0.5)] border border-slate-200 p-8 rounded-2xl font-mono-code text-xs shadow-2xl">
-        <div class="flex justify-between items-center mb-6 pb-4 border-b border-slate-200">
+<body class="bg-slate-950 text-slate-100 min-h-screen p-6 flex items-center justify-center selection:bg-blue-600 selection:text-white">
+    <div class="max-w-3xl w-full bg-white/[0.05] shadow-[0_8px_32px_rgba(0,0,0,0.5)] border border-white/15 p-8 rounded-2xl font-mono-code text-xs shadow-2xl">
+        <div class="flex justify-between items-center mb-6 pb-4 border-b border-white/15">
             <div>
                 <span class="text-xs font-bold text-blue-400 block uppercase">FIRMA MALLEN® • PASARELA CORPORATIVA 3D SECURE</span>
                 <span class="text-[10px] text-slate-500">Instrumentación Jurídica Personalizada + Pago 3D Secure + Sellado Criptográfico SHA-256</span>
             </div>
-            <a href="/" class="text-[10px] text-slate-600 hover:text-white transition">Volver al Portal</a>
+            <a href="/" class="text-[10px] text-slate-400 hover:text-white transition">Volver al Portal</a>
         </div>
 
-        <div class="bg-slate-50 border border-slate-200 rounded-xl p-5 mb-6 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+        <div class="bg-slate-950 border border-white/15 rounded-xl p-5 mb-6 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
             <div>
                 <span class="text-[10px] text-emerald-400 font-bold uppercase block">EXPEDIENTE CORPORATIVO DE CUMPLIMIENTO INTEGRAL</span>
                 <span class="text-sm font-bold text-white block mt-0.5">RFC: {ref_code} — Contingencia Auditada: <span class="text-red-400">${fine_formatted} MXN</span></span>
-                <span class="text-[10px] text-slate-600 block mt-1">Los datos públicos detectados por su RFC y sitio web se pre-cargan automáticamente abajo. Los campos que deje en blanco (como los datos de un proveedor específico para el Contrato Art. 69-B o los firmantes internos) se generarán con líneas jurídicas formales de llenado (____________________) para que pueda reutilizar sus contratos con múltiples proveedores.</span>
+                <span class="text-[10px] text-slate-400 block mt-1">Los datos públicos detectados por su RFC y sitio web se pre-cargan automáticamente abajo. Los campos que deje en blanco (como los datos de un proveedor específico para el Contrato Art. 69-B o los firmantes internos) se generarán con líneas jurídicas formales de llenado (____________________) para que pueda reutilizar sus contratos con múltiples proveedores.</span>
             </div>
             <div class="text-right shrink-0">
                 <span class="text-xl font-extrabold text-white">$3,000.00</span>
@@ -1286,7 +1287,7 @@ async fn render_checkout_page_with_state(state: Arc<AppState>, raw_ref: String) 
                         Inversión Única: $3,000.00 MXN
                     </span>
                 </div>
-                <div class="grid sm:grid-cols-2 gap-5 text-slate-700">
+                <div class="grid sm:grid-cols-2 gap-5 text-slate-300">
                     <div>
                         <div class="font-bold text-sky-400 mb-2">Cobertura Integral por Eje Regulador:</div>
                         <ul class="space-y-1.5 leading-relaxed list-disc pl-5">
@@ -1307,106 +1308,106 @@ async fn render_checkout_page_with_state(state: Arc<AppState>, raw_ref: String) 
             </div>
 
             <form id="checkoutForm" onsubmit="processCheckoutPayment(event)" class="space-y-5">
-            <div class="bg-slate-50 border border-slate-200 p-4 rounded-xl space-y-3">
+            <div class="bg-slate-950 border border-white/15 p-4 rounded-xl space-y-3">
                 <span class="text-[10px] font-bold text-blue-400 uppercase block">Datos Societarios, Domicilio Fiscal y Representación Legal</span>
                 <div class="grid sm:grid-cols-2 gap-3">
                     <div>
-                        <label class="text-[10px] text-slate-600 block mb-1">Denominación o Razón Social Oficial</label>
-                        <input id="pay_razon" type="text" required value="{pre_razon}" class="w-full bg-white/[0.05] shadow-[0_8px_32px_rgba(0,0,0,0.5)] border border-slate-200 rounded-lg px-3.5 py-2.5 text-white">
+                        <label class="text-[10px] text-slate-400 block mb-1">Denominación o Razón Social Oficial</label>
+                        <input id="pay_razon" type="text" required value="{pre_razon}" class="w-full bg-white/[0.05] shadow-[0_8px_32px_rgba(0,0,0,0.5)] border border-white/15 rounded-lg px-3.5 py-2.5 text-white">
                     </div>
                     <div>
-                        <label class="text-[10px] text-slate-600 block mb-1">Giro o Actividad Económica SCIAN</label>
-                        <input id="pay_giro" type="text" required value="{pre_giro}" class="w-full bg-white/[0.05] shadow-[0_8px_32px_rgba(0,0,0,0.5)] border border-slate-200 rounded-lg px-3.5 py-2.5 text-white">
+                        <label class="text-[10px] text-slate-400 block mb-1">Giro o Actividad Económica SCIAN</label>
+                        <input id="pay_giro" type="text" required value="{pre_giro}" class="w-full bg-white/[0.05] shadow-[0_8px_32px_rgba(0,0,0,0.5)] border border-white/15 rounded-lg px-3.5 py-2.5 text-white">
                     </div>
                     <div class="sm:col-span-2">
-                        <label class="text-[10px] text-slate-600 block mb-1">Domicilio Fiscal y del Centro de Trabajo</label>
-                        <input id="pay_dom" type="text" required value="{pre_dom}" class="w-full bg-white/[0.05] shadow-[0_8px_32px_rgba(0,0,0,0.5)] border border-slate-200 rounded-lg px-3.5 py-2.5 text-white">
+                        <label class="text-[10px] text-slate-400 block mb-1">Domicilio Fiscal y del Centro de Trabajo</label>
+                        <input id="pay_dom" type="text" required value="{pre_dom}" class="w-full bg-white/[0.05] shadow-[0_8px_32px_rgba(0,0,0,0.5)] border border-white/15 rounded-lg px-3.5 py-2.5 text-white">
                     </div>
                     <div>
-                        <label class="text-[10px] text-slate-600 block mb-1">Código Postal Fiscal (opcional, si solicita factura)</label>
-                        <input id="pay_cp" type="text" maxlength="5" value="{pre_cp}" class="w-full bg-white/[0.05] shadow-[0_8px_32px_rgba(0,0,0,0.5)] border border-slate-200 rounded-lg px-3.5 py-2.5 text-white">
+                        <label class="text-[10px] text-slate-400 block mb-1">Código Postal Fiscal (opcional, si solicita factura)</label>
+                        <input id="pay_cp" type="text" maxlength="5" value="{pre_cp}" class="w-full bg-white/[0.05] shadow-[0_8px_32px_rgba(0,0,0,0.5)] border border-white/15 rounded-lg px-3.5 py-2.5 text-white">
                     </div>
                     <div>
-                        <label class="text-[10px] text-slate-600 block mb-1">Entidad Federativa / Jurisdicción</label>
-                        <input id="pay_estado" type="text" required value="{pre_estado}" class="w-full bg-white/[0.05] shadow-[0_8px_32px_rgba(0,0,0,0.5)] border border-slate-200 rounded-lg px-3.5 py-2.5 text-white">
+                        <label class="text-[10px] text-slate-400 block mb-1">Entidad Federativa / Jurisdicción</label>
+                        <input id="pay_estado" type="text" required value="{pre_estado}" class="w-full bg-white/[0.05] shadow-[0_8px_32px_rgba(0,0,0,0.5)] border border-white/15 rounded-lg px-3.5 py-2.5 text-white">
                     </div>
                     <div>
-                        <label class="text-[10px] text-slate-600 block mb-1">Nombre del Representante Legal</label>
-                        <input id="pay_rep" type="text" value="{pre_rep}" class="w-full bg-white/[0.05] shadow-[0_8px_32px_rgba(0,0,0,0.5)] border border-slate-200 rounded-lg px-3.5 py-2.5 text-white">
+                        <label class="text-[10px] text-slate-400 block mb-1">Nombre del Representante Legal</label>
+                        <input id="pay_rep" type="text" value="{pre_rep}" class="w-full bg-white/[0.05] shadow-[0_8px_32px_rgba(0,0,0,0.5)] border border-white/15 rounded-lg px-3.5 py-2.5 text-white">
                     </div>
                     <div>
-                        <label class="text-[10px] text-slate-600 block mb-1">Cargo Societario del Representante</label>
-                        <input id="pay_cargo" type="text" value="{pre_cargo}" class="w-full bg-white/[0.05] shadow-[0_8px_32px_rgba(0,0,0,0.5)] border border-slate-200 rounded-lg px-3.5 py-2.5 text-white">
+                        <label class="text-[10px] text-slate-400 block mb-1">Cargo Societario del Representante</label>
+                        <input id="pay_cargo" type="text" value="{pre_cargo}" class="w-full bg-white/[0.05] shadow-[0_8px_32px_rgba(0,0,0,0.5)] border border-white/15 rounded-lg px-3.5 py-2.5 text-white">
                     </div>
                 </div>
             </div>
 
-            <div class="bg-slate-50 border border-slate-200 p-4 rounded-xl space-y-3">
+            <div class="bg-slate-950 border border-white/15 p-4 rounded-xl space-y-3">
                 <span class="text-[10px] font-bold text-emerald-400 uppercase block">Oficial de Privacidad (LFPDPPP), Contacto y Comisión Mixta STPS</span>
                 <div class="grid sm:grid-cols-3 gap-3">
                     <div>
-                        <label class="text-[10px] text-slate-600 block mb-1">Oficial de Privacidad (Art. 17)</label>
-                        <input id="pay_oficial" type="text" value="{pre_oficial}" class="w-full bg-white/[0.05] shadow-[0_8px_32px_rgba(0,0,0,0.5)] border border-slate-200 rounded-lg px-3.5 py-2.5 text-white">
+                        <label class="text-[10px] text-slate-400 block mb-1">Oficial de Privacidad (Art. 17)</label>
+                        <input id="pay_oficial" type="text" value="{pre_oficial}" class="w-full bg-white/[0.05] shadow-[0_8px_32px_rgba(0,0,0,0.5)] border border-white/15 rounded-lg px-3.5 py-2.5 text-white">
                     </div>
                     <div>
-                        <label class="text-[10px] text-slate-600 block mb-1">Correo Corporativo (ARCO y factura bajo solicitud)</label>
-                        <input id="pay_email" type="email" value="{pre_email}" class="w-full bg-white/[0.05] shadow-[0_8px_32px_rgba(0,0,0,0.5)] border border-slate-200 rounded-lg px-3.5 py-2.5 text-white">
+                        <label class="text-[10px] text-slate-400 block mb-1">Correo Corporativo (ARCO y factura bajo solicitud)</label>
+                        <input id="pay_email" type="email" value="{pre_email}" class="w-full bg-white/[0.05] shadow-[0_8px_32px_rgba(0,0,0,0.5)] border border-white/15 rounded-lg px-3.5 py-2.5 text-white">
                     </div>
                     <div>
-                        <label class="text-[10px] text-slate-600 block mb-1">Teléfono Corporativo</label>
-                        <input id="pay_tel" type="text" value="{pre_tel}" class="w-full bg-white/[0.05] shadow-[0_8px_32px_rgba(0,0,0,0.5)] border border-slate-200 rounded-lg px-3.5 py-2.5 text-white">
+                        <label class="text-[10px] text-slate-400 block mb-1">Teléfono Corporativo</label>
+                        <input id="pay_tel" type="text" value="{pre_tel}" class="w-full bg-white/[0.05] shadow-[0_8px_32px_rgba(0,0,0,0.5)] border border-white/15 rounded-lg px-3.5 py-2.5 text-white">
                     </div>
                     <div>
-                        <label class="text-[10px] text-slate-600 block mb-1">Registro Patronal IMSS</label>
-                        <input id="pay_reg_imss" type="text" value="{pre_reg_imss}" class="w-full bg-white/[0.05] shadow-[0_8px_32px_rgba(0,0,0,0.5)] border border-slate-200 rounded-lg px-3.5 py-2.5 text-white">
+                        <label class="text-[10px] text-slate-400 block mb-1">Registro Patronal IMSS</label>
+                        <input id="pay_reg_imss" type="text" value="{pre_reg_imss}" class="w-full bg-white/[0.05] shadow-[0_8px_32px_rgba(0,0,0,0.5)] border border-white/15 rounded-lg px-3.5 py-2.5 text-white">
                     </div>
                     <div>
-                        <label class="text-[10px] text-slate-600 block mb-1">Coordinador Patronal NOM-019</label>
-                        <input id="pay_coord" type="text" value="{pre_coord}" class="w-full bg-white/[0.05] shadow-[0_8px_32px_rgba(0,0,0,0.5)] border border-slate-200 rounded-lg px-3.5 py-2.5 text-white">
+                        <label class="text-[10px] text-slate-400 block mb-1">Coordinador Patronal NOM-019</label>
+                        <input id="pay_coord" type="text" value="{pre_coord}" class="w-full bg-white/[0.05] shadow-[0_8px_32px_rgba(0,0,0,0.5)] border border-white/15 rounded-lg px-3.5 py-2.5 text-white">
                     </div>
                     <div>
-                        <label class="text-[10px] text-slate-600 block mb-1">Secretario Trabajadores NOM-019</label>
-                        <input id="pay_sec" type="text" value="{pre_sec}" class="w-full bg-white/[0.05] shadow-[0_8px_32px_rgba(0,0,0,0.5)] border border-slate-200 rounded-lg px-3.5 py-2.5 text-white">
+                        <label class="text-[10px] text-slate-400 block mb-1">Secretario Trabajadores NOM-019</label>
+                        <input id="pay_sec" type="text" value="{pre_sec}" class="w-full bg-white/[0.05] shadow-[0_8px_32px_rgba(0,0,0,0.5)] border border-white/15 rounded-lg px-3.5 py-2.5 text-white">
                     </div>
                 </div>
             </div>
 
-            <div class="bg-slate-50 border border-slate-200 p-4 rounded-xl space-y-3">
+            <div class="bg-slate-950 border border-white/15 p-4 rounded-xl space-y-3">
                 <span class="text-[10px] font-bold text-purple-400 uppercase block">Datos de Contraparte para Contrato de Materialidad SAT Art. 69-B</span>
                 <div class="grid sm:grid-cols-2 gap-3">
                     <div>
-                        <label class="text-[10px] text-slate-600 block mb-1">Razón Social del Proveedor</label>
-                        <input id="pay_prov_nom" type="text" value="{pre_prov_nom}" class="w-full bg-white/[0.05] shadow-[0_8px_32px_rgba(0,0,0,0.5)] border border-slate-200 rounded-lg px-3.5 py-2.5 text-white">
+                        <label class="text-[10px] text-slate-400 block mb-1">Razón Social del Proveedor</label>
+                        <input id="pay_prov_nom" type="text" value="{pre_prov_nom}" class="w-full bg-white/[0.05] shadow-[0_8px_32px_rgba(0,0,0,0.5)] border border-white/15 rounded-lg px-3.5 py-2.5 text-white">
                     </div>
                     <div>
-                        <label class="text-[10px] text-slate-600 block mb-1">RFC del Proveedor</label>
-                        <input id="pay_prov_rfc" type="text" value="{pre_prov_rfc}" class="w-full bg-white/[0.05] shadow-[0_8px_32px_rgba(0,0,0,0.5)] border border-slate-200 rounded-lg px-3.5 py-2.5 text-white">
+                        <label class="text-[10px] text-slate-400 block mb-1">RFC del Proveedor</label>
+                        <input id="pay_prov_rfc" type="text" value="{pre_prov_rfc}" class="w-full bg-white/[0.05] shadow-[0_8px_32px_rgba(0,0,0,0.5)] border border-white/15 rounded-lg px-3.5 py-2.5 text-white">
                     </div>
                     <div class="sm:col-span-2">
-                        <label class="text-[10px] text-slate-600 block mb-1">Objeto del Servicio / Entregable Auditado (Art. 5-A y 69-B CFF)</label>
-                        <input id="pay_prov_obj" type="text" value="{pre_prov_obj}" class="w-full bg-white/[0.05] shadow-[0_8px_32px_rgba(0,0,0,0.5)] border border-slate-200 rounded-lg px-3.5 py-2.5 text-white">
+                        <label class="text-[10px] text-slate-400 block mb-1">Objeto del Servicio / Entregable Auditado (Art. 5-A y 69-B CFF)</label>
+                        <input id="pay_prov_obj" type="text" value="{pre_prov_obj}" class="w-full bg-white/[0.05] shadow-[0_8px_32px_rgba(0,0,0,0.5)] border border-white/15 rounded-lg px-3.5 py-2.5 text-white">
                     </div>
                 </div>
             </div>
 
-            <div class="bg-slate-50 border border-slate-200 p-4 rounded-xl space-y-3">
+            <div class="bg-slate-950 border border-white/15 p-4 rounded-xl space-y-3">
                 <div class="flex justify-between items-center">
                     <span class="text-[10px] font-bold text-blue-400 uppercase">Método de Pago Corporativo (Tokenización TLS 1.3 / 3DS)</span>
                     <span class="text-[10px] text-emerald-400 font-bold">Estándar PCI-DSS Nivel 1</span>
                 </div>
-                <input type="text" required value="4242 •••• •••• 4242" class="w-full bg-white/[0.05] shadow-[0_8px_32px_rgba(0,0,0,0.5)] border border-slate-200 rounded-lg px-3.5 py-2.5 text-white">
+                <input type="text" required value="4242 •••• •••• 4242" class="w-full bg-white/[0.05] shadow-[0_8px_32px_rgba(0,0,0,0.5)] border border-white/15 rounded-lg px-3.5 py-2.5 text-white">
                 <div class="grid grid-cols-2 gap-3">
-                    <input type="text" required value="12/28" class="bg-white/[0.05] shadow-[0_8px_32px_rgba(0,0,0,0.5)] border border-slate-200 rounded-lg px-3.5 py-2.5 text-white">
-                    <input type="password" required value="888" class="bg-white/[0.05] shadow-[0_8px_32px_rgba(0,0,0,0.5)] border border-slate-200 rounded-lg px-3.5 py-2.5 text-white">
+                    <input type="text" required value="12/28" class="bg-white/[0.05] shadow-[0_8px_32px_rgba(0,0,0,0.5)] border border-white/15 rounded-lg px-3.5 py-2.5 text-white">
+                    <input type="password" required value="888" class="bg-white/[0.05] shadow-[0_8px_32px_rgba(0,0,0,0.5)] border border-white/15 rounded-lg px-3.5 py-2.5 text-white">
                 </div>
             </div>
 
-            <div class="bg-slate-50 border border-slate-200 p-3.5 rounded-xl text-[10px] text-slate-600 leading-relaxed">
+            <div class="bg-slate-950 border border-white/15 p-3.5 rounded-xl text-[10px] text-slate-400 leading-relaxed">
                 <label class="flex items-start gap-2.5 cursor-pointer">
                     <input id="chk-disclaimer" type="checkbox" required checked class="mt-1 accent-emerald-500">
                     <span>
-                        <strong class="text-slate-800">Manifiesto de Alcance Pericial y Exactitud de Datos (Art. 89 C.Com):</strong> Confirmo los datos ingresados para la emisión de los 10 Certificados y Instrumentos Propietarios de Blindaje del RFC <b>{ref_code}</b>. Si requiere factura CFDI 4.0, podrá solicitarla con su Constancia de Situación Fiscal dentro del mes en curso.
-                        <span class="block text-[9px] text-slate-600 mt-1">SHA-256 Disclaimer: {disclaimer_hash}</span>
+                        <strong class="text-slate-200">Manifiesto de Alcance Pericial y Exactitud de Datos (Art. 89 C.Com):</strong> Confirmo los datos ingresados para la emisión de los 10 Certificados y Instrumentos Propietarios de Blindaje del RFC <b>{ref_code}</b>. Si requiere factura CFDI 4.0, podrá solicitarla con su Constancia de Situación Fiscal dentro del mes en curso.
+                        <span class="block text-[9px] text-slate-400 mt-1">SHA-256 Disclaimer: {disclaimer_hash}</span>
                     </span>
                 </label>
             </div>
@@ -1418,7 +1419,7 @@ async fn render_checkout_page_with_state(state: Arc<AppState>, raw_ref: String) 
 
         <div id="paymentSuccessBox" class="hidden mt-5 bg-emerald-950/40 border border-emerald-500/50 rounded-xl p-5 text-center space-y-3">
             <span class="text-emerald-400 font-bold text-sm block">PAGO 3D SECURE AUTORIZADO Y EXPEDIENTE COMPILADO</span>
-            <p class="text-slate-700 text-[11px]">Su expediente completo de 18 documentos (Dictamen Ejecutivo/Técnico de 3 páginas, 10 Certificados SHA-256 y Instrumentos Propietarios de Blindaje en formato editable Word/Markdown + Manifiesto Merkle) está listo para descarga inmediata.</p>
+            <p class="text-slate-300 text-[11px]">Su expediente completo de 18 documentos (Dictamen Ejecutivo/Técnico de 3 páginas, 10 Certificados SHA-256 y Instrumentos Propietarios de Blindaje en formato editable Word/Markdown + Manifiesto Merkle) está listo para descarga inmediata.</p>
             <a href="/download/zip/{ref_code}" class="inline-block w-full bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-3.5 rounded-xl uppercase">
                 Descargar Paquete Corporativo ZIP ({ref_code})
             </a>
@@ -1736,11 +1737,12 @@ async fn handle_privacy() -> impl IntoResponse {
     <style>body { font-family: 'Inter', sans-serif; background-color: #f8fafc; } .font-mono-code { font-family: 'JetBrains Mono', monospace; }</style>
     <link rel="stylesheet" href="/css/quantum-glass.css?v=2026.25">
     <script src="/js/quantum-lights.js?v=2026.25" defer></script>
-<link rel="stylesheet" href="/css/pure-light-mode.css?v=2026.140"><script src="/js/theme-init.js?v=2026.140"></script>  <link rel="stylesheet" href="/css/mallen-high-impact.css?v=2026.95">
+<script src="/js/theme-init.js?v=2026.140"></script>  <script src="/js/theme-init.js?v=2026.128"></script>
+  <link rel="stylesheet" href="/css/mallen-high-impact.css?v=2026.128">
 </head>
-<body class="bg-slate-50 text-slate-700 min-h-screen p-6 md:p-12 border-t-4 border-blue-600">
-    <div class="max-w-4xl mx-auto bg-white/[0.05] shadow-[0_8px_32px_rgba(0,0,0,0.5)] border border-slate-200 p-8 md:p-12 shadow-2xl rounded-2xl">
-        <div class="flex items-center justify-between pb-6 mb-8 border-b border-slate-200">
+<body class="bg-slate-950 text-slate-300 min-h-screen p-6 md:p-12 border-t-4 border-blue-600">
+    <div class="max-w-4xl mx-auto bg-white/[0.05] shadow-[0_8px_32px_rgba(0,0,0,0.5)] border border-white/15 p-8 md:p-12 shadow-2xl rounded-2xl">
+        <div class="flex items-center justify-between pb-6 mb-8 border-b border-white/15">
             <div>
                 <span class="text-xs font-bold text-blue-400 font-mono-code uppercase tracking-wider block">FIRMA MALLEN®</span>
                 <span class="text-xs text-slate-500 font-mono-code">Aviso de Privacidad Integral conforme a la LFPDPPP vigente (SABG / Transparencia para el Pueblo)</span>
@@ -1748,17 +1750,17 @@ async fn handle_privacy() -> impl IntoResponse {
             <a href="/" class="text-xs text-blue-400 hover:text-blue-300 font-mono-code transition">← Regresar al Portal</a>
         </div>
         <h1 class="text-xl font-bold text-white mb-6 tracking-tight">AVISO DE PRIVACIDAD INTEGRAL</h1>
-        <div class="space-y-6 text-xs leading-relaxed font-mono-code text-slate-600">
+        <div class="space-y-6 text-xs leading-relaxed font-mono-code text-slate-400">
             <section class="border-l-2 border-blue-500 pl-4 py-1">
-                <h2 class="text-xs font-bold text-slate-800 mb-1 uppercase font-sans">1. Identidad y Domicilio del Responsable</h2>
+                <h2 class="text-xs font-bold text-slate-200 mb-1 uppercase font-sans">1. Identidad y Domicilio del Responsable</h2>
                 <p>FIRMA MALLEN® (mallen.lat), con domicilio operativo en la Ciudad de México, Estados Unidos Mexicanos, actúa como Responsable del tratamiento de los datos personales y corporativos conforme a los Artículos 8, 15, 16 y 19 de la Ley Federal de Protección de Datos Personales en Posesión de los Particulares (LFPDPPP).</p>
             </section>
             <section class="border-l-2 border-blue-500 pl-4 py-1">
-                <h2 class="text-xs font-bold text-slate-800 mb-1 uppercase font-sans">2. Datos Objeto de Tratamiento y Sanitización PII</h2>
+                <h2 class="text-xs font-bold text-slate-200 mb-1 uppercase font-sans">2. Datos Objeto de Tratamiento y Sanitización PII</h2>
                 <p>Para la ejecución de evaluaciones de riesgo y personalización de instrumentos jurídicos, se procesan los datos societarios confirmados por el representante legal y registros públicos corporativos. Nuestro motor aplica filtros Regex de sanitización PII en tránsito.</p>
             </section>
             <section class="border-l-2 border-blue-500 pl-4 py-1">
-                <h2 class="text-xs font-bold text-slate-800 mb-1 uppercase font-sans">3. Secreto Profesional y Mecanismos ARCO (Arts. 22 a 35 LFPDPPP)</h2>
+                <h2 class="text-xs font-bold text-slate-200 mb-1 uppercase font-sans">3. Secreto Profesional y Mecanismos ARCO (Arts. 22 a 35 LFPDPPP)</h2>
                 <p>Toda la información procesada está amparada bajo el Secreto Profesional de Auditoría y Peritaje. Para el ejercicio de los Derechos de Acceso, Rectificación, Cancelación u Oposición (ARCO), envíe su solicitud a <strong>dictamenes@mallen.lat</strong> (plazo legal de respuesta: 20 días hábiles).</p>
             </section>
         </div>
@@ -1779,11 +1781,12 @@ async fn handle_terms() -> impl IntoResponse {
     <style>body { font-family: 'Inter', sans-serif; background-color: #f8fafc; } .font-mono-code { font-family: 'JetBrains Mono', monospace; }</style>
     <link rel="stylesheet" href="/css/quantum-glass.css?v=2026.25">
     <script src="/js/quantum-lights.js?v=2026.25" defer></script>
-<link rel="stylesheet" href="/css/pure-light-mode.css?v=2026.140"><script src="/js/theme-init.js?v=2026.140"></script>  <link rel="stylesheet" href="/css/mallen-high-impact.css?v=2026.95">
+<script src="/js/theme-init.js?v=2026.140"></script>  <script src="/js/theme-init.js?v=2026.128"></script>
+  <link rel="stylesheet" href="/css/mallen-high-impact.css?v=2026.128">
 </head>
-<body class="bg-slate-50 text-slate-700 min-h-screen p-6 md:p-12 border-t-4 border-indigo-600">
-    <div class="max-w-4xl mx-auto bg-white/[0.05] shadow-[0_8px_32px_rgba(0,0,0,0.5)] border border-slate-200 p-8 md:p-12 shadow-2xl rounded-2xl">
-        <div class="flex items-center justify-between pb-6 mb-8 border-b border-slate-200">
+<body class="bg-slate-950 text-slate-300 min-h-screen p-6 md:p-12 border-t-4 border-indigo-600">
+    <div class="max-w-4xl mx-auto bg-white/[0.05] shadow-[0_8px_32px_rgba(0,0,0,0.5)] border border-white/15 p-8 md:p-12 shadow-2xl rounded-2xl">
+        <div class="flex items-center justify-between pb-6 mb-8 border-b border-white/15">
             <div>
                 <span class="text-xs font-bold text-indigo-400 font-mono-code uppercase tracking-wider block">FIRMA MALLEN®</span>
                 <span class="text-xs text-slate-500 font-mono-code">Términos y Condiciones del Sistema de Auditoría 360°</span>
@@ -1791,13 +1794,13 @@ async fn handle_terms() -> impl IntoResponse {
             <a href="/" class="text-xs text-indigo-400 hover:text-indigo-300 font-mono-code transition">← Regresar al Portal</a>
         </div>
         <h1 class="text-xl font-bold text-white mb-6 tracking-tight">TÉRMINOS Y CONDICIONES Y MANIFIESTO DE ALCANCE PERICIAL</h1>
-        <div class="space-y-6 text-xs leading-relaxed font-mono-code text-slate-600">
+        <div class="space-y-6 text-xs leading-relaxed font-mono-code text-slate-400">
             <section class="border-l-2 border-indigo-500 pl-4 py-1">
-                <h2 class="text-xs font-bold text-slate-800 mb-1 uppercase font-sans">1. Personalización Jurídica Sin Suposiciones y Última Milla</h2>
+                <h2 class="text-xs font-bold text-slate-200 mb-1 uppercase font-sans">1. Personalización Jurídica Sin Suposiciones y Última Milla</h2>
                 <p>Mallen personaliza los 10 Certificados y 7 Kits Legales con los datos societarios y de representación confirmados por el cliente antes de la emisión. La impresión física y recabo de firmas autógrafas en el centro de trabajo corresponde a la representación legal de la empresa.</p>
             </section>
             <section class="border-l-2 border-indigo-500 pl-4 py-1">
-                <h2 class="text-xs font-bold text-slate-800 mb-1 uppercase font-sans">2. Inalterabilidad Criptográfica y Política de Entrega Digital</h2>
+                <h2 class="text-xs font-bold text-slate-200 mb-1 uppercase font-sans">2. Inalterabilidad Criptográfica y Política de Entrega Digital</h2>
                 <p>Cada folio de dictamen cuenta con un identificador único SHA-256 vinculado a un Árbol de Merkle en Arbitrum L2 conforme a los Artículos 89 a 94 del Código de Comercio.</p>
             </section>
         </div>
@@ -1891,23 +1894,24 @@ fn render_validez_detail(slug: &str) -> Html<String> {
     <style>body {{ font-family: 'Inter', sans-serif; }} .font-mono-code {{ font-family: 'JetBrains Mono', monospace; }}</style>
     <link rel="stylesheet" href="/css/quantum-glass.css?v=2026.25">
     <script src="/js/quantum-lights.js?v=2026.25" defer></script>
-<link rel="stylesheet" href="/css/pure-light-mode.css?v=2026.140"><script src="/js/theme-init.js?v=2026.140"></script>  <link rel="stylesheet" href="/css/mallen-high-impact.css?v=2026.95">
+<script src="/js/theme-init.js?v=2026.140"></script>  <script src="/js/theme-init.js?v=2026.128"></script>
+  <link rel="stylesheet" href="/css/mallen-high-impact.css?v=2026.128">
 </head>
-<body class="bg-slate-50 text-slate-900 min-h-screen p-6 md:p-12 border-t-4 border-emerald-500">
+<body class="bg-slate-950 text-slate-100 min-h-screen p-6 md:p-12 border-t-4 border-emerald-500">
     <div class="max-w-4xl mx-auto">
-        <div class="flex justify-between items-center pb-6 mb-8 border-b border-slate-200">
+        <div class="flex justify-between items-center pb-6 mb-8 border-b border-white/15">
             <span class="text-xs font-bold text-emerald-400 font-mono-code uppercase">{badge}</span>
-            <a href="/" class="text-xs font-mono-code text-slate-700 hover:text-white px-3 py-1.5 rounded-lg bg-white border border-slate-200 shadow-sm transition">Volver al Portal Principal</a>
+            <a href="/" class="text-xs font-mono-code text-slate-300 hover:text-white px-3 py-1.5 rounded-lg bg-slate-900 border border-white/10 transition">Volver al Portal Principal</a>
         </div>
         <div class="quantum-laser-console rounded-2xl p-8 mb-8">
             <h1 class="text-2xl sm:text-3xl font-extrabold text-white mb-2">{title}</h1>
-            <p class="text-sm text-slate-700 font-mono-code mb-4">{subtitle}</p>
+            <p class="text-sm text-slate-300 font-mono-code mb-4">{subtitle}</p>
             <span class="inline-block text-[11px] font-mono-code text-emerald-300 bg-emerald-950/60 border border-emerald-500/30 px-3 py-1 rounded-lg">{legal_basis}</span>
         </div>
-        <div class="quantum-card rounded-2xl p-8 space-y-4 text-xs font-mono-code text-slate-800 leading-relaxed">
+        <div class="quantum-card rounded-2xl p-8 space-y-4 text-xs font-mono-code text-slate-200 leading-relaxed">
             <p>{body_p1}</p>
             <p>{body_p2}</p>
-            <div class="pt-4 border-t border-slate-200 flex justify-end">
+            <div class="pt-4 border-t border-white/15 flex justify-end">
                 <a href="/#express-check" class="bg-gradient-to-r from-blue-600 to-emerald-600 text-white font-bold px-6 py-3 rounded-xl uppercase">Auditar mi RFC</a>
             </div>
         </div>
@@ -2043,7 +2047,8 @@ async fn handle_dedicated_normativa_page() -> impl IntoResponse {
   <script src="https://cdn.tailwindcss.com"></script>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="/css/enterprise-linear.css?v=2026.77">
-  <link rel="stylesheet" href="/css/mallen-high-impact.css?v=2026.95">
+  <script src="/js/theme-init.js?v=2026.128"></script>
+  <link rel="stylesheet" href="/css/mallen-high-impact.css?v=2026.128">
 </head>
 <body class="min-h-screen flex flex-col">
   <header class="border-b px-6 py-4">
@@ -2063,42 +2068,42 @@ async fn handle_dedicated_normativa_page() -> impl IntoResponse {
     <div>
       <span class="text-xs font-semibold uppercase text-emerald-400">Enciclopedia Regulatoria Especializada</span>
       <h1 class="text-3xl font-extrabold text-white mt-1">Directorio Normativo Federal: 39 NOMs STPS y 37 Vectores de Inspección</h1>
-      <p class="text-base text-slate-700 mt-2">Consulte los criterios de inspección federal, fundamentos legales vigentes y lineamientos técnicos preventivos clasificados por autoridad reguladora.</p>
+      <p class="text-base text-slate-300 mt-2">Consulte los criterios de inspección federal, fundamentos legales vigentes y lineamientos técnicos preventivos clasificados por autoridad reguladora.</p>
     </div>
     <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
       <a href="/normas/stps" class="mallen-surface-card p-6 block">
         <span class="font-mono-data text-xs text-emerald-400 font-bold">STPS • 39 NOMs</span>
         <h2 class="text-lg font-bold text-white mt-1">Seguridad, Salud, NOM-035, NOM-037 y Comisiones Mixtas</h2>
-        <p class="text-sm text-slate-700 mt-2">Inspección laboral federal, ergonomía, teletrabajo y condiciones generales de trabajo.</p>
+        <p class="text-sm text-slate-300 mt-2">Inspección laboral federal, ergonomía, teletrabajo y condiciones generales de trabajo.</p>
       </a>
       <a href="/normas/sat" class="mallen-surface-card p-6 block">
         <span class="font-mono-data text-xs text-emerald-400 font-bold">SAT • CFF Arts. 69-B y 32-B Ter</span>
         <h2 class="text-lg font-bold text-white mt-1">Materialidad Fiscal, Razón de Negocios y Beneficiario Controlador</h2>
-        <p class="text-sm text-slate-700 mt-2">Prevención de presunción EFOS/EDOS, Carta Porte 3.1 y expedientes de fecha cierta.</p>
+        <p class="text-sm text-slate-300 mt-2">Prevención de presunción EFOS/EDOS, Carta Porte 3.1 y expedientes de fecha cierta.</p>
       </a>
       <a href="/normas/imss" class="mallen-surface-card p-6 block">
         <span class="font-mono-data text-xs text-emerald-400 font-bold">IMSS • INFONAVIT • REPSE</span>
         <h2 class="text-lg font-bold text-white mt-1">Clasificación de Riesgo (Art. 196 RACERF), SUA e Informativas</h2>
-        <p class="text-sm text-slate-700 mt-2">Siniestralidad laboral, integración salarial y validación de contratistas especializados.</p>
+        <p class="text-sm text-slate-300 mt-2">Siniestralidad laboral, integración salarial y validación de contratistas especializados.</p>
       </a>
       <a href="/normas/inai" class="mallen-surface-card p-6 block">
         <span class="font-mono-data text-xs text-emerald-400 font-bold">LFPDPPP • SABG</span>
         <h2 class="text-lg font-bold text-white mt-1">Protección de Datos Personales, Derechos ARCO y Seguridad Web</h2>
-        <p class="text-sm text-slate-700 mt-2">Avisos de privacidad integrales, encargados de tratamiento cloud y cifrado TLS.</p>
+        <p class="text-sm text-slate-300 mt-2">Avisos de privacidad integrales, encargados de tratamiento cloud y cifrado TLS.</p>
       </a>
       <a href="/normas/pld" class="mallen-surface-card p-6 block">
         <span class="font-mono-data text-xs text-emerald-400 font-bold">LFPIORPI • UIF • CNBV</span>
         <h2 class="text-lg font-bold text-white mt-1">Prevención de Operaciones con Recursos de Procedencia Ilícita</h2>
-        <p class="text-sm text-slate-700 mt-2">Actividades vulnerables (Art. 17), expedientes KYC y umbrales de aviso en UMAs.</p>
+        <p class="text-sm text-slate-300 mt-2">Actividades vulnerables (Art. 17), expedientes KYC y umbrales de aviso en UMAs.</p>
       </a>
       <a href="/normas/comercio" class="mallen-surface-card p-6 block">
         <span class="font-mono-data text-xs text-emerald-400 font-bold">PROFECO • COFEPRIS • PIPC</span>
         <h2 class="text-lg font-bold text-white mt-1">Comercio Digital (Art. 76 BIS LFPC), Sanidad y Protección Civil</h2>
-        <p class="text-sm text-slate-700 mt-2">Términos de e-commerce, avisos sanitarios DIGIPRIS y programas internos locales.</p>
+        <p class="text-sm text-slate-300 mt-2">Términos de e-commerce, avisos sanitarios DIGIPRIS y programas internos locales.</p>
       </a>
     </div>
   </main>
-  <script src="/js/quantum-lights.js?v=2026.77"></script>
+  <script src="/js/quantum-lights.js?v=2026.128"></script>
 </body>
 </html>"#;
     Html(html.to_string())
@@ -2114,7 +2119,8 @@ async fn handle_dedicated_radar_dof_page() -> impl IntoResponse {
   <script src="https://cdn.tailwindcss.com"></script>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="/css/enterprise-linear.css?v=2026.77">
-  <link rel="stylesheet" href="/css/mallen-high-impact.css?v=2026.95">
+  <script src="/js/theme-init.js?v=2026.128"></script>
+  <link rel="stylesheet" href="/css/mallen-high-impact.css?v=2026.128">
 </head>
 <body class="min-h-screen flex flex-col">
   <header class="border-b px-6 py-4">
@@ -2134,11 +2140,11 @@ async fn handle_dedicated_radar_dof_page() -> impl IntoResponse {
     <div>
       <span class="text-xs font-semibold uppercase text-emerald-400">Monitoreo Normativo Federal</span>
       <h1 class="text-3xl font-extrabold text-white mt-1">Radar Regulatorio Diario — Publicaciones del DOF, SAT y STPS</h1>
-      <p class="text-base text-slate-700 mt-2">Consulte los acuerdos, reformas y criterios de inspección vigentes y su impacto por sector SCIAN.</p>
+      <p class="text-base text-slate-300 mt-2">Consulte los acuerdos, reformas y criterios de inspección vigentes y su impacto por sector SCIAN.</p>
     </div>
     <div id="radar-dof-dedicated-feed" class="grid md:grid-cols-2 gap-5"></div>
   </main>
-  <script src="/js/quantum-lights.js?v=2026.77"></script>
+  <script src="/js/quantum-lights.js?v=2026.128"></script>
   <script>
     fetch('/api/regulatory_news')
       .then(function(r){ return r.json(); })
@@ -2152,7 +2158,7 @@ async fn handle_dedicated_radar_dof_page() -> impl IntoResponse {
               '<span>' + (n.published_at || '') + '</span>' +
             '</div>' +
             '<h2 class="text-lg font-bold text-white mb-2">' + (n.title || '') + '</h2>' +
-            '<p class="text-sm text-slate-700 mb-4">' + (n.summary || '') + '</p>' +
+            '<p class="text-sm text-slate-300 mb-4">' + (n.summary || '') + '</p>' +
             '<a href="/?rfc=' + encodeURIComponent(n.scian_prefix || '') + '" class="mallen-btn-secondary px-3.5 py-2 text-xs inline-block">Evaluar impacto en mi empresa</a>' +
           '</div>';
         }).join('');
