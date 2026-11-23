@@ -645,7 +645,58 @@ fn get_category_data(
     }
 }
 
+fn render_encyclopedia_nav(category: &str, compact: bool) -> String {
+    let active_cat = match category.trim().to_lowercase().as_str() {
+        "stps" => "stps",
+        "sat" => "sat",
+        "imss" => "imss",
+        "inai" => "inai",
+        "pld" => "pld",
+        _ => "comercio",
+    };
+
+    let pad = if compact { "px-2.5 py-1" } else { "px-3 py-1.5" };
+    let items: [(&str, &str, &str, &str); 6] = [
+        ("stps", "STPS (39 NOMs)", "STPS", "blue"),
+        ("sat", "SAT / CFF", "SAT", "emerald"),
+        ("imss", "IMSS / INFONAVIT", "IMSS", "purple"),
+        ("inai", "LFPDPPP / SABG", "LFPDPPP", "cyan"),
+        ("pld", "9 Sectoriales & PLD", "Sectoriales", "amber"),
+        ("comercio", "PROFECO & NOM-151", "PROFECO", "teal"),
+    ];
+
+    let mut out = String::from(r#"<div class="flex flex-wrap gap-2 text-[11px] font-mono-code">"#);
+    for (slug, full_lbl, short_lbl, accent) in items {
+        let label = if compact { short_lbl } else { full_lbl };
+        if active_cat == slug {
+            out.push_str(&format!(
+                r##"<a href="/normas/{slug}" aria-current="page" class="mallen-nav-pill-active {pad} rounded-lg bg-{accent}-600/25 border border-{accent}-400 text-white font-extrabold ring-1 ring-{accent}-400/60 shadow-sm transition">{label}</a>"##,
+                slug = slug,
+                pad = pad,
+                accent = accent,
+                label = label
+            ));
+        } else {
+            out.push_str(&format!(
+                r##"<a href="/normas/{slug}" class="{pad} rounded-lg bg-slate-900 border border-white/10 hover:border-{accent}-400 text-slate-300 transition">{label}</a>"##,
+                slug = slug,
+                pad = pad,
+                accent = accent,
+                label = label
+            ));
+        }
+    }
+
+    out.push_str(&format!(
+        r##"<a href="/" class="{pad} rounded-lg bg-slate-900/80 hover:bg-slate-800 text-slate-200 border border-white/15 font-semibold transition">Portal Principal</a>"##,
+        pad = pad
+    ));
+    out.push_str("</div>");
+    out
+}
+
 pub fn render_norma_category(category: &str) -> Html<String> {
+    let nav_html = render_encyclopedia_nav(category, false);
     let (siglas, titulo, subtitulo, resumen_ejecutivo, color_tw, border_top, normas) =
         get_category_data(category);
 
@@ -742,7 +793,7 @@ pub fn render_norma_category(category: &str) -> Html<String> {
     <style>body {{ font-family: 'Inter', sans-serif; }} .font-mono-code {{ font-family: 'JetBrains Mono', monospace; }}</style>
     <link rel="stylesheet" href="/css/enterprise-linear.css?v=2026.103">
     <script src="/js/quantum-lights.js?v=2026.103" defer></script>
-<script src="/js/theme-init.js?v=2026.103"></script>  <link rel="stylesheet" href="/css/mallen-high-impact.css?v=2026.128">
+<script src="/js/theme-init.js?v=2026.103"></script>  <link rel="stylesheet" href="/css/mallen-high-impact.css?v=2026.130">
 </head>
 <body class="bg-slate-950 text-slate-100 min-h-screen p-4 sm:p-8 border-t-4 {border_top}">
     <div class="max-w-7xl mx-auto">
@@ -751,15 +802,7 @@ pub fn render_norma_category(category: &str) -> Html<String> {
                 <span class="text-xs font-bold text-{color_tw}-400 font-mono-code uppercase tracking-wider block">FIRMA MALLEN® • CENTRO DE CUMPLIMIENTO Y RENDIMIENTO EMPRESARIAL</span>
                 <span class="text-xs text-slate-400 font-mono-code">{siglas}</span>
             </div>
-            <div class="flex flex-wrap gap-2 text-[11px] font-mono-code">
-                <a href="/normas/stps" class="px-3 py-1.5 rounded-lg bg-slate-900 border border-white/10 hover:border-blue-400 text-slate-300 transition">STPS (39 NOMs)</a>
-                <a href="/normas/sat" class="px-3 py-1.5 rounded-lg bg-slate-900 border border-white/10 hover:border-emerald-400 text-slate-300 transition">SAT / CFF</a>
-                <a href="/normas/imss" class="px-3 py-1.5 rounded-lg bg-slate-900 border border-white/10 hover:border-purple-400 text-slate-300 transition">IMSS / INFONAVIT</a>
-                <a href="/normas/inai" class="px-3 py-1.5 rounded-lg bg-slate-900 border border-white/10 hover:border-cyan-400 text-slate-300 transition">LFPDPPP / SABG</a>
-                <a href="/normas/pld" class="px-3 py-1.5 rounded-lg bg-slate-900 border border-white/10 hover:border-amber-400 text-slate-300 transition">9 Sectoriales & PLD</a>
-                <a href="/normas/comercio" class="px-3 py-1.5 rounded-lg bg-slate-900 border border-white/10 hover:border-teal-400 text-slate-300 transition">PROFECO & NOM-151</a>
-                <a href="/" class="px-3 py-1.5 rounded-lg bg-{color_tw}-600 text-white font-bold transition">Portal Principal</a>
-            </div>
+            {nav_html}
         </div>
 
         <div class="quantum-laser-console rounded-2xl p-6 mb-8">
@@ -791,13 +834,15 @@ pub fn render_norma_category(category: &str) -> Html<String> {
         siglas = siglas,
         subtitulo = subtitulo,
         resumen_ejecutivo = resumen_ejecutivo,
-        modulos_html = modulos_html
+        modulos_html = modulos_html,
+        nav_html = nav_html
     );
 
     Html(html)
 }
 
 pub fn render_subnorma_detail(category: &str, code_idx: &str) -> Html<String> {
+    let nav_html = render_encyclopedia_nav(category, true);
     let (siglas, titulo, _sub, _res, color_tw, border_top, normas) =
         get_category_data(category);
 
@@ -857,7 +902,7 @@ pub fn render_subnorma_detail(category: &str, code_idx: &str) -> Html<String> {
     <style>body {{ font-family: 'Inter', sans-serif; }} .font-mono-code {{ font-family: 'JetBrains Mono', monospace; }}</style>
     <link rel="stylesheet" href="/css/enterprise-linear.css?v=2026.103">
     <script src="/js/quantum-lights.js?v=2026.103" defer></script>
-<script src="/js/theme-init.js?v=2026.103"></script>  <link rel="stylesheet" href="/css/mallen-high-impact.css?v=2026.128">
+<script src="/js/theme-init.js?v=2026.103"></script>  <link rel="stylesheet" href="/css/mallen-high-impact.css?v=2026.130">
 </head>
 <body class="bg-slate-950 text-slate-100 min-h-screen p-4 sm:p-8 border-t-4 {border_top}">
     <div class="max-w-5xl mx-auto">
@@ -868,15 +913,7 @@ pub fn render_subnorma_detail(category: &str, code_idx: &str) -> Html<String> {
                 </a>
                 <span class="text-[11px] text-slate-400 font-mono-code block">{siglas}</span>
             </div>
-            <div class="flex flex-wrap gap-2 text-[11px] font-mono-code">
-                <a href="/normas/stps" class="px-2.5 py-1 rounded-lg bg-slate-900 border border-white/10 hover:border-blue-400 text-slate-300 transition">STPS</a>
-                <a href="/normas/sat" class="px-2.5 py-1 rounded-lg bg-slate-900 border border-white/10 hover:border-emerald-400 text-slate-300 transition">SAT</a>
-                <a href="/normas/imss" class="px-2.5 py-1 rounded-lg bg-slate-900 border border-white/10 hover:border-purple-400 text-slate-300 transition">IMSS</a>
-                <a href="/normas/inai" class="px-2.5 py-1 rounded-lg bg-slate-900 border border-white/10 hover:border-cyan-400 text-slate-300 transition">LFPDPPP</a>
-                <a href="/normas/pld" class="px-2.5 py-1 rounded-lg bg-slate-900 border border-white/10 hover:border-amber-400 text-slate-300 transition">Sectoriales</a>
-                <a href="/normas/comercio" class="px-2.5 py-1 rounded-lg bg-slate-900 border border-white/10 hover:border-teal-400 text-slate-300 transition">PROFECO</a>
-                <a href="/" class="px-3 py-1 rounded-lg bg-{color_tw}-600 text-white font-bold transition">Portal Principal</a>
-            </div>
+            {nav_html}
         </div>
 
         <div class="quantum-laser-console rounded-2xl p-6 sm:p-8 mb-8">
@@ -987,7 +1024,8 @@ pub fn render_subnorma_detail(category: &str, code_idx: &str) -> Html<String> {
         pasos_li = pasos_li,
         entregable = n.entregable_kit,
         cat_upper = category.to_uppercase(),
-        otros_html = otros_html
+        otros_html = otros_html,
+        nav_html = nav_html
     );
 
     Html(html)
