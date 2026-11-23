@@ -496,7 +496,16 @@ async fn handle_live_scan(
     let is_fallback = master_report.razon_social.starts_with("REGISTRO NO INDEXADO") 
         || master_report.domicilio_fiscal_o_denue.contains("Territorio Nacional");
         
-    if is_fallback && master_report.web_telemetry.target_url.is_empty() {
+    let s69b_up = master_report.sat_69b_status.to_uppercase();
+    let has_active_69b = !s69b_up.contains("LIMPIO")
+        && !s69b_up.contains("SIN ANTECEDENTES")
+        && !s69b_up.contains("DESVIRTUADO")
+        && !s69b_up.contains("SENTENCIA FAVORABLE")
+        && !s69b_up.contains("NO_CANONIC");
+    let has_active_69 = !master_report.sat_69_status.to_uppercase().contains("LIMPIO");
+    let has_federal_alert = has_active_69b || has_active_69 || master_report.sfp_sanctioned;
+
+    if is_fallback && master_report.web_telemetry.target_url.is_empty() && !has_federal_alert {
         master_report.findings.clear();
         master_report.risk_score = 0;
         master_report.total_estimated_fine_mxn = 0.0;

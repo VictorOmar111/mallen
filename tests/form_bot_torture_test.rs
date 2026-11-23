@@ -2600,34 +2600,34 @@ async fn test_http_form_bot_14_scenarios_with_real_db_companies() {
         use worker_inegi_engine::engine::pdf_generator::{build_adaptive_prospect_outreach, build_scian_sector_hook};
         let deep_sectors = [
             ("722514", "Restaurantes", 45u32, "Restaurantes"),
-            ("311811", "Panaderia industrial", 40, "Alimentaria"),
-            ("312111", "Bebidas", 60, "Bebidas"),
-            ("541510", "Desarrollo de software", 52, "Software"),
-            ("517311", "Telecomunicaciones", 80, "Telecomunicaciones"),
-            ("236221", "Construccion industrial", 120, "Construcción"),
+            ("311811", "Panaderia industrial", 40, "Panificación"),
+            ("312111", "Bebidas", 60, "refrescos"),
+            ("541510", "Desarrollo de software", 52, "diseño"),
+            ("517311", "Telecomunicaciones", 80, "Operadores"),
+            ("236221", "Construccion industrial", 120, "Edificación"),
             ("212221", "Mineria", 300, "Minería"),
-            ("221111", "Energia electrica", 150, "Energía"),
-            ("541941", "Clinica veterinaria", 12, "Veterinarios"),
-            ("621211", "Laboratorio dental", 18, "Dentales"),
-            ("621341", "Clinica rehabilitacion", 25, "Fisioterapia"),
+            ("221111", "Energia electrica", 150, "Generación"),
+            ("541941", "Clinica veterinaria", 12, "veterinarios"),
+            ("621211", "Laboratorio dental", 18, "dentales"),
+            ("621341", "Clinica rehabilitacion", 25, "audiología"),
             ("622111", "Hospital privado", 320, "Hospitales"),
-            ("484129", "Autotransporte de carga", 90, "Transporte"),
-            ("488511", "Agencia aduanal", 35, "Aduanales"),
-            ("492110", "Mensajeria y paqueteria", 70, "Paquetería"),
-            ("467111", "Ferreteria y materiales", 22, "Ferreterías"),
-            ("468411", "Estacion de servicio", 30, "Gasolineras"),
-            ("524110", "Seguros y fianzas", 65, "Seguros"),
+            ("484129", "Autotransporte de carga", 90, "autotransporte"),
+            ("488511", "Agencia aduanal", 35, "agencias"),
+            ("492110", "Mensajeria y paqueteria", 70, "mensajería"),
+            ("467111", "Ferreteria y materiales", 22, "ferreterías"),
+            ("468411", "Estacion de servicio", 30, "gasolina"),
+            ("524110", "Seguros y fianzas", 65, "Compañías"),
             ("541120", "Notaria publica", 16, "Notarías"),
-            ("561422", "Call center", 110, "Call Centers"),
-            ("561610", "Seguridad privada", 140, "Seguridad Privada"),
-            ("713941", "Gimnasio deportivo", 28, "Gimnasios"),
-            ("812110", "Estetica y spa", 14, "Estéticas"),
-            ("332310", "Metalmecanica", 85, "Metalmecánica"),
+            ("561422", "Call center", 110, "recepción"),
+            ("561610", "Seguridad privada", 140, "investigación"),
+            ("713941", "Gimnasio deportivo", 28, "Clubes"),
+            ("812110", "Estetica y spa", 14, "Salones"),
+            ("332310", "Metalmecanica", 85, "estructuras"),
         ];
-        for (sc, desc, emp, _expected_lbl) in deep_sectors {
+        for (sc, desc, emp, expected_lbl) in deep_sectors {
             let (lbl, pain, sol) = build_scian_sector_hook(sc, desc, emp);
             assert!(
-                lbl.trim().len() >= 8 && !pain.contains("(SCIAN") && pain.len() > 60 && ["SAT","STPS","PROFECO","COFEPRIS","LFPDPPP","Protección Civil","PIPC","REPSE","IMSS","LFPIORPI","Carta Porte","SEMARNAT","SICT","Beneficiario Controlador","NOM-"].iter().any(|k| pain.contains(k)),
+                expected_lbl.to_lowercase().split(|c: char| !c.is_alphanumeric()).filter(|w| !w.is_empty()).all(|ew| lbl.to_lowercase().split(|c: char| !c.is_alphanumeric()).any(|w| w == ew)) && lbl.trim().chars().count() >= 8 && !pain.contains("(SCIAN") && pain.chars().count() > 55 && (pain.to_lowercase().split(|c: char| !c.is_alphanumeric()).any(|w| ["sat","stps","profeco","cofepris","lfpdppp","pipc","repse","imss","lfpiorpi","semarnat","sict"].contains(&w)) || ["protección civil","carta porte","beneficiario controlador","nom-"].iter().any(|ph| pain.to_lowercase().contains(ph))),
                 "Desfase o contenido pobre en sector SCIAN {} -> lbl='{}'",
                 sc, lbl
             );
@@ -2649,26 +2649,26 @@ async fn test_http_form_bot_14_scenarios_with_real_db_companies() {
         }
         // Validar los 20 nuevos giros SCIAN (95 totales) y generar log completo + muestra aleatoria
         let new_20_probes = [
-            ("468111", "Agencia Automotriz del Centro", 85u32, "Agencias Automotrices"),
-            ("532110", "Rentadora de Autos Ejecutivos", 28, "Rentadoras de Autos"),
-            ("462111", "Supermercados y Autoservicios del Norte", 340, "Supermercados"),
-            ("462210", "Tiendas Departamentales Reforma", 480, "Tiendas Departamentales"),
-            ("311812", "Pasteleria y Reposteria Artesanal", 22, "Pastelerías"),
-            ("311611", "Empacadora de Carnes del Bajio", 150, "Carnicerías"),
-            ("621320", "Clinica Oftalmologica Vision", 32, "Oftalmológicas"),
+            ("468111", "Agencia Automotriz del Centro", 85u32, "automóviles"),
+            ("532110", "Rentadora de Autos Ejecutivos", 28, "Alquiler"),
+            ("462111", "Supermercados y Autoservicios del Norte", 340, "supermercados"),
+            ("462210", "Tiendas Departamentales Reforma", 480, "tiendas"),
+            ("311812", "Pasteleria y Reposteria Artesanal", 22, "Panificación"),
+            ("311611", "Empacadora de Carnes del Bajio", 150, "Matanza"),
+            ("621320", "Clinica Oftalmologica Vision", 32, "optometría"),
             ("621330", "Centro de Psicologia y Bienestar", 14, "Psicología"),
             ("621340", "Centro de Fisioterapia Deportiva", 19, "Fisioterapia"),
-            ("611311", "Universidad Tecnologica del Pacifico", 410, "Universidades"),
-            ("611121", "Colegio Privado Bilingue", 95, "Escuelas"),
-            ("236111", "Constructora de Vivienda Residencial", 290, "Vivienda"),
-            ("237312", "Obra Civil y Carreteras del Sureste", 520, "Obra Civil"),
-            ("238210", "Contratistas Electricos Industriales", 65, "Contratistas"),
-            ("484210", "Mudanzas y Fletes Nacionales", 44, "Mudanzas"),
-            ("492110", "Paqueteria Internacional Express", 270, "Paquetería"),
+            ("611311", "Universidad Tecnologica del Pacifico", 410, "educación"),
+            ("611121", "Colegio Privado Bilingue", 95, "educación"),
+            ("236111", "Constructora de Vivienda Residencial", 290, "Edificación"),
+            ("237312", "Obra Civil y Carreteras del Sureste", 520, "carreteras"),
+            ("238210", "Contratistas Electricos Industriales", 65, "Instalaciones"),
+            ("484210", "Mudanzas y Fletes Nacionales", 44, "mudanzas"),
+            ("492110", "Paqueteria Internacional Express", 270, "mensajería"),
             ("541611", "Consultoria Financiera Estrategica", 35, "Consultoras Financieras"),
-            ("522460", "Casa de Empeno y Prestamos", 55, "Casas de Empeño"),
-            ("713910", "Club Deportivo y Campo de Golf", 130, "Clubes"),
-            ("722320", "Servicios de Catering y Banquetes", 48, "Catering"),
+            ("522460", "Casa de Empeno y Prestamos", 55, "Sociedades"),
+            ("713910", "Club Deportivo y Campo de Golf", 130, "Campos"),
+            ("722320", "Servicios de Catering y Banquetes", 48, "preparación"),
         ];
         let mut full_log = String::from("=== LOG COMPLETO DE MENSAJES FORMBOT (95 GIROS SCIAN — SIN SCIAN EN TEXTO NI PREGUNTA DE CIERRE) ===\n\n");
         let seed = std::time::SystemTime::now()
@@ -2676,10 +2676,10 @@ async fn test_http_form_bot_14_scenarios_with_real_db_companies() {
             .map(|d| d.subsec_nanos() as usize)
             .unwrap_or(7);
         let mut rendered_msgs: Vec<(String, String)> = Vec::new();
-        for (idx_s, (sc_s, nom_s, emp_s, _exp_lbl)) in new_20_probes.iter().enumerate() {
+        for (idx_s, (sc_s, nom_s, emp_s, exp_lbl)) in new_20_probes.iter().enumerate() {
             let (lbl_s, pain_s, _) = build_scian_sector_hook(sc_s, nom_s, *emp_s);
             assert!(
-                lbl_s.trim().len() >= 8 && !pain_s.contains("(SCIAN") && !pain_s.contains('?') && pain_s.len() > 60 && ["SAT","STPS","PROFECO","COFEPRIS","LFPDPPP","Protección Civil","PIPC","REPSE","IMSS","LFPIORPI","Carta Porte","SEMARNAT","SICT","Beneficiario Controlador","NOM-"].iter().any(|k| pain_s.contains(k)),
+                exp_lbl.to_lowercase().split(|c: char| !c.is_alphanumeric()).filter(|w| !w.is_empty()).all(|ew| lbl_s.to_lowercase().split(|c: char| !c.is_alphanumeric()).any(|w| w == ew)) && lbl_s.trim().chars().count() >= 8 && !pain_s.contains("(SCIAN") && !pain_s.contains('?') && pain_s.chars().count() > 55 && (pain_s.to_lowercase().split(|c: char| !c.is_alphanumeric()).any(|w| ["sat","stps","profeco","cofepris","lfpdppp","pipc","repse","imss","lfpiorpi","semarnat","sict"].contains(&w)) || ["protección civil","carta porte","beneficiario controlador","nom-"].iter().any(|ph| pain_s.to_lowercase().contains(ph))),
                 "Fallo en nuevo giro {} -> {}", sc_s, lbl_s
             );
             let msg_s = if *emp_s > 250 {

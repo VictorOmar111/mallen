@@ -3208,7 +3208,7 @@ pub fn build_scian_sector_hook(scian_code: &str, actividad_desc: &str, emp_count
         let pain = "en clínicas oftalmológicas, el foco suele estar en el consentimiento expreso de expedientes clínicos (LFPDPPP) y los requisitos COFEPRIS".to_string();
         return ("Clínicas Oftalmológicas", pain, String::new());
     } else if sc.starts_with("62133") {
-        let pain = "en centros de psicología y salud mental, lo más sensible en una revisión es el resguardo reforzado de datos clínicos sensibles y avisos de privacidad".to_string();
+        let pain = "en centros de psicología y salud mental, lo más sensible en una revisión es el resguardo reforzado de datos clínicos sensibles y avisos de privacidad (LFPDPPP)".to_string();
         return ("Psicología y Salud Mental", pain, String::new());
     } else if sc.starts_with("62134") {
         let pain = "en centros de fisioterapia y rehabilitación, el punto crítico suele ser el manejo de expedientes de salud y la vigilancia sanitaria COFEPRIS".to_string();
