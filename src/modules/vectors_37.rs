@@ -506,7 +506,7 @@ pub fn evaluate_all_37_vectors(
     );
 
     // ==================== II. SAT / CFF (6 MÓDULOS FISCALES) ====================
-    let is_69b_bad = !sat_69b_status.to_uppercase().contains("LIMPIO") && !sat_69b_status.to_uppercase().contains("SIN ANTECEDENTES");
+    let is_69b_bad = !sat_69b_status.to_uppercase().contains("LIMPIO") && !sat_69b_status.to_uppercase().contains("SIN ANTECEDENTES") && !sat_69b_status.to_uppercase().contains("NO_CANONIC");
     add(
         "SAT",
         "Art. 69-B CFF • SCJN 2a./J. 161/2019",

@@ -2052,7 +2052,12 @@ fn build_report_typst_markup_full(
             .or_else(|| tokens.iter().copied().find(|t| *t != "541610").map(|s| s.to_string()))
             .or_else(|| tokens.first().copied().map(|s| s.to_string()))
             .unwrap_or_else(|| "541610".to_string());
-        let resolved_emp = fb_emp.unwrap_or(20_u32);
+        let intel_cold = extract_deep_denue_360_intelligence(tax_id);
+        let resolved_emp = if intel_cold.estimated_employees > 0 && !intel_cold.razon_social.starts_with("RFC ") {
+            intel_cold.estimated_employees
+        } else {
+            fb_emp.unwrap_or(20_u32)
+        };
         (
             clean_scian.clone(),
             resolved_emp,
