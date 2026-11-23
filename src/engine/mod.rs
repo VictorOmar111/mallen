@@ -16,5 +16,6 @@ pub mod pdf_generator;
 pub mod processor;
 pub mod risk_evaluator;
 pub mod rules;
+pub mod scian_catalog_6d;
 pub mod sat_billing;
 pub mod storage;

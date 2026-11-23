@@ -1247,7 +1247,6 @@ async fn render_checkout_page_with_state(state: Arc<AppState>, raw_ref: String) 
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
     <style>body {{ font-family: 'Inter', sans-serif; }} .font-mono-code {{ font-family: 'JetBrains Mono', monospace; }}</style>
-    <link rel="stylesheet" href="/css/quantum-glass.css?v=2026.25">
     <script src="/js/quantum-lights.js?v=2026.25" defer></script>
 <script src="/js/theme-init.js?v=2026.140"></script>    <link rel="stylesheet" href="/css/enterprise-linear.css?v=2026.77">
   <script src="/js/theme-init.js?v=2026.128"></script>
@@ -1735,7 +1734,6 @@ async fn handle_privacy() -> impl IntoResponse {
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
     <style>body { font-family: 'Inter', sans-serif; background-color: #f8fafc; } .font-mono-code { font-family: 'JetBrains Mono', monospace; }</style>
-    <link rel="stylesheet" href="/css/quantum-glass.css?v=2026.25">
     <script src="/js/quantum-lights.js?v=2026.25" defer></script>
 <script src="/js/theme-init.js?v=2026.140"></script>  <script src="/js/theme-init.js?v=2026.128"></script>
   <link rel="stylesheet" href="/css/mallen-high-impact.css?v=2026.128">
@@ -1779,7 +1777,6 @@ async fn handle_terms() -> impl IntoResponse {
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
     <style>body { font-family: 'Inter', sans-serif; background-color: #f8fafc; } .font-mono-code { font-family: 'JetBrains Mono', monospace; }</style>
-    <link rel="stylesheet" href="/css/quantum-glass.css?v=2026.25">
     <script src="/js/quantum-lights.js?v=2026.25" defer></script>
 <script src="/js/theme-init.js?v=2026.140"></script>  <script src="/js/theme-init.js?v=2026.128"></script>
   <link rel="stylesheet" href="/css/mallen-high-impact.css?v=2026.128">
@@ -1892,7 +1889,6 @@ fn render_validez_detail(slug: &str) -> Html<String> {
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
     <style>body {{ font-family: 'Inter', sans-serif; }} .font-mono-code {{ font-family: 'JetBrains Mono', monospace; }}</style>
-    <link rel="stylesheet" href="/css/quantum-glass.css?v=2026.25">
     <script src="/js/quantum-lights.js?v=2026.25" defer></script>
 <script src="/js/theme-init.js?v=2026.140"></script>  <script src="/js/theme-init.js?v=2026.128"></script>
   <link rel="stylesheet" href="/css/mallen-high-impact.css?v=2026.128">

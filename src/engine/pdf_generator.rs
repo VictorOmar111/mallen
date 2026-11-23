@@ -3159,6 +3159,11 @@ fn humanize_company_display_name(raw: &str) -> String {
 
 pub fn build_scian_sector_hook(scian_code: &str, actividad_desc: &str, emp_count: u32) -> (&'static str, String, String) {
     let sc = scian_code.trim();
+    if sc.len() == 6 {
+        if let Some((lbl, pain, sol)) = crate::engine::scian_catalog_6d::lookup_scian_6d(sc) {
+            return (lbl, pain.to_string(), sol.to_string());
+        }
+    }
     if sc.starts_with("4681") {
         let pain = "en agencias automotrices, lo que más suele revisarse es la trazabilidad de operaciones vulnerables (LFPIORPI) y los contratos de adhesión ante PROFECO".to_string();
         return ("Agencias Automotrices", pain, String::new());
