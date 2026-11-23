@@ -1149,9 +1149,10 @@ pub fn extract_deep_denue_360_intelligence(query_rfc_or_name: &str) -> Corporate
                 out.estimated_employees = dynamic_emp_sum.max(1);
                 out.headcount_source_type = "ESTRATO_OFICIAL_INEGI".to_string();
 
+                let sc_d = out.codigo_scian.as_str();
                 let (_, _, _, _, _, _, _, denue_cents, denue_score) = compute_ssot_exact_totals_cents(
                     &out.razon_social,
-                    &out.codigo_scian,
+                    sc_d,
                     out.estimated_employees,
                     "LIMPIO",
                     "LIMPIO",
@@ -1163,13 +1164,13 @@ pub fn extract_deep_denue_360_intelligence(query_rfc_or_name: &str) -> Corporate
                     false,
                     true,
                     true,
-                    false,
+                    sc_d.starts_with("31") || sc_d.starts_with("32") || sc_d.starts_with("33") || sc_d.starts_with("722"),
                     true,
-                    false,
+                    sc_d.starts_with("811") || sc_d.starts_with("31") || sc_d.starts_with("32") || sc_d.starts_with("62"),
                     true,
                     true,
-                    false,
-                    false,
+                    sc_d.starts_with("48") || sc_d.starts_with("49") || sc_d.starts_with("43"),
+                    sc_d.starts_with("52") || sc_d.starts_with("53") || sc_d.starts_with("23"),
                     None,
                 );
                 out.exact_vemp_fine_mxn = (denue_cents as f64) / 100.0;
