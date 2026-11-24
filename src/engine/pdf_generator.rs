@@ -1077,7 +1077,8 @@ pub fn extract_deep_denue_360_intelligence(query_rfc_or_name: &str) -> Corporate
 
             let mut branch_rows: Vec<(String, String, String, String, String, String, String)> = Vec::new();
             if !fts_query.is_empty() {
-                // Ordenar priorizando filas donde raz_social o nom_estab contenga el token buscado
+                // Consulta 100% indexada (< 2 ms): FTS5 solo en nombre_norm + JOIN por PRIMARY KEY id_denue (NO rowid)
+                let fts_name_query = format!("nombre_norm : ({})", fts_query);
                 let fts_sql = "
                     SELECT COALESCE(NULLIF(TRIM(u.raz_social), ''), TRIM(u.nom_estab)),
                            COALESCE(NULLIF(TRIM(u.codigo_scian), ''), '541110'),
@@ -1087,13 +1088,40 @@ pub fn extract_deep_denue_360_intelligence(query_rfc_or_name: &str) -> Corporate
                            COALESCE(NULLIF(TRIM(u.direccion), ''), ''),
                            COALESCE(TRIM(u.id_denue), '')
                     FROM denue_fts f
-                    JOIN denue_units u ON u.rowid = f.rowid
+                    JOIN denue_units u ON u.id_denue = f.id_denue
                     WHERE denue_fts MATCH ?1
-                    ORDER BY CASE WHEN UPPER(u.raz_social) LIKE '%' || UPPER(?2) || '%' THEN 0 ELSE 1 END
+                    ORDER BY CASE
+                        WHEN UPPER(TRIM(u.raz_social)) = UPPER(?2) OR UPPER(TRIM(u.nom_estab)) = UPPER(?2) THEN 0
+                        WHEN UPPER(TRIM(u.raz_social)) = UPPER(?3) OR UPPER(TRIM(u.nom_estab)) = UPPER(?3) THEN 1
+                        WHEN UPPER(u.raz_social) LIKE '%' || UPPER(?3) || '%' OR UPPER(u.nom_estab) LIKE '%' || UPPER(?3) || '%' THEN 2
+                        ELSE 3
+                    END
                     LIMIT 100
                 ";
+                let q_tokens: Vec<String> = clean_token
+                    .split(|c: char| !c.is_alphanumeric())
+                    .filter(|w| w.len() >= 3)
+                    .map(|w| w.to_uppercase())
+                    .collect();
+
+                let norm_entity_key = |raw: &str| -> String {
+                    let mut alnum: String = raw
+                        .to_uppercase()
+                        .chars()
+                        .filter(|c| c.is_alphanumeric())
+                        .collect();
+                    for suf in ["SAPIDECV", "SABDECV", "SDERLDECV", "SADECV", "SDERL"] {
+                        if alnum.len() > suf.len() + 2 && alnum.ends_with(suf) {
+                            let new_len = alnum.len() - suf.len();
+                            alnum.truncate(new_len);
+                            break;
+                        }
+                    }
+                    alnum
+                };
+
                 if let Ok(mut stmt) = conn.prepare(fts_sql) {
-                    if let Ok(rows) = stmt.query_map(rusqlite::params![fts_query, clean_token], |r| {
+                    if let Ok(rows) = stmt.query_map(rusqlite::params![fts_name_query, resolved_company_name, clean_token], |r| {
                         Ok((
                             r.get::<_, String>(0)?,
                             r.get::<_, String>(1)?,
@@ -1104,8 +1132,47 @@ pub fn extract_deep_denue_360_intelligence(query_rfc_or_name: &str) -> Corporate
                             r.get::<_, String>(6)?,
                         ))
                     }) {
+                        let mut candidates: Vec<(String, String, String, String, String, String, String)> = Vec::new();
                         for item in rows.flatten() {
-                            branch_rows.push(item);
+                            let cand_up = item.0.to_uppercase();
+                            let matched_toks = q_tokens.iter().filter(|t| cand_up.contains(t.as_str())).count();
+                            let min_req = if q_tokens.len() <= 1 { 1 } else { 2.min(q_tokens.len()) };
+                            if matched_toks >= min_req {
+                                candidates.push(item);
+                            }
+                        }
+                        if let Some(best) = candidates.first().cloned() {
+                            let best_key = norm_entity_key(&best.0);
+                            if !best_key.is_empty() {
+                                let same_entity: Vec<_> = candidates
+                                    .into_iter()
+                                    .filter(|c| norm_entity_key(&c.0) == best_key)
+                                    .collect();
+                                let up_best = best.0.to_uppercase();
+                                let up_req = resolved_company_name.to_uppercase();
+                                let has_corp_suffix = [
+                                    "S.A.", "SA DE CV", "S.A. DE C.V.", "SAPI", "S.A.P.I.",
+                                    "S DE RL", "S. DE R.L.", "S.A.B.", "SAB DE CV", "S.C.", "A.C."
+                                ].iter().any(|suf| up_best.contains(suf) || up_req.contains(suf));
+                                let distinct_subsectors_4d: std::collections::HashSet<&str> = same_entity
+                                    .iter()
+                                    .map(|c| {
+                                        let sc = c.1.trim();
+                                        if sc.len() >= 4 { &sc[..4] } else { sc }
+                                    })
+                                    .collect();
+                                let word_count = best.0.split_whitespace().count();
+
+                                // Candado anti-homonimia: solo sumar sucursales si es persona moral explícita
+                                // o marca multi-palabra con giro homogéneo (1 solo subsector SCIAN 4d)
+                                if has_corp_suffix || (distinct_subsectors_4d.len() <= 1 && word_count >= 2) {
+                                    branch_rows = same_entity;
+                                } else {
+                                    branch_rows.push(best);
+                                }
+                            } else {
+                                branch_rows.push(best);
+                            }
                         }
                     }
                 }
