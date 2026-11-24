@@ -1605,9 +1605,12 @@ async fn handle_payment_webhook(
     headers: HeaderMap,
     body_text: String,
 ) -> impl IntoResponse {
-    let stripe_key = std::env::var("STRIPE_SECRET_KEY").unwrap_or_default();
     let webhook_secret = std::env::var("STRIPE_WEBHOOK_SECRET").unwrap_or_default();
-    if !webhook_secret.trim().is_empty() {
+    let has_wh_secret = !webhook_secret.trim().is_empty();
+    let allow_sim = std::env::var("MALLEN_ALLOW_SIMULATED_WEBHOOK")
+        .map(|v| v.trim() == "1")
+        .unwrap_or(false);
+    if has_wh_secret {
         let sig = headers
             .get("stripe-signature")
             .and_then(|v| v.to_str().ok())
@@ -1618,14 +1621,30 @@ async fn handle_payment_webhook(
                 Json(json!({"error": "Firma Stripe-Signature inválida"})),
             );
         }
-    } else if !stripe_key.trim().is_empty() {
+    } else if !allow_sim {
         return (
             StatusCode::SERVICE_UNAVAILABLE,
-            Json(json!({"error": "STRIPE_WEBHOOK_SECRET obligatorio cuando STRIPE_SECRET_KEY está activo"})),
+            Json(json!({"error": "STRIPE_WEBHOOK_SECRET requerido (webhook en modo fail-closed)"})),
         );
     }
 
     let parsed: Value = serde_json::from_str(&body_text).unwrap_or_else(|_| json!({}));
+    if has_wh_secret {
+        let event_type = parsed["type"].as_str().unwrap_or("");
+        if event_type != "checkout.session.completed" {
+            return (
+                StatusCode::OK,
+                Json(json!({"status": "IGNORED_EVENT_TYPE", "type": event_type})),
+            );
+        }
+        let pay_status = parsed["data"]["object"]["payment_status"].as_str().unwrap_or("");
+        if pay_status != "paid" && pay_status != "no_payment_required" {
+            return (
+                StatusCode::OK,
+                Json(json!({"status": "IGNORED_UNPAID_SESSION", "payment_status": pay_status})),
+            );
+        }
+    }
     let event_id = parsed["id"]
         .as_str()
         .unwrap_or("evt_simulated_local")
