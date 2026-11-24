@@ -161,7 +161,15 @@ async fn ingest_sat_69(pool: &SqlitePool, path: &str) -> Result<usize, Box<dyn s
         let raw_rfc = clean_field(&rec, 0);
         let Some(rfc) = normalize_canonical_rfc(&raw_rfc) else { continue };
         let razon = clean_field(&rec, 1);
-        let supuesto = clean_field(&rec, 2);
+        let col3 = clean_field(&rec, 3);
+        let col2 = clean_field(&rec, 2);
+        let supuesto = if !col3.is_empty() {
+            col3
+        } else if col2 != "F" && col2 != "M" {
+            col2
+        } else {
+            String::new()
+        };
 
         sqlx::query(
             "INSERT OR REPLACE INTO sat_69_incumplidos (rfc, razon_social, supuesto) VALUES (?1, ?2, ?3)",
