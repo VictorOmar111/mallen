@@ -1631,7 +1631,7 @@ async fn handle_payment_webhook(
     let parsed: Value = serde_json::from_str(&body_text).unwrap_or_else(|_| json!({}));
     if has_wh_secret {
         let event_type = parsed["type"].as_str().unwrap_or("");
-        if event_type != "checkout.session.completed" {
+        if event_type != "checkout.session.completed" && event_type != "checkout.session.async_payment_succeeded" {
             return (
                 StatusCode::OK,
                 Json(json!({"status": "IGNORED_EVENT_TYPE", "type": event_type})),

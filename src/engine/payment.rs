@@ -51,6 +51,7 @@ pub async fn create_checkout_session(
         ("client_reference_id", prospect_id.to_string()),
         ("metadata[tax_id]", prospect_id.to_string()),
         ("payment_method_options[card][request_three_d_secure]", "any".to_string()),
+        ("payment_method_options[card][installments][enabled]", "true".to_string()),
         ("line_items[0][price_data][currency]", "mxn".to_string()),
         ("line_items[0][price_data][unit_amount]", amount_centavos.to_string()),
         (
