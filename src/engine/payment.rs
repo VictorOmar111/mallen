@@ -145,7 +145,24 @@ impl StripeDisputeGuard {
         mac.update(signed_payload.as_bytes());
         let expected_hex = hex::encode(mac.finalize().into_bytes());
 
-        expected_hex.eq_ignore_ascii_case(v1_sig)
+        if !expected_hex.eq_ignore_ascii_case(v1_sig) {
+            return false;
+        }
+
+        // Tolerancia anti-replay estándar de Stripe: +/- 300 segundos (fail-closed)
+        let Ok(ts_i64) = timestamp.trim().parse::<i64>() else {
+            return false;
+        };
+        let Ok(dur) = std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH) else {
+            return false;
+        };
+        let now_i64 = dur.as_secs() as i64;
+        if now_i64.saturating_sub(ts_i64).saturating_abs() > 300 {
+            eprintln!("[STRIPE] Webhook autenticado rechazado: timestamp fuera de ventana (+/-300s)");
+            return false;
+        }
+
+        true
     }
 
     /// Calcula el hash SHA-256 inmutable del texto del Disclaimer Pericial aceptado en el Checkout.
