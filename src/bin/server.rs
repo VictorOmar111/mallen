@@ -615,6 +615,28 @@ async fn handle_live_scan(
             master_report.total_max_fine_mxn = ((unified_360.exact_vemp_fine_mxn * 2.25) * 100.0).round() / 100.0;
         }
     }
+    if !master_report.tax_id.trim().to_uppercase().starts_with("MALLEN") {
+        let prev_hash = master_report.audit_sha256_hash.clone();
+        let prev_total_cents: i64 = (master_report.total_estimated_fine_mxn * 100.0).round() as i64;
+        let prev_sum_cents: i64 = master_report
+            .findings
+            .iter()
+            .map(|f| (f.estimated_fine_mxn * 100.0).round() as i64)
+            .sum();
+        worker_inegi_engine::engine::pdf_generator::sync_master_ssot_in_place(&mut master_report);
+        let new_total_cents: i64 = (master_report.total_estimated_fine_mxn * 100.0).round() as i64;
+        let new_sum_cents: i64 = master_report
+            .findings
+            .iter()
+            .map(|f| (f.estimated_fine_mxn * 100.0).round() as i64)
+            .sum();
+        if prev_total_cents != new_total_cents
+            || prev_sum_cents != new_sum_cents
+            || prev_hash != master_report.audit_sha256_hash
+        {
+            let _ = state.db.save_audit_session(&tax_key, &master_report, false).await;
+        }
+    }
     let _ev = worker_inegi_engine::engine::pdf_generator::record_forensic_dom_evidence(
         &master_report.tax_id,
         &master_report.web_telemetry.target_url,

@@ -16,3 +16,4 @@ data/*.csv
 .env.*
 data/formbot_messages_audit.log
 data/*.bak
+__pycache__/
