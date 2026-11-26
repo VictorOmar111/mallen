@@ -65,25 +65,39 @@ pub fn classify_imss_risk_by_scian(scian: &str) -> (&'static str, &'static str, 
 
 /// Limpia direcciones corruptas del CSV del DENUE como "CALLE PRIVADA, COL. , C.P. COLONIA, ,"
 pub fn sanitize_denue_address(raw_dir: &str, raw_ent: &str, _id_denue: &str) -> String {
-    let cleaned = raw_dir
-        .replace("C.P. COLONIA", "")
-        .replace("C.P. ,", "")
-        .replace("COL. ,", "")
-        .replace("COL. NINGUNO", "")
-        .replace("CALLE NINGUNO", "")
-        .replace("NINGUNO", "");
-
-    let parts: Vec<String> = cleaned
+    let parts: Vec<String> = raw_dir
         .split(',')
-        .map(|s| s.trim().to_string())
-        .filter(|s| {
-            !s.is_empty()
-                && s != "COL."
-                && s != "C.P."
-                && s != "CALLE"
-                && s != "PRIVADA"
-                && s != "CALLE PRIVADA"
-                && s.len() > 2
+        .filter_map(|seg| {
+            let norm = seg.split_whitespace().collect::<Vec<_>>().join(" ");
+            let up = norm.to_uppercase();
+            if up.is_empty()
+                || matches!(
+                    up.as_str(),
+                    "COL." | "C.P." | "CP." | "CP" | "CALLE" | "CALLE CALLE" | "PRIVADA"
+                    | "CALLE PRIVADA" | "NINGUNO" | "COL. NINGUNO" | "CALLE NINGUNO" | "C.P. COLONIA"
+                )
+            {
+                return None;
+            }
+            let prefix_len = if up.starts_with("C.P.") || up.starts_with("C.P ") {
+                Some(4)
+            } else if up.starts_with("CP.") || up.starts_with("CP ") {
+                Some(3)
+            } else {
+                None
+            };
+            if let Some(plen) = prefix_len {
+                let r_norm = norm[plen..].trim();
+                let r_up = r_norm.to_uppercase();
+                if r_up.len() == 5 && r_up.bytes().all(|b| b.is_ascii_digit()) {
+                    return Some(format!("C.P. {}", r_up));
+                }
+                if r_up.is_empty() || matches!(r_up.as_str(), "COLONIA" | "NINGUNO" | "S/N" | "SN") {
+                    return None;
+                }
+                return Some(r_norm.to_string());
+            }
+            if norm.len() > 2 { Some(norm) } else { None }
         })
         .collect();
 

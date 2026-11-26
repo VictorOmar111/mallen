@@ -347,11 +347,11 @@ Dictamen pericial compilado específicamente para *"{{EMPRESA_NOMBRE}}"* (`{{EMP
       #text(size: 6.1pt, fill: rgb("#1e293b"))[
         *A. 10 Certificados de Acreditación Normativa (PDF Sellados SHA-256):*
         #linebreak()
-        10 Constancias Digitales de Acreditación Normativa (STPS, SAT, IMSS, LFPDPPP/SABG, Protección Civil y PROFECO) selladas con huella SHA-256 (Desglose técnico reservado dentro del archivo .ZIP).
+        10 Constancias Digitales de Acreditación Normativa (STPS NOM-019/030/035/037, SAT 69-B, IMSS 32-D, LFPDPPP/SABG, Protección Civil PIPC, PROFECO 76 BIS y NOM-151) selladas con huella SHA-256.
         #v(0.18em)
         *B. 7 Instrumentos Jurídicos Editables (Word-HTML y PDF Listos para Firma):*
         #linebreak()
-        7 Instrumentos Jurídicos, Actas Constitutivas, Políticas y Contratos Marco parametrizados específicamente al giro SCIAN y plantilla de la empresa (Títulos y clausulado reservados para descarga exclusiva en el Kit .ZIP acreditado).
+        7 Instrumentos Jurídicos Editables (1. Aviso Integral LFPDPPP, 2. Política NOM-035, 3. Acta Comisión Mixta NOM-019/030, 4. Política Teletrabajo NOM-037, 5. Contrato Marco 69-B, 6. Protocolo IMSS/REPSE/PIPC y 7. Términos E-Commerce Art. 76 BIS) en PDF y Word-HTML.
       ]
     ]
   ]

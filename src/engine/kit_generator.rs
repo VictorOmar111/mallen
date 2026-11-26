@@ -63,9 +63,13 @@ fn build_base_compliance_documents_inner(
     dossier: &LegalDossierInput,
     master_opt_in: Option<&AuditMasterJson>,
 ) -> Vec<GeneratedKitDocument> {
-    let tax_id = empresa.tax_id.as_deref().unwrap_or(&empresa.id);
+    let tax_id = empresa
+        .tax_id
+        .as_deref()
+        .filter(|t| !t.trim().is_empty())
+        .unwrap_or(&empresa.id);
     let recovered_snap = crate::engine::pdf_generator::upgrade_or_recover_ssot_master(tax_id, &empresa.nombre, master_opt_in);
-    let master_opt = recovered_snap.as_ref();
+    let master_opt = recovered_snap.as_ref().or(master_opt_in);
     let fecha = Utc::now().format("%d/%m/%Y").to_string();
 
     // 1. Extracción exacta del código SCIAN desde AuditMasterJson o EmpresaB2B
@@ -120,8 +124,18 @@ fn build_base_compliance_documents_inner(
 
     // 3. Variables pre-llenadas solo con datos reales; si no existen, línea formal de llenado
     let razon_social = pick_known_or_blank(&dossier.razon_social_oficial, &empresa.nombre, BLANK_LINE);
-    let domicilio = pick_known_or_blank(&dossier.domicilio_fiscal_completo, &empresa.direccion, BLANK_LINE);
-    let cp_fiscal = pick_known_or_blank(&dossier.codigo_postal_fiscal, "", BLANK_SHORT);
+    let dir_sanitized = crate::modules::vectors_37::sanitize_denue_address(
+        &empresa.direccion,
+        &empresa.estado,
+        &empresa.id,
+    );
+    let domicilio = pick_known_or_blank(&dossier.domicilio_fiscal_completo, &dir_sanitized, BLANK_LINE);
+    let cp_fiscal = match dossier.codigo_postal_fiscal.as_deref().map(str::trim) {
+        Some(c) if !c.is_empty() && !domicilio.to_uppercase().contains("C.P.") => {
+            format!(", C.P. {}", c)
+        }
+        _ => String::new(),
+    };
     let jurisdiccion = pick_known_or_blank(&dossier.entidad_jurisdiccion, &empresa.estado, BLANK_SHORT);
     let giro_scian = pick_known_or_blank(&dossier.giro_scian_descripcion, &scian_desc_clean, &scian_desc_clean);
     let email_arco = pick_known_or_blank(&dossier.email_arco_privacidad, &empresa.email, BLANK_LINE);
@@ -321,14 +335,14 @@ Cualquier autoridad administrativa, cliente corporativo o auditor externo puede 
 r#"# AVISO DE PRIVACIDAD INTEGRAL, FORMATO DE CONSENTIMIENTO EXPRESO Y DESIGNACIÓN DEL DEPARTAMENTO DE DATOS PERSONALES
 **Sujeto Obligado / Responsable:** {razon} | **RFC:** {rfc}
 **Giro Económico SCIAN:** {giro} | **Plantilla Parametrizada:** {emp} colaboradores
-**Domicilio para Oír y Recibir Notificaciones:** {domicilio}, C.P. {cp}, {jurisdiccion}
+**Domicilio para Oír y Recibir Notificaciones:** {domicilio}{cp}, {jurisdiccion}
 **Titular / Encargado del Departamento de Datos Personales (Art. 30 LFPDPPP):** {oficial}
 **Medio Oficial para Ejercicio de Derechos ARCO:** {email} | **Teléfono:** {tel}
 
 ---
 
 ### I. IDENTIDAD Y DOMICILIO DEL RESPONSABLE (ARTS. 8, 15 Y 16 LFPDPPP)
-**{razon}** (con Registro Federal de Contribuyentes **{rfc}**), representada legalmente por **{rep_legal}** (Carácter / Cargo: **{cargo}**, Instrumento Público N° {escritura}), con domicilio convencional y fiscal en **{domicilio}, C.P. {cp}, {jurisdiccion}**, es el responsable del tratamiento legítimo, controlado e informado de sus datos personales, financieros/patrimoniales y sensibles, en estricto cumplimiento a la Ley Federal de Protección de Datos Personales en Posesión de los Particulares (LFPDPPP), su Reglamento y los Lineamientos vigentes ante la Autoridad Garante Federal (Secretaría Anticorrupción y Buen Gobierno — SABG).
+**{razon}** (con Registro Federal de Contribuyentes **{rfc}**), representada legalmente por **{rep_legal}** (Carácter / Cargo: **{cargo}**, Instrumento Público N° {escritura}), con domicilio convencional y fiscal en **{domicilio}{cp}, {jurisdiccion}**, es el responsable del tratamiento legítimo, controlado e informado de sus datos personales, financieros/patrimoniales y sensibles, en estricto cumplimiento a la Ley Federal de Protección de Datos Personales en Posesión de los Particulares (LFPDPPP), su Reglamento y los Lineamientos vigentes ante la Autoridad Garante Federal (Secretaría Anticorrupción y Buen Gobierno — SABG).
 
 ### II. DESIGNACIÓN DEL DEPARTAMENTO DE DATOS PERSONALES (ARTS. 19 Y 30 LFPDPPP)
 Para dar cumplimiento al Artículo 30 de la LFPDPPP, el Responsable designa a **{oficial}** a cargo del Departamento de Protección de Datos Personales, quien tiene la encomienda de dar trámite a las solicitudes de los titulares para el ejercicio de los Derechos ARCO, así como de resguardar y actualizar el **Documento de Seguridad Administrativo, Físico y Técnico (Art. 19 LFPDPPP)**.
@@ -357,7 +371,7 @@ Yo, _________________________________________________________, declaro que me ha
 | **{rep_legal}** | **{oficial}** | ________________________________________ |
 | Cargo: {cargo} | Medio ARCO: {email} | Fecha de Suscripción: ____/____/2026 |
 
-*Infraestructura Documental FIRMA MALLEN® • Fecha de Compilación: {fecha} • Sello SHA-256:* `{hash}`
+Infraestructura Documental FIRMA MALLEN® • Fecha de Compilación: {fecha} • Sello SHA-256: {hash}
 "#,
                 razon = razon_social, rfc = tax_id, giro = giro_scian, emp = emp_count,
                 domicilio = domicilio, cp = cp_fiscal, jurisdiccion = jurisdiccion,
@@ -376,7 +390,7 @@ Yo, _________________________________________________________, declaro que me ha
             content: format!(
 r#"# POLÍTICA DE PREVENCIÓN DE RIESGOS PSICOSOCIALES Y PROTOCOLO DE ACTUACIÓN (NOM-035-STPS-2018)
 **Patrón / Razón Social:** {razon} | **RFC:** {rfc} | **Registro Patronal IMSS:** {reg_patronal}
-**Domicilio del Centro de Trabajo:** {domicilio}, C.P. {cp}, {jurisdiccion}
+**Domicilio del Centro de Trabajo:** {domicilio}{cp}, {jurisdiccion}
 **Actividad Económica SCIAN:** {giro} | **Plantilla del Centro de Trabajo:** {emp} trabajadores
 **Fundamento Legal:** Artículos 132 Fracc. XVI y 994 Fracc. V de la Ley Federal del Trabajo; Numerales 5.1, 7.1, 8.1 y Guía de Referencia IV de la NOM-035-STPS-2018.
 
@@ -427,7 +441,7 @@ r#"# ACTA DE CONSTITUCIÓN DE LA COMISIÓN MIXTA DE SEGURIDAD E HIGIENE (NOM-019
 ### I. DATOS DEL CENTRO DE TRABAJO (REQUISITOS DEL NUMERAL 7.4 INCISO A DE LA NOM-019-STPS-2011)
 1. **Nombre, Denominación o Razón Social:** {razon}
 2. **Registro Federal de Contribuyentes (RFC):** {rfc} | **Registro Patronal IMSS:** {reg_patronal}
-3. **Domicilio Completo del Centro de Trabajo:** {domicilio}, C.P. {cp}, {jurisdiccion}
+3. **Domicilio Completo del Centro de Trabajo:** {domicilio}{cp}, {jurisdiccion}
 4. **Teléfono:** {tel} | **Correo Electrónico:** {email}
 5. **Rama o Actividad Económica (SCIAN):** {giro}
 6. **Clasificación de Riesgo IMSS de Referencia:** {clase_prima}
@@ -443,7 +457,7 @@ En la localidad de **{jurisdiccion}**, siendo las ______ horas del día ____ de 
 En este mismo acto, con fundamento en el Numeral 4.1 de la **NOM-030-STPS-2009**, el patrón designa formalmente a **{csh_coord}** como **Responsable de los Servicios Preventivos de Seguridad y Salud en el Trabajo**, quien coordinará la elaboración del Diagnóstico Integral de Seguridad y Salud y el Programa Anual de Recorridos Trimestrales sobre las Normas Oficiales Mexicanas aplicables al giro **{giro}**:
 - **Marco Técnico de NOMs STPS a Verificar en Recorridos:** {noms_scian}
 
-*Infraestructura Documental FIRMA MALLEN® • Fecha de Compilación: {fecha} • Sello SHA-256:* `{hash}`
+Infraestructura Documental FIRMA MALLEN® • Fecha de Compilación: {fecha} • Sello SHA-256: {hash}
 "#,
                 razon = razon_social, rfc = tax_id, reg_patronal = reg_patronal,
                 domicilio = domicilio, cp = cp_fiscal, jurisdiccion = jurisdiccion,
@@ -464,7 +478,7 @@ En este mismo acto, con fundamento en el Numeral 4.1 de la **NOM-030-STPS-2009**
             content: format!(
 r#"# POLÍTICA DE TELETRABAJO, CONVENIO MODIFICATORIO (ART. 330-B LFT), DERECHO A LA DESCONEXIÓN DIGITAL Y LISTA DE VERIFICACIÓN ERGONÓMICA (NOM-037-STPS-2023)
 **Patrón:** {razon} ({rfc}) | **Giro SCIAN:** {giro}
-**Domicilio Presencial del Centro de Trabajo:** {domicilio}, C.P. {cp}, {jurisdiccion}
+**Domicilio Presencial del Centro de Trabajo:** {domicilio}{cp}, {jurisdiccion}
 **Fundamento Legal:** Artículos 330-A al 330-K de la Ley Federal del Trabajo y Numerales 5.2, 5.4, 7.1 y Guía de Referencia I de la NOM-037-STPS-2023.
 
 ---
@@ -490,7 +504,7 @@ Para ser requisitada por el trabajador y validada por la Comisión de Seguridad 
 | :--- | :--- | :--- |
 | **{rep_legal}** ({cargo}) | Nombre y Firma: ________________________ | **{csh_coord}** |
 
-*Infraestructura Documental FIRMA MALLEN® • Fecha de Compilación: {fecha} • Sello SHA-256:* `{hash}`
+Infraestructura Documental FIRMA MALLEN® • Fecha de Compilación: {fecha} • Sello SHA-256: {hash}
 "#,
                 razon = razon_social, rfc = tax_id, giro = giro_scian,
                 domicilio = domicilio, cp = cp_fiscal, jurisdiccion = jurisdiccion,
@@ -513,7 +527,7 @@ r#"# CONTRATO MARCO DE PRESTACIÓN DE SERVICIOS Y SUMINISTRO CON CLÁUSULAS DE M
 ---
 
 ### DECLARACIONES DE LAS PARTES CONTRATANTES
-1. **Declara "EL CLIENTE" ({razon}):** Ser una sociedad mercantil o contribuyente legalmente inscrito bajo las leyes mexicanas, con RFC **{rfc}**, actividad económica registrada **{giro}**, con domicilio fiscal en **{domicilio}, C.P. {cp}, {jurisdiccion}**, representada en este acto por **{rep_legal}** en su carácter de **{cargo}** (según consta en el Instrumento Público N° {escritura}).
+1. **Declara "EL CLIENTE" ({razon}):** Ser una sociedad mercantil o contribuyente legalmente inscrito bajo las leyes mexicanas, con RFC **{rfc}**, actividad económica registrada **{giro}**, con domicilio fiscal en **{domicilio}{cp}, {jurisdiccion}**, representada en este acto por **{rep_legal}** en su carácter de **{cargo}** (según consta en el Instrumento Público N° {escritura}).
 2. **Declara "EL PROVEEDOR" ({prov_nombre}):** Ser una persona moral o física con actividad empresarial inscrita en el Registro Federal de Contribuyentes con clave **{prov_rfc}**, con domicilio fiscal localizado en ________________________________________________________, representada por ________________________________________ (Instrumento Público N° ____________________), declarando bajo protesta de decir verdad que cuenta con activos, personal propio, infraestructura y capacidad material directa para ejecutar el objeto de este contrato, que su Opinión de Cumplimiento 32-D es **POSITIVA** y que no se encuentra en los listados de los Artículos 69 ni 69-B del Código Fiscal de la Federación.
 
 ---
@@ -559,7 +573,7 @@ r#"# PROTOCOLO DE CONCILIACIÓN PATRONAL IMSS (SUA / RACERF), LISTA DE VERIFICAC
 **Giro SCIAN:** {giro} | **Plantilla Parametrizada:** {emp} trabajadores
 **Clasificación de Riesgo IMSS de Referencia (Art. 196 RACERF):** {clase_prima}
 **Folio REPSE (En caso de prestar o contratar servicios especializados):** {repse}
-**Domicilio del Establecimiento:** {domicilio}, C.P. {cp}, {jurisdiccion}
+**Domicilio del Establecimiento:** {domicilio}{cp}, {jurisdiccion}
 
 ---
 
@@ -570,13 +584,13 @@ Para prevenir diferencias por Salario Base de Cotización (Arts. 27 a 30 LSS) y 
 
 ### 2. CHECKLIST MENSUAL DE BLINDAJE SOLIDARIO EN SUBCONTRATACIÓN ESPECIALIZADA (ART. 15-A LSS Y ART. 27 FRACC. V LISR)
 Cuando **{razon}** contrate servicios u obras especializadas con terceros (Contratista: **{prov_nombre}** — RFC: **{prov_rfc}**), será requisito previo al pago marcar y archivar mensualmente los siguientes 7 comprobantes obligatorios:
-- `[ ]` **1. Registro REPSE vigente:** Copia del aviso de registro ante la STPS (Folio: {repse}).
-- `[ ]` **2. CFDI de Nómina:** Comprobantes fiscales de pago de salario de los trabajadores asignados al servicio en el mes.
-- `[ ]` **3. Entero de Retenciones ISR:** Recibo bancario del pago de retenciones de ISR de dichos trabajadores.
-- `[ ]` **4. Pago de IVA:** Declaración mensual y acuse de pago del Impuesto al Valor Agregado del contratista.
-- `[ ]` **5. Cuotas IMSS (SUA):** Cédula de determinación y comprobante de pago de cuotas obrero-patronales al IMSS.
-- `[ ]` **6. Aportaciones INFONAVIT:** Comprobante de pago de aportaciones y amortizaciones bimestrales al INFONAVIT.
-- `[ ]` **7. Informativas ICSOE y SISSUB:** Acuses cuatrimestrales presentados a más tardar los días 17 de enero, mayo y septiembre.
+- ☐ **1. Registro REPSE vigente:** Copia del aviso de registro ante la STPS (Folio: {repse}).
+- ☐ **2. CFDI de Nómina:** Comprobantes fiscales de pago de salario de los trabajadores asignados al servicio en el mes.
+- ☐ **3. Entero de Retenciones ISR:** Recibo bancario del pago de retenciones de ISR de dichos trabajadores.
+- ☐ **4. Pago de IVA:** Declaración mensual y acuse de pago del Impuesto al Valor Agregado del contratista.
+- ☐ **5. Cuotas IMSS (SUA):** Cédula de determinación y comprobante de pago de cuotas obrero-patronales al IMSS.
+- ☐ **6. Aportaciones INFONAVIT:** Comprobante de pago de aportaciones y amortizaciones bimestrales al INFONAVIT.
+- ☐ **7. Informativas ICSOE y SISSUB:** Acuses cuatrimestrales presentados a más tardar los días 17 de enero, mayo y septiembre.
 
 ### 3. ACTA DE INTEGRACIÓN DE LA UNIDAD INTERNA DE PROTECCIÓN CIVIL (ARTS. 39, 40 Y 74–78 LGPC) Y MATRIZ SECTORIAL ({scian_short})
 Con el objeto de integrar formalmente el Programa Interno de Protección Civil (PIPC) en el inmueble ubicado en **{domicilio}**, se designa la estructura de la Unidad Interna de Protección Civil para su firma autógrafa:
@@ -596,7 +610,7 @@ Con el objeto de integrar formalmente el Programa Interno de Protección Civil (
 | :--- | :--- | :--- |
 | **{rep_legal}** ({cargo}) | **{csh_coord}** | **{testigo}** |
 
-*Infraestructura Documental FIRMA MALLEN® • Fecha de Compilación: {fecha} • Sello SHA-256:* `{hash}`
+Infraestructura Documental FIRMA MALLEN® • Fecha de Compilación: {fecha} • Sello SHA-256: {hash}
 "#,
                 razon = razon_social, rfc = tax_id, reg_patronal = reg_patronal,
                 giro = giro_scian, emp = emp_count, clase_prima = clase_prima_imss,
@@ -617,18 +631,18 @@ Con el objeto de integrar formalmente el Programa Interno de Protección Civil (
             content: format!(
 r#"# TÉRMINOS Y CONDICIONES DE COMERCIO ELECTRÓNICO (ART. 76 BIS LFPC), PÓLIZA DE GARANTÍA ({garantia} DÍAS) Y CÉDULA DE INTEGRACIÓN DE BENEFICIARIO CONTROLADOR (ART. 32-B TER CFF)
 **Proveedor Comercial:** {razon} | **RFC:** {rfc} | **Giro SCIAN:** {giro}
-**Domicilio Físico en Territorio Nacional (Art. 76 BIS Fracc. IV LFPC):** {domicilio}, C.P. {cp}, {jurisdiccion}
+**Domicilio Físico en Territorio Nacional (Art. 76 BIS Fracc. IV LFPC):** {domicilio}{cp}, {jurisdiccion}
 **Representante Legal:** {rep_legal} ({cargo}) | **Atención a Clientes y Reclamaciones:** {email} | **Teléfono:** {tel}
 
 ---
 
 ### 1. INFORMACIÓN AL CONSUMIDOR, PRECIOS TOTALES Y TRANSACCIONES DIGITALES (ARTS. 7 BIS, 76 BIS Y 90 LFPC)
-1. **Identificación y Domicilio Físico:** En cumplimiento al Artículo 76 BIS Fracciones I a VII de la Ley Federal de Protección al Consumidor (LFPC), **{razon}** pone a disposición de los consumidores su domicilio físico en **{domicilio}, C.P. {cp}, {jurisdiccion}**, teléfono **{tel}** y correo **{email}** para presentar aclaraciones o reclamaciones.
+1. **Identificación y Domicilio Físico:** En cumplimiento al Artículo 76 BIS Fracciones I a VII de la Ley Federal de Protección al Consumidor (LFPC), **{razon}** pone a disposición de los consumidores su domicilio físico en **{domicilio}{cp}, {jurisdiccion}**, teléfono **{tel}** y correo **{email}** para presentar aclaraciones o reclamaciones.
 2. **Exhibición de Precios Totales (Art. 7 BIS LFPC):** Todo precio exhibido en catálogos, cotizaciones o medios electrónicos se expresa en **Moneda Nacional (MXN)** e informa de manera visible el monto total a pagar, incluyendo el Impuesto al Valor Agregado (IVA), impuestos aplicables y, en su caso, costos de envío, sin aplicar cargos automáticos ni cláusulas unilaterales prohibidas por el Artículo 90 de la LFPC.
 
 ### 2. DERECHO DE REVOCACIÓN (5 DÍAS HÁBILES) Y PÓLIZA DE GARANTÍA LEGAL ({garantia} DÍAS NATURALES)
 1. **Derecho de Revocación en Ventas a Distancia (Art. 56 LFPC):** El consumidor cuenta con un plazo de **5 días hábiles** contados a partir de la entrega del bien o de la firma del contrato para revocar su consentimiento sin responsabilidad alguna, notificándolo a **{email}** y devolviendo el bien en las mismas condiciones en que lo recibió.
-2. **Póliza de Garantía Escrita (Arts. 77, 78 y 79 LFPC):** **{razon}** otorga sobre sus productos una garantía de **{garantia} días naturales** (nunca inferior al mínimo legal de 90 días del Art. 77 LFPC), la cual ampara sin cargo alguno la reparación, reposición del bien o devolución del importe pagado directamente en **{domicilio}, C.P. {cp}, {jurisdiccion}**.
+2. **Póliza de Garantía Escrita (Arts. 77, 78 y 79 LFPC):** **{razon}** otorga sobre sus productos una garantía de **{garantia} días naturales** (nunca inferior al mínimo legal de 90 días del Art. 77 LFPC), la cual ampara sin cargo alguno la reparación, reposición del bien o devolución del importe pagado directamente en **{domicilio}{cp}, {jurisdiccion}**.
 
 ---
 
@@ -649,7 +663,7 @@ Como parte de la contabilidad fiscal obligatoria (Art. 28 CFF y Reglas 2.8.1.20 
 | :--- | :--- |
 | **{rep_legal}** ({cargo}) | **{testigo}** |
 
-*Infraestructura Documental FIRMA MALLEN® • Fecha de Compilación: {fecha} • Sello SHA-256:* `{hash}`
+Infraestructura Documental FIRMA MALLEN® • Fecha de Compilación: {fecha} • Sello SHA-256: {hash}
 "#,
                 garantia = dias_garantia, razon = razon_social, rfc = tax_id,
                 giro = giro_scian, domicilio = domicilio, cp = cp_fiscal,
@@ -749,7 +763,7 @@ pub fn classify_scian_32_taxonomic_profile(scian_raw: &str) -> ScianTaxonomicPro
             sector_title: "Servicios de Agencias Aduanales y Logística de Comercio Exterior (SCIAN 4885)",
             imss_class: "Clase II / III (Operación Logística y Despacho Aduanero — Art. 196 RACERF)",
             imss_prime_pct: "1.13065% - 2.59840%",
-            primary_noms: "NOM-006-STPS-2014 (Manejo de Carga en Recinto), NOM-035-STPS-2018, NOM-037-STPS-2023 y Arts. 59 / 162 Ley Aduanera (Expediente Electrónico de Pedimentos)",
+            primary_noms: "NOM-006-STPS-2023 (Manejo de Carga en Recinto), NOM-035-STPS-2018, NOM-037-STPS-2023 y Arts. 59 / 162 Ley Aduanera (Expediente Electrónico de Pedimentos)",
             sector_agency_focus: "ANAM / SAT Comercio Exterior (Anexo 22 RGCE y Carta Porte 3.1), LFPIORPI Art. 17 Fracc. XIV (Comercio Exterior) y STPS",
             excluded_irrelevant_clauses: "Excluye NOM-251-SSA1 de preparación de alimentos y trampas de grasa",
             requires_food_cofepris_nom251: false,
@@ -853,7 +867,7 @@ pub fn classify_scian_32_taxonomic_profile(scian_raw: &str) -> ScianTaxonomicPro
             sector_title: "Sector 43 — Comercio al por Mayor, Distribución Mayorista y Centros de Abasto",
             imss_class: "Clase II / III (Almacenaje, Montacargas y Distribución — Art. 196 RACERF)",
             imss_prime_pct: "1.13065% - 2.59840%",
-            primary_noms: "NOM-006-STPS-2014 (Montacargas y Almacenes), NOM-036-1-STPS-2018 (Cargas Manuales), NOM-002-STPS-2010 y NOM-051-SCFI/SSA1",
+            primary_noms: "NOM-006-STPS-2023 (Montacargas y Almacenes), NOM-036-1-STPS-2018 (Cargas Manuales), NOM-002-STPS-2010 y NOM-051-SCFI/SSA1",
             sector_agency_focus: "SAT Complemento Carta Porte 3.1, PROFECO Metrología/Etiquetado y STPS Almacenes",
             excluded_irrelevant_clauses: "Excluye NOM-023-STPS y NOM-031-STPS",
             requires_food_cofepris_nom251: s.starts_with("431"),
@@ -881,7 +895,7 @@ pub fn classify_scian_32_taxonomic_profile(scian_raw: &str) -> ScianTaxonomicPro
             sector_title: "Sectores 48–49 — Transporte, Correo, Paquetería y Almacenamiento Logístico",
             imss_class: "Clase IV (Autotransporte, Pasajeros y Carga — Art. 196 RACERF)",
             imss_prime_pct: "4.65325%",
-            primary_noms: "NOM-087-SCT-2-2017 (Bitácora de Horas de Conducción y Pausas), NOM-068-SCT-2-2014 (Físico-Mecánica), NOM-012-SCT-2-2017 y NOM-006-STPS-2014",
+            primary_noms: "NOM-087-SCT-2-2017 (Bitácora de Horas de Conducción y Pausas), NOM-068-SCT-2-2014 (Físico-Mecánica), NOM-012-SCT-2-2017 y NOM-006-STPS-2023",
             sector_agency_focus: "SICT / Guardia Nacional Tramos Federales, SAT Complemento Carta Porte 3.1 y STPS Operadores",
             excluded_irrelevant_clauses: "Excluye COFEPRIS de cocinas",
             requires_food_cofepris_nom251: false,
@@ -1105,7 +1119,8 @@ fn build_scian_precision_addendum(
     );
 
     match doc_index {
-        0 => {
+        0 => String::new(),
+        1 => {
             let sec_priv = if prof.requires_food_cofepris_nom251 {
                 "**CLÁUSULA ESPECIAL DE GEOLOCALIZACIÓN, DELIVERY Y PERFILAMIENTO DE CONSUMO:** En pedidos a domicilio, apps de reparto o programas de lealtad, las coordenadas de geolocalización se tratan exclusivamente para el despacho logístico (Finalidad Primaria). El perfilamiento de hábitos de consumo constituye una **Finalidad Secundaria** con mecanismo expreso de negativa (Opt-Out)."
             } else if prof.requires_clinical_rpbi_nom087 {
@@ -1122,7 +1137,7 @@ fn build_scian_precision_addendum(
                 prof.sector_code, actividad_desc, prof.sector_title, dedicated_arco_channel, sec_priv
             )
         }
-        1 => {
+        2 => {
             format!(
                 "\n\n---\n### ANEXO DE DESAGREGACIÓN MULTI-SUCURSAL Y ROTACIÓN DE TURNOS (NOM-035-STPS-2018 • {} COLABORADORES)\n\n\
                 1. **PROTOCOLO DE DESAGREGACIÓN POR SUCURSAL / UNIDAD ECONÓMICA:** Para la plantilla consolidada de **{} colaboradores** de **{}**, las evaluaciones psicosociales se aplican desagregadas por centro físico de trabajo (**Guía I** en centros de 1 a 15 trabajadores; **Guía I y II** en sucursales de 16 a 50 trabajadores; **Guía I y III de Entorno Organizacional** en unidades con más de 50 trabajadores), instalando un Subcomité Local por establecimiento.\n\
@@ -1130,21 +1145,21 @@ fn build_scian_precision_addendum(
                 emp_count, emp_count, razon_social, prof.sector_code, prof.sector_title, prof.excluded_irrelevant_clauses
             )
         }
-        2 => {
+        3 => {
             format!(
                 "\n\n---\n### CALENDARIO AUTOMATIZADO DE LOS 4 RECORRIDOS TRIMESTRALES (NOM-019-STPS-2011) Y NOMs DEL GIRO {}\n\n\
                 | Trimestre | Fecha Programada de Verificación | Áreas / Instalaciones Sujetas a Inspección Bipartita | Folio de Acta |\n\
                 | :--- | :--- | :--- | :--- |\n\
-                | **1° Recorrido Trimestral** | **{}** | Instalaciones eléctricas, extintores, salidas de emergencia y botiquines | `ACTA-CSH-Q1-{}` |\n\
-                | **2° Recorrido Trimestral** | **{}** | Verificación específica: {} | `ACTA-CSH-Q2-{}` |\n\
-                | **3° Recorrido Trimestral** | **{}** | Simulacro PIPC, señalética (NOM-026), tierras físicas (NOM-022) y espacios confinados/trampas (NOM-033 cuando aplique) | `ACTA-CSH-Q3-{}` |\n\
-                | **4° Recorrido Trimestral** | **{}** | Cierre anual NOM-030-STPS y actualización de diagnóstico integral | `ACTA-CSH-Q4-{}` |\n\n\
+                | **1° Recorrido Trimestral** | **{}** | Instalaciones eléctricas, extintores, salidas de emergencia y botiquines | ACTA-CSH-Q1-{} |\n\
+                | **2° Recorrido Trimestral** | **{}** | Verificación específica: {} | ACTA-CSH-Q2-{} |\n\
+                | **3° Recorrido Trimestral** | **{}** | Simulacro PIPC, señalética (NOM-026), tierras físicas (NOM-022) y espacios confinados/trampas (NOM-033 cuando aplique) | ACTA-CSH-Q3-{} |\n\
+                | **4° Recorrido Trimestral** | **{}** | Cierre anual NOM-030-STPS y actualización de diagnóstico integral | ACTA-CSH-Q4-{} |\n\n\
                 * **NORMATIVA TÉCNICA OBLIGATORIA DEL SECTOR:** {}\n\
                 * **EXCLUSIÓN ANTI-DERIVA SECTORIAL:** {}\n",
                 prof.sector_code, q1_date, rfc, q2_date, prof.primary_noms, rfc, q3_date, rfc, q4_date, rfc, prof.primary_noms, prof.excluded_irrelevant_clauses
             )
         }
-        3 => {
+        4 => {
             format!(
                 "\n\n---\n### CLÁUSULA DE ELEGIBILIDAD DE PUESTOS Y FÓRMULA DE PRORRATEO (NOM-037-STPS-2023 • GIRO {})\n\n\
                 1. **EXCLUSIÓN EXPRESA DE PERSONAL OPERATIVO DE PISO / SUCURSAL / COCINA / PLANTA:** En atención al giro **{}**, la modalidad de Teletrabajo (Art. 330-A LFT y NOM-037-STPS-2023) **aplica única y exclusivamente al personal administrativo, corporativo, contable o de sistemas** cuyo convenio individual acredite más del **40%** de la jornada semanal en domicilio. Queda excluido de bonos de teletrabajo el personal operativo presencial.\n\
@@ -1153,22 +1168,22 @@ fn build_scian_precision_addendum(
                 prof.sector_code, prof.sector_title
             )
         }
-        4 => {
+        5 => {
             format!(
                 "\n\n---\n### ANEXO DE MATERIALIDAD DIFERENCIADA DE DOBLE CARRIL (ARTS. 5-A Y 69-B CFF • SCJN 2a./J. 161/2019)\n\n\
                 * **CARRIL A — ABASTO OPERATIVO DIARIO, PERECEDEROS, MERCANCÍAS E INSUMOS RECURRENTES (FAST-TRACK):** Acreditable mediante: **(i)** Orden de Compra ERP, **(ii)** Nota de Remisión o Ticket de Recepción de Almacén/Báscula en sucursal, **(iii)** CFDI 4.0 de Ingreso y **(iv)** Transferencia SPEI, sin entrabar la operación diaria con actas solemnes por cada abasto menor.\n\
                 * **CARRIL B — SERVICIOS INTANGIBLES, CONSULTORÍA, SOFTWARE Y SUBCONTRATACIÓN (EXPEDIENTE SOLEMNE):** Exige entregable técnico auditable, bitácora de ejecución, memoria de Razón de Negocios (Art. 5-A CFF) y Sello de Fecha Cierta.\n"
             )
         }
-        5 => {
+        6 => {
             let cofepris_or_excl = if prof.requires_food_cofepris_nom251 {
                 "**3. CHECKLIST INTEGRADO DE SANIDAD E HIGIENE COFEPRIS (NOM-251-SSA1-2009 Y AVISO DIGIPRIS):**\n\
-                - `[ ]` Aviso de Funcionamiento COFEPRIS/DIGIPRIS vigente exhibido en sucursal.\n\
-                - `[ ]` Bitácora diaria de temperaturas de refrigeración (< 4°C) y congelación (-18°C).\n\
-                - `[ ]` Certificado vigente de control de plagas con licencia sanitaria y bitácora de limpieza de trampas de grasa."
+                - ☐ Aviso de Funcionamiento COFEPRIS/DIGIPRIS vigente exhibido en sucursal.\n\
+                - ☐ Bitácora diaria de temperaturas de refrigeración (< 4°C) y congelación (-18°C).\n\
+                - ☐ Certificado vigente de control de plagas con licencia sanitaria y bitácora de limpieza de trampas de grasa."
             } else if prof.requires_clinical_rpbi_nom087 {
                 "**3. CHECKLIST SANITARIO HOSPITALARIO / CLÍNICO (COFEPRIS & SEMARNAT NOM-087-RPBI):**\n\
-                - `[ ]` Aviso de Responsable Sanitario / Licencia COFEPRIS y contrato vigente de recolección de RPBI."
+                - ☐ Aviso de Responsable Sanitario / Licencia COFEPRIS y contrato vigente de recolección de RPBI."
             } else {
                 "**3. EXCLUSIÓN SECTORIAL DE COFEPRIS ALIMENTARIO (CERO DERIVA DE PLANTILLA):** Por corresponder al giro especificado, se suprimen las obligaciones de manejo de alimentos (NOM-251-SSA1) y trampas de grasa, aplicando estrictamente las normas de seguridad estructural, eléctrica y contra incendio del sector."
             };
@@ -1180,15 +1195,16 @@ fn build_scian_precision_addendum(
                 prof.sector_code, prof.imss_class, prof.imss_prime_pct, jurisdiccion, cofepris_or_excl
             )
         }
-        _ => {
+        7 => {
             format!(
                 "\n\n---\n### SALVAGUARDAS DE COMERCIO DIGITAL / ENTREGAS Y ALERTA SEMESTRAL DE BENEFICIARIO CONTROLADOR\n\n\
                 1. **PROTOCOLO DE REEMBOLSO AUTOMÁTICO Y SALVAGUARDA EN ENTREGAS A DOMICILIO (ART. 76 BIS Y 92 LFPC):** Ante entregas fallidas o discrepancia de inventario en pedidos digitales, el reembolso o bonificación se ejecuta dentro de 24 a 72 horas hábiles.\n\
                 2. **AUDITORÍA SEMESTRAL OBLIGATORIA Y DISPARADOR DE ACTUALIZACIÓN EN 15 DÍAS NATURALES (ART. 32-B TER CFF):** Revisión obligatoria en **Junio y Diciembre**, o dentro de los **15 días naturales** siguientes a cualquier modificación accionaria mayor al **2%** en **{}**.\n\
-                3. **SELLO CRIPTOGRÁFICO DEL INSTRUMENTO:** `SHA256:{}`\n",
+                3. **SELLO CRIPTOGRÁFICO DEL INSTRUMENTO:** SHA256:{}\n",
                 razon_social, audit_hash
             )
         }
+        _ => String::new(),
     }
 }
 
