@@ -17,8 +17,8 @@ pub struct GeneratedKitDocument {
     pub content: String,
 }
 
-const BLANK_LINE: &str = "________________________________________";
-const BLANK_SHORT: &str = "____________________";
+const BLANK_LINE: &str = "────────────────────────────";
+const BLANK_SHORT: &str = "──────────────";
 
 fn pick_known_or_blank<'a>(primary: &'a Option<String>, secondary: &'a str, blank: &'a str) -> &'a str {
     if let Some(p) = primary {
@@ -137,6 +137,14 @@ fn build_base_compliance_documents_inner(
         _ => String::new(),
     };
     let jurisdiccion = pick_known_or_blank(&dossier.entidad_jurisdiccion, &empresa.estado, BLANK_SHORT);
+    let jur_suffix = if jurisdiccion != BLANK_SHORT
+        && !jurisdiccion.trim().is_empty()
+        && !domicilio.to_uppercase().contains(&jurisdiccion.to_uppercase())
+    {
+        format!(", {}", jurisdiccion)
+    } else {
+        String::new()
+    };
     let giro_scian = pick_known_or_blank(&dossier.giro_scian_descripcion, &scian_desc_clean, &scian_desc_clean);
     let email_arco = pick_known_or_blank(&dossier.email_arco_privacidad, &empresa.email, BLANK_LINE);
     let telefono_corp = pick_known_or_blank(&dossier.telefono_corporativo, &empresa.telefono, BLANK_SHORT);
@@ -301,7 +309,7 @@ El presente paquete ha sido ensamblado dinámicamente por el motor determinísti
 
 ### 2. VALIDACIÓN PROBATORIA (ARTS. 89–93 BIS CÓDIGO DE COMERCIO Y ESTÁNDAR ISO 19011)
 Cualquier autoridad administrativa, cliente corporativo o auditor externo puede verificar en tiempo real la autenticidad, fecha cierta de corte UTC ({fecha}) e inalterabilidad del presente expediente escaneando o consultando:
-> **Enlace Oficial de Verificación Criptográfica:** `https://mallen.lat/verify/{rfc}`
+**Enlace Oficial de Verificación Criptográfica:** https://mallen.lat/verify/{rfc}
 "#,
                 razon = razon_social,
                 rfc = tax_id,
@@ -335,14 +343,14 @@ Cualquier autoridad administrativa, cliente corporativo o auditor externo puede 
 r#"# AVISO DE PRIVACIDAD INTEGRAL, FORMATO DE CONSENTIMIENTO EXPRESO Y DESIGNACIÓN DEL DEPARTAMENTO DE DATOS PERSONALES
 **Sujeto Obligado / Responsable:** {razon} | **RFC:** {rfc}
 **Giro Económico SCIAN:** {giro} | **Plantilla Parametrizada:** {emp} colaboradores
-**Domicilio para Oír y Recibir Notificaciones:** {domicilio}{cp}, {jurisdiccion}
+**Domicilio para Oír y Recibir Notificaciones:** {domicilio}{cp}{jur_suffix}
 **Titular / Encargado del Departamento de Datos Personales (Art. 30 LFPDPPP):** {oficial}
 **Medio Oficial para Ejercicio de Derechos ARCO:** {email} | **Teléfono:** {tel}
 
 ---
 
 ### I. IDENTIDAD Y DOMICILIO DEL RESPONSABLE (ARTS. 8, 15 Y 16 LFPDPPP)
-**{razon}** (con Registro Federal de Contribuyentes **{rfc}**), representada legalmente por **{rep_legal}** (Carácter / Cargo: **{cargo}**, Instrumento Público N° {escritura}), con domicilio convencional y fiscal en **{domicilio}{cp}, {jurisdiccion}**, es el responsable del tratamiento legítimo, controlado e informado de sus datos personales, financieros/patrimoniales y sensibles, en estricto cumplimiento a la Ley Federal de Protección de Datos Personales en Posesión de los Particulares (LFPDPPP), su Reglamento y los Lineamientos vigentes ante la Autoridad Garante Federal (Secretaría Anticorrupción y Buen Gobierno — SABG).
+**{razon}** (con Registro Federal de Contribuyentes **{rfc}**), representada legalmente por **{rep_legal}** (Carácter / Cargo: **{cargo}**, Instrumento Público N° {escritura}), con domicilio convencional y fiscal en **{domicilio}{cp}{jur_suffix}**, es el responsable del tratamiento legítimo, controlado e informado de sus datos personales, financieros/patrimoniales y sensibles, en estricto cumplimiento a la Ley Federal de Protección de Datos Personales en Posesión de los Particulares (LFPDPPP), su Reglamento y los Lineamientos vigentes ante la Autoridad Garante Federal (Secretaría Anticorrupción y Buen Gobierno — SABG).
 
 ### II. DESIGNACIÓN DEL DEPARTAMENTO DE DATOS PERSONALES (ARTS. 19 Y 30 LFPDPPP)
 Para dar cumplimiento al Artículo 30 de la LFPDPPP, el Responsable designa a **{oficial}** a cargo del Departamento de Protección de Datos Personales, quien tiene la encomienda de dar trámite a las solicitudes de los titulares para el ejercicio de los Derechos ARCO, así como de resguardar y actualizar el **Documento de Seguridad Administrativo, Físico y Técnico (Art. 19 LFPDPPP)**.
@@ -356,7 +364,7 @@ Para dar cumplimiento al Artículo 30 de la LFPDPPP, el Responsable designa a **
 ### IV. FINALIDADES DEL TRATAMIENTO Y OPCIONES PARA FINALIDADES SECUNDARIAS
 - **Finalidades Primarias (Necesarias para la relación jurídica):** Administración de personal y nómina, cumplimiento de obligaciones fiscales (SAT), de seguridad social (IMSS/INFONAVIT) y laborales (STPS), facturación, cobranza, pago a proveedores y seguridad física de las instalaciones en **{domicilio}**.
 - **Finalidades Secundarias (Opcionales):** Envío de comunicaciones comerciales, boletines informativos o encuestas de calidad.
-  *[ ] No consiento que mis datos personales sean utilizados para finalidades secundarias.*
+  ☐ No consiento que mis datos personales sean utilizados para finalidades secundarias.
 
 ### V. TRANSFERENCIAS (ARTS. 36 Y 37 LFPDPPP) Y PROCEDIMIENTO DE DERECHOS ARCO (20 DÍAS HÁBILES)
 Sus datos personales únicamente se transfieren sin requerir consentimiento en los casos legalmente previstos por el Artículo 37 de la LFPDPPP (autoridades competentes SAT, IMSS, INFONAVIT, STPS y cumplimiento de obligaciones contractuales). Para ejercer sus derechos de **Acceso, Rectificación, Cancelación u Oposición (ARCO)** o revocar su consentimiento, deberá presentar solicitud en **{domicilio}** o vía electrónica al correo **{email}**, acreditando su identidad. El Departamento de Datos Personales comunicará la respuesta en un plazo máximo de **20 días hábiles** contados desde la recepción (Art. 32 LFPDPPP) y, de resultar procedente, se hará efectiva dentro de los **15 días hábiles** siguientes.
@@ -374,7 +382,7 @@ Yo, _________________________________________________________, declaro que me ha
 Infraestructura Documental FIRMA MALLEN® • Fecha de Compilación: {fecha} • Sello SHA-256: {hash}
 "#,
                 razon = razon_social, rfc = tax_id, giro = giro_scian, emp = emp_count,
-                domicilio = domicilio, cp = cp_fiscal, jurisdiccion = jurisdiccion,
+                domicilio = domicilio, cp = cp_fiscal, jur_suffix = jur_suffix,
                 oficial = oficial_privacidad, cargo = rep_cargo, email = email_arco,
                 tel = telefono_corp, rep_legal = rep_legal, escritura = escritura_num,
                 clausula_scian = clausula_privacidad_scian, fecha = fecha, hash = empresa.audit_hash
@@ -390,7 +398,7 @@ Infraestructura Documental FIRMA MALLEN® • Fecha de Compilación: {fecha} •
             content: format!(
 r#"# POLÍTICA DE PREVENCIÓN DE RIESGOS PSICOSOCIALES Y PROTOCOLO DE ACTUACIÓN (NOM-035-STPS-2018)
 **Patrón / Razón Social:** {razon} | **RFC:** {rfc} | **Registro Patronal IMSS:** {reg_patronal}
-**Domicilio del Centro de Trabajo:** {domicilio}{cp}, {jurisdiccion}
+**Domicilio del Centro de Trabajo:** {domicilio}{cp}{jur_suffix}
 **Actividad Económica SCIAN:** {giro} | **Plantilla del Centro de Trabajo:** {emp} trabajadores
 **Fundamento Legal:** Artículos 132 Fracc. XVI y 994 Fracc. V de la Ley Federal del Trabajo; Numerales 5.1, 7.1, 8.1 y Guía de Referencia IV de la NOM-035-STPS-2018.
 
@@ -419,7 +427,7 @@ Toda denuncia será investigada de forma imparcial y confidencial en un plazo no
 | Fecha de Adopción: ____/____/2026 | Plantilla: {emp} colaboradores | Sello SHA-256: `{hash}` |
 "#,
                 razon = razon_social, rfc = tax_id, reg_patronal = reg_patronal,
-                domicilio = domicilio, cp = cp_fiscal, jurisdiccion = jurisdiccion,
+                domicilio = domicilio, cp = cp_fiscal, jur_suffix = jur_suffix,
                 giro = giro_scian, emp = emp_count, protocolo_escala = protocolo_nom035_escala,
                 horario = horario_jornada, email = email_arco, csh_coord = csh_coord,
                 csh_sec = csh_sec, rep_legal = rep_legal, cargo = rep_cargo, hash = empresa.audit_hash
@@ -441,7 +449,7 @@ r#"# ACTA DE CONSTITUCIÓN DE LA COMISIÓN MIXTA DE SEGURIDAD E HIGIENE (NOM-019
 ### I. DATOS DEL CENTRO DE TRABAJO (REQUISITOS DEL NUMERAL 7.4 INCISO A DE LA NOM-019-STPS-2011)
 1. **Nombre, Denominación o Razón Social:** {razon}
 2. **Registro Federal de Contribuyentes (RFC):** {rfc} | **Registro Patronal IMSS:** {reg_patronal}
-3. **Domicilio Completo del Centro de Trabajo:** {domicilio}{cp}, {jurisdiccion}
+3. **Domicilio Completo del Centro de Trabajo:** {domicilio}{cp}{jur_suffix}
 4. **Teléfono:** {tel} | **Correo Electrónico:** {email}
 5. **Rama o Actividad Económica (SCIAN):** {giro}
 6. **Clasificación de Riesgo IMSS de Referencia:** {clase_prima}
@@ -460,7 +468,7 @@ En este mismo acto, con fundamento en el Numeral 4.1 de la **NOM-030-STPS-2009**
 Infraestructura Documental FIRMA MALLEN® • Fecha de Compilación: {fecha} • Sello SHA-256: {hash}
 "#,
                 razon = razon_social, rfc = tax_id, reg_patronal = reg_patronal,
-                domicilio = domicilio, cp = cp_fiscal, jurisdiccion = jurisdiccion,
+                domicilio = domicilio, cp = cp_fiscal, jurisdiccion = jurisdiccion, jur_suffix = jur_suffix,
                 tel = telefono_corp, email = email_arco, giro = giro_scian,
                 clase_prima = clase_prima_imss, emp = emp_count, rep_legal = rep_legal,
                 cargo = rep_cargo, tabla_comision = tabla_comision_nom019,
@@ -478,7 +486,7 @@ Infraestructura Documental FIRMA MALLEN® • Fecha de Compilación: {fecha} •
             content: format!(
 r#"# POLÍTICA DE TELETRABAJO, CONVENIO MODIFICATORIO (ART. 330-B LFT), DERECHO A LA DESCONEXIÓN DIGITAL Y LISTA DE VERIFICACIÓN ERGONÓMICA (NOM-037-STPS-2023)
 **Patrón:** {razon} ({rfc}) | **Giro SCIAN:** {giro}
-**Domicilio Presencial del Centro de Trabajo:** {domicilio}{cp}, {jurisdiccion}
+**Domicilio Presencial del Centro de Trabajo:** {domicilio}{cp}{jur_suffix}
 **Fundamento Legal:** Artículos 330-A al 330-K de la Ley Federal del Trabajo y Numerales 5.2, 5.4, 7.1 y Guía de Referencia I de la NOM-037-STPS-2023.
 
 ---
@@ -494,11 +502,11 @@ El presente instrumento rige para las personas trabajadoras de **{razon}** que d
 
 ### 3. LISTA DE VERIFICACIÓN DE CONDICIONES DE SEGURIDAD Y SALUD EN EL LUGAR DE TELETRABAJO (NUMERAL 5.4 NOM-037-STPS-2023)
 Para ser requisitada por el trabajador y validada por la Comisión de Seguridad e Higiene (**{csh_coord}**):
-- `[ ] Sí  [ ] No` El área destinada al teletrabajo se encuentra limpia, ordenada e iluminada adecuadamente (natural o artificialmente) sin reflejos directos sobre la pantalla.
-- `[ ] Sí  [ ] No` Cuenta con ventilación adecuada y libre de ruido excesivo o agentes físicos/químicos peligrosos.
-- `[ ] Sí  [ ] No` Cuenta con escritorio o mesa de trabajo a altura ergonómica (70 a 75 cm) y silla con soporte lumbar y ajuste de altura.
-- `[ ] Sí  [ ] No` Las instalaciones eléctricas del área de trabajo carecen de cables expuestos, sobrecargas o conexiones improvisadas.
-- `[ ] Sí  [ ] No` La persona trabajadora manifiesta que en el domicilio acordado existen condiciones libres de violencia familiar.
+- ☐ Sí  ☐ No El área destinada al teletrabajo se encuentra limpia, ordenada e iluminada adecuadamente (natural o artificialmente) sin reflejos directos sobre la pantalla.
+- ☐ Sí  ☐ No Cuenta con ventilación adecuada y libre de ruido excesivo o agentes físicos/químicos peligrosos.
+- ☐ Sí  ☐ No Cuenta con escritorio o mesa de trabajo a altura ergonómica (70 a 75 cm) y silla con soporte lumbar y ajuste de altura.
+- ☐ Sí  ☐ No Las instalaciones eléctricas del área de trabajo carecen de cables expuestos, sobrecargas o conexiones improvisadas.
+- ☐ Sí  ☐ No La persona trabajadora manifiesta que en el domicilio acordado existen condiciones libres de violencia familiar.
 
 | **POR EL PATRÓN ({razon})** | **PERSONA TRABAJADORA EN TELETRABAJO** | **VALIDACIÓN COMISIÓN MIXTA SST** |
 | :--- | :--- | :--- |
@@ -507,7 +515,7 @@ Para ser requisitada por el trabajador y validada por la Comisión de Seguridad 
 Infraestructura Documental FIRMA MALLEN® • Fecha de Compilación: {fecha} • Sello SHA-256: {hash}
 "#,
                 razon = razon_social, rfc = tax_id, giro = giro_scian,
-                domicilio = domicilio, cp = cp_fiscal, jurisdiccion = jurisdiccion,
+                domicilio = domicilio, cp = cp_fiscal, jur_suffix = jur_suffix,
                 horario = horario_jornada, apoyo = apoyo_teletrabajo,
                 csh_coord = csh_coord, rep_legal = rep_legal, cargo = rep_cargo,
                 fecha = fecha, hash = empresa.audit_hash
@@ -527,7 +535,7 @@ r#"# CONTRATO MARCO DE PRESTACIÓN DE SERVICIOS Y SUMINISTRO CON CLÁUSULAS DE M
 ---
 
 ### DECLARACIONES DE LAS PARTES CONTRATANTES
-1. **Declara "EL CLIENTE" ({razon}):** Ser una sociedad mercantil o contribuyente legalmente inscrito bajo las leyes mexicanas, con RFC **{rfc}**, actividad económica registrada **{giro}**, con domicilio fiscal en **{domicilio}{cp}, {jurisdiccion}**, representada en este acto por **{rep_legal}** en su carácter de **{cargo}** (según consta en el Instrumento Público N° {escritura}).
+1. **Declara "EL CLIENTE" ({razon}):** Ser una sociedad mercantil o contribuyente legalmente inscrito bajo las leyes mexicanas, con RFC **{rfc}**, actividad económica registrada **{giro}**, con domicilio fiscal en **{domicilio}{cp}{jur_suffix}**, representada en este acto por **{rep_legal}** en su carácter de **{cargo}** (según consta en el Instrumento Público N° {escritura}).
 2. **Declara "EL PROVEEDOR" ({prov_nombre}):** Ser una persona moral o física con actividad empresarial inscrita en el Registro Federal de Contribuyentes con clave **{prov_rfc}**, con domicilio fiscal localizado en ________________________________________________________, representada por ________________________________________ (Instrumento Público N° ____________________), declarando bajo protesta de decir verdad que cuenta con activos, personal propio, infraestructura y capacidad material directa para ejecutar el objeto de este contrato, que su Opinión de Cumplimiento 32-D es **POSITIVA** y que no se encuentra en los listados de los Artículos 69 ni 69-B del Código Fiscal de la Federación.
 
 ---
@@ -553,7 +561,7 @@ r#"# CONTRATO MARCO DE PRESTACIÓN DE SERVICIOS Y SUMINISTRO CON CLÁUSULAS DE M
 | Fecha de Firma: ____/____/2026 | RFC Proveedor: {prov_rfc} | Sello SHA-256: `{hash}` |
 "#,
                 razon = razon_social, rfc = tax_id, giro = giro_scian,
-                domicilio = domicilio, cp = cp_fiscal, jurisdiccion = jurisdiccion,
+                domicilio = domicilio, cp = cp_fiscal, jurisdiccion = jurisdiccion, jur_suffix = jur_suffix,
                 rep_legal = rep_legal, cargo = rep_cargo, escritura = escritura_num,
                 prov_nombre = prov_nombre, prov_rfc = prov_rfc, prov_objeto = prov_objeto,
                 testigo = testigo_auditor, clausula_fiscal = clausula_fiscal_scian,
@@ -573,7 +581,7 @@ r#"# PROTOCOLO DE CONCILIACIÓN PATRONAL IMSS (SUA / RACERF), LISTA DE VERIFICAC
 **Giro SCIAN:** {giro} | **Plantilla Parametrizada:** {emp} trabajadores
 **Clasificación de Riesgo IMSS de Referencia (Art. 196 RACERF):** {clase_prima}
 **Folio REPSE (En caso de prestar o contratar servicios especializados):** {repse}
-**Domicilio del Establecimiento:** {domicilio}{cp}, {jurisdiccion}
+**Domicilio del Establecimiento:** {domicilio}{cp}{jur_suffix}
 
 ---
 
@@ -615,7 +623,7 @@ Infraestructura Documental FIRMA MALLEN® • Fecha de Compilación: {fecha} •
                 razon = razon_social, rfc = tax_id, reg_patronal = reg_patronal,
                 giro = giro_scian, emp = emp_count, clase_prima = clase_prima_imss,
                 repse = folio_repse, domicilio = domicilio, cp = cp_fiscal,
-                jurisdiccion = jurisdiccion, testigo = testigo_auditor,
+                jur_suffix = jur_suffix, testigo = testigo_auditor,
                 prov_nombre = prov_nombre, prov_rfc = prov_rfc, scian_short = scian_code,
                 csh_coord = csh_coord, anexo_sectorial = anexo_sectorial_pipc,
                 rep_legal = rep_legal, cargo = rep_cargo, fecha = fecha, hash = empresa.audit_hash
@@ -631,18 +639,18 @@ Infraestructura Documental FIRMA MALLEN® • Fecha de Compilación: {fecha} •
             content: format!(
 r#"# TÉRMINOS Y CONDICIONES DE COMERCIO ELECTRÓNICO (ART. 76 BIS LFPC), PÓLIZA DE GARANTÍA ({garantia} DÍAS) Y CÉDULA DE INTEGRACIÓN DE BENEFICIARIO CONTROLADOR (ART. 32-B TER CFF)
 **Proveedor Comercial:** {razon} | **RFC:** {rfc} | **Giro SCIAN:** {giro}
-**Domicilio Físico en Territorio Nacional (Art. 76 BIS Fracc. IV LFPC):** {domicilio}{cp}, {jurisdiccion}
+**Domicilio Físico en Territorio Nacional (Art. 76 BIS Fracc. IV LFPC):** {domicilio}{cp}{jur_suffix}
 **Representante Legal:** {rep_legal} ({cargo}) | **Atención a Clientes y Reclamaciones:** {email} | **Teléfono:** {tel}
 
 ---
 
 ### 1. INFORMACIÓN AL CONSUMIDOR, PRECIOS TOTALES Y TRANSACCIONES DIGITALES (ARTS. 7 BIS, 76 BIS Y 90 LFPC)
-1. **Identificación y Domicilio Físico:** En cumplimiento al Artículo 76 BIS Fracciones I a VII de la Ley Federal de Protección al Consumidor (LFPC), **{razon}** pone a disposición de los consumidores su domicilio físico en **{domicilio}{cp}, {jurisdiccion}**, teléfono **{tel}** y correo **{email}** para presentar aclaraciones o reclamaciones.
+1. **Identificación y Domicilio Físico:** En cumplimiento al Artículo 76 BIS Fracciones I a VII de la Ley Federal de Protección al Consumidor (LFPC), **{razon}** pone a disposición de los consumidores su domicilio físico en **{domicilio}{cp}{jur_suffix}**, teléfono **{tel}** y correo **{email}** para presentar aclaraciones o reclamaciones.
 2. **Exhibición de Precios Totales (Art. 7 BIS LFPC):** Todo precio exhibido en catálogos, cotizaciones o medios electrónicos se expresa en **Moneda Nacional (MXN)** e informa de manera visible el monto total a pagar, incluyendo el Impuesto al Valor Agregado (IVA), impuestos aplicables y, en su caso, costos de envío, sin aplicar cargos automáticos ni cláusulas unilaterales prohibidas por el Artículo 90 de la LFPC.
 
 ### 2. DERECHO DE REVOCACIÓN (5 DÍAS HÁBILES) Y PÓLIZA DE GARANTÍA LEGAL ({garantia} DÍAS NATURALES)
 1. **Derecho de Revocación en Ventas a Distancia (Art. 56 LFPC):** El consumidor cuenta con un plazo de **5 días hábiles** contados a partir de la entrega del bien o de la firma del contrato para revocar su consentimiento sin responsabilidad alguna, notificándolo a **{email}** y devolviendo el bien en las mismas condiciones en que lo recibió.
-2. **Póliza de Garantía Escrita (Arts. 77, 78 y 79 LFPC):** **{razon}** otorga sobre sus productos una garantía de **{garantia} días naturales** (nunca inferior al mínimo legal de 90 días del Art. 77 LFPC), la cual ampara sin cargo alguno la reparación, reposición del bien o devolución del importe pagado directamente en **{domicilio}{cp}, {jurisdiccion}**.
+2. **Póliza de Garantía Escrita (Arts. 77, 78 y 79 LFPC):** **{razon}** otorga sobre sus productos una garantía de **{garantia} días naturales** (nunca inferior al mínimo legal de 90 días del Art. 77 LFPC), la cual ampara sin cargo alguno la reparación, reposición del bien o devolución del importe pagado directamente en **{domicilio}{cp}{jur_suffix}**.
 
 ---
 
@@ -667,7 +675,7 @@ Infraestructura Documental FIRMA MALLEN® • Fecha de Compilación: {fecha} •
 "#,
                 garantia = dias_garantia, razon = razon_social, rfc = tax_id,
                 giro = giro_scian, domicilio = domicilio, cp = cp_fiscal,
-                jurisdiccion = jurisdiccion, rep_legal = rep_legal, cargo = rep_cargo,
+                jur_suffix = jur_suffix, rep_legal = rep_legal, cargo = rep_cargo,
                 email = email_arco, tel = telefono_corp, testigo = testigo_auditor,
                 fecha = fecha, hash = empresa.audit_hash
             ),
@@ -1134,7 +1142,7 @@ fn build_scian_precision_addendum(
                 2. **CANAL DEDICADO Y EXCLUSIVO DE ATENCIÓN ARCO:** `{}`.\n\
                 3. **COMPETENCIA CONCURRENTE (SABG / CRITERIOS HISTÓRICOS INAI):** El presente instrumento cumple simultáneamente con las atribuciones de la **Secretaría Anticorrupción y Buen Gobierno (SABG)** y los **Criterios Interpretativos Históricos de la LFPDPPP y su Reglamento**.\n\
                 4. {}\n",
-                prof.sector_code, actividad_desc, prof.sector_title, dedicated_arco_channel, sec_priv
+                prof.sector_code, actividad_desc.trim().strip_prefix(&prof.sector_code).unwrap_or(actividad_desc).trim_start_matches(|c: char| matches!(c, '-' | '—' | '–' | ':' | ' ')), prof.sector_title, dedicated_arco_channel, sec_priv
             )
         }
         2 => {

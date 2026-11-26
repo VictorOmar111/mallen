@@ -1085,10 +1085,7 @@ async fn build_empresa_and_session(
                 emp.actividad = format!("{} - {}", intel.codigo_scian, intel.actividad_desc);
             }
             if !intel.domicilio_completo.is_empty() {
-                emp.direccion = format!(
-                    "{} ({} colaboradores)",
-                    intel.domicilio_completo, intel.estimated_employees
-                );
+                emp.direccion = intel.domicilio_completo.clone();
             }
             emp.risk_score = intel.exact_risk_score as _;
             emp.estimated_fine_mxn = intel.exact_vemp_fine_mxn;
@@ -1498,7 +1495,7 @@ async fn render_checkout_page_with_state(state: Arc<AppState>, raw_ref: String) 
                 </div>
                 <div class="flex flex-wrap gap-2 text-[10px]">
                     <span class="px-2.5 py-1 rounded-md bg-white/5 border border-white/15 text-slate-200 font-semibold">Visa / Mastercard / Amex</span>
-                    <span class="px-2.5 py-1 rounded-md bg-emerald-500/10 border border-emerald-400/30 text-emerald-300 font-semibold">Meses sin Intereses (MSI)</span>
+                    <span class="px-2.5 py-1 rounded-md bg-white/5 border border-white/15 text-slate-200 font-semibold">Meses sin Intereses (MSI)</span>
                     <span class="px-2.5 py-1 rounded-md bg-white/5 border border-white/15 text-slate-200 font-semibold">OXXO Efectivo</span>
                     <span class="px-2.5 py-1 rounded-md bg-white/5 border border-white/15 text-slate-200 font-semibold">Apple Pay / Google Pay</span>
                 </div>
