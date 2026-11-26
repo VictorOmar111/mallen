@@ -542,6 +542,83 @@ pub fn require_strict_snapshot_or_reject(snapshot_uuid_or_tax: &str) -> Result<A
 /// Calcula el Hash SHA-256 bit a bit del estado de los 37 vectores y los 6 subtotales regulatorios
 /// (`STPS`, `SAT`, `IMSS`, `LFPDPPP`, `PIPC`, `PROFECO`) para verificar coherencia criptográfica 1:1
 /// entre el cálculo web y el compilador Typst.
+/// Sincroniza in-place `AuditMasterJson` usando exactamente la misma llamada SSOT
+/// (`compute_ssot_exact_totals_cents`) que emplean el Micro-Dictamen PDF y el Expediente ZIP,
+/// y actualiza `audit_sha256_hash` sobre los montos y vectores ya sincronizados.
+pub fn sync_master_ssot_in_place(master: &mut AuditMasterJson) {
+    let emp = master
+        .calibration_applied
+        .exact_employee_count
+        .unwrap_or(master.estimated_employees)
+        .max(1);
+    let scian = if master.codigo_scian.trim().is_empty() {
+        "541110"
+    } else {
+        master.codigo_scian.trim()
+    };
+    let c = &master.calibration_applied;
+    let is_immune = master.tax_id.trim().to_uppercase().starts_with("MALLEN");
+    let s69b_norm = if master.sat_69b_status.trim().is_empty() { "LIMPIO" } else { master.sat_69b_status.trim() };
+    let s69_norm = if master.sat_69_status.trim().is_empty() { "LIMPIO" } else { master.sat_69_status.trim() };
+
+    let (vecs, _c_stps, _c_sat, _c_inai, _c_imss, _c_pc, _c_profeco, total_cents, score) =
+        compute_ssot_exact_totals_cents(
+            &master.razon_social,
+            scian,
+            emp,
+            s69b_norm,
+            s69_norm,
+            master.stps_repse_registered,
+            master.sfp_sanctioned,
+            if master.web_telemetry.target_url.is_empty() { true } else { master.web_telemetry.ssl_valid },
+            if master.web_telemetry.target_url.is_empty() { true } else { master.web_telemetry.has_privacy_notice },
+            if master.web_telemetry.target_url.is_empty() { true } else { master.web_telemetry.mentions_arco_rights || master.web_telemetry.has_privacy_notice },
+            is_immune,
+            c.has_telework_over_40_percent.unwrap_or(true),
+            c.uses_subcontracted_services_repse.unwrap_or(true),
+            c.has_pressure_vessels_boilers.unwrap_or(scian.starts_with("31") || scian.starts_with("32") || scian.starts_with("33") || scian.starts_with("722")),
+            c.has_forklifts_or_manual_loads.unwrap_or(true),
+            c.handles_hazardous_chemicals.unwrap_or(scian.starts_with("811") || scian.starts_with("31") || scian.starts_with("32") || scian.starts_with("62")),
+            c.uses_biometrics_or_health_data.unwrap_or(true),
+            c.pays_intangible_b2b_services.unwrap_or(true),
+            c.transports_goods_federal_highways.unwrap_or(scian.starts_with("48") || scian.starts_with("49") || scian.starts_with("43")),
+            c.performs_vulnerable_activities_pld.unwrap_or(scian.starts_with("52") || scian.starts_with("53") || scian.starts_with("23")),
+            None,
+        );
+
+    let total_mxn = (total_cents as f64) / 100.0;
+    master.risk_score = if is_immune { 0 } else { score };
+    master.total_estimated_fine_mxn = if is_immune { 0.0 } else { total_mxn };
+    master.total_min_fine_mxn = if is_immune { 0.0 } else { ((total_cents as f64) * 0.35).round() / 100.0 };
+    master.total_max_fine_mxn = if is_immune { 0.0 } else { ((total_cents as f64) * 2.25).round() / 100.0 };
+
+    if master.findings.len() == vecs.len() {
+        for (f, v) in master.findings.iter_mut().zip(vecs.iter()) {
+            f.estimated_fine_mxn = if is_immune { 0.0 } else { v.multa_estimada_mxn };
+            f.min_fine_mxn = if is_immune || v.multa_estimada_mxn <= 0.0 {
+                0.0
+            } else {
+                (v.multa_estimada_mxn * 0.35 * 100.0).round() / 100.0
+            };
+            f.max_fine_mxn = if is_immune || v.multa_estimada_mxn <= 0.0 {
+                0.0
+            } else {
+                (v.multa_estimada_mxn * 2.25 * 100.0).round() / 100.0
+            };
+        }
+    } else if !is_immune && !master.findings.is_empty() {
+        eprintln!(
+            "[SSOT] Aviso: findings.len() ({}) != vecs.len() ({}) para {}",
+            master.findings.len(),
+            vecs.len(),
+            master.tax_id
+        );
+    }
+
+    let (fp_hex, _) = compute_vectors_37_sha256_fingerprint(master);
+    master.audit_sha256_hash = fp_hex.trim_start_matches("0x").to_string();
+}
+
 pub fn compute_vectors_37_sha256_fingerprint(master: &AuditMasterJson) -> (String, u64) {
     let emp = master
         .calibration_applied
@@ -2228,7 +2305,7 @@ fn build_report_typst_markup_full(
             osint_ssl || is_immune,
             osint_privacy || is_immune,
             osint_arco || is_immune,
-            is_immune || is_unindexed_orphan,
+            is_immune || (is_unindexed_orphan && master_opt.map(|m| m.total_estimated_fine_mxn <= 0.0).unwrap_or(true)),
             cal_telework,
             cal_repse,
             cal_boilers,

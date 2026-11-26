@@ -1,7 +1,9 @@
 #!/usr/bin/env bash
 set -euo pipefail
+umask 077
 
 cd ~/worker_inegi_engine
+PROJECT_DIR="$PWD"
 
 WITH_STRIPE=0
 BASE_URL="http://127.0.0.1:8080"
@@ -47,6 +49,7 @@ BACKUP_ENV=".env.pre_master_audit_${TS}.bak"
 ROLLBACK_ARMED=0
 
 cleanup_all() {
+  set +e
   unset TEST_SK TEST_WH || true
   if [ "${ROLLBACK_ARMED}" -eq 1 ]; then
     echo "!! Rollback activado: restaurando .env original y reiniciando mallen.service..." | tee -a "$LOG_FILE"
@@ -60,23 +63,52 @@ cleanup_all() {
 }
 trap cleanup_all EXIT INT TERM HUP
 
-log() { echo "$@" | tee -a "$LOG_FILE"; }
-mark_fail() { log "  [FAIL] $*"; }
-mark_pass() { log "  [PASS] $*"; }
+log() {
+  echo "$@" | tee -a "$LOG_FILE"
+}
+
+mark_fail() {
+  log "  [FAIL] $*"
+}
+
+mark_warn() {
+  log "  [WARN] $*"
+}
+
+mark_pass() {
+  log "  [PASS] $*"
+}
+
+wait_health() {
+  local tries="${1:-25}"
+  for i in $(seq 1 "$tries"); do
+    if [ "$(curl -s -o /dev/null -w '%{http_code}' "${BASE_URL}/health" || true)" = "200" ]; then
+      return 0
+    fi
+    sleep 1
+  done
+  return 1
+}
 
 log "========================================================================"
-log "  MALLEN 360° MASTER AUDIT (v3.1) | ${START_ISO} | WITH_STRIPE=${WITH_STRIPE}"
+log "  MALLEN 360° MASTER AUDIT (v4.2) | ${START_ISO} | WITH_STRIPE=${WITH_STRIPE}"
 log "  URL: ${BASE_URL} | DB: ${DB_PATH} | Log: ${LOG_FILE}"
 log "========================================================================"
 
 NRESTARTS_BEFORE="$(systemctl show mallen.service -p NRestarts --value 2>/dev/null || echo 0)"
 MAIN_PID_BEFORE="$(systemctl show mallen.service -p MainPID --value 2>/dev/null || echo 0)"
-RSS_BEFORE_KB="$(awk '/VmRSS:/ {print $2}' "/proc/${MAIN_PID_BEFORE}/status" 2>/dev/null || echo 0)"
+MAIN_PID_BEFORE="${MAIN_PID_BEFORE:-0}"
+[[ "$MAIN_PID_BEFORE" =~ ^[0-9]+$ ]] || MAIN_PID_BEFORE=0
+
+RSS_BEFORE_KB=0
+if [ "$MAIN_PID_BEFORE" -gt 0 ] && [ -r "/proc/${MAIN_PID_BEFORE}/status" ]; then
+  RSS_BEFORE_KB="$(awk '/VmRSS:/ {print $2}' "/proc/${MAIN_PID_BEFORE}/status" 2>/dev/null || echo 0)"
+fi
 RSS_BEFORE_KB="${RSS_BEFORE_KB:-0}"
 
 FAILS_BEFORE_RO="$(grep -c '\[FAIL\]' "$LOG_FILE" || true)"
 set +e
-python3 scripts/mallen_audit_core.py --mode readonly --db "$DB_PATH" --base-url "$BASE_URL" 2>&1 | tee -a "$LOG_FILE"
+python3 scripts/mallen_audit_core.py --mode readonly --db "$DB_PATH" --base-url "$BASE_URL" --project-dir "$PROJECT_DIR" 2>&1 | tee -a "$LOG_FILE"
 PY_RO_RC=${PIPESTATUS[0]}
 set -e
 FAILS_AFTER_RO="$(grep -c '\[FAIL\]' "$LOG_FILE" || true)"
@@ -84,10 +116,24 @@ if [ "$PY_RO_RC" -ne 0 ] && [ "$FAILS_AFTER_RO" -eq "$FAILS_BEFORE_RO" ]; then
   mark_fail "mallen_audit_core.py (readonly) abortó con código ${PY_RO_RC}"
 fi
 
+NRESTARTS_MID="$(systemctl show mallen.service -p NRestarts --value 2>/dev/null || echo 0)"
+if [ "$NRESTARTS_MID" -ne "$NRESTARTS_BEFORE" ]; then
+  mark_fail "mallen.service se reinició durante fase readonly (${NRESTARTS_BEFORE} -> ${NRESTARTS_MID})"
+fi
+
+PEAK_HWM_KB=0
+if [ "$MAIN_PID_BEFORE" -gt 0 ] && [ -r "/proc/${MAIN_PID_BEFORE}/status" ]; then
+  PEAK_HWM_KB="$(awk '/VmHWM:/ {print $2}' "/proc/${MAIN_PID_BEFORE}/status" 2>/dev/null || echo 0)"
+fi
+PEAK_HWM_KB="${PEAK_HWM_KB:-0}"
+PEAK_HWM_MB=$((PEAK_HWM_KB / 1024))
+
+NRESTARTS_BASE_FINAL="$NRESTARTS_MID"
+
 if [ "$WITH_STRIPE" -eq 1 ]; then
   log ""
   log "=== PILAR 3: STRIPE TEST E2E (MSI + OXXO + REPLAY + ZIP + LIMPIEZA) ==="
-  if grep -qE "^MALLEN_AUTO_CFDI=1$" .env; then
+  if grep -qE "^[[:space:]]*MALLEN_AUTO_CFDI[[:space:]]*=[[:space:]]*[\"']?1[\"']?([[:space:]]*(#.*)?)?$" .env 2>/dev/null; then
     mark_fail "MALLEN_AUTO_CFDI=1 está activo en .env. Abortando Pilar 3."
     exit 1
   fi
@@ -96,19 +142,24 @@ if [ "$WITH_STRIPE" -eq 1 ]; then
   chmod 600 "$BACKUP_ENV"
   ROLLBACK_ARMED=1
 
-  read -rsp "Pega tu STRIPE_SECRET_KEY de PRUEBA (sk_test_...): " TEST_SK; echo ""
-  read -rsp "Pega tu STRIPE_WEBHOOK_SECRET de PRUEBA (whsec_...): " TEST_WH; echo ""
+  read -rsp "Pega tu STRIPE_SECRET_KEY de PRUEBA (sk_test_...): " TEST_SK
+  echo ""
+  read -rsp "Pega tu STRIPE_WEBHOOK_SECRET de PRUEBA (whsec_...): " TEST_WH
+  echo ""
   [[ "$TEST_SK" == sk_test_* ]] || { mark_fail "STRIPE_SECRET_KEY debe empezar con sk_test_"; exit 1; }
   [[ "$TEST_WH" == whsec_* ]]   || { mark_fail "STRIPE_WEBHOOK_SECRET debe empezar con whsec_"; exit 1; }
 
-  python3 - "$TEST_SK" "$TEST_WH" << 'ENVEOF'
-import re, sys
-sk, wh = sys.argv[1], sys.argv[2]
+  AUDIT_STRIPE_SK="$TEST_SK" AUDIT_STRIPE_WH="$TEST_WH" python3 - << 'ENVEOF'
+import os, re
+sk = os.environ["AUDIT_STRIPE_SK"]
+wh = os.environ["AUDIT_STRIPE_WH"]
 with open(".env", "r", encoding="utf-8") as f:
     s = f.read()
 def upsert(text, k, v):
     pat = re.compile(rf"^#?\s*{k}=.*$", re.MULTILINE)
-    return pat.sub(f"{k}={v}", text, count=1) if pat.search(text) else text.rstrip("\n") + f"\n{k}={v}\n"
+    if pat.search(text):
+        return pat.sub(lambda _: f"{k}={v}", text, count=1)
+    return text.rstrip("\n") + f"\n{k}={v}\n"
 s = upsert(upsert(s, "STRIPE_SECRET_KEY", sk), "STRIPE_WEBHOOK_SECRET", wh)
 with open(".env", "w", encoding="utf-8") as f:
     f.write(s)
@@ -116,16 +167,16 @@ ENVEOF
   chmod 600 .env
 
   sudo -n systemctl restart mallen.service
-  for i in $(seq 1 10); do
-    if [ "$(curl -s -o /dev/null -w '%{http_code}' "${BASE_URL}/health" || true)" = "200" ]; then
-      break
-    fi
-    sleep 1
-  done
+  if ! wait_health 25; then
+    mark_fail "/health no respondió HTTP 200 en 25s tras activar llaves de prueba"
+    exit 1
+  fi
 
   FAILS_BEFORE_ST="$(grep -c '\[FAIL\]' "$LOG_FILE" || true)"
   set +e
-  python3 scripts/mallen_audit_core.py --mode stripe --db "$DB_PATH" --base-url "$BASE_URL" --sk "$TEST_SK" --wh "$TEST_WH" --ts "$TS" 2>&1 | tee -a "$LOG_FILE"
+  AUDIT_STRIPE_SK="$TEST_SK" AUDIT_STRIPE_WH="$TEST_WH" \
+    python3 scripts/mallen_audit_core.py --mode stripe --db "$DB_PATH" --base-url "$BASE_URL" --project-dir "$PROJECT_DIR" --ts "$TS" \
+    2>&1 | tee -a "$LOG_FILE"
   PY_ST_RC=${PIPESTATUS[0]}
   set -e
   FAILS_AFTER_ST="$(grep -c '\[FAIL\]' "$LOG_FILE" || true)"
@@ -136,23 +187,19 @@ ENVEOF
   cp "$BACKUP_ENV" .env
   chmod 600 .env
   sudo -n systemctl restart mallen.service
-  RESTORE_OK=0
-  for i in $(seq 1 10); do
-    if [ "$(curl -s -o /dev/null -w '%{http_code}' "${BASE_URL}/health" || true)" = "200" ]; then
-      RESTORE_OK=1
-      break
-    fi
-    sleep 1
-  done
-  [ "$RESTORE_OK" -eq 1 ] || { mark_fail "/health falló tras restaurar .env"; exit 1; }
+  if ! wait_health 25; then
+    mark_fail "/health no respondió HTTP 200 en 25s tras restaurar .env"
+    exit 1
+  fi
+
   ROLLBACK_ARMED=0
   rm -f "$BACKUP_ENV"
-  NRESTARTS_BEFORE="$(systemctl show mallen.service -p NRestarts --value 2>/dev/null || echo 0)"
+  NRESTARTS_BASE_FINAL="$(systemctl show mallen.service -p NRestarts --value 2>/dev/null || echo 0)"
   mark_pass ".env original restaurado y mallen.service en HTTP 200"
 fi
 
 log ""
-log "=== PILAR 5: TELEMETRÍA DEL SISTEMA, SEGURIDAD Y ALMACENAMIENTO ==="
+log "=== PILAR 5: TELEMETRÍA DEL SISTEMA, RELOJ NTP, SEGURIDAD Y ALMACENAMIENTO ==="
 if systemctl is-active --quiet mallen.service; then
   mark_pass "mallen.service estado active"
 else
@@ -161,17 +208,36 @@ fi
 
 NRESTARTS_AFTER="$(systemctl show mallen.service -p NRestarts --value 2>/dev/null || echo 0)"
 MAIN_PID_AFTER="$(systemctl show mallen.service -p MainPID --value 2>/dev/null || echo 0)"
-RSS_AFTER_KB="$(awk '/VmRSS:/ {print $2}' "/proc/${MAIN_PID_AFTER}/status" 2>/dev/null || echo 0)"
+MAIN_PID_AFTER="${MAIN_PID_AFTER:-0}"
+[[ "$MAIN_PID_AFTER" =~ ^[0-9]+$ ]] || MAIN_PID_AFTER=0
+
+RSS_AFTER_KB=0
+if [ "$MAIN_PID_AFTER" -gt 0 ] && [ -r "/proc/${MAIN_PID_AFTER}/status" ]; then
+  RSS_AFTER_KB="$(awk '/VmRSS:/ {print $2}' "/proc/${MAIN_PID_AFTER}/status" 2>/dev/null || echo 0)"
+fi
 RSS_AFTER_KB="${RSS_AFTER_KB:-0}"
 RSS_AFTER_MB=$((RSS_AFTER_KB / 1024))
 
-[ "$NRESTARTS_AFTER" -eq "$NRESTARTS_BEFORE" ] \
+[ "$NRESTARTS_AFTER" -eq "$NRESTARTS_BASE_FINAL" ] \
   && mark_pass "mallen.service NRestarts delta=0 (total=${NRESTARTS_AFTER})" \
-  || mark_fail "mallen.service tuvo reinicios inesperados (${NRESTARTS_BEFORE} -> ${NRESTARTS_AFTER})"
+  || mark_fail "mallen.service tuvo reinicios inesperados (${NRESTARTS_BASE_FINAL} -> ${NRESTARTS_AFTER})"
 
-[ "$RSS_AFTER_MB" -lt 512 ] \
-  && mark_pass "Memoria RSS actual=${RSS_AFTER_MB} MB (antes=$((RSS_BEFORE_KB / 1024)) MB, umbral < 512 MB)" \
-  || mark_fail "Memoria RSS=${RSS_AFTER_MB} MB excede 512 MB"
+if [ "$PEAK_HWM_KB" -eq 0 ]; then
+  mark_warn "No se pudo leer VmHWM (MAIN_PID_BEFORE=${MAIN_PID_BEFORE}) | RSS final=${RSS_AFTER_MB} MB"
+elif [ "$PEAK_HWM_MB" -lt 512 ]; then
+  mark_pass "Memoria pico real (VmHWM pre-restart)=${PEAK_HWM_MB} MB | RSS final=${RSS_AFTER_MB} MB (antes=$((RSS_BEFORE_KB / 1024)) MB, umbral < 512 MB)"
+else
+  mark_fail "Memoria pico (VmHWM)=${PEAK_HWM_MB} MB excede 512 MB"
+fi
+
+NTP_SYNC="$(timedatectl show -p NTPSynchronized --value 2>/dev/null || echo unknown)"
+if [ "$NTP_SYNC" = "yes" ]; then
+  mark_pass "Reloj del servidor sincronizado vía NTP (NTPSynchronized=yes)"
+elif [ "$NTP_SYNC" = "no" ]; then
+  mark_fail "Reloj NTP desincronizado (NTPSynchronized=no — riesgo para ventana +/-300s de Stripe)"
+else
+  mark_warn "No se pudo verificar NTPSynchronized (valor=${NTP_SYNC})"
+fi
 
 WAL_BYTES="$(stat -c%s "${DB_PATH}-wal" 2>/dev/null || echo 0)"
 WAL_MB=$((WAL_BYTES / 1048576))
@@ -187,13 +253,14 @@ for mount_pt in "/" "." "/tmp"; do
     || mark_fail "Espacio libre en '${mount_pt}' = ${free_pct}% (<= 20%)"
 done
 
-ENV_PERM="$(stat -c%a .env)"
+ENV_PERM="$(stat -c%a .env 2>/dev/null || echo missing)"
 [ "$ENV_PERM" = "600" ] \
   && mark_pass "Permisos de .env = ${ENV_PERM}" \
   || mark_fail "Permisos de .env = ${ENV_PERM} (esperado 600)"
 
-if (cat .env; systemctl cat mallen.service 2>/dev/null) | grep -qE "^(Environment=)?MALLEN_ALLOW_SIMULATED_WEBHOOK=1$"; then
-  mark_fail "MALLEN_ALLOW_SIMULATED_WEBHOOK=1 detectado en .env o systemd/drop-ins"
+if { [ -r .env ] && cat .env; systemctl cat mallen.service 2>/dev/null; systemctl show mallen.service -p Environment --value 2>/dev/null; } \
+  | grep -qE "(^|[[:space:]])(Environment=)?[\"']?MALLEN_ALLOW_SIMULATED_WEBHOOK[\"']?[[:space:]]*=[[:space:]]*[\"']?1[\"']?([[:space:]]|$|#)"; then
+  mark_fail "MALLEN_ALLOW_SIMULATED_WEBHOOK=1 detectado en .env o systemd"
 else
   mark_pass "MALLEN_ALLOW_SIMULATED_WEBHOOK apagado (.env + systemd/drop-ins)"
 fi

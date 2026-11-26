@@ -587,6 +587,9 @@ async fn handle_live_scan(
                     master_report = hydrated_snap;
                 }
                 let _ = state.db.save_audit_session(&tax_key, &master_report, false).await;
+            } else {
+                worker_inegi_engine::engine::pdf_generator::sync_master_ssot_in_place(&mut master_report);
+                let _ = state.db.save_audit_session(&tax_key, &master_report, false).await;
             }
         }
     }
@@ -664,40 +667,86 @@ async fn handle_exit_intent_micro_pdf(
     State(state): State<Arc<AppState>>,
     Path(tax_id): Path<String>,
 ) -> impl IntoResponse {
+    static MICRO_PDF_SEQ: std::sync::atomic::AtomicU64 = std::sync::atomic::AtomicU64::new(0);
     let clean_tax = tax_id.trim().to_uppercase();
     let (empresa, session_opt) = build_empresa_and_session(&state, &clean_tax).await;
-    let _ = std::fs::remove_dir_all(format!("kits_blindaje/{}", clean_tax));
+    let (has_ssl_val, has_priv_val, http_st_val) = if let Some((ref m, _)) = session_opt {
+        if m.web_telemetry.target_url.is_empty() {
+            (true, true, 200)
+        } else {
+            (
+                m.web_telemetry.ssl_valid,
+                m.web_telemetry.has_privacy_notice,
+                m.web_telemetry.http_status,
+            )
+        }
+    } else {
+        (true, clean_tax.starts_with("MALLEN"), 200)
+    };
     let osint = OsintResult {
         domain_found: empresa.sitio_web.clone(),
-        has_ssl: true,
-        has_privacy_policy: clean_tax.starts_with("MALLEN"),
-        http_status: 200,
+        has_ssl: has_ssl_val,
+        has_privacy_policy: has_priv_val,
+        http_status: http_st_val,
         ..Default::default()
     };
 
+    let nanos = std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)
+        .map(|d| d.as_nanos())
+        .unwrap_or(0);
+    let seq = MICRO_PDF_SEQ.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
+    let safe_tax: String = clean_tax
+        .chars()
+        .filter(|c| c.is_ascii_alphanumeric() || *c == '_' || *c == '-')
+        .collect();
+    let safe_tax = if safe_tax.is_empty() { "RFC".to_string() } else { safe_tax };
     let out_path = format!(
-        "kits_blindaje/{}/Micro_Dictamen_STPS_{}.pdf",
-        clean_tax, clean_tax
+        "/tmp/mallen_micro_{}_{}_{}_{}.pdf",
+        safe_tax,
+        std::process::id(),
+        nanos,
+        seq
     );
-    match generate_exit_intent_micro_pdf_with_session(
-        &empresa,
-        &osint,
-        session_opt.as_ref().map(|(m, _)| m), session_opt.as_ref().map(|(_, a)| *a).unwrap_or(clean_tax.starts_with("MALLEN")),
-        &out_path,
-    ) {
-        Ok(pdf_bytes) => {
+    let is_acc = session_opt
+        .as_ref()
+        .map(|(_, a)| *a)
+        .unwrap_or(clean_tax.starts_with("MALLEN"));
+    let master_owned = session_opt.map(|(m, _)| m);
+    let out_path_worker = out_path.clone();
+
+    let gen_res = tokio::task::spawn_blocking(move || {
+        let res = generate_exit_intent_micro_pdf_with_session(
+            &empresa,
+            &osint,
+            master_owned.as_ref(),
+            is_acc,
+            &out_path_worker,
+        );
+        let _ = std::fs::remove_file(&out_path_worker);
+        res.map_err(|e| e.to_string())
+    })
+    .await;
+
+    match gen_res {
+        Ok(Ok(pdf_bytes)) => {
             let headers = [
                 (header::CONTENT_TYPE, "application/pdf".to_string()),
                 (
                     header::CONTENT_DISPOSITION,
-                    format!("inline; filename=\"Pre_Dictamen_STPS_{}.pdf\"", clean_tax),
+                    format!("inline; filename=\"Pre_Dictamen_STPS_{}.pdf\"", safe_tax),
                 ),
             ];
             (headers, pdf_bytes).into_response()
         }
-        Err(e) => (
+        Ok(Err(e)) => (
             StatusCode::INTERNAL_SERVER_ERROR,
             format!("Error generando Micro-Dictamen: {}", e),
+        )
+            .into_response(),
+        Err(e) => (
+            StatusCode::INTERNAL_SERVER_ERROR,
+            format!("Error en worker de Micro-Dictamen: {}", e),
         )
             .into_response(),
     }
@@ -824,7 +873,7 @@ async fn build_empresa_and_session(
     let session_opt = if let Some(snap_m) = worker_inegi_engine::engine::pdf_generator::load_immutable_snapshot_strict(clean_tax, "") {
         Some((snap_m, is_acc_flag))
     } else if let Some((m_sess, acc)) = db_sess {
-        if !m_sess.razon_social.starts_with("REGISTRO NO INDEXADO") && m_sess.total_estimated_fine_mxn > 0.0 {
+        if m_sess.total_estimated_fine_mxn > 0.0 || acc {
             Some((m_sess, acc))
         } else {
             None
