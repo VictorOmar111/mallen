@@ -833,13 +833,35 @@ async fn handle_rag_query(Json(req): Json<RagQueryRequest>) -> impl IntoResponse
     }))
 }
 
+fn constant_time_eq_token(a: &str, b: &str) -> bool {
+    let ba = a.trim().as_bytes();
+    let bb = b.trim().as_bytes();
+    if ba.is_empty() || ba.len() != bb.len() {
+        return false;
+    }
+    let mut diff: u8 = 0;
+    for (x, y) in ba.iter().zip(bb.iter()) {
+        diff |= x ^ y;
+    }
+    diff == 0
+}
+
 async fn download_zip_handler(
     State(state): State<Arc<AppState>>,
     Path(tax_id): Path<String>,
+    headers: axum::http::HeaderMap,
+    Query(params): Query<std::collections::HashMap<String, String>>,
 ) -> impl IntoResponse {
     let clean_tax = tax_id.trim().to_uppercase();
+    let expected_admin = std::env::var("MALLEN_ADMIN_TOKEN").unwrap_or_default();
+    let provided_tok = headers
+        .get("x-admin-token")
+        .and_then(|v| v.to_str().ok())
+        .or_else(|| params.get("admin_token").map(|s| s.as_str()))
+        .unwrap_or("");
+    let is_admin = constant_time_eq_token(provided_tok, &expected_admin);
     let session_check = state.db.get_audit_session(&clean_tax).await.ok().flatten();
-    let is_paid = session_check.as_ref().map(|(_, acc)| *acc).unwrap_or(false);
+    let is_paid = is_admin || session_check.as_ref().map(|(_, acc)| *acc).unwrap_or(false);
     if !is_paid {
         return (
             StatusCode::SEE_OTHER,
@@ -856,7 +878,7 @@ async fn download_zip_handler(
         ..Default::default()
     };
 
-    match generate_custom_bundle_with_session(&empresa, &osint, session_opt.as_ref().map(|(m, _)| m), session_opt.as_ref().map(|(_, a)| *a).unwrap_or(clean_tax.starts_with("MALLEN"))) {
+    match generate_custom_bundle_with_session(&empresa, &osint, session_opt.as_ref().map(|(m, _)| m), is_admin || session_opt.as_ref().map(|(_, a)| *a).unwrap_or(clean_tax.starts_with("MALLEN"))) {
         Ok(zip_path) => {
             if let Ok(bytes) = fs::read(&zip_path) {
                 let headers = [
@@ -1470,15 +1492,17 @@ async fn render_checkout_page_with_state(state: Arc<AppState>, raw_ref: String) 
             </div>
 
             <div class="bg-slate-950 border border-white/15 p-4 rounded-xl space-y-3">
-                <div class="flex justify-between items-center">
-                    <span class="text-[10px] font-bold text-blue-400 uppercase">Método de Pago Corporativo (Tokenización TLS 1.3 / 3DS)</span>
-                    <span class="text-[10px] text-emerald-400 font-bold">Estándar PCI-DSS Nivel 1</span>
+                <div class="flex flex-wrap justify-between items-center gap-2">
+                    <span class="text-[10px] font-bold text-blue-400 uppercase">Pasarela Oficial Stripe Checkout (TLS 1.3 / 3D Secure)</span>
+                    <span class="text-[10px] text-emerald-400 font-bold">PCI-DSS Nivel 1 • Cero almacenamiento de tarjetas</span>
                 </div>
-                <input type="text" required value="4242 •••• •••• 4242" class="w-full bg-white/[0.05] shadow-[0_8px_32px_rgba(0,0,0,0.5)] border border-white/15 rounded-lg px-3.5 py-2.5 text-white">
-                <div class="grid grid-cols-2 gap-3">
-                    <input type="text" required value="12/28" class="bg-white/[0.05] shadow-[0_8px_32px_rgba(0,0,0,0.5)] border border-white/15 rounded-lg px-3.5 py-2.5 text-white">
-                    <input type="password" required value="888" class="bg-white/[0.05] shadow-[0_8px_32px_rgba(0,0,0,0.5)] border border-white/15 rounded-lg px-3.5 py-2.5 text-white">
+                <div class="flex flex-wrap gap-2 text-[10px]">
+                    <span class="px-2.5 py-1 rounded-md bg-white/5 border border-white/15 text-slate-200 font-semibold">Visa / Mastercard / Amex</span>
+                    <span class="px-2.5 py-1 rounded-md bg-emerald-500/10 border border-emerald-400/30 text-emerald-300 font-semibold">Meses sin Intereses (MSI)</span>
+                    <span class="px-2.5 py-1 rounded-md bg-white/5 border border-white/15 text-slate-200 font-semibold">OXXO Efectivo</span>
+                    <span class="px-2.5 py-1 rounded-md bg-white/5 border border-white/15 text-slate-200 font-semibold">Apple Pay / Google Pay</span>
                 </div>
+                <p class="text-[10px] text-slate-400 leading-relaxed">Al continuar será redirigido de forma cifrada a la pasarela oficial de <strong class="text-slate-200">Stripe</strong> para elegir su método de pago y completar la activación con autenticación 3D Secure.</p>
             </div>
 
             <div class="bg-slate-950 border border-white/15 p-3.5 rounded-xl text-[10px] text-slate-400 leading-relaxed">

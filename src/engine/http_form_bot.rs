@@ -1870,7 +1870,7 @@ impl HttpFormBot {
             .ok()
             .and_then(|conn| {
                 conn.query_row(
-                    "SELECT COALESCE(NULLIF(TRIM(codigo_scian), ''), '541110'), COALESCE(NULLIF(TRIM(nombre_act), ''), ''), COALESCE(per_ocu, '11 a 30 personas') FROM denue_units WHERE UPPER(TRIM(raz_social)) = UPPER(?1) OR UPPER(TRIM(nom_estab)) = UPPER(?1) LIMIT 1",
+                    "SELECT TRIM(codigo_scian), COALESCE(MAX(NULLIF(TRIM(nombre_act), '')), ''), COALESCE(MAX(TRIM(per_ocu)), '11 a 30 personas') FROM denue_units WHERE (UPPER(TRIM(raz_social)) = UPPER(?1) OR UPPER(TRIM(nom_estab)) = UPPER(?1)) AND TRIM(codigo_scian) GLOB '[0-9][0-9][0-9][0-9][0-9][0-9]' GROUP BY TRIM(codigo_scian) ORDER BY COUNT(*) DESC, TRIM(codigo_scian) ASC LIMIT 1",
                     rusqlite::params![emp_clean],
                     |r| {
                         let sc: String = r.get(0)?;
@@ -1893,18 +1893,26 @@ impl HttpFormBot {
                     },
                 ).ok()
             })
-            .unwrap_or_else(|| ("541110".to_string(), String::new(), 25));
+            .unwrap_or_else(|| (String::new(), String::new(), 25));
 
         let intel_dom = crate::engine::pdf_generator::extract_deep_denue_360_intelligence(emp_clean);
-        let effective_scian = if intel_dom.codigo_scian.trim().len() == 6 {
-            intel_dom.codigo_scian.as_str()
-        } else {
-            scian_code.as_str()
+        let is_scian_6d = |v: &str| {
+            let t = v.trim();
+            t.len() == 6 && t.bytes().all(|b| b.is_ascii_digit())
         };
-        let effective_act = if !intel_dom.actividad_desc.trim().is_empty() && !intel_dom.actividad_desc.starts_with("Pendiente") {
+        let effective_scian = if is_scian_6d(&scian_code) {
+            scian_code.trim()
+        } else if is_scian_6d(&intel_dom.codigo_scian) {
+            intel_dom.codigo_scian.trim()
+        } else {
+            "541110"
+        };
+        let effective_act = if !actividad_desc.trim().is_empty() {
+            actividad_desc.as_str()
+        } else if !intel_dom.actividad_desc.trim().is_empty() && !intel_dom.actividad_desc.starts_with("Pendiente") {
             intel_dom.actividad_desc.as_str()
         } else {
-            actividad_desc.as_str()
+            ""
         };
         let effective_emp = if intel_dom.estimated_employees > 0 {
             intel_dom.estimated_employees
