@@ -2,7 +2,7 @@
 //! - 100% apegado a la legislación mexicana vigente (LFPDPPP, LFT, NOMs STPS, CFF, LSS, RACERF, LGPC, LFPC).
 //! - Cero suposiciones falsas: no inventa horarios, no inventa montos, no cruza cargos sin autorización
 //!   y no declara como "ya cumplidos" hechos físicos que requieren llenado o firma en sitio.
-//! - Inserta líneas jurídicas formales (`________________________________________`) y listas de verificación
+//! - Inserta líneas jurídicas formales (`────────────────────────────`) y listas de verificación
 //!   reales (`[ ] Sí / [ ] No`) para que el cliente tenga documentos listos para uso legal inmediato.
 
 use crate::engine::models::{AuditMasterJson, EmpresaB2B, LegalDossierInput};
@@ -210,10 +210,10 @@ r#"Conforme al Numeral 7.1 inciso b) de la **NOM-019-STPS-2011**, por contar el 
 
 | **CARGO EN LA COMISIÓN** | **NOMBRE DEL INTEGRANTE DESIGNADO** | **SECTOR REPRESENTADO** | **FIRMA AUTÓGRAFA** |
 | :--- | :--- | :--- | :--- |
-| **Coordinador** | **{csh_coord}** | Representante Patronal | ________________________ |
-| **Secretario** | **{csh_sec}** | Representante Trabajadores | ________________________ |
-| **Vocal 1** | **{csh_vocal_pat}** | Vocal Patronal | ________________________ |
-| **Vocal 2** | **{csh_vocal_trab}** | Vocal Trabajadores | ________________________ |"#,
+| **Coordinador** | **{csh_coord}** | Representante Patronal | ──────────────────────── |
+| **Secretario** | **{csh_sec}** | Representante Trabajadores | ──────────────────────── |
+| **Vocal 1** | **{csh_vocal_pat}** | Vocal Patronal | ──────────────────────── |
+| **Vocal 2** | **{csh_vocal_trab}** | Vocal Trabajadores | ──────────────────────── |"#,
             emp_count,
             csh_coord = csh_coord,
             csh_sec = csh_sec,
@@ -226,8 +226,8 @@ r#"Conforme al Numeral 7.1 inciso a) de la **NOM-019-STPS-2011**, por contar el 
 
 | **FUNCIONES EN LA COMISIÓN** | **NOMBRE DEL INTEGRANTE DESIGNADO** | **SECTOR REPRESENTADO** | **FIRMA AUTÓGRAFA** |
 | :--- | :--- | :--- | :--- |
-| **Representante Patronal** | **{csh_coord}** | Patrón / Representante | ________________________ |
-| **Representante Laboral** | **{csh_sec}** | Representante Trabajadores | ________________________ |"#,
+| **Representante Patronal** | **{csh_coord}** | Patrón / Representante | ──────────────────────── |
+| **Representante Laboral** | **{csh_sec}** | Representante Trabajadores | ──────────────────────── |"#,
             emp_count,
             csh_coord = csh_coord,
             csh_sec = csh_sec
@@ -372,12 +372,12 @@ Sus datos personales únicamente se transfieren sin requerir consentimiento en l
 ---
 
 ### FORMATO DE CONSENTIMIENTO EXPRESO Y AUTÓGRAFO PARA DATOS SENSIBLES Y PATRIMONIALES (ARTS. 8 Y 9 LFPDPPP)
-Yo, _________________________________________________________, declaro que me ha sido puesto a disposición el presente Aviso de Privacidad Integral y otorgo mi consentimiento expreso, libre, específico e informado para que mis datos personales patrimoniales, financieros, sensibles y/o biométricos sean tratados por **{razon}** ({rfc}) exclusivamente para las finalidades primarias aquí descritas.
+Yo, ────────────────────────────, declaro que me ha sido puesto a disposición el presente Aviso de Privacidad Integral y otorgo mi consentimiento expreso, libre, específico e informado para que mis datos personales patrimoniales, financieros, sensibles y/o biométricos sean tratados por **{razon}** ({rfc}) exclusivamente para las finalidades primarias aquí descritas.
 
 | **POR EL RESPONSABLE ({razon})** | **DEPARTAMENTO DE DATOS PERSONALES** | **NOMBRE Y FIRMA AUTÓGRAFA DEL TITULAR** |
 | :--- | :--- | :--- |
-| **{rep_legal}** | **{oficial}** | ________________________________________ |
-| Cargo: {cargo} | Medio ARCO: {email} | Fecha de Suscripción: ____/____/2026 |
+| **{rep_legal}** | **{oficial}** | ──────────────────────────── |
+| Cargo: {cargo} | Medio ARCO: {email} | Fecha de Suscripción: ────/────/2026 |
 
 Infraestructura Documental FIRMA MALLEN® • Fecha de Compilación: {fecha} • Sello SHA-256: {hash}
 "#,
@@ -424,7 +424,7 @@ Toda denuncia será investigada de forma imparcial y confidencial en un plazo no
 | **POR EL PATRÓN ({razon})** | **REPRESENTACIÓN DE LOS TRABAJADORES** | **RESPONSABLE DE SEGUIMIENTO SST** |
 | :--- | :--- | :--- |
 | **{rep_legal}** ({cargo}) | **{csh_sec}** | **{csh_coord}** |
-| Fecha de Adopción: ____/____/2026 | Plantilla: {emp} colaboradores | Sello SHA-256: `{hash}` |
+| Fecha de Adopción: ────/────/2026 | Plantilla: {emp} colaboradores | Sello SHA-256: `{hash}` |
 "#,
                 razon = razon_social, rfc = tax_id, reg_patronal = reg_patronal,
                 domicilio = domicilio, cp = cp_fiscal, jur_suffix = jur_suffix,
@@ -453,11 +453,11 @@ r#"# ACTA DE CONSTITUCIÓN DE LA COMISIÓN MIXTA DE SEGURIDAD E HIGIENE (NOM-019
 4. **Teléfono:** {tel} | **Correo Electrónico:** {email}
 5. **Rama o Actividad Económica (SCIAN):** {giro}
 6. **Clasificación de Riesgo IMSS de Referencia:** {clase_prima}
-7. **Fecha de Inicio de Actividades del Centro de Trabajo:** ____________________
-8. **Número de Trabajadores del Centro de Trabajo:** {emp} trabajadores | **Número de Turnos:** ________
+7. **Fecha de Inicio de Actividades del Centro de Trabajo:** ────────────────────
+8. **Número de Trabajadores del Centro de Trabajo:** {emp} trabajadores | **Número de Turnos:** ────────
 
 ### II. INTEGRACIÓN DE LA COMISIÓN (NUMERAL 7.4 INCISO B DE LA NOM-019-STPS-2011)
-En la localidad de **{jurisdiccion}**, siendo las ______ horas del día ____ de ______________ de 2026, reunidos en las instalaciones del centro de trabajo ubicado en **{domicilio}**, comparecen por la parte patronal **{rep_legal}** ({cargo}) y los representantes de los trabajadores para constituir formalmente la Comisión de Seguridad e Higiene:
+En la localidad de **{jurisdiccion}**, siendo las ────── horas del día ──── de ────────────── de 2026, reunidos en las instalaciones del centro de trabajo ubicado en **{domicilio}**, comparecen por la parte patronal **{rep_legal}** ({cargo}) y los representantes de los trabajadores para constituir formalmente la Comisión de Seguridad e Higiene:
 
 {tabla_comision}
 
@@ -495,9 +495,9 @@ r#"# POLÍTICA DE TELETRABAJO, CONVENIO MODIFICATORIO (ART. 330-B LFT), DERECHO 
 El presente instrumento rige para las personas trabajadoras de **{razon}** que desarrollen más del **40% de su jornada laboral semanal** en su domicilio o en un lugar distinto al centro de trabajo. El patrón garantiza el **Derecho a la Desconexión Digital** al concluir la jornada pactada (**{horario}**), así como durante pausas de alimentos, licencias, incapacidades, días de descanso y vacaciones, absteniéndose de emitir órdenes o aplicar sanciones fuera de dicho horario.
 
 ### 2. INSUMOS, SERVICIOS PROPORCIONALES Y REVERSIBILIDAD (ARTS. 330-B, 330-E Y 330-G LFT)
-1. **Equipo de Trabajo:** El patrón entrega en comodato el equipo informático y mobiliario ergonómico descrito en el resguardo individual del trabajador: ________________________________________________.
+1. **Equipo de Trabajo:** El patrón entrega en comodato el equipo informático y mobiliario ergonómico descrito en el resguardo individual del trabajador: ────────────────────────────.
 2. **Pago Proporcional de Servicios (Art. 330-E Fracc. III LFT):** El patrón cubrirá mensualmente al trabajador en modalidad de teletrabajo la cantidad de **${apoyo} MXN** por concepto de pago proporcional de telecomunicaciones (internet) y consumo de energía eléctrica derivados del desempeño de sus funciones.
-3. **Domicilio Acordado para Teletrabajo:** ________________________________________________________________.
+3. **Domicilio Acordado para Teletrabajo:** ────────────────────────────.
 4. **Reversibilidad (Art. 330-G LFT):** El cambio de la modalidad presencial a teletrabajo es voluntario y reversible. Cualquiera de las partes podrá solicitar el retorno a la modalidad presencial en **{domicilio}** mediante aviso escrito con al menos 10 días hábiles de anticipación.
 
 ### 3. LISTA DE VERIFICACIÓN DE CONDICIONES DE SEGURIDAD Y SALUD EN EL LUGAR DE TELETRABAJO (NUMERAL 5.4 NOM-037-STPS-2023)
@@ -510,7 +510,7 @@ Para ser requisitada por el trabajador y validada por la Comisión de Seguridad 
 
 | **POR EL PATRÓN ({razon})** | **PERSONA TRABAJADORA EN TELETRABAJO** | **VALIDACIÓN COMISIÓN MIXTA SST** |
 | :--- | :--- | :--- |
-| **{rep_legal}** ({cargo}) | Nombre y Firma: ________________________ | **{csh_coord}** |
+| **{rep_legal}** ({cargo}) | Nombre y Firma: ──────────────────────── | **{csh_coord}** |
 
 Infraestructura Documental FIRMA MALLEN® • Fecha de Compilación: {fecha} • Sello SHA-256: {hash}
 "#,
@@ -536,7 +536,7 @@ r#"# CONTRATO MARCO DE PRESTACIÓN DE SERVICIOS Y SUMINISTRO CON CLÁUSULAS DE M
 
 ### DECLARACIONES DE LAS PARTES CONTRATANTES
 1. **Declara "EL CLIENTE" ({razon}):** Ser una sociedad mercantil o contribuyente legalmente inscrito bajo las leyes mexicanas, con RFC **{rfc}**, actividad económica registrada **{giro}**, con domicilio fiscal en **{domicilio}{cp}{jur_suffix}**, representada en este acto por **{rep_legal}** en su carácter de **{cargo}** (según consta en el Instrumento Público N° {escritura}).
-2. **Declara "EL PROVEEDOR" ({prov_nombre}):** Ser una persona moral o física con actividad empresarial inscrita en el Registro Federal de Contribuyentes con clave **{prov_rfc}**, con domicilio fiscal localizado en ________________________________________________________, representada por ________________________________________ (Instrumento Público N° ____________________), declarando bajo protesta de decir verdad que cuenta con activos, personal propio, infraestructura y capacidad material directa para ejecutar el objeto de este contrato, que su Opinión de Cumplimiento 32-D es **POSITIVA** y que no se encuentra en los listados de los Artículos 69 ni 69-B del Código Fiscal de la Federación.
+2. **Declara "EL PROVEEDOR" ({prov_nombre}):** Ser una persona moral o física con actividad empresarial inscrita en el Registro Federal de Contribuyentes con clave **{prov_rfc}**, con domicilio fiscal localizado en ────────────────────────────, representada por ──────────────────────────── (Instrumento Público N° ────────────────────), declarando bajo protesta de decir verdad que cuenta con activos, personal propio, infraestructura y capacidad material directa para ejecutar el objeto de este contrato, que su Opinión de Cumplimiento 32-D es **POSITIVA** y que no se encuentra en los listados de los Artículos 69 ni 69-B del Código Fiscal de la Federación.
 
 ---
 
@@ -557,8 +557,8 @@ r#"# CONTRATO MARCO DE PRESTACIÓN DE SERVICIOS Y SUMINISTRO CON CLÁUSULAS DE M
 
 | **POR "EL CLIENTE": {razon} ({rfc})** | **POR "EL PROVEEDOR": {prov_nombre}** | **TESTIGO / REVISIÓN DE MATERIALIDAD** |
 | :--- | :--- | :--- |
-| **{rep_legal}** ({cargo}) | Nombre y Firma: ________________________ | **{testigo}** |
-| Fecha de Firma: ____/____/2026 | RFC Proveedor: {prov_rfc} | Sello SHA-256: `{hash}` |
+| **{rep_legal}** ({cargo}) | Nombre y Firma: ──────────────────────── | **{testigo}** |
+| Fecha de Firma: ────/────/2026 | RFC Proveedor: {prov_rfc} | Sello SHA-256: `{hash}` |
 "#,
                 razon = razon_social, rfc = tax_id, giro = giro_scian,
                 domicilio = domicilio, cp = cp_fiscal, jurisdiccion = jurisdiccion, jur_suffix = jur_suffix,
@@ -605,11 +605,11 @@ Con el objeto de integrar formalmente el Programa Interno de Protección Civil (
 
 | **ROL EN LA UNIDAD INTERNA PIPC** | **NOMBRE DEL RESPONSABLE / BRIGADISTA** | **FIRMA AUTÓGRAFA** |
 | :--- | :--- | :--- |
-| **Coordinador General de la UIPC** | **{csh_coord}** | ________________________ |
-| **Jefe de Brigada de Evacuación y Repliegue** | ________________________________________ | ________________________ |
-| **Jefe de Brigada de Prevención y Combate de Incendios** | ________________________________________ | ________________________ |
-| **Jefe de Brigada de Primeros Auxilios** | ________________________________________ | ________________________ |
-| **Jefe de Brigada de Búsqueda y Salvamento** | ________________________________________ | ________________________ |
+| **Coordinador General de la UIPC** | **{csh_coord}** | ──────────────────────── |
+| **Jefe de Brigada de Evacuación y Repliegue** | ──────────────────────────── | ──────────────────────── |
+| **Jefe de Brigada de Prevención y Combate de Incendios** | ──────────────────────────── | ──────────────────────── |
+| **Jefe de Brigada de Primeros Auxilios** | ──────────────────────────── | ──────────────────────── |
+| **Jefe de Brigada de Búsqueda y Salvamento** | ──────────────────────────── | ──────────────────────── |
 
 **Obligaciones Sectoriales Específicas a Verificar según el Giro SCIAN ({giro}):**
 {anexo_sectorial}
@@ -659,13 +659,13 @@ Como parte de la contabilidad fiscal obligatoria (Art. 28 CFF y Reglas 2.8.1.20 
 
 | **CAMPO REQUERIDO (RMF REGLA 2.8.1.22)** | **BENEFICIARIO CONTROLADOR 1** | **BENEFICIARIO CONTROLADOR 2** |
 | :--- | :--- | :--- |
-| **Nombre(s) y Apellidos Completos** | ____________________________________ | ____________________________________ |
-| **RFC y CURP (o ID Fiscal Extranjero)** | ____________________________________ | ____________________________________ |
-| **Fecha de Nacimiento y Nacionalidad** | ____________________________________ | ____________________________________ |
-| **Porcentaje de Participación / Control** | ______________ % | ______________ % |
-| **Estado Civil y Régimen Patrimonial** | ____________________________________ | ____________________________________ |
-| **Domicilio Particular y Correo Electrónico** | ____________________________________ | ____________________________________ |
-| **Fecha de Adquisición de la Calidad de BC** | ____ / ____ / ________ | ____ / ____ / ________ |
+| **Nombre(s) y Apellidos Completos** | ──────────────────────────── | ──────────────────────────── |
+| **RFC y CURP (o ID Fiscal Extranjero)** | ──────────────────────────── | ──────────────────────────── |
+| **Fecha de Nacimiento y Nacionalidad** | ──────────────────────────── | ──────────────────────────── |
+| **Porcentaje de Participación / Control** | ────────────── % | ────────────── % |
+| **Estado Civil y Régimen Patrimonial** | ──────────────────────────── | ──────────────────────────── |
+| **Domicilio Particular y Correo Electrónico** | ──────────────────────────── | ──────────────────────────── |
+| **Fecha de Adquisición de la Calidad de BC** | ──── / ──── / ──────── | ──── / ──── / ──────── |
 
 | **POR LA SOCIEDAD / EMISOR ({razon})** | **RESPONSABLE DE CUSTODIA CONTABLE Y FISCAL** |
 | :--- | :--- |

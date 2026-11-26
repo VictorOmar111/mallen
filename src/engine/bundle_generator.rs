@@ -500,13 +500,41 @@ pub fn build_zip_buffer_from_dir(
         zip.write_all(&pdf_bytes)?;
     }
 
-    let emp_count = master_opt
-        .and_then(|m| m.calibration_applied.exact_employee_count.or(Some(m.estimated_employees)))
-        .unwrap_or(45)
+    let hydrated_ref = crate::engine::pdf_generator::load_immutable_snapshot_strict(
+        tax_id,
+        &empresa.nombre,
+    );
+    let recovered_ref = crate::engine::pdf_generator::upgrade_or_recover_ssot_master(
+        tax_id,
+        &empresa.nombre,
+        master_opt.or(hydrated_ref.as_ref()),
+    );
+    let eff_master = master_opt
+        .or(recovered_ref.as_ref())
+        .or(hydrated_ref.as_ref());
+    let (_denue_ctx, denue_emp, _denue_match) =
+        crate::engine::pdf_generator::lookup_formbot_and_denue_context(&empresa.nombre, tax_id);
+    let emp_count = eff_master
+        .and_then(|m| {
+            m.calibration_applied
+                .exact_employee_count
+                .filter(|&n| n > 0)
+                .or_else(|| Some(m.estimated_employees).filter(|&n| n > 0))
+        })
+        .or_else(|| denue_emp.filter(|&n| n > 0))
+        .unwrap_or(20)
         .max(1);
-    let scian_str = master_opt
+    let scian_from_act: String = empresa
+        .actividad
+        .trim()
+        .chars()
+        .take_while(|c| c.is_ascii_digit())
+        .take(6)
+        .collect();
+    let scian_str: &str = eff_master
         .map(|m| m.codigo_scian.as_str())
         .filter(|s| !s.is_empty())
+        .or_else(|| if scian_from_act.len() >= 4 { Some(scian_from_act.as_str()) } else { None })
         .unwrap_or("541110");
 
     // 2. Compilar e incluir los 10 Certificados Individuales de Acreditación en PDF
@@ -573,44 +601,29 @@ pub fn build_zip_buffer_from_dir(
     } else {
         empresa.audit_hash.trim()
     };
-    let padded_h = format!("{:0<64}", clean_h);
-    let armor_1 = format!("MALLEN{}", &padded_h[0..36].to_uppercase());
-    let armor_2 = format!("SSOT37{}", &padded_h[28..64].to_uppercase());
-    let armor_3 = format!("VERIFY{}FRANKFURT2026", &padded_h[12..44].to_uppercase());
-    let armor_crc = &padded_h[56..60].to_uppercase();
-
     let manifiesto_content = format!(
         "FIRMA MALLEN® (MALLEN.LAT) — CERTIFICADO CRIPTOGRAFICO Y ALCANCE LEGAL\r\n\
-        ENTIDAD AUDITADA: {}\r\n\
-        RFC / TAX ID: {}\r\n\
-        PLANTILLA AUDITADA (SSOT): {} COLABORADORES\r\n\
-        GIRO SCIAN: {}\r\n\
-        FECHA Y HORA UTC: {}\r\n\
-        HASH SHA-256 EXPEDIENTE: {}\r\n\
-        URL DE VERIFICACION: https://mallen.lat/verify/{}\r\n\
-        ================================================================================\r\n\
-        4. CONTROL DE VERSIONES DEL SELLO Y RECALIBRACION TRIMESTRAL (MERKLE GOVERNANCE)\r\n\
-        - Esquema Criptografico : MERKLE-SSOT-v4.2 (Edicion 2026)\r\n\
-        - Ventana de Vigilancia : 90 Dias Naturales (NSF / ISO 17065 Surveillance Window)\r\n\
-        - Esquema Canonico JSON : RFC 8785 (JCS) + Evidencia Forense DOM (IIA Norma 14.2)\r\n\
-        ================================================================================\r\n\
-        5. FIRMA DIGITAL CRIPTOGRAFICA DESCONECTADA (OFFLINE PGP / ASCII-ARMORED SEAL)\r\n\
-        -----BEGIN PGP SIGNED MESSAGE-----\r\n\
-        Hash: SHA256\r\n\r\n\
-        EXPEDIENTE_ID: {}\r\n\
-        RAZON_SOCIAL: {}\r\n\
-        AUDIT_SHA256_SEAL: {}\r\n\
-        ISSUER_NODE: FIRMA_MALLEN_FRANKFURT_CORE_HUB_EU_DE_01\r\n\
-        REVISION_CYCLE: QUARTERLY_MERKLE_SYNC_ACTIVE\r\n\
-        CANONICAL_SCHEMA: RFC_8785_JCS_IIA_DOM_EVIDENCE_ENABLED\r\n\
-        -----BEGIN PGP SIGNATURE-----\r\n\
-        Version: Mallen-CryptoEngine 2026.4 (Offline Deterministic Seal)\r\n\r\n\
-        iQIzBAEBCAAdFiEEW16MallenGlobalCompliance2026FrankfurtHubACgkQ\r\n\
-        {}\r\n\
-        {}\r\n\
-        {}\r\n\
-        ={}\r\n\
-        -----END PGP SIGNATURE-----\r\n",
+ENTIDAD AUDITADA: {}\r\n\
+RFC / TAX ID: {}\r\n\
+PLANTILLA AUDITADA (SSOT): {} COLABORADORES\r\n\
+GIRO SCIAN: {}\r\n\
+FECHA Y HORA UTC: {}\r\n\
+HASH SHA-256 EXPEDIENTE: {}\r\n\
+URL DE VERIFICACION: https://mallen.lat/verify/{}\r\n\
+================================================================================\r\n\
+1. CONTROL DE VERSIONES DEL SELLO Y GOBERNANZA CRIPTOGRAFICA (MERKLE L2)\r\n\
+- Esquema Criptografico : MERKLE-SSOT-v4.2 (Edicion 2026)\r\n\
+- Ventana de Vigilancia : 90 Dias Naturales (NSF / ISO 17065 Surveillance Window)\r\n\
+- Esquema Canonico JSON : RFC 8785 (JCS) + Evidencia Forense DOM (IIA Norma 14.2)\r\n\
+================================================================================\r\n\
+2. SELLO DETERMINISTICO DE INTEGRIDAD (ARTS. 89-93 CODIGO DE COMERCIO)\r\n\
+EXPEDIENTE_ID      : {}\r\n\
+RAZON_SOCIAL       : {}\r\n\
+GIRO_SCIAN_SSOT    : {}\r\n\
+PLANTILLA_SSOT     : {} COLABORADORES\r\n\
+AUDIT_SHA256_SEAL  : {}\r\n\
+ISSUER_NODE        : FIRMA_MALLEN_CORE_ENGINE_2026\r\n\
+VERIFICACION_WEB   : https://mallen.lat/verify/{}\r\n",
         empresa.nombre,
         tax_id,
         emp_count,
@@ -620,11 +633,10 @@ pub fn build_zip_buffer_from_dir(
         tax_id,
         tax_id,
         empresa.nombre,
+        scian_str,
+        emp_count,
         clean_h,
-        armor_1,
-        armor_2,
-        armor_3,
-        armor_crc
+        tax_id
     );
 
     zip.start_file(
