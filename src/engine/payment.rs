@@ -32,6 +32,16 @@ pub async fn create_checkout_session(
     prospect_id: &str,
     amount_mxn: u32,
 ) -> Result<CheckoutSession, String> {
+    create_checkout_session_with_meta(client, prospect_id, amount_mxn, None, None).await
+}
+
+pub async fn create_checkout_session_with_meta(
+    client: &Client,
+    prospect_id: &str,
+    amount_mxn: u32,
+    emp_count: Option<u32>,
+    snapshot_hash: Option<&str>,
+) -> Result<CheckoutSession, String> {
     let secret_key = std::env::var("STRIPE_SECRET_KEY").unwrap_or_default();
     let base_url = std::env::var("MALLEN_BASE_URL").unwrap_or_else(|_| "https://mallen.lat".to_string());
 
@@ -44,8 +54,9 @@ pub async fn create_checkout_session(
     }
 
     let amount_centavos = (amount_mxn.max(3000) as u64) * 100;
-    let params = [
+    let mut params = vec![
         ("mode", "payment".to_string()),
+        ("locale", "es-419".to_string()),
         ("success_url", format!("{}/dashboard.html?paid=1&ref={}", base_url, prospect_id)),
         ("cancel_url", format!("{}/?canceled=1&ref={}", base_url, prospect_id)),
         ("client_reference_id", prospect_id.to_string()),
@@ -60,6 +71,15 @@ pub async fn create_checkout_session(
         ),
         ("line_items[0][quantity]", "1".to_string()),
     ];
+    if let Some(n) = emp_count.filter(|&v| (1..=50000).contains(&v)) {
+        params.push(("metadata[emp_count]", n.to_string()));
+    }
+    if let Some(h) = snapshot_hash
+        .map(str::trim)
+        .filter(|s| !s.is_empty() && s.chars().count() <= 200 && !s.chars().any(|c| c.is_control()))
+    {
+        params.push(("metadata[snapshot_hash]", h.to_string()));
+    }
 
     let resp = client
         .post("https://api.stripe.com/v1/checkout/sessions")

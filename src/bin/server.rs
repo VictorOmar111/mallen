@@ -27,7 +27,7 @@ use worker_inegi_engine::engine::{
     },
     network::NetworkClientManager,
     osint_scanner::{run_deep_web_telemetry, OsintResult},
-    payment::{create_checkout_session, StripeDisputeGuard},
+    payment::{create_checkout_session_with_meta, StripeDisputeGuard},
     pdf_generator::generate_exit_intent_micro_pdf_with_session,
     risk_evaluator::evaluate_risk,
     sat_billing::{InvoiceData, SatBillingManager},
@@ -53,6 +53,8 @@ struct PaymentRequest {
     ref_code: String,
     email: Option<String>,
     accepted_disclaimer: Option<bool>,
+    #[serde(default)]
+    exact_employee_count: Option<u32>,
     #[serde(default)]
     dossier: Option<LegalDossierInput>,
 }
@@ -1488,6 +1490,17 @@ async fn render_checkout_page_with_state(state: Arc<AppState>, raw_ref: String) 
                 </div>
             </div>
 
+            <div class="bg-slate-950 border border-white/15 p-4 rounded-xl space-y-2">
+                <span class="text-[10px] font-bold text-amber-400 uppercase block">Ajuste Opcional de Plantilla (NOM-035 / NOM-019 / STPS)</span>
+                <div class="grid sm:grid-cols-2 gap-3 items-center">
+                    <div>
+                        <label class="text-[10px] text-slate-400 block mb-1">Número exacto de colaboradores (opcional)</label>
+                        <input id="pay_empleados" type="number" min="1" max="50000" step="1" placeholder="Dejar vacío para usar dato oficial DENUE" class="w-full bg-white/[0.05] shadow-[0_8px_32px_rgba(0,0,0,0.5)] border border-white/15 rounded-lg px-3.5 py-2.5 text-white">
+                    </div>
+                    <p class="text-[10px] text-slate-400 leading-relaxed">Si su plantilla real cambió respecto al padrón oficial, ingrésela aquí antes de pagar para sincronizar su Dictamen, Certificados y Contratos.</p>
+                </div>
+            </div>
+
             <div class="bg-slate-950 border border-white/15 p-4 rounded-xl space-y-3">
                 <div class="flex flex-wrap justify-between items-center gap-2">
                     <span class="text-[10px] font-bold text-blue-400 uppercase">Pasarela Oficial Stripe Checkout (TLS 1.3 / 3D Secure)</span>
@@ -1530,6 +1543,7 @@ async fn render_checkout_page_with_state(state: Arc<AppState>, raw_ref: String) 
         async function processCheckoutPayment(e) {{
             e.preventDefault();
             const btn = document.getElementById("btnPayNow");
+            const origBtnText = btn.textContent;
             btn.disabled = true;
             btn.textContent = "Compilando Expediente Personalizado y Paquete ZIP...";
 
@@ -1538,14 +1552,30 @@ async fn render_checkout_page_with_state(state: Arc<AppState>, raw_ref: String) 
                 return v ? v : null;
             }};
 
-            await fetch("/api/calibrate", {{
-                method: "POST",
-                headers: {{ "Content-Type": "application/json" }},
-                body: JSON.stringify({{
-                    tax_id: "{ref_code}",
-                    razon_social_override: valOrNull("pay_razon"),
-                    email_contacto: valOrNull("pay_email"),
-                    calibration: {{
+            const rawEmp = document.getElementById("pay_empleados")?.value?.trim() || "";
+            let exactEmp = null;
+            if (rawEmp !== "") {{
+                if (!/^\d+$/.test(rawEmp)) {{
+                    alert("Ingrese un número entero válido de colaboradores (1 a 50,000) o deje el campo vacío.");
+                    btn.disabled = false;
+                    btn.textContent = origBtnText;
+                    return;
+                }}
+                const parsedEmp = parseInt(rawEmp, 10);
+                if (parsedEmp < 1 || parsedEmp > 50000) {{
+                    alert("El número de colaboradores debe estar entre 1 y 50,000.");
+                    btn.disabled = false;
+                    btn.textContent = origBtnText;
+                    return;
+                }}
+                exactEmp = parsedEmp;
+            }}
+
+            const calPayload = {{
+                tax_id: "{ref_code}",
+                razon_social_override: valOrNull("pay_razon"),
+                email_contacto: valOrNull("pay_email"),
+                calibration: {{
                         dossier: {{
                             razon_social_oficial: valOrNull("pay_razon"),
                             giro_scian_descripcion: valOrNull("pay_giro"),
@@ -1565,13 +1595,39 @@ async fn render_checkout_page_with_state(state: Arc<AppState>, raw_ref: String) 
                             proveedor_principal_servicio_objeto: valOrNull("pay_prov_obj")
                         }}
                     }}
-                }})
-            }});
+                }}
+            }};
+            if (exactEmp !== null) {{
+                calPayload.calibration.exact_employee_count = exactEmp;
+            }}
 
+            try {{
+                const calRes = await fetch("/api/calibrate", {{
+                    method: "POST",
+                    headers: {{ "Content-Type": "application/json" }},
+                    body: JSON.stringify(calPayload)
+                }});
+                if (!calRes.ok) {{
+                    alert("No se pudo guardar la calibración previa al pago. Intente nuevamente.");
+                    btn.disabled = false;
+                    btn.textContent = origBtnText;
+                    return;
+                }}
+            }} catch (netErr) {{
+                alert("Error de conexión al preparar su expediente. Verifique su red e intente nuevamente.");
+                btn.disabled = false;
+                btn.textContent = origBtnText;
+                return;
+            }}
+
+            const sessPayload = {{ ref_code: "{ref_code}", email: valOrNull("pay_email"), accepted_disclaimer: true }};
+            if (exactEmp !== null) {{
+                sessPayload.exact_employee_count = exactEmp;
+            }}
             const res = await fetch("/api/checkout/session", {{
                 method: "POST",
                 headers: {{ "Content-Type": "application/json" }},
-                body: JSON.stringify({{ ref_code: "{ref_code}", email: valOrNull("pay_email"), accepted_disclaimer: true }})
+                body: JSON.stringify(sessPayload)
             }});
             const sessionData = await res.json();
 
@@ -1666,7 +1722,71 @@ async fn create_payment_session(
         .map(|v| v.round() as u32)
         .filter(|&v| v > 0)
         .unwrap_or(3000);
-    let session = create_checkout_session(&state.http_client, &clean_tax, kit_price_mxn)
+    if let Some(n) = payload.exact_employee_count {
+        if !(1..=50000).contains(&n) {
+            return (
+                StatusCode::BAD_REQUEST,
+                Json(json!({"error": "El número de colaboradores debe estar entre 1 y 50,000"})),
+            )
+                .into_response();
+        }
+    }
+
+    let mut meta_emp_count: Option<u32> = payload.exact_employee_count;
+    let mut meta_snap_hash: Option<String> = None;
+    let safe_tax_path = !clean_tax.is_empty()
+        && !clean_tax.contains('/')
+        && !clean_tax.contains('\\')
+        && !clean_tax.contains("..");
+
+    match state.db.get_audit_session(&clean_tax).await {
+        Ok(Some((mut master, is_acc))) => {
+            if let Some(n) = meta_emp_count {
+                master.calibration_applied.exact_employee_count = Some(n);
+                master.estimated_employees = n;
+                let snap_id = worker_inegi_engine::engine::pdf_generator::freeze_immutable_audit_snapshot(
+                    &clean_tax,
+                    &master.razon_social,
+                    &master,
+                );
+                if let Err(e) = state.db.save_audit_session(&clean_tax, &master, is_acc).await {
+                    eprintln!("[v156] WARN save_audit_session({}): {}", clean_tax, e);
+                }
+                if safe_tax_path {
+                    let cached_zip = format!("kits_blindaje/{}/Paquete_Blindaje_Integral_{}.zip", clean_tax, clean_tax);
+                    if let Err(e) = std::fs::remove_file(&cached_zip) {
+                        if e.kind() != std::io::ErrorKind::NotFound {
+                            eprintln!("[v156] WARN remove_file({}): {}", cached_zip, e);
+                        }
+                    }
+                }
+                if !snap_id.trim().is_empty() {
+                    meta_snap_hash = Some(snap_id);
+                }
+            } else {
+                meta_emp_count = master
+                    .calibration_applied
+                    .exact_employee_count
+                    .filter(|&n| (1..=50000).contains(&n))
+                    .or(Some(master.estimated_employees).filter(|&n| (1..=50000).contains(&n)));
+                if !master.audit_id.trim().is_empty() {
+                    meta_snap_hash = Some(master.audit_id.clone());
+                }
+            }
+        }
+        Ok(None) => {}
+        Err(e) => {
+            eprintln!("[v156] WARN get_audit_session({}): {}", clean_tax, e);
+        }
+    }
+
+    let session = create_checkout_session_with_meta(
+        &state.http_client,
+        &clean_tax,
+        kit_price_mxn,
+        meta_emp_count,
+        meta_snap_hash.as_deref(),
+    )
         .await
         .unwrap_or(worker_inegi_engine::engine::payment::CheckoutSession {
             checkout_url: format!("/verify/{}", clean_tax),
