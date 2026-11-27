@@ -105,16 +105,22 @@ fn normalize_url_and_domain(raw_www: &str) -> Option<(String, String)> {
         format!("https://{}", trimmed.trim_start_matches('/'))
     };
     let host = normalize_domain_key(&url);
+    let Some((_, tld)) = host.rsplit_once('.') else {
+        return None;
+    };
     if host.is_empty()
-        || !host.contains('.')
         || host == "localhost"
         || host == "127.0.0.1"
-        || host.starts_with('.')
-        || host.ends_with('.')
         || host.starts_with("http.")
         || host.starts_with("https.")
         || host.contains("2www.")
         || host.starts_with("www")
+        || tld.len() < 2
+        || !tld.chars().all(|c| c.is_ascii_alphabetic())
+        || matches!(tld, "om" | "cm")
+        || host
+            .split('.')
+            .any(|seg| seg.is_empty() || seg.starts_with('-') || seg.ends_with('-'))
         || !host.chars().all(|c| c.is_ascii_alphanumeric() || c == '-' || c == '.')
     {
         return None;
@@ -455,21 +461,62 @@ async fn run_wave1(
 
     let fetch_cap = (limit * 15).clamp(250, 12_000) as i64;
     let sql = "
-        SELECT COALESCE(NULLIF(TRIM(raz_social), ''), TRIM(nom_estab)) AS empresa,
-               TRIM(www) AS web_raw,
-               COALESCE(NULLIF(TRIM(codigo_scian), ''), '541110') AS scian,
-               COALESCE(per_ocu, '11 a 30 personas') AS estrato
-        FROM denue_units
-        WHERE www IS NOT NULL
-          AND TRIM(www) != ''
-          AND (TRIM(raz_social) != '' OR TRIM(nom_estab) != '')
-          AND UPPER(COALESCE(NULLIF(TRIM(raz_social), ''), TRIM(nom_estab))) NOT LIKE '%(SUCURSAL %'
+        WITH step1 AS (
+            SELECT raz_social,
+                   nom_estab,
+                   www,
+                   codigo_scian,
+                   per_ocu,
+                   REPLACE(REPLACE(LOWER(TRIM(www)), 'https://', ''), 'http://', '') AS no_scheme
+            FROM denue_units
+            WHERE www IS NOT NULL AND TRIM(www) != ''
+        ),
+        step2 AS (
+            SELECT raz_social,
+                   nom_estab,
+                   www,
+                   codigo_scian,
+                   per_ocu,
+                   CASE
+                       WHEN INSTR(no_scheme, '/') > 0 THEN SUBSTR(no_scheme, 1, INSTR(no_scheme, '/') - 1)
+                       ELSE no_scheme
+                   END AS raw_host
+            FROM step1
+        ),
+        step3 AS (
+            SELECT raz_social,
+                   nom_estab,
+                   www,
+                   codigo_scian,
+                   per_ocu,
+                   CASE
+                       WHEN raw_host LIKE 'www.%' THEN SUBSTR(raw_host, 5)
+                       ELSE raw_host
+                   END AS host_key
+            FROM step2
+        ),
+        non_franchise AS (
+            SELECT host_key
+            FROM step3
+            WHERE host_key != ''
+            GROUP BY host_key
+            HAVING COUNT(*) <= 3
+        )
+        SELECT COALESCE(NULLIF(TRIM(d.raz_social), ''), TRIM(d.nom_estab)) AS empresa,
+               TRIM(d.www) AS web_raw,
+               COALESCE(NULLIF(TRIM(d.codigo_scian), ''), '541110') AS scian,
+               COALESCE(d.per_ocu, '11 a 30 personas') AS estrato
+        FROM step3 d
+        INNER JOIN non_franchise nf ON d.host_key = nf.host_key
+        WHERE (TRIM(d.raz_social) != '' OR TRIM(d.nom_estab) != '')
+          AND UPPER(COALESCE(NULLIF(TRIM(d.raz_social), ''), TRIM(d.nom_estab))) NOT LIKE '%(SUCURSAL %'
+          AND substr(TRIM(d.codigo_scian), 1, 2) IN ('23','31','32','33','43','48','49','54')
           AND (
-            per_ocu LIKE '%6 a 10%'
-            OR per_ocu LIKE '%11 a 30%'
-            OR per_ocu LIKE '%31 a 50%'
-            OR per_ocu LIKE '%51 a 100%'
-            OR per_ocu LIKE '%101 a 250%'
+            d.per_ocu LIKE '%6 a 10%'
+            OR d.per_ocu LIKE '%11 a 30%'
+            OR d.per_ocu LIKE '%31 a 50%'
+            OR d.per_ocu LIKE '%51 a 100%'
+            OR d.per_ocu LIKE '%101 a 250%'
           )
         ORDER BY RANDOM()
         LIMIT ?1
