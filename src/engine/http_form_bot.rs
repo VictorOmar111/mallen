@@ -2614,11 +2614,38 @@ impl HttpFormBot {
     /// Incluye Backoff Exponencial en GET/POST, resolución de redirecciones 301/302 y Meta-Refresh,
     /// autodescubrimiento de subpágina `/contacto`, detección de Iframes CRM (HubSpot/Typeform/Calendly),
     /// cosecha de email/WhatsApp de respaldo y Máquina de Estados en SQLite WAL (`prospect_pipeline`).
+    pub fn build_wave2_followup_message(empresa_nombre: &str, had_clicked_link: bool) -> String {
+        let encoded_ref = Self::encode_url_ref(empresa_nombre);
+        let link = format!("https://mallen.lat/api/micro_scan/{}", encoded_ref);
+        let emp = empresa_nombre.trim();
+        if had_clicked_link {
+            format!(
+                "Hola, equipo de {}. Dando breve seguimiento a la consulta de su pre-evaluacion tecnica preventiva (STPS, SAT, IMSS y LFPDPPP), su resumen confidencial sigue disponible aqui: {} | Si desean activar el expediente completo, pueden hacerlo en linea cuando gusten. Aviso de Privacidad: https://mallen.lat/privacidad | Exclusion ARCO: https://mallen.lat/derechos-arco",
+                emp, link
+            )
+        } else {
+            format!(
+                "Hola, equipo de {}. Recordatorio breve de 72 horas: el pre-diagnostico tecnico preventivo de cumplimiento (STPS, SAT, IMSS y LFPDPPP) para su entidad sigue disponible sin costo aqui: {} | Fuente: INEGI, DENUE. Aviso de Privacidad: https://mallen.lat/privacidad | Exclusion ARCO: https://mallen.lat/derechos-arco",
+                emp, link
+            )
+        }
+    }
+
     pub async fn submit_form_direct(
         client: &Client,
         page_url: &str,
         empresa_nombre: &str,
         multa_estimada: f64,
+    ) -> String {
+        Self::submit_form_direct_with_message(client, page_url, empresa_nombre, multa_estimada, None).await
+    }
+
+    pub async fn submit_form_direct_with_message(
+        client: &Client,
+        page_url: &str,
+        empresa_nombre: &str,
+        multa_estimada: f64,
+        custom_message: Option<&str>,
     ) -> String {
         if let Err(link_err) = Self::build_and_validate_checkout_link(empresa_nombre, None) {
             return link_err.to_string();
@@ -2677,7 +2704,10 @@ impl HttpFormBot {
         }
         let encoded_ref = Self::encode_url_ref(empresa_nombre);
 
-        let mensaje_utf8 = Self::build_human_consultative_message(empresa_nombre, &encoded_ref);
+        let mensaje_utf8 = match custom_message {
+            Some(m) if !m.trim().is_empty() => m.to_string(),
+            _ => Self::build_human_consultative_message(empresa_nombre, &encoded_ref),
+        };
 
         let mut tracked_final_url = page_url.to_string();
         let mut harvested_contact: Option<String> = None;
