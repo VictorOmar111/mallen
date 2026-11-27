@@ -492,7 +492,7 @@ impl HttpFormBot {
         let (default_headers, _) = Self::next_rotated_headers();
         let mut builder = Client::builder()
             .timeout(Duration::from_millis(Self::configured_timeout_ms()))
-            .connect_timeout(Duration::from_millis(3000))
+            .connect_timeout(Duration::from_millis(8000))
             .pool_idle_timeout(Duration::from_secs(15))
             .pool_max_idle_per_host(16)
             .tcp_keepalive(Duration::from_secs(30))
