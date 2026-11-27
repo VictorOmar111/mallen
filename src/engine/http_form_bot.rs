@@ -2839,17 +2839,61 @@ impl HttpFormBot {
                 }
             }
 
-            // Si en la página inicial no hay ningún <form> de contacto pero sí hay un link a /contacto, navegar a él automáticamente
+            // Detección temprana de redirección a brokers/parking de dominios antes de evaluar WAF o sondear /contacto
+            if let Some(final_host) = current_target_url.host_str() {
+                let fh = final_host.to_lowercase();
+                let parking_hosts = [
+                    "hugedomains.com", "sedo.com", "sedoparking.com", "dan.com",
+                    "afternic.com", "bodis.com", "parkingcrew.net",
+                ];
+                if parking_hosts.iter().any(|ph| fh == *ph || fh.ends_with(&format!(".{}", ph))) {
+                    return ("DOMINIO_ESTACIONADO".to_string(), current_target_url.to_string(), None);
+                }
+            }
+
+            // Si en la página inicial no hay ningún <textarea>, navegar al enlace interno de contacto o sondear rutas estándar
             if !html_text.to_lowercase().contains("<textarea") {
+                let mut found_contact_form = false;
                 if let Some(contact_subpage) = Self::discover_internal_contact_link(&current_target_url, &html_text) {
-                    if let Ok(r3) = active_client.get(&contact_subpage).headers(rotated_headers.clone()).send().await {
-                        if r3.status().is_success() {
-                            current_target_url = r3.url().clone();
-                            if let Ok(b3) = r3.bytes().await {
-                                let s3 = if b3.len() > 1_500_000 { &b3[..1_500_000] } else { &b3[..] };
-                                let candidate_html = String::from_utf8_lossy(s3).into_owned();
-                                if candidate_html.to_lowercase().contains("<form") || candidate_html.to_lowercase().contains("<iframe") {
+                    if let Ok(Some((next_url, candidate_html))) = timeout(Duration::from_millis(4500), async {
+                        let r3 = active_client.get(&contact_subpage).headers(rotated_headers.clone()).send().await.ok()?;
+                        if !r3.status().is_success() {
+                            return None;
+                        }
+                        let next_url = r3.url().clone();
+                        let b3 = r3.bytes().await.ok()?;
+                        let s3 = if b3.len() > 1_500_000 { &b3[..1_500_000] } else { &b3[..] };
+                        Some((next_url, String::from_utf8_lossy(s3).into_owned()))
+                    }).await {
+                        let clow = candidate_html.to_lowercase();
+                        if clow.contains("<form") || clow.contains("<iframe") {
+                            current_target_url = next_url;
+                            html_text = candidate_html;
+                            found_contact_form = true;
+                        }
+                    }
+                }
+                if !found_contact_form {
+                    for probe_path in ["/contacto", "/contactanos", "/contact"] {
+                        if let Ok(probe_url) = current_target_url.join(probe_path) {
+                            if probe_url.as_str() == current_target_url.as_str() {
+                                continue;
+                            }
+                            if let Ok(Some((next_url, candidate_html))) = timeout(Duration::from_millis(3500), async {
+                                let rp = active_client.get(probe_url.as_str()).headers(rotated_headers.clone()).send().await.ok()?;
+                                if !rp.status().is_success() {
+                                    return None;
+                                }
+                                let next_url = rp.url().clone();
+                                let bp = rp.bytes().await.ok()?;
+                                let sp = if bp.len() > 1_500_000 { &bp[..1_500_000] } else { &bp[..] };
+                                Some((next_url, String::from_utf8_lossy(sp).into_owned()))
+                            }).await {
+                                let clow = candidate_html.to_lowercase();
+                                if clow.contains("<form") || clow.contains("<iframe") {
+                                    current_target_url = next_url;
                                     html_text = candidate_html;
+                                    break;
                                 }
                             }
                         }
@@ -3137,11 +3181,11 @@ impl HttpFormBot {
                 }
 
                 let req_builder = if form_method_is_get {
-                    active_client.get(&form_action).headers(post_headers).query(&form_params)
+                    active_client.get(&form_action).headers(post_headers.clone()).query(&form_params)
                 } else {
                     active_client
                         .post(&form_action)
-                        .headers(post_headers)
+                        .headers(post_headers.clone())
                         .header("Content-Type", "application/x-www-form-urlencoded; charset=UTF-8")
                         .form(&form_params)
                 };
@@ -3156,16 +3200,22 @@ impl HttpFormBot {
                         continue; // Reintentar 1 vez si el servidor destino dio 502/503 temporal en el POST
                     }
                     Ok(res) if res.status().as_u16() == 415 => {
-                        // Fallback automático para APIs modernas que exigen application/json en el action del form
-                        if let Ok(json_res) = active_client
-                            .post(&form_action)
-                            .header("Referer", current_target_url.as_str())
-                            .header("Origin", &origin_str)
-                            .json(&form_params)
-                            .send()
-                            .await
-                        {
-                            if json_res.status().is_success() {
+                        // Fallback automático para APIs modernas que exigen objeto application/json con cookies y headers originales
+                        let json_obj: HashMap<&str, &str> = form_params
+                            .iter()
+                            .map(|(k, v)| (k.as_str(), v.as_str()))
+                            .collect();
+                        let mut json_headers = post_headers.clone();
+                        json_headers.remove("content-type");
+                        if let Ok(Ok(json_res)) = timeout(
+                            Duration::from_millis(6000),
+                            active_client
+                                .post(&form_action)
+                                .headers(json_headers)
+                                .json(&json_obj)
+                                .send(),
+                        ).await {
+                            if json_res.status().is_success() || json_res.status().is_redirection() {
                                 let body_resp = json_res.text().await.unwrap_or_default();
                                 let sem = Self::classify_post_response_semantics(&body_resp).to_string();
                                 return (sem, current_target_url.to_string(), fallback_contact);

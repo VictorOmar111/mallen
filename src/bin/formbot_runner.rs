@@ -130,6 +130,10 @@ fn is_excluded_entity(empresa: &str, domain: &str) -> bool {
         "tiktok.com", "youtube.com", "whatsapp.com", "wa.me", "gob.mx", "edu.mx",
         "blogspot.com", "wixsite.com", "google.com", "mercadolibre.com", "amazon.com",
         "seccionamarilla.com", "paginasamarillas", "yelp.com",
+        "hugedomains.com", "sedo.com", "sedoparking.com", "dan.com", "afternic.com",
+        "oxxo.com", "farmaciasanpablo.com.mx", "fahorro.com", "tiendas3b.com",
+        "moctezuma.com.mx", "grupoexpansion.com", "walmart.com", "soriana.com",
+        "chedraui.com.mx", "coppel.com", "liverpool.com.mx", "telmex.com", "telcel.com",
     ];
     if blocked_domains.iter().any(|b| d == *b || d.ends_with(&format!(".{}", b)) || d.contains(b)) {
         return true;
@@ -139,6 +143,9 @@ fn is_excluded_entity(empresa: &str, domain: &str) -> bool {
         "SEGURO SOCIAL", "INSTITUTO MEXICANO", "PEMEX", "CFE ", "BANCO ", "BBVA",
         "BANAMEX", "SANTANDER", "HSBC", "SCOTIABANK", "BANORTE", "INBURSA",
         "UNIVERSIDAD ", "ESCUELA ", "COLEGIO ", "IGLESIA ", "7-ELEVEN", "WESTERN UNION",
+        "OXXO", "PHARMA PLUS", "TIENDAS TRES B", "CEMENTOS MOCTEZUMA", "KRISPY KREME",
+        "WALMART", "SORIANA", "CHEDRAUI", "COPPEL", "ELEKTRA", "LIVERPOOL", "SANBORNS",
+        "BIMBO", "FEMSA", "TELMEX", "TELCEL", "STARBUCKS", "GRUPO EXPANSION",
     ];
     blocked_names.iter().any(|b| e.contains(b))
 }
@@ -180,6 +187,7 @@ fn is_terminal_wave2_result(res: &str) -> bool {
             | "CANAL_ALTERNATIVO_MAILTO_DETECTADO"
             | "CANAL_ALTERNATIVO_IFRAME_CRM"
             | "URL_INVALIDA"
+            | "DOMINIO_ESTACIONADO"
     ) || res.starts_with("DEAD_DOMAIN")
 }
 
