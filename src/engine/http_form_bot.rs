@@ -464,12 +464,16 @@ impl HttpFormBot {
         headers.insert(USER_AGENT, HeaderValue::from_static(ua));
         headers.insert(
             ACCEPT,
-            HeaderValue::from_static("text/html,application/xhtml+xml,application/xml;q=0.9,application/json;q=0.8,*/*;q=0.7"),
+            HeaderValue::from_static("text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8"),
         );
         headers.insert(
             ACCEPT_LANGUAGE,
             HeaderValue::from_static("es-MX,es;q=0.9,en-US;q=0.8,en;q=0.7"),
         );
+        headers.insert("upgrade-insecure-requests", HeaderValue::from_static("1"));
+        headers.insert("sec-fetch-dest", HeaderValue::from_static("document"));
+        headers.insert("sec-fetch-mode", HeaderValue::from_static("navigate"));
+        headers.insert("sec-fetch-site", HeaderValue::from_static("none"));
         if !sec_ch_ua.is_empty() {
             if let Ok(v) = HeaderValue::from_str(sec_ch_ua) {
                 headers.insert("sec-ch-ua", v);
@@ -3247,6 +3251,7 @@ impl HttpFormBot {
                 }
 
                 let mut post_headers = rotated_headers.clone();
+                post_headers.insert("sec-fetch-site", HeaderValue::from_static("same-origin"));
                 if let Ok(ref_val) = HeaderValue::from_str(current_target_url.as_str()) {
                     post_headers.insert(REFERER, ref_val);
                 }
