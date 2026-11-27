@@ -2,6 +2,7 @@ use std::collections::{BTreeMap, HashSet};
 use std::fs::OpenOptions;
 use std::io::Write;
 use std::path::PathBuf;
+use std::sync::Arc;
 use std::time::{Duration, Instant, SystemTime, UNIX_EPOCH};
 use worker_inegi_engine::engine::http_form_bot::HttpFormBot;
 
@@ -339,6 +340,7 @@ async fn async_main() {
     let mut wave = String::from("1");
     let mut limit: usize = 25;
     let mut delay_ms: u64 = 1500;
+    let mut concurrency: usize = 1;
     let mut live_mode = false;
     let mut db_override: Option<String> = None;
 
@@ -383,6 +385,21 @@ async fn async_main() {
                 }
                 i += 2;
             }
+            "--concurrency" => {
+                let Some(val) = args.get(i + 1) else {
+                    eprintln!("ERROR: falta valor para --concurrency");
+                    std::process::exit(1);
+                };
+                concurrency = val.parse::<usize>().unwrap_or_else(|_| {
+                    eprintln!("ERROR: --concurrency inválido '{}'", val);
+                    std::process::exit(1);
+                });
+                if concurrency == 0 || concurrency > 64 {
+                    eprintln!("ERROR: --concurrency debe estar entre 1 y 64");
+                    std::process::exit(1);
+                }
+                i += 2;
+            }
             "--db" => {
                 let Some(val) = args.get(i + 1) else {
                     eprintln!("ERROR: falta valor para --db");
@@ -400,7 +417,7 @@ async fn async_main() {
                 i += 1;
             }
             "-h" | "--help" => {
-                println!("Uso: formbot_runner --wave <1|2-72h> --limit <1..2000> [--delay-ms <200..30000>] [--db <ruta>] [--dry-run|--live]");
+                println!("Uso: formbot_runner --wave <1|2-72h> --limit <1..2000> [--delay-ms <200..30000>] [--concurrency <1..64>] [--db <ruta>] [--dry-run|--live]");
                 return;
             }
             other => {
@@ -449,18 +466,31 @@ async fn async_main() {
         .build()
         .expect("ERROR creando reqwest::Client");
 
+    let has_proxy_pool = std::env::var("MALLEN_PROXY_POOL")
+        .map(|v| !v.trim().is_empty())
+        .unwrap_or(false);
+    if live_mode && concurrency > 4 && !has_proxy_pool {
+        eprintln!(
+            "AVISO SEGURIDAD: --concurrency {} sin MALLEN_PROXY_POOL en .env. Limitando a 4 para proteger la IP de AWS.",
+            concurrency
+        );
+        concurrency = 4;
+    }
+
     let t0 = Instant::now();
     println!(
-        "=== FORMBOT RUNNER v160 | wave={} | mode={} | limit={} | delay_ms={}±25% | db={} ===",
+        "=== FORMBOT RUNNER v160.9 | wave={} | mode={} | limit={} | concurrency={} | proxy={} | delay_ms={}±25% | db={} ===",
         wave,
         if live_mode { "LIVE" } else { "DRY-RUN (RO)" },
         limit,
+        concurrency,
+        if has_proxy_pool { "POOL" } else { "DIRECT" },
         delay_ms,
         db_path
     );
 
     if wave == "1" {
-        run_wave1(&conn, &client, limit, delay_ms, live_mode).await;
+        run_wave1(&conn, &client, limit, delay_ms, live_mode, concurrency).await;
     } else if wave == "2-72h" || wave == "2" {
         run_wave2_72h(&conn, &client, limit, delay_ms, live_mode).await;
     } else {
@@ -480,6 +510,7 @@ async fn run_wave1(
     limit: usize,
     delay_ms: u64,
     live_mode: bool,
+    concurrency: usize,
 ) {
     let (mut existing_names, mut existing_domains) = load_exclusion_sets(conn);
 
@@ -577,8 +608,10 @@ async fn run_wave1(
         })
         .expect("ERROR leyendo denue_units");
 
+    let mut prefiltered: Vec<(String, String, String, String, f64)> = Vec::new();
+    let prefilter_cap = if live_mode { (limit * 3 + 64).min(fetch_cap as usize) } else { limit };
     for (empresa, raw_www, scian, estrato) in rows.flatten() {
-        if candidates.len() >= limit {
+        if prefiltered.len() >= prefilter_cap {
             break;
         }
         let emp_clean = empresa.trim().to_string();
@@ -599,21 +632,49 @@ async fn run_wave1(
         if is_excluded_entity(&emp_clean, &domain) {
             continue;
         }
-        let final_url = if live_mode {
-            match resolve_live_url(&url, &domain).await {
-                Some(u) => u,
-                None => {
-                    skipped_dead_dns += 1;
-                    continue;
-                }
-            }
-        } else {
-            url
-        };
         batch_names.insert(emp_up);
         batch_domains.insert(domain.clone());
         let multa = estimate_fine_from_estrato(&estrato);
-        candidates.push((emp_clean, final_url, domain, scian, multa));
+        prefiltered.push((emp_clean, url, domain, scian, multa));
+    }
+
+    if !live_mode {
+        candidates = prefiltered.into_iter().take(limit).collect();
+    } else if concurrency <= 1 {
+        for (emp_clean, url, domain, scian, multa) in prefiltered {
+            if candidates.len() >= limit {
+                break;
+            }
+            match resolve_live_url(&url, &domain).await {
+                Some(final_url) => candidates.push((emp_clean, final_url, domain, scian, multa)),
+                None => skipped_dead_dns += 1,
+            }
+        }
+    } else {
+        for chunk in prefiltered.chunks(32) {
+            if candidates.len() >= limit {
+                break;
+            }
+            let mut dns_set = tokio::task::JoinSet::new();
+            for (emp_clean, url, domain, scian, multa) in chunk.iter().cloned() {
+                dns_set.spawn(async move {
+                    let resolved = resolve_live_url(&url, &domain).await;
+                    (emp_clean, resolved, domain, scian, multa)
+                });
+            }
+            while let Some(joined) = dns_set.join_next().await {
+                match joined {
+                    Ok((emp_clean, resolved, domain, scian, multa)) => match resolved {
+                        Some(final_url) if candidates.len() < limit => {
+                            candidates.push((emp_clean, final_url, domain, scian, multa));
+                        }
+                        None => skipped_dead_dns += 1,
+                        _ => {}
+                    },
+                    Err(e) => eprintln!("WARN tarea DNS falló: {}", e),
+                }
+            }
+        }
     }
 
     println!(
@@ -625,8 +686,8 @@ async fn run_wave1(
     );
     let mut stats: BTreeMap<String, usize> = BTreeMap::new();
 
-    for (idx, (empresa, url, domain, scian, multa)) in candidates.iter().enumerate() {
-        if !live_mode {
+    if !live_mode {
+        for (idx, (empresa, url, _domain, scian, multa)) in candidates.iter().enumerate() {
             println!(
                 "  [DRY {:02}/{}] {} | {} | SCIAN {} | multa_est=${:.0}",
                 idx + 1,
@@ -636,28 +697,59 @@ async fn run_wave1(
                 scian,
                 multa
             );
-            continue;
         }
-        let mut res = HttpFormBot::submit_form_direct(client, url, empresa, *multa).await;
-        if (res == "ERR_HTTP_GET_CONNECT" || res == "ERR_HTTP_GET_NET") && url.to_lowercase().contains("://www.") {
-            let apex_https = format!("https://{}", domain);
-            res = HttpFormBot::submit_form_direct(client, &apex_https, empresa, *multa).await;
+    } else if concurrency <= 1 {
+        for (idx, (empresa, url, domain, _scian, multa)) in candidates.iter().enumerate() {
+            let mut res = HttpFormBot::submit_form_direct(client, url, empresa, *multa).await;
+            if (res == "ERR_HTTP_GET_CONNECT" || res == "ERR_HTTP_GET_NET") && url.to_lowercase().contains("://www.") {
+                let apex_https = format!("https://{}", domain);
+                res = HttpFormBot::submit_form_direct(client, &apex_https, empresa, *multa).await;
+            }
+            if (res == "ERR_HTTP_GET_CONNECT" || res == "ERR_HTTP_GET_NET") && url.starts_with("https://") {
+                let http_fallback = url.replacen("https://", "http://", 1);
+                res = HttpFormBot::submit_form_direct(client, &http_fallback, empresa, *multa).await;
+            }
+            println!(
+                "  [LIVE {:02}/{}] {} ({}) -> {}",
+                idx + 1,
+                candidates.len(),
+                empresa,
+                domain,
+                res
+            );
+            *stats.entry(res).or_insert(0) += 1;
+            if idx + 1 < candidates.len() {
+                tokio::time::sleep(Duration::from_millis(jittered_delay_ms(delay_ms))).await;
+            }
         }
-        if (res == "ERR_HTTP_GET_CONNECT" || res == "ERR_HTTP_GET_NET") && url.starts_with("https://") {
-            let http_fallback = url.replacen("https://", "http://", 1);
-            res = HttpFormBot::submit_form_direct(client, &http_fallback, empresa, *multa).await;
+    } else {
+        let total = candidates.len();
+        let sem = Arc::new(tokio::sync::Semaphore::new(concurrency));
+        let mut join_set = tokio::task::JoinSet::new();
+        for (idx, (empresa, url, domain, _scian, multa)) in candidates.iter().cloned().enumerate() {
+            let permit = Arc::clone(&sem).acquire_owned().await.expect("semaphore closed");
+            let base_client = client.clone();
+            join_set.spawn(async move {
+                let _permit = permit;
+                let mut res = HttpFormBot::submit_form_direct(&base_client, &url, &empresa, multa).await;
+                if (res == "ERR_HTTP_GET_CONNECT" || res == "ERR_HTTP_GET_NET") && url.to_lowercase().contains("://www.") {
+                    let apex_https = format!("https://{}", domain);
+                    res = HttpFormBot::submit_form_direct(&base_client, &apex_https, &empresa, multa).await;
+                }
+                if (res == "ERR_HTTP_GET_CONNECT" || res == "ERR_HTTP_GET_NET") && url.starts_with("https://") {
+                    let http_fallback = url.replacen("https://", "http://", 1);
+                    res = HttpFormBot::submit_form_direct(&base_client, &http_fallback, &empresa, multa).await;
+                }
+                println!("  [LIVE {:02}/{}] {} ({}) -> {}", idx + 1, total, empresa, domain, res);
+                tokio::time::sleep(Duration::from_millis(jittered_delay_ms(delay_ms))).await;
+                res
+            });
         }
-        println!(
-            "  [LIVE {:02}/{}] {} ({}) -> {}",
-            idx + 1,
-            candidates.len(),
-            empresa,
-            domain,
-            res
-        );
-        *stats.entry(res).or_insert(0) += 1;
-        if idx + 1 < candidates.len() {
-            tokio::time::sleep(Duration::from_millis(jittered_delay_ms(delay_ms))).await;
+        while let Some(joined) = join_set.join_next().await {
+            match joined {
+                Ok(res) => *stats.entry(res).or_insert(0) += 1,
+                Err(e) => eprintln!("WARN tarea concurrente falló: {}", e),
+            }
         }
     }
 
