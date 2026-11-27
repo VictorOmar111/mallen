@@ -449,19 +449,20 @@ async fn run_wave1(
         WHERE www IS NOT NULL
           AND TRIM(www) != ''
           AND (TRIM(raz_social) != '' OR TRIM(nom_estab) != '')
-        ORDER BY
-          CASE
-            WHEN per_ocu LIKE '%31 a 50%' OR per_ocu LIKE '%51 a 100%' OR per_ocu LIKE '%101 a 250%' THEN 1
-            WHEN per_ocu LIKE '%11 a 30%' THEN 2
-            WHEN per_ocu LIKE '%251%' THEN 3
-            ELSE 4
-          END,
-          rowid ASC
+          AND UPPER(COALESCE(NULLIF(TRIM(raz_social), ''), TRIM(nom_estab))) NOT LIKE '%(SUCURSAL 00%'
+          AND (
+            per_ocu LIKE '%11 a 30%'
+            OR per_ocu LIKE '%31 a 50%'
+            OR per_ocu LIKE '%51 a 100%'
+            OR per_ocu LIKE '%101 a 250%'
+          )
+        ORDER BY RANDOM()
         LIMIT ?1
     ";
 
     let mut candidates: Vec<(String, String, String, String, f64)> = Vec::new();
     let mut batch_domains: HashSet<String> = HashSet::new();
+    let mut batch_names: HashSet<String> = HashSet::new();
 
     let mut stmt = conn.prepare(sql).expect("ERROR preparando consulta denue_units");
     let rows = stmt
@@ -481,7 +482,11 @@ async fn run_wave1(
         }
         let emp_clean = empresa.trim().to_string();
         let emp_up = emp_clean.to_uppercase();
-        if emp_clean.len() < 3 || existing_names.contains(&emp_up) {
+        if emp_clean.len() < 3
+            || emp_up.contains("(SUCURSAL 00")
+            || existing_names.contains(&emp_up)
+            || batch_names.contains(&emp_up)
+        {
             continue;
         }
         let Some((url, domain)) = normalize_url_and_domain(&raw_www) else {
@@ -493,6 +498,7 @@ async fn run_wave1(
         if is_excluded_entity(&emp_clean, &domain) {
             continue;
         }
+        batch_names.insert(emp_up);
         batch_domains.insert(domain.clone());
         let multa = estimate_fine_from_estrato(&estrato);
         candidates.push((emp_clean, url, domain, scian, multa));
