@@ -1239,16 +1239,31 @@ async fn build_empresa_from_db_or_default(state: &AppState, clean_tax: &str) -> 
     emp
 }
 
+fn sanitize_checkout_ref(raw: String) -> String {
+    let clean: String = raw
+        .trim()
+        .chars()
+        .filter(|c| c.is_ascii_alphanumeric() || *c == '_' || *c == '-' || *c == '&')
+        .take(64)
+        .collect();
+    if clean.is_empty() {
+        "EST850628K51".to_string()
+    } else {
+        clean
+    }
+}
+
 async fn handle_checkout_path(
     State(state): State<Arc<AppState>>,
     Path(id): Path<String>,
 ) -> impl IntoResponse {
+    let safe_id = sanitize_checkout_ref(id);
     (
         [
             (axum::http::header::CACHE_CONTROL, "no-store, no-cache, must-revalidate, max-age=0"),
             (axum::http::header::PRAGMA, "no-cache"),
         ],
-        render_checkout_page_with_state(state, id).await,
+        render_checkout_page_with_state(state, safe_id).await,
     )
 }
 
@@ -1256,11 +1271,13 @@ async fn handle_checkout(
     State(state): State<Arc<AppState>>,
     Query(params): Query<CheckoutParams>,
 ) -> impl IntoResponse {
-    let ref_code = params
-        .ref_id
-        .or(params.r#ref)
-        .or(params.hash)
-        .unwrap_or_else(|| "EST850628K51".to_string());
+    let ref_code = sanitize_checkout_ref(
+        params
+            .ref_id
+            .or(params.r#ref)
+            .or(params.hash)
+            .unwrap_or_else(|| "EST850628K51".to_string()),
+    );
     (
         [
             (axum::http::header::CACHE_CONTROL, "no-store, no-cache, must-revalidate, max-age=0"),
@@ -1420,6 +1437,7 @@ async fn render_checkout_page_with_state(state: Arc<AppState>, raw_ref: String) 
             </div>
 
             <form id="checkoutForm" onsubmit="processCheckoutPayment(event)" class="space-y-5">
+            <input type="hidden" name="ref" value="{ref_code}">
             <div class="bg-slate-950 border border-white/15 p-4 rounded-xl space-y-3">
                 <span class="text-[10px] font-bold text-blue-400 uppercase block">Datos Societarios, Domicilio Fiscal y Representación Legal</span>
                 <div class="grid sm:grid-cols-2 gap-3">
@@ -1507,7 +1525,7 @@ async fn render_checkout_page_with_state(state: Arc<AppState>, raw_ref: String) 
                 <div class="grid sm:grid-cols-2 gap-3 items-center">
                     <div>
                         <label class="text-[10px] text-slate-400 block mb-1">Número exacto de colaboradores (opcional)</label>
-                        <input id="pay_empleados" type="number" min="1" max="50000" step="1" placeholder="Dejar vacío para usar dato oficial DENUE" class="w-full bg-white/[0.05] shadow-[0_8px_32px_rgba(0,0,0,0.5)] border border-white/15 rounded-lg px-3.5 py-2.5 text-white">
+                        <input id="pay_empleados" type="number" min="1" max="50000" step="1" onkeydown="if(event.key==='Enter'){{event.preventDefault();this.blur();}}" placeholder="Dejar vacío para usar dato oficial DENUE" class="w-full bg-white/[0.05] shadow-[0_8px_32px_rgba(0,0,0,0.5)] border border-white/15 rounded-lg px-3.5 py-2.5 text-white">
                     </div>
                     <p class="text-[10px] text-slate-400 leading-relaxed">Si su plantilla real cambió respecto al padrón oficial, ingrésela aquí antes de pagar para sincronizar su Dictamen, Certificados y Contratos.</p>
                 </div>
@@ -1607,7 +1625,6 @@ async fn render_checkout_page_with_state(state: Arc<AppState>, raw_ref: String) 
                             proveedor_principal_servicio_objeto: valOrNull("pay_prov_obj")
                         }}
                     }}
-                }}
             }};
             if (exactEmp !== null) {{
                 calPayload.calibration.exact_employee_count = exactEmp;
