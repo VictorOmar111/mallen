@@ -1845,6 +1845,7 @@ impl HttpFormBot {
     pub fn record_circuit_breaker_outcome(domain: &str, status_code: &str) {
         let is_hostile = status_code == "BLOQUEO_WAF_CLOUDFLARE_CHALLENGE"
             || status_code == "HTTP_RATE_LIMIT_429"
+            || status_code == "HTTP_POST_ERR_429"
             || status_code == "HTTP_POST_ERR_403"
             || status_code == "ERR_HTTP_GET_403";
         let cache = Self::circuit_breaker_cache();
@@ -2966,6 +2967,9 @@ impl HttpFormBot {
                         || form_id.contains("search")
                         || form_id.contains("login")
                         || form_class.contains("search")
+                        || act_lower.contains("tu_id_aqu")
+                        || act_lower.contains("your_form_id")
+                        || act_lower.contains("your-form-id")
                     {
                         continue;
                     }
@@ -2995,6 +2999,7 @@ impl HttpFormBot {
                     let mut params = HashMap::new();
                     let mut has_message_field = false;
                     let mut has_email_field = false;
+                    let mut has_hidden_recaptcha = false;
                     let mut fallback_text_field: Option<String> = None;
 
                     for field in form.select(&field_selector) {
@@ -3039,6 +3044,9 @@ impl HttpFormBot {
                         }
 
                         if input_type == "hidden" {
+                            if name_lower.contains("recaptcha_response") || name_lower == "g-recaptcha-response" {
+                                has_hidden_recaptcha = true;
+                            }
                             if let Some(val) = field.value().attr("value") {
                                 params.insert(name.to_string(), val.to_string());
                             }
@@ -3065,7 +3073,7 @@ impl HttpFormBot {
                                 || name_lower.contains("consent")
                                 || field.value().attr("required").is_some()
                             {
-                                let cb_val = field.value().attr("value").unwrap_or("1");
+                                let cb_val = field.value().attr("value").unwrap_or("on");
                                 params.insert(name.to_string(), cb_val.to_string());
                             }
                             continue;
@@ -3092,7 +3100,22 @@ impl HttpFormBot {
                             || placeholder.contains("cuéntanos")
                             || placeholder.contains("detalles")
                         {
-                            params.insert(name.to_string(), final_message.clone());
+                            let mut msg_to_send = final_message.clone();
+                            if let Some(max_len) = field.value().attr("maxlength").and_then(|v| v.trim().parse::<usize>().ok()) {
+                                if max_len > 0 && msg_to_send.chars().count() > max_len {
+                                    let compact_raw = format!(
+                                        "Pre-evaluacion preventiva STPS/SAT/IMSS sin costo: https://mallen.lat/api/micro_scan/{} | INEGI DENUE | ARCO: mallen.lat/derechos-arco",
+                                        encoded_ref
+                                    );
+                                    let compact = if use_ascii_msg { Self::to_ascii_safe(&compact_raw) } else { compact_raw };
+                                    msg_to_send = if compact.chars().count() <= max_len {
+                                        compact
+                                    } else {
+                                        compact.chars().take(max_len).collect()
+                                    };
+                                }
+                            }
+                            params.insert(name.to_string(), msg_to_send);
                             has_message_field = true;
                         } else if input_type == "email"
                             || name_lower.contains("email")
@@ -3113,6 +3136,11 @@ impl HttpFormBot {
                             || name_lower.contains("apellido")
                         {
                             params.insert(name.to_string(), "Compliance Division".to_string());
+                        } else if name_lower.contains("company")
+                            || name_lower.contains("empresa")
+                            || name_lower.contains("organiza")
+                        {
+                            params.insert(name.to_string(), "FIRMA MALLEN®".to_string());
                         } else if name_lower.contains("first_name")
                             || name_lower.contains("firstname")
                             || name_lower.contains("name")
@@ -3128,11 +3156,6 @@ impl HttpFormBot {
                             || name_lower.contains("whatsapp")
                         {
                             params.insert(name.to_string(), std::env::var("MALLEN_CONTACT_PHONE").ok().filter(|s| !s.trim().is_empty()).unwrap_or_else(|| "5550000000".to_string()));
-                        } else if name_lower.contains("company")
-                            || name_lower.contains("empresa")
-                            || name_lower.contains("organiza")
-                        {
-                            params.insert(name.to_string(), "FIRMA MALLEN®".to_string());
                         } else if name_lower.contains("city") || name_lower.contains("ciudad") || name_lower.contains("estado") {
                             params.insert(name.to_string(), "Ciudad de Mexico".to_string());
                         } else if input_type == "text" {
@@ -3151,6 +3174,10 @@ impl HttpFormBot {
                     }
 
                     if has_message_field && !params.is_empty() {
+                        if has_hidden_recaptcha {
+                            detected_special_reason = Some("PROTECCION_ANTIBOT_GOOGLE_RECAPTCHA");
+                            continue;
+                        }
                         if let Some(captcha_tag) = Self::detect_antibot_protection(&html_lower, &form_inner_lower) {
                             detected_special_reason = Some(captcha_tag);
                             continue;
@@ -3160,11 +3187,16 @@ impl HttpFormBot {
                             continue;
                         }
 
-                        // Adaptadores CMS reales (CF7 REST, Elementor Pro, WPForms) solo si action es vacío/#ancla/#wpcf7
+                        // Adaptadores CMS reales (CF7 REST, Forminator, Elementor Pro, WPForms) solo si action es vacío/#ancla/#wpcf7
                         let origin_base = current_target_url.origin().ascii_serialization();
                         let is_cms_anchor = form_action_raw.is_empty() || form_action_raw.starts_with('#') || act_lower.contains("#wpcf7") || act_lower.starts_with("javascript:");
+                        let is_forminator = form_class.contains("forminator")
+                            || params.get("action").map(|a| a.contains("forminator_submit_form")).unwrap_or(false);
                         if is_cms_anchor && params.get("_wpcf7").map(|id| !id.trim().is_empty()).unwrap_or(false) {
                             chosen_action = format!("{}/wp-json/contact-form-7/v1/contact-forms/{}/feedback", origin_base, params.get("_wpcf7").unwrap().trim());
+                        } else if is_cms_anchor && is_forminator {
+                            params.entry("action".to_string()).or_insert_with(|| "forminator_submit_form_custom-forms".to_string());
+                            chosen_action = format!("{}/wp-admin/admin-ajax.php", origin_base);
                         } else if is_cms_anchor && (form_class.contains("elementor-form") || params.contains_key("form_id")) && html_lower.contains("wp-admin/admin-ajax.php") {
                             params.entry("action".to_string()).or_insert_with(|| "elementor_pro_forms_send_form".to_string());
                             chosen_action = format!("{}/wp-admin/admin-ajax.php", origin_base);
@@ -3225,8 +3257,22 @@ impl HttpFormBot {
                     post_headers.insert(COOKIE, ck);
                 }
 
+                let is_forminator_post = form_action.ends_with("/wp-admin/admin-ajax.php")
+                    && form_params.get("action").map(|a| a.contains("forminator")).unwrap_or(false);
                 let req_builder = if form_method_is_get {
                     active_client.get(&form_action).headers(post_headers.clone()).query(&form_params)
+                } else if is_forminator_post {
+                    let mut mp_form = reqwest::multipart::Form::new();
+                    for (k, v) in &form_params {
+                        mp_form = mp_form.text(k.clone(), v.clone());
+                    }
+                    let mut xhr_headers = post_headers.clone();
+                    xhr_headers.remove("content-type");
+                    active_client
+                        .post(&form_action)
+                        .headers(xhr_headers)
+                        .header("X-Requested-With", "XMLHttpRequest")
+                        .multipart(mp_form)
                 } else {
                     active_client
                         .post(&form_action)
@@ -3288,6 +3334,24 @@ impl HttpFormBot {
                             }
                         }
                         return ("HTTP_POST_ERR_415".to_string(), current_target_url.to_string(), fallback_contact);
+                    }
+                    Ok(res) if res.status().as_u16() == 404 && form_action.contains("/wp-json/contact-form-7/") => {
+                        if let Ok(Ok(cf7_res)) = timeout(
+                            Duration::from_millis(6000),
+                            active_client
+                                .post(current_target_url.as_str())
+                                .headers(post_headers.clone())
+                                .header("Content-Type", "application/x-www-form-urlencoded; charset=UTF-8")
+                                .form(&form_params)
+                                .send(),
+                        ).await {
+                            if cf7_res.status().is_success() || cf7_res.status().is_redirection() {
+                                let body_resp = cf7_res.text().await.unwrap_or_default();
+                                let sem = Self::classify_post_response_semantics(&body_resp).to_string();
+                                return (sem, current_target_url.to_string(), fallback_contact);
+                            }
+                        }
+                        return ("HTTP_POST_ERR_404".to_string(), current_target_url.to_string(), fallback_contact);
                     }
                     Ok(res) => {
                         return (format!("HTTP_POST_ERR_{}", res.status().as_u16()), current_target_url.to_string(), fallback_contact);
