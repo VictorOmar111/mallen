@@ -2361,7 +2361,21 @@ impl HttpFormBot {
             local = stripped_digits;
         }
 
-        if local.is_empty() || domain.len() < 4 || !domain.contains('.') || domain.starts_with('.') || domain.ends_with('.') {
+        if local.is_empty()
+            || local.len() > 64
+            || local.starts_with('.')
+            || local.ends_with('.')
+            || local.contains("..")
+            || !local.chars().all(|c| c.is_ascii_alphanumeric() || matches!(c, '.' | '_' | '-' | '+'))
+            || domain.len() < 4
+            || domain.len() > 120
+            || !domain.contains('.')
+            || domain.starts_with('.')
+            || domain.ends_with('.')
+            || domain.contains("..")
+            || !domain.chars().all(|c| c.is_ascii_alphanumeric() || matches!(c, '.' | '-'))
+            || domain.rsplit('.').next().map(|tld| tld.len() < 2 || !tld.chars().all(|c| c.is_ascii_alphabetic())).unwrap_or(true)
+        {
             return None;
         }
 
@@ -2377,7 +2391,7 @@ impl HttpFormBot {
         }
 
         let blacklisted_locals = ["no-reply", "noreply", "donotreply", "mailer-daemon", "postmaster", "ejemplo", "tu-correo", "tucorreo", "yourname", "user"];
-        let blacklisted_domains = ["example.com", "example.org", "dominio.com", "tudominio.com", "sentry.io", "wixpress.com", "email.com"];
+        let blacklisted_domains = ["example.com", "example.org", "dominio.com", "tudominio.com", "sentry.io", "wixpress.com", "email.com", "mysite.com", "domain.com", "yoursite.com", "yourdomain.com", "test.com", "company.com"];
         if blacklisted_locals.iter().any(|&b| local == b || local.starts_with("no-reply") || local.starts_with("noreply")) {
             return None;
         }
@@ -3231,7 +3245,28 @@ impl HttpFormBot {
                         continue; // Reintentar 1 vez si el servidor destino dio 502/503 temporal en el POST
                     }
                     Ok(res) if res.status().as_u16() == 415 => {
-                        // Fallback automático para APIs modernas que exigen objeto application/json con cookies y headers originales
+                        // 1) Fallback multipart/form-data (WordPress Contact Form 7 / WPForms / Forminator)
+                        let mut mp_form = reqwest::multipart::Form::new();
+                        for (k, v) in &form_params {
+                            mp_form = mp_form.text(k.clone(), v.clone());
+                        }
+                        let mut mp_headers = post_headers.clone();
+                        mp_headers.remove("content-type");
+                        if let Ok(Ok(mp_res)) = timeout(
+                            Duration::from_millis(6000),
+                            active_client
+                                .post(&form_action)
+                                .headers(mp_headers)
+                                .multipart(mp_form)
+                                .send(),
+                        ).await {
+                            if mp_res.status().is_success() || mp_res.status().is_redirection() {
+                                let body_resp = mp_res.text().await.unwrap_or_default();
+                                let sem = Self::classify_post_response_semantics(&body_resp).to_string();
+                                return (sem, current_target_url.to_string(), fallback_contact);
+                            }
+                        }
+                        // 2) Fallback objeto application/json para APIs modernas
                         let json_obj: HashMap<&str, &str> = form_params
                             .iter()
                             .map(|(k, v)| (k.as_str(), v.as_str()))

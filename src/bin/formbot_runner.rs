@@ -172,6 +172,44 @@ fn estimate_fine_from_estrato(estrato: &str) -> f64 {
     }
 }
 
+async fn resolve_live_url(raw_url: &str, apex_domain: &str) -> Option<String> {
+    let lower = raw_url.trim().to_lowercase();
+    let without_scheme = lower
+        .strip_prefix("https://")
+        .or_else(|| lower.strip_prefix("http://"))
+        .unwrap_or(&lower);
+    let url_host = without_scheme
+        .split('/')
+        .next()
+        .unwrap_or("")
+        .split(':')
+        .next()
+        .unwrap_or("")
+        .trim();
+
+    if !url_host.is_empty() {
+        if let Ok(Ok(mut addrs)) = tokio::time::timeout(
+            Duration::from_millis(1200),
+            tokio::net::lookup_host((url_host, 443)),
+        ).await {
+            if addrs.next().is_some() {
+                return Some(raw_url.to_string());
+            }
+        }
+    }
+    if url_host != apex_domain && !apex_domain.is_empty() {
+        if let Ok(Ok(mut addrs)) = tokio::time::timeout(
+            Duration::from_millis(1200),
+            tokio::net::lookup_host((apex_domain, 443)),
+        ).await {
+            if addrs.next().is_some() {
+                return Some(format!("https://{}", apex_domain));
+            }
+        }
+    }
+    None
+}
+
 fn jittered_delay_ms(base_ms: u64) -> u64 {
     let nanos = SystemTime::now()
         .duration_since(UNIX_EPOCH)
@@ -525,6 +563,7 @@ async fn run_wave1(
     let mut candidates: Vec<(String, String, String, String, f64)> = Vec::new();
     let mut batch_domains: HashSet<String> = HashSet::new();
     let mut batch_names: HashSet<String> = HashSet::new();
+    let mut skipped_dead_dns: usize = 0;
 
     let mut stmt = conn.prepare(sql).expect("ERROR preparando consulta denue_units");
     let rows = stmt
@@ -560,15 +599,27 @@ async fn run_wave1(
         if is_excluded_entity(&emp_clean, &domain) {
             continue;
         }
+        let final_url = if live_mode {
+            match resolve_live_url(&url, &domain).await {
+                Some(u) => u,
+                None => {
+                    skipped_dead_dns += 1;
+                    continue;
+                }
+            }
+        } else {
+            url
+        };
         batch_names.insert(emp_up);
         batch_domains.insert(domain.clone());
         let multa = estimate_fine_from_estrato(&estrato);
-        candidates.push((emp_clean, url, domain, scian, multa));
+        candidates.push((emp_clean, final_url, domain, scian, multa));
     }
 
     println!(
-        "Candidatos frescos seleccionados (Ola 1): {} (excluidos previos/ARCO/pagados: {} nombres, {} dominios)",
+        "Candidatos frescos seleccionados (Ola 1): {} (descartados DNS muerto: {} | excluidos previos/ARCO/pagados: {} nombres, {} dominios)",
         candidates.len(),
+        skipped_dead_dns,
         existing_names.len(),
         existing_domains.len()
     );

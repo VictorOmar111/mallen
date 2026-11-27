@@ -34,8 +34,7 @@ reqwest = { version = "0.12", default-features = false, features = [
     "brotli",
     "stream",
     "rustls-tls",
-    "rustls-tls-native-roots"
-] }
+    "rustls-tls-native-roots", "multipart"] }
 scraper = "0.19"
 url = "2.5"
 chromiumoxide = { version = "0.7", default-features = false, features = ["tokio-runtime"] }
