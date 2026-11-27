@@ -21,6 +21,45 @@ fn clean_field(rec: &StringRecord, idx: usize) -> String {
     rec.get(idx).unwrap_or("").trim().trim_matches('"').to_string()
 }
 
+fn clean_digits(raw: &str, pad_cp: bool) -> String {
+    let t = raw.trim();
+    if t.is_empty() {
+        return String::new();
+    }
+    let normalized = if t.contains('e') || t.contains('E') || t.ends_with(".0") {
+        t.parse::<f64>()
+            .ok()
+            .filter(|v| v.is_finite() && *v >= 0.0)
+            .map(|v| format!("{}", v.round() as u64))
+            .unwrap_or_else(|| t.to_string())
+    } else {
+        t.to_string()
+    };
+    if pad_cp && normalized.len() == 4 && normalized.chars().all(|c| c.is_ascii_digit()) {
+        format!("0{}", normalized)
+    } else {
+        normalized
+    }
+}
+
+fn clean_www(raw: &str) -> String {
+    let token = raw
+        .trim()
+        .split(|c: char| c.is_whitespace() || c == ',' || c == ';')
+        .find(|tok| !tok.is_empty())
+        .unwrap_or("")
+        .trim_matches(|c: char| c == '"' || c == '\'' || c == '<' || c == '>')
+        .to_lowercase();
+    if token.is_empty()
+        || token.contains('@')
+        || !token.contains('.')
+        || matches!(token.as_str(), "ninguno" | "no tiene" | "n/a" | "na" | "sin pagina" | "s/n")
+    {
+        return String::new();
+    }
+    token
+}
+
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let start = Instant::now();
@@ -231,13 +270,50 @@ async fn ingest_sfp(pool: &SqlitePool, path: &str) -> Result<usize, Box<dyn std:
     Ok(count)
 }
 
-/// Lee cualquier CSV oficial del INEGI DENUE (42 columnas estándar del INEGI) e inserta en lotes de 10,000 filas
+/// Lee cualquier CSV oficial del INEGI DENUE mapeando columnas por nombre de encabezado (inmune a cambios de orden del INEGI)
 async fn ingest_denue_csv_file(pool: &SqlitePool, path: &str) -> Result<usize, Box<dyn std::error::Error>> {
     let file = File::open(path)?;
     let mut rdr = ReaderBuilder::new()
         .flexible(true)
         .has_headers(true)
         .from_reader(BufReader::new(file));
+
+    let hdr_map: std::collections::HashMap<String, usize> = rdr
+        .headers()?
+        .iter()
+        .enumerate()
+        .map(|(i, h)| (h.trim().trim_start_matches('﻿').to_ascii_uppercase(), i))
+        .collect();
+
+    let has_named_headers = hdr_map.contains_key("NOM_ESTAB") || hdr_map.contains_key("WWW");
+    if !hdr_map.contains_key("WWW") {
+        eprintln!("WARN [ingest]: encabezado 'WWW' no encontrado en {}; usando índice de respaldo 38.", path);
+    }
+
+    let idx_of = |names: &[&str], fallback: usize| -> usize {
+        for name in names {
+            if let Some(&i) = hdr_map.get(*name) {
+                return i;
+            }
+        }
+        fallback
+    };
+
+    let i_id = idx_of(&["ID"], 0);
+    let i_nom = idx_of(&["NOM_ESTAB"], 2);
+    let i_raz = idx_of(&["RAZ_SOCIAL"], 3);
+    let i_scian = idx_of(&["CODIGO_ACT", "CODIGO_SCIAN"], 4);
+    let i_act = idx_of(&["NOMBRE_ACT"], 5);
+    let i_per = idx_of(&["PER_OCU"], 6);
+    let i_vial = idx_of(&["NOM_VIAL"], 8);
+    let i_num = idx_of(&["NUMERO_EXT"], 15);
+    let i_col = idx_of(&["NOMB_ASENT"], 22);
+    let i_cp = idx_of(&["COD_POSTAL"], 26);
+    let i_ent = idx_of(&["ENTIDAD", "NOM_ENT"], 29);
+    let i_mun = idx_of(&["MUNICIPIO", "NOM_MUN"], 31);
+    let i_tel = idx_of(&["TELEFONO"], 36);
+    let i_mail = idx_of(&["CORREOELEC", "EMAIL"], 37);
+    let i_web = idx_of(&["WWW"], 38);
 
     let mut tx = pool.begin().await?;
     let mut count = 0usize;
@@ -248,27 +324,23 @@ async fn ingest_denue_csv_file(pool: &SqlitePool, path: &str) -> Result<usize, B
             continue;
         }
 
-        // Estructura oficial de 42 columnas del CSV masivo INEGI DENUE:
-        // [0]=id, [1]=clee, [2]=nom_estab, [3]=raz_social, [4]=codigo_act, [5]=nombre_act, [6]=per_ocu
-        // [9]=nom_vial, [13]=numero_ext, [20]=nomb_asent, [21]=cod_postal, [23]=entidad, [25]=municipio
-        // [35]=telefono, [36]=correoelec, [37]=www
         let (id_denue, nom_estab, raz_social, codigo_scian, nombre_act, per_ocu, direccion, entidad, www, email, telefono) =
-            if rec.len() >= 38 {
-                let id = clean_field(&rec, 0);
-                let nom = clean_field(&rec, 2);
-                let raz = clean_field(&rec, 3);
-                let scian = clean_field(&rec, 4);
-                let act = clean_field(&rec, 5);
-                let per = clean_field(&rec, 6);
-                let vial = clean_field(&rec, 9);
-                let num = clean_field(&rec, 13);
-                let col = clean_field(&rec, 20);
-                let cp = clean_field(&rec, 21);
-                let ent = clean_field(&rec, 23);
-                let mun = clean_field(&rec, 25);
-                let tel = clean_field(&rec, 35);
-                let mail = clean_field(&rec, 36);
-                let web = clean_field(&rec, 37);
+            if has_named_headers || rec.len() >= 38 {
+                let id = clean_field(&rec, i_id);
+                let nom = clean_field(&rec, i_nom);
+                let raz = clean_field(&rec, i_raz);
+                let scian = clean_field(&rec, i_scian);
+                let act = clean_field(&rec, i_act);
+                let per = clean_field(&rec, i_per);
+                let vial = clean_field(&rec, i_vial);
+                let num = clean_field(&rec, i_num);
+                let col = clean_field(&rec, i_col);
+                let cp = clean_digits(&clean_field(&rec, i_cp), true);
+                let ent = clean_field(&rec, i_ent);
+                let mun = clean_field(&rec, i_mun);
+                let tel = clean_digits(&clean_field(&rec, i_tel), false);
+                let mail = clean_field(&rec, i_mail);
+                let web = clean_www(&clean_field(&rec, i_web));
                 let dir = format!("{} {}, COL. {}, C.P. {}, {}", vial, num, col, cp, mun);
                 (id, nom, raz, scian, act, per, dir, ent, web, mail, tel)
             } else {
@@ -281,9 +353,9 @@ async fn ingest_denue_csv_file(pool: &SqlitePool, path: &str) -> Result<usize, B
                     clean_field(&rec, 5),
                     clean_field(&rec, 6),
                     clean_field(&rec, 7),
-                    clean_field(&rec, 8),
+                    clean_www(&clean_field(&rec, 8)),
                     clean_field(&rec, 9),
-                    clean_field(&rec, 10),
+                    clean_digits(&clean_field(&rec, 10), false),
                 )
             };
 
