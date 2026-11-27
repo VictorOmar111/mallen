@@ -2866,7 +2866,11 @@ impl HttpFormBot {
                         Some((next_url, String::from_utf8_lossy(s3).into_owned()))
                     }).await {
                         let clow = candidate_html.to_lowercase();
-                        if clow.contains("<form") || clow.contains("<iframe") {
+                        let has_crm_iframe = clow.contains("<iframe")
+                            && ["hubspot", "hsforms", "typeform", "jotform", "forms.gle", "docs.google.com/forms", "zoho", "tally.so", "bitrix", "calendly"]
+                                .iter()
+                                .any(|k| clow.contains(k));
+                        if clow.contains("<form") || has_crm_iframe {
                             current_target_url = next_url;
                             html_text = candidate_html;
                             found_contact_form = true;
@@ -2874,12 +2878,12 @@ impl HttpFormBot {
                     }
                 }
                 if !found_contact_form {
-                    for probe_path in ["/contacto", "/contactanos", "/contact"] {
+                    for probe_path in ["/contacto", "/contactanos", "/contact", "/es/contacto"] {
                         if let Ok(probe_url) = current_target_url.join(probe_path) {
                             if probe_url.as_str() == current_target_url.as_str() {
                                 continue;
                             }
-                            if let Ok(Some((next_url, candidate_html))) = timeout(Duration::from_millis(3500), async {
+                            if let Ok(Some((next_url, candidate_html))) = timeout(Duration::from_millis(3000), async {
                                 let rp = active_client.get(probe_url.as_str()).headers(rotated_headers.clone()).send().await.ok()?;
                                 if !rp.status().is_success() {
                                     return None;
@@ -2890,7 +2894,11 @@ impl HttpFormBot {
                                 Some((next_url, String::from_utf8_lossy(sp).into_owned()))
                             }).await {
                                 let clow = candidate_html.to_lowercase();
-                                if clow.contains("<form") || clow.contains("<iframe") {
+                                let has_crm_iframe = clow.contains("<iframe")
+                                    && ["hubspot", "hsforms", "typeform", "jotform", "forms.gle", "docs.google.com/forms", "zoho", "tally.so", "bitrix", "calendly"]
+                                        .iter()
+                                        .any(|k| clow.contains(k));
+                                if clow.contains("<form") || has_crm_iframe {
                                     current_target_url = next_url;
                                     html_text = candidate_html;
                                     break;
@@ -2972,6 +2980,8 @@ impl HttpFormBot {
 
                     let mut params = HashMap::new();
                     let mut has_message_field = false;
+                    let mut has_email_field = false;
+                    let mut fallback_text_field: Option<String> = None;
 
                     for field in form.select(&field_selector) {
                         let tag_name = field.value().name();
@@ -3054,9 +3064,19 @@ impl HttpFormBot {
                             || name_lower.contains("coment")
                             || name_lower.contains("consulta")
                             || name_lower.contains("duda")
+                            || name_lower.contains("solicitud")
+                            || name_lower.contains("requerimiento")
+                            || name_lower.starts_with("text-")
                             || placeholder.contains("mensaje")
                             || placeholder.contains("message")
                             || placeholder.contains("escribe")
+                            || placeholder.contains("necesit")
+                            || placeholder.contains("ayuda")
+                            || placeholder.contains("proyecto")
+                            || placeholder.contains("cotiz")
+                            || placeholder.contains("cuentanos")
+                            || placeholder.contains("cuéntanos")
+                            || placeholder.contains("detalles")
                         {
                             params.insert(name.to_string(), final_message.clone());
                             has_message_field = true;
@@ -3066,6 +3086,7 @@ impl HttpFormBot {
                             || name_lower.contains("mail")
                         {
                             params.insert(name.to_string(), "dictamenes@mallen.lat".to_string());
+                            has_email_field = true;
                         } else if name_lower.contains("subject") || name_lower.contains("asunto") {
                             let subj = if use_ascii_msg {
                                 format!("Aviso Preventivo de Cumplimiento - {}", Self::to_ascii_safe(empresa_nombre))
@@ -3100,8 +3121,18 @@ impl HttpFormBot {
                             params.insert(name.to_string(), "FIRMA MALLEN®".to_string());
                         } else if name_lower.contains("city") || name_lower.contains("ciudad") || name_lower.contains("estado") {
                             params.insert(name.to_string(), "Ciudad de Mexico".to_string());
-                        } else if field.value().attr("required").is_some() && input_type == "text" {
-                            params.insert(name.to_string(), "Cumplimiento Normativo".to_string());
+                        } else if input_type == "text" {
+                            fallback_text_field = Some(name.to_string());
+                            if field.value().attr("required").is_some() {
+                                params.insert(name.to_string(), "Cumplimiento Normativo".to_string());
+                            }
+                        }
+                    }
+
+                    if !has_message_field && has_email_field {
+                        if let Some(fb_name) = fallback_text_field {
+                            params.insert(fb_name, final_message.clone());
+                            has_message_field = true;
                         }
                     }
 

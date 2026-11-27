@@ -588,6 +588,10 @@ async fn run_wave1(
             continue;
         }
         let mut res = HttpFormBot::submit_form_direct(client, url, empresa, *multa).await;
+        if (res == "ERR_HTTP_GET_CONNECT" || res == "ERR_HTTP_GET_NET") && url.to_lowercase().contains("://www.") {
+            let apex_https = format!("https://{}", domain);
+            res = HttpFormBot::submit_form_direct(client, &apex_https, empresa, *multa).await;
+        }
         if (res == "ERR_HTTP_GET_CONNECT" || res == "ERR_HTTP_GET_NET") && url.starts_with("https://") {
             let http_fallback = url.replacen("https://", "http://", 1);
             res = HttpFormBot::submit_form_direct(client, &http_fallback, empresa, *multa).await;
