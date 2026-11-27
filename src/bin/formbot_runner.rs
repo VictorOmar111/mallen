@@ -111,6 +111,10 @@ fn normalize_url_and_domain(raw_www: &str) -> Option<(String, String)> {
         || host == "127.0.0.1"
         || host.starts_with('.')
         || host.ends_with('.')
+        || host.starts_with("http.")
+        || host.starts_with("https.")
+        || host.contains("2www.")
+        || host.starts_with("www")
         || !host.chars().all(|c| c.is_ascii_alphanumeric() || c == '-' || c == '.')
     {
         return None;
@@ -132,8 +136,9 @@ fn is_excluded_entity(empresa: &str, domain: &str) -> bool {
     }
     let blocked_names = [
         "GOBIERNO", "MUNICIPIO", "AYUNTAMIENTO", "SECRETARIA DE ", "IMSS", "ISSSTE",
-        "PEMEX", "CFE ", "BANCO ", "BBVA", "BANAMEX", "SANTANDER", "HSBC", "SCOTIABANK",
-        "BANORTE", "INBURSA", "UNIVERSIDAD ", "ESCUELA ", "COLEGIO ", "IGLESIA ",
+        "SEGURO SOCIAL", "INSTITUTO MEXICANO", "PEMEX", "CFE ", "BANCO ", "BBVA",
+        "BANAMEX", "SANTANDER", "HSBC", "SCOTIABANK", "BANORTE", "INBURSA",
+        "UNIVERSIDAD ", "ESCUELA ", "COLEGIO ", "IGLESIA ", "7-ELEVEN", "WESTERN UNION",
     ];
     blocked_names.iter().any(|b| e.contains(b))
 }
@@ -385,8 +390,9 @@ async fn async_main() {
     };
 
     let client = reqwest::Client::builder()
-        .timeout(Duration::from_secs(20))
-        .connect_timeout(Duration::from_secs(8))
+        .danger_accept_invalid_certs(true)
+        .timeout(Duration::from_secs(22))
+        .connect_timeout(Duration::from_secs(10))
         .redirect(reqwest::redirect::Policy::limited(5))
         .build()
         .expect("ERROR creando reqwest::Client");
@@ -449,9 +455,10 @@ async fn run_wave1(
         WHERE www IS NOT NULL
           AND TRIM(www) != ''
           AND (TRIM(raz_social) != '' OR TRIM(nom_estab) != '')
-          AND UPPER(COALESCE(NULLIF(TRIM(raz_social), ''), TRIM(nom_estab))) NOT LIKE '%(SUCURSAL 00%'
+          AND UPPER(COALESCE(NULLIF(TRIM(raz_social), ''), TRIM(nom_estab))) NOT LIKE '%(SUCURSAL %'
           AND (
-            per_ocu LIKE '%11 a 30%'
+            per_ocu LIKE '%6 a 10%'
+            OR per_ocu LIKE '%11 a 30%'
             OR per_ocu LIKE '%31 a 50%'
             OR per_ocu LIKE '%51 a 100%'
             OR per_ocu LIKE '%101 a 250%'
@@ -483,7 +490,7 @@ async fn run_wave1(
         let emp_clean = empresa.trim().to_string();
         let emp_up = emp_clean.to_uppercase();
         if emp_clean.len() < 3
-            || emp_up.contains("(SUCURSAL 00")
+            || emp_up.contains("(SUCURSAL ")
             || existing_names.contains(&emp_up)
             || batch_names.contains(&emp_up)
         {
@@ -525,7 +532,11 @@ async fn run_wave1(
             );
             continue;
         }
-        let res = HttpFormBot::submit_form_direct(client, url, empresa, *multa).await;
+        let mut res = HttpFormBot::submit_form_direct(client, url, empresa, *multa).await;
+        if (res == "ERR_HTTP_GET_CONNECT" || res == "ERR_HTTP_GET_NET") && url.starts_with("https://") {
+            let http_fallback = url.replacen("https://", "http://", 1);
+            res = HttpFormBot::submit_form_direct(client, &http_fallback, empresa, *multa).await;
+        }
         println!(
             "  [LIVE {:02}/{}] {} ({}) -> {}",
             idx + 1,

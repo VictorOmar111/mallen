@@ -958,7 +958,7 @@ impl HttpFormBot {
             ("STAGE_DERIVADO_CRM_EXTERNO", "PROSPECCION_API_O_EMAIL_DIRECTO")
         } else if status_result.starts_with("PROTECCION_ANTIBOT_") || status_result.starts_with("BLOQUEO_WAF_") {
             ("STAGE_BLOQUEO_WAF_DERIVADO", "CANAL_ALTERNATIVO_EMAIL_LINKEDIN_WHATSAPP")
-        } else if status_result == "HTTP_POST_TIMEOUT" || status_result == "ERR_HTTP_GET" || status_result == "HTTP_RATE_LIMIT_429" {
+        } else if status_result == "HTTP_POST_TIMEOUT" || status_result.starts_with("ERR_HTTP_GET") || status_result == "HTTP_RATE_LIMIT_429" {
             ("STAGE_REINTENTO_PROGRAMADO", "COLA_BACKOFF_DIFERIDO_6H")
         } else {
             ("STAGE_SIN_FORMULARIO_WEB", "BUSQUEDA_OSINT_EMAIL_TELEFONO")
@@ -2139,7 +2139,7 @@ impl HttpFormBot {
             .ok()
             .and_then(|v| v.trim().parse::<u64>().ok())
             .filter(|&ms| ms >= 500 && ms <= 60_000)
-            .unwrap_or(8500)
+            .unwrap_or(18_000)
     }
 
     /// Decodificador inteligente de bytes HTTP para charsets exóticos y legacy
@@ -2773,7 +2773,7 @@ impl HttpFormBot {
                             continue;
                         }
                         if !r.status().is_success() {
-                            return ("ERR_HTTP_GET".to_string(), r.url().to_string(), None);
+                            return (format!("ERR_HTTP_GET_{}", code), r.url().to_string(), None);
                         }
                         let ctype = r
                             .headers()
@@ -2795,7 +2795,13 @@ impl HttpFormBot {
                         if e.is_redirect() {
                             return ("ERR_REDIRECT_LOOP_DETECTADO".to_string(), page_url.to_string(), None);
                         }
-                        last_get_err = "ERR_HTTP_GET".to_string();
+                        last_get_err = if e.is_timeout() {
+                            "ERR_HTTP_GET_TIMEOUT".to_string()
+                        } else if e.is_connect() {
+                            "ERR_HTTP_GET_CONNECT".to_string()
+                        } else {
+                            "ERR_HTTP_GET_NET".to_string()
+                        };
                     }
                 }
             }
