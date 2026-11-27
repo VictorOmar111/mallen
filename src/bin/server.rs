@@ -1243,7 +1243,13 @@ async fn handle_checkout_path(
     State(state): State<Arc<AppState>>,
     Path(id): Path<String>,
 ) -> impl IntoResponse {
-    render_checkout_page_with_state(state, id).await
+    (
+        [
+            (axum::http::header::CACHE_CONTROL, "no-store, no-cache, must-revalidate, max-age=0"),
+            (axum::http::header::PRAGMA, "no-cache"),
+        ],
+        render_checkout_page_with_state(state, id).await,
+    )
 }
 
 async fn handle_checkout(
@@ -1255,7 +1261,13 @@ async fn handle_checkout(
         .or(params.r#ref)
         .or(params.hash)
         .unwrap_or_else(|| "EST850628K51".to_string());
-    render_checkout_page_with_state(state, ref_code).await
+    (
+        [
+            (axum::http::header::CACHE_CONTROL, "no-store, no-cache, must-revalidate, max-age=0"),
+            (axum::http::header::PRAGMA, "no-cache"),
+        ],
+        render_checkout_page_with_state(state, ref_code).await,
+    )
 }
 
 async fn render_checkout_page_with_state(state: Arc<AppState>, raw_ref: String) -> Html<String> {
@@ -1519,14 +1531,14 @@ async fn render_checkout_page_with_state(state: Arc<AppState>, raw_ref: String) 
                 <label class="flex items-start gap-2.5 cursor-pointer">
                     <input id="chk-disclaimer" type="checkbox" required checked class="mt-1 accent-emerald-500">
                     <span>
-                        <strong class="text-slate-200">Manifiesto de Alcance Pericial y Exactitud de Datos (Art. 89 C.Com):</strong> Confirmo los datos ingresados para la emisión de los 10 Certificados y Instrumentos Propietarios de Blindaje del RFC <b>{ref_code}</b>. Si requiere factura CFDI 4.0, podrá solicitarla con su Constancia de Situación Fiscal dentro del mes en curso.
+                        <strong class="text-slate-200">Manifiesto de Alcance Pericial y Exactitud de Datos (Art. 89 C.Com):</strong> Confirmo los datos ingresados para la emisión de los 10 Certificados e Instrumentos Propietarios de Blindaje del RFC <b>{ref_code}</b>. Si requiere factura CFDI 4.0, podrá solicitarla con su Constancia de Situación Fiscal dentro del mes en curso.
                         <span class="block text-[9px] text-slate-400 mt-1">SHA-256 Disclaimer: {disclaimer_hash}</span>
                     </span>
                 </label>
             </div>
 
             <button id="btnPayNow" type="submit" class="w-full bg-gradient-to-r from-blue-600 to-emerald-600 hover:from-blue-500 hover:to-emerald-500 text-white font-bold py-4 rounded-xl transition shadow-lg shadow-emerald-600/20 uppercase tracking-wider">
-                Confirmar Datos y Descargar Paquete ZIP
+                Confirmar Datos y Continuar al Pago Seguro
             </button>
         </form>
 
@@ -1882,6 +1894,10 @@ async fn handle_payment_webhook(
         }
     }
 
+    if let Err(e) = state.db.update_status_to_paid(&tax_id).await {
+        eprintln!("[v157] WARN update_status_to_paid({}): {}", tax_id, e);
+    }
+
     let state_bg = state.clone();
     let tax_bg = tax_id.clone();
 
@@ -1930,7 +1946,6 @@ async fn handle_payment_webhook(
         }
 
         let _ = generate_custom_bundle_with_session(&emp, &osint, session_opt.as_ref().map(|(m, _)| m), true);
-        let _ = state_bg.db.update_status_to_paid(&tax_bg).await;
     });
 
     (
