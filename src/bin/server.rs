@@ -129,6 +129,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .route("/validez/:slug", get(handle_validez_detail))
         .route("/verify/:id", get(checkout::handle_verify))
         .route("/download/zip/:tax_id", get(download_zip_handler))
+        .route("/api/admin/telemetry", get(handle_admin_telemetry))
         .route("/download/:hash", get(download_pdf_report))
         .route("/api/merkle/verify/:ref_code", get(get_merkle_proof_api))
         .route("/api/quick-contact", axum::routing::post(handle_quick_contact))
@@ -2529,29 +2530,566 @@ pub async fn handle_list_quick_contacts() -> (axum::http::StatusCode, axum::Json
 }
 
 
+struct TelemetryEvent {
+    stage: String,
+    method: String,
+    path: String,
+    ref_key: String,
+    status_code: i64,
+    latency_ms: i64,
+    is_bot: i64,
+    device_type: String,
+    country_code: String,
+    ip_hash: String,
+    referer_host: String,
+    utm_source: String,
+    user_agent_short: String,
+}
+
+static TELEMETRY_TX: std::sync::OnceLock<tokio::sync::mpsc::Sender<TelemetryEvent>> =
+    std::sync::OnceLock::new();
+static TELEMETRY_SCHEMA_READY: std::sync::OnceLock<bool> = std::sync::OnceLock::new();
+static TELEMETRY_DROPS: std::sync::atomic::AtomicU64 = std::sync::atomic::AtomicU64::new(0);
+static TELEMETRY_FALLBACK_WRITES: std::sync::atomic::AtomicU64 = std::sync::atomic::AtomicU64::new(0);
+static TELEMETRY_WRITE_ERRORS: std::sync::atomic::AtomicU64 = std::sync::atomic::AtomicU64::new(0);
+
+fn configure_telemetry_pragmas(conn: &rusqlite::Connection) {
+    let _ = conn.execute_batch("PRAGMA journal_mode=WAL; PRAGMA synchronous=NORMAL; PRAGMA busy_timeout=5000;");
+}
+
+fn ensure_web_telemetry_schema_once(conn: &rusqlite::Connection) {
+    TELEMETRY_SCHEMA_READY.get_or_init(|| {
+        configure_telemetry_pragmas(conn);
+        if let Err(e) = conn.execute_batch(
+            "CREATE TABLE IF NOT EXISTS web_telemetry_events (
+                 id INTEGER PRIMARY KEY AUTOINCREMENT,
+                 created_at_utc TEXT NOT NULL DEFAULT (datetime('now')),
+                 stage TEXT NOT NULL,
+                 method TEXT NOT NULL,
+                 path TEXT NOT NULL,
+                 ref_key TEXT NOT NULL DEFAULT '',
+                 status_code INTEGER NOT NULL,
+                 latency_ms INTEGER NOT NULL,
+                 is_bot INTEGER NOT NULL DEFAULT 0,
+                 device_type TEXT NOT NULL DEFAULT 'DESKTOP',
+                 country_code TEXT NOT NULL DEFAULT 'XX',
+                 ip_hash TEXT NOT NULL DEFAULT '',
+                 referer_host TEXT NOT NULL DEFAULT '',
+                 utm_source TEXT NOT NULL DEFAULT '',
+                 user_agent_short TEXT NOT NULL DEFAULT ''
+             );
+             CREATE INDEX IF NOT EXISTS idx_wte_created ON web_telemetry_events(created_at_utc);
+             CREATE INDEX IF NOT EXISTS idx_wte_bot_created_ip ON web_telemetry_events(is_bot, created_at_utc, ip_hash);
+             CREATE INDEX IF NOT EXISTS idx_wte_stage_bot ON web_telemetry_events(stage, is_bot);
+             CREATE INDEX IF NOT EXISTS idx_wte_ref ON web_telemetry_events(ref_key);
+             CREATE TABLE IF NOT EXISTS link_clicks (
+                 ref_key TEXT PRIMARY KEY,
+                 first_clicked_at_utc TEXT DEFAULT (datetime('now')),
+                 last_clicked_at_utc TEXT DEFAULT (datetime('now')),
+                 click_count INTEGER DEFAULT 1,
+                 last_visitor_ip TEXT DEFAULT '',
+                 last_user_agent TEXT DEFAULT ''
+             );",
+        ) {
+            eprintln!("[v159] WARN ensure_web_telemetry_schema: {}", e);
+        }
+        if let Err(e) = conn.execute(
+            "CREATE INDEX IF NOT EXISTS idx_pipeline_clicked_res ON prospect_pipeline(has_clicked_link, ultimo_resultado_codigo)",
+            [],
+        ) {
+            eprintln!("[v159] WARN idx_pipeline_clicked_res: {}", e);
+        }
+        true
+    });
+}
+
+fn normalize_domain_or_ref(raw: &str) -> String {
+    let up = raw.trim().to_uppercase();
+    let no_scheme = up
+        .strip_prefix("HTTPS://")
+        .or_else(|| up.strip_prefix("HTTP://"))
+        .unwrap_or(&up);
+    let no_www = no_scheme.strip_prefix("WWW.").unwrap_or(no_scheme);
+    no_www.trim_end_matches('/').trim().to_string()
+}
+
+fn persist_telemetry_event(conn: &mut rusqlite::Connection, ev: &TelemetryEvent) {
+    let mut had_err = false;
+    match conn.transaction_with_behavior(rusqlite::TransactionBehavior::Immediate) {
+        Ok(tx_db) => {
+            if let Err(e) = tx_db.execute(
+                "INSERT INTO web_telemetry_events
+                 (stage, method, path, ref_key, status_code, latency_ms, is_bot, device_type, country_code, ip_hash, referer_host, utm_source, user_agent_short)
+                 VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13)",
+                rusqlite::params![
+                    ev.stage, ev.method, ev.path, ev.ref_key, ev.status_code, ev.latency_ms,
+                    ev.is_bot, ev.device_type, ev.country_code, ev.ip_hash, ev.referer_host,
+                    ev.utm_source, ev.user_agent_short
+                ],
+            ) {
+                eprintln!("[v159] WARN insert web_telemetry_events: {}", e);
+                had_err = true;
+            }
+
+            if ev.is_bot == 0
+                && ev.status_code < 400
+                && !ev.ref_key.is_empty()
+                && (ev.stage == "MICRO_SCAN_OPEN" || ev.stage == "CHECKOUT_VIEW" || ev.stage == "PORTAL_VIEW")
+            {
+                let canon_ref = ev.ref_key.trim().to_uppercase();
+                if let Err(e) = tx_db.execute(
+                    "INSERT INTO link_clicks (ref_key, first_clicked_at_utc, last_clicked_at_utc, click_count, last_visitor_ip, last_user_agent)
+                     VALUES (?1, datetime('now'), datetime('now'), 1, ?2, ?3)
+                     ON CONFLICT(ref_key) DO UPDATE SET
+                       last_clicked_at_utc = datetime('now'),
+                       click_count = click_count + 1,
+                       last_visitor_ip = excluded.last_visitor_ip,
+                       last_user_agent = excluded.last_user_agent",
+                    rusqlite::params![canon_ref, ev.ip_hash, ev.user_agent_short],
+                ) {
+                    eprintln!("[v159] WARN upsert link_clicks: {}", e);
+                    had_err = true;
+                }
+
+                let norm_ref = normalize_domain_or_ref(&canon_ref);
+                if let Err(e) = tx_db.execute(
+                    "UPDATE prospect_pipeline SET has_clicked_link = 1
+                     WHERE TRIM(UPPER(empresa_nombre)) = ?1
+                        OR TRIM(REPLACE(REPLACE(REPLACE(RTRIM(UPPER(final_domain), '/'), 'HTTPS://', ''), 'HTTP://', ''), 'WWW.', '')) = ?1",
+                    rusqlite::params![norm_ref],
+                ) {
+                    eprintln!("[v159] WARN update prospect_pipeline.has_clicked_link: {}", e);
+                    had_err = true;
+                }
+            }
+
+            if let Err(e) = tx_db.commit() {
+                eprintln!("[v159] WARN commit telemetry tx: {}", e);
+                had_err = true;
+            }
+        }
+        Err(e) => {
+            eprintln!("[v159] WARN begin telemetry tx: {}", e);
+            had_err = true;
+        }
+    }
+    if had_err {
+        TELEMETRY_WRITE_ERRORS.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
+    }
+}
+
+fn get_telemetry_tx() -> &'static tokio::sync::mpsc::Sender<TelemetryEvent> {
+    TELEMETRY_TX.get_or_init(|| {
+        let (tx, mut rx) = tokio::sync::mpsc::channel::<TelemetryEvent>(4096);
+        std::thread::spawn(move || {
+            let db_path = std::env::var("MALLEN_DB_PATH")
+                .unwrap_or_else(|_| "data/mallen_prod.db".to_string());
+            let mut conn_opt: Option<rusqlite::Connection> = None;
+
+            while let Some(ev) = rx.blocking_recv() {
+                if conn_opt.is_none() {
+                    match rusqlite::Connection::open(&db_path) {
+                        Ok(c) => {
+                            configure_telemetry_pragmas(&c);
+                            ensure_web_telemetry_schema_once(&c);
+                            conn_opt = Some(c);
+                        }
+                        Err(e) => {
+                            eprintln!("[v159] WARN abriendo SQLite en telemetry writer: {}", e);
+                            TELEMETRY_WRITE_ERRORS.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
+                            std::thread::sleep(std::time::Duration::from_millis(500));
+                            continue;
+                        }
+                    }
+                }
+                if let Some(ref mut conn) = conn_opt {
+                    persist_telemetry_event(conn, &ev);
+                }
+            }
+        });
+        tx
+    })
+}
+
+fn percent_decode_utf8(input: &str, plus_as_space: bool) -> String {
+    let bytes = input.as_bytes();
+    let mut out = Vec::with_capacity(bytes.len());
+    let mut i = 0;
+    while i < bytes.len() {
+        if bytes[i] == b'%' && i + 2 < bytes.len() {
+            if let (Some(h), Some(l)) = (
+                (bytes[i + 1] as char).to_digit(16),
+                (bytes[i + 2] as char).to_digit(16),
+            ) {
+                out.push(((h << 4) | l) as u8);
+                i += 3;
+                continue;
+            }
+        } else if plus_as_space && bytes[i] == b'+' {
+            out.push(b' ');
+            i += 1;
+            continue;
+        }
+        out.push(bytes[i]);
+        i += 1;
+    }
+    String::from_utf8_lossy(&out)
+        .chars()
+        .filter(|c| !c.is_control() && *c != char::REPLACEMENT_CHARACTER)
+        .collect::<String>()
+        .trim()
+        .to_string()
+}
+
+fn classify_telemetry_stage(path: &str) -> &'static str {
+    if path.starts_with("/api/micro_scan") {
+        "MICRO_SCAN_OPEN"
+    } else if path.starts_with("/api/scan") {
+        "SCAN_API"
+    } else if path.starts_with("/api/calibrate") {
+        "CALIBRATE"
+    } else if path.starts_with("/checkout") {
+        "CHECKOUT_VIEW"
+    } else if path.starts_with("/api/checkout") {
+        "STRIPE_SESSION"
+    } else if path.starts_with("/api/webhook") {
+        "STRIPE_WEBHOOK"
+    } else if path.starts_with("/download/zip") {
+        "ZIP_DOWNLOAD"
+    } else if path.starts_with("/verify") {
+        "VERIFY_VIEW"
+    } else if path.starts_with("/api/arco") || path.starts_with("/derechos-arco") {
+        "ARCO_OPT_OUT"
+    } else if path == "/" || path == "/index.html" || path == "/dashboard.html" {
+        "PORTAL_VIEW"
+    } else {
+        "OTHER"
+    }
+}
+
+fn extract_query_param(query: &str, key: &str) -> String {
+    for pair in query.split('&') {
+        if let Some((k, v)) = pair.split_once('=') {
+            if k.eq_ignore_ascii_case(key) && !v.trim().is_empty() {
+                return percent_decode_utf8(v, true).chars().take(120).collect();
+            }
+        }
+    }
+    String::new()
+}
+
+fn extract_ref_key(path: &str, query: &str) -> String {
+    for key in ["ref", "ref_id", "hash"] {
+        let qv = extract_query_param(query, key);
+        if !qv.is_empty() {
+            return qv;
+        }
+    }
+    for prefix in ["/api/micro_scan/", "/checkout/", "/download/zip/", "/verify/"] {
+        if let Some(rest) = path.strip_prefix(prefix) {
+            let seg = rest.split('/').next().unwrap_or("").trim();
+            if !seg.is_empty() {
+                return percent_decode_utf8(seg, false).chars().take(120).collect();
+            }
+        }
+    }
+    String::new()
+}
+
+fn classify_ua(ua: &str) -> (i64, &'static str) {
+    let low = ua.to_lowercase();
+    let is_bot = low.is_empty()
+        || low.contains("bot")
+        || low.contains("crawler")
+        || low.contains("spider")
+        || low.contains("curl/")
+        || low.contains("wget/")
+        || low.contains("python")
+        || low.contains("go-http-client")
+        || low.contains("headless")
+        || low.contains("ahrefs")
+        || low.contains("semrush")
+        || low.contains("uptime")
+        || low.contains("postman");
+    if is_bot {
+        (1, "BOT")
+    } else if low.contains("ipad") || low.contains("tablet") {
+        (0, "TABLET")
+    } else if low.contains("mobile") || low.contains("android") || low.contains("iphone") {
+        (0, "MOBILE")
+    } else {
+        (0, "DESKTOP")
+    }
+}
+
+fn hash_visitor_ip(raw_ip: &str) -> String {
+    use sha2::Digest as _;
+    let salt = std::env::var("MALLEN_TELEMETRY_SALT")
+        .unwrap_or_else(|_| "mallen-telemetry-v159".to_string());
+    let mut h = sha2::Sha256::new();
+    h.update(salt.as_bytes());
+    h.update(b"|");
+    h.update(raw_ip.trim().as_bytes());
+    let hex = format!("{:x}", h.finalize());
+    hex.chars().take(32).collect()
+}
+
+fn extract_referer_host(referer: &str) -> String {
+    let trimmed = referer.trim();
+    if trimmed.is_empty() {
+        return String::new();
+    }
+    let without_scheme = trimmed
+        .strip_prefix("https://")
+        .or_else(|| trimmed.strip_prefix("http://"))
+        .unwrap_or(trimmed);
+    without_scheme
+        .split('/')
+        .next()
+        .unwrap_or("")
+        .chars()
+        .filter(|c| !c.is_control())
+        .take(80)
+        .collect()
+}
+
 async fn funnel_telemetry_middleware(
     req: axum::extract::Request,
     next: axum::middleware::Next,
 ) -> axum::response::Response {
-    let method = req.method().clone();
+    let method = req.method().as_str().to_string();
     let path = req.uri().path().to_string();
-    let is_funnel = path.starts_with("/api/micro_scan")
-        || path.starts_with("/api/scan")
-        || path.starts_with("/api/calibrate")
-        || path.starts_with("/checkout")
-        || path.starts_with("/api/checkout")
-        || path.starts_with("/api/webhook")
-        || path.starts_with("/download/zip")
-        || path.starts_with("/verify")
-        || path.starts_with("/api/arco");
+    let query = req.uri().query().unwrap_or("").to_string();
+
+    let stage = classify_telemetry_stage(&path);
+    let track_in_db = stage != "OTHER" && method != "OPTIONS" && method != "HEAD";
+
+    let raw_ip = req
+        .headers()
+        .get("cf-connecting-ip")
+        .and_then(|v| v.to_str().ok())
+        .map(|s| s.split(',').next().unwrap_or("").trim().to_string())
+        .filter(|s| !s.is_empty())
+        .or_else(|| {
+            req.headers()
+                .get("x-forwarded-for")
+                .and_then(|v| v.to_str().ok())
+                .map(|s| s.split(',').next().unwrap_or("").trim().to_string())
+                .filter(|s| !s.is_empty())
+        })
+        .unwrap_or_else(|| "127.0.0.1".to_string());
+    let country = req
+        .headers()
+        .get("cf-ipcountry")
+        .and_then(|v| v.to_str().ok())
+        .map(|s| s.trim().to_uppercase().chars().take(8).collect::<String>())
+        .filter(|s| !s.is_empty())
+        .unwrap_or_else(|| "XX".to_string());
+    let ua = req
+        .headers()
+        .get(axum::http::header::USER_AGENT)
+        .and_then(|v| v.to_str().ok())
+        .unwrap_or("")
+        .to_string();
+    let referer = req
+        .headers()
+        .get(axum::http::header::REFERER)
+        .and_then(|v| v.to_str().ok())
+        .unwrap_or("")
+        .to_string();
 
     let t0 = std::time::Instant::now();
     let resp = next.run(req).await;
     let status = resp.status().as_u16();
     let ms = t0.elapsed().as_millis();
 
-    if is_funnel || status >= 400 {
+    if (track_in_db && stage != "PORTAL_VIEW") || status >= 400 {
         println!("[FUNNEL] {} {} -> HTTP {} | {}ms", method, path, status, ms);
     }
+
+    if track_in_db {
+        let ref_key = extract_ref_key(&path, &query);
+        let utm_source = extract_query_param(&query, "utm_source");
+        let (is_bot, device_type) = classify_ua(&ua);
+        let ev = TelemetryEvent {
+            stage: stage.to_string(),
+            method,
+            path,
+            ref_key,
+            status_code: status as i64,
+            latency_ms: ms as i64,
+            is_bot,
+            device_type: device_type.to_string(),
+            country_code: country,
+            ip_hash: hash_visitor_ip(&raw_ip),
+            referer_host: extract_referer_host(&referer),
+            utm_source,
+            user_agent_short: ua.chars().filter(|c| !c.is_control()).take(120).collect(),
+        };
+        if let Err(tokio::sync::mpsc::error::TrySendError::Full(ev_back)) = get_telemetry_tx().try_send(ev) {
+            let is_money_stage = ev_back.stage == "STRIPE_WEBHOOK"
+                || ev_back.stage == "STRIPE_SESSION"
+                || ev_back.stage == "ZIP_DOWNLOAD";
+            if is_money_stage {
+                TELEMETRY_FALLBACK_WRITES.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
+                tokio::task::spawn_blocking(move || {
+                    let db_path = std::env::var("MALLEN_DB_PATH")
+                        .unwrap_or_else(|_| "data/mallen_prod.db".to_string());
+                    if let Ok(mut conn) = rusqlite::Connection::open(&db_path) {
+                        configure_telemetry_pragmas(&conn);
+                        ensure_web_telemetry_schema_once(&conn);
+                        persist_telemetry_event(&mut conn, &ev_back);
+                    }
+                });
+            } else {
+                TELEMETRY_DROPS.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
+                eprintln!("[v159] WARN telemetry channel full (4096); non-critical event dropped");
+            }
+        }
+    }
+
     resp
+}
+
+async fn handle_admin_telemetry(headers: axum::http::HeaderMap) -> impl axum::response::IntoResponse {
+    let expected = std::env::var("MALLEN_ADMIN_TOKEN").unwrap_or_default();
+    let provided = headers
+        .get("x-admin-token")
+        .and_then(|v| v.to_str().ok())
+        .unwrap_or("");
+    if expected.trim().is_empty() || provided != expected.trim() {
+        return (
+            axum::http::StatusCode::UNAUTHORIZED,
+            axum::Json(serde_json::json!({ "error": "UNAUTHORIZED" })),
+        );
+    }
+
+    let report = tokio::task::spawn_blocking(|| {
+        let db_path = std::env::var("MALLEN_DB_PATH")
+            .unwrap_or_else(|_| "data/mallen_prod.db".to_string());
+        let conn = match rusqlite::Connection::open(db_path) {
+            Ok(c) => c,
+            Err(e) => return serde_json::json!({ "error": format!("DB_OPEN_ERR: {}", e) }),
+        };
+        let _ = conn.execute_batch("PRAGMA busy_timeout=5000;");
+        ensure_web_telemetry_schema_once(&conn);
+
+        let q_i64 = |sql: &str| -> i64 {
+            conn.query_row(sql, [], |r| r.get::<_, i64>(0)).unwrap_or(0)
+        };
+
+        let human_24h = q_i64("SELECT COUNT(*) FROM web_telemetry_events WHERE is_bot = 0 AND created_at_utc >= datetime('now', '-24 hours')");
+        let bot_24h = q_i64("SELECT COUNT(*) FROM web_telemetry_events WHERE is_bot = 1 AND created_at_utc >= datetime('now', '-24 hours')");
+        let uniq_visitors_24h = q_i64("SELECT COUNT(DISTINCT ip_hash) FROM web_telemetry_events WHERE is_bot = 0 AND created_at_utc >= datetime('now', '-24 hours')");
+        let human_today = q_i64("SELECT COUNT(*) FROM web_telemetry_events WHERE is_bot = 0 AND created_at_utc >= date('now')");
+        let uniq_today = q_i64("SELECT COUNT(DISTINCT ip_hash) FROM web_telemetry_events WHERE is_bot = 0 AND created_at_utc >= date('now')");
+
+        let forms_sent = q_i64("SELECT COUNT(*) FROM prospect_pipeline WHERE ultimo_resultado_codigo = 'PROSPECCION_ENVIADA_EXITO'");
+        let prospects_clicked = q_i64("SELECT COUNT(*) FROM prospect_pipeline WHERE has_clicked_link = 1");
+        let portal_views = q_i64("SELECT COUNT(*) FROM web_telemetry_events WHERE is_bot = 0 AND stage = 'PORTAL_VIEW' AND status_code < 400");
+        let micro_opens = q_i64("SELECT COUNT(DISTINCT NULLIF(UPPER(TRIM(ref_key)), '')) FROM web_telemetry_events WHERE is_bot = 0 AND stage = 'MICRO_SCAN_OPEN' AND status_code < 400");
+        let checkout_views = q_i64("SELECT COUNT(DISTINCT NULLIF(UPPER(TRIM(ref_key)), '')) FROM web_telemetry_events WHERE is_bot = 0 AND stage = 'CHECKOUT_VIEW' AND status_code < 400");
+        let stripe_sessions = q_i64("SELECT COUNT(*) FROM web_telemetry_events WHERE is_bot = 0 AND stage = 'STRIPE_SESSION' AND status_code < 400");
+        let paid_webhooks = q_i64("SELECT COUNT(*) FROM web_telemetry_events WHERE stage = 'STRIPE_WEBHOOK' AND status_code = 200");
+        let zip_downloads = q_i64("SELECT COUNT(*) FROM web_telemetry_events WHERE stage = 'ZIP_DOWNLOAD' AND status_code = 200");
+
+        let pct = |num: i64, den: i64| -> f64 {
+            if den <= 0 { 0.0 } else { ((num as f64 / den as f64) * 10000.0).round() / 100.0 }
+        };
+
+        let mut countries = Vec::new();
+        if let Ok(mut stmt) = conn.prepare(
+            "SELECT country_code, COUNT(*) FROM web_telemetry_events WHERE is_bot = 0 AND created_at_utc >= datetime('now', '-24 hours') GROUP BY country_code ORDER BY 2 DESC LIMIT 10"
+        ) {
+            if let Ok(rows) = stmt.query_map([], |r| Ok(serde_json::json!({"country": r.get::<_, String>(0)?, "events": r.get::<_, i64>(1)?}))) {
+                for row in rows.flatten() { countries.push(row); }
+            }
+        }
+
+        let mut devices = Vec::new();
+        if let Ok(mut stmt) = conn.prepare(
+            "SELECT device_type, COUNT(*) FROM web_telemetry_events WHERE is_bot = 0 AND created_at_utc >= datetime('now', '-24 hours') GROUP BY device_type ORDER BY 2 DESC"
+        ) {
+            if let Ok(rows) = stmt.query_map([], |r| Ok(serde_json::json!({"device": r.get::<_, String>(0)?, "events": r.get::<_, i64>(1)?}))) {
+                for row in rows.flatten() { devices.push(row); }
+            }
+        }
+
+        let mut stage_latency = Vec::new();
+        if let Ok(mut stmt) = conn.prepare(
+            "SELECT stage, COUNT(*), COALESCE(ROUND(AVG(latency_ms), 1), 0.0) FROM web_telemetry_events WHERE created_at_utc >= datetime('now', '-24 hours') GROUP BY stage ORDER BY 2 DESC"
+        ) {
+            if let Ok(rows) = stmt.query_map([], |r| Ok(serde_json::json!({
+                "stage": r.get::<_, String>(0)?,
+                "events": r.get::<_, i64>(1)?,
+                "avg_ms": r.get::<_, f64>(2)?
+            }))) {
+                for row in rows.flatten() { stage_latency.push(row); }
+            }
+        }
+
+        let mut recent_clicks = Vec::new();
+        if let Ok(mut stmt) = conn.prepare(
+            "SELECT lc.ref_key, lc.click_count, lc.first_clicked_at_utc, lc.last_clicked_at_utc,
+                    (SELECT COUNT(DISTINCT w.ip_hash) FROM web_telemetry_events w WHERE w.is_bot = 0 AND w.ip_hash != '' AND UPPER(TRIM(w.ref_key)) = UPPER(TRIM(lc.ref_key))) AS unique_ips
+             FROM link_clicks lc
+             ORDER BY lc.last_clicked_at_utc DESC LIMIT 15"
+        ) {
+            if let Ok(rows) = stmt.query_map([], |r| Ok(serde_json::json!({
+                "ref_key": r.get::<_, String>(0)?,
+                "click_count": r.get::<_, i64>(1)?,
+                "unique_ips": r.get::<_, i64>(4)?,
+                "first_clicked_at_utc": r.get::<_, String>(2)?,
+                "last_clicked_at_utc": r.get::<_, String>(3)?
+            }))) {
+                for row in rows.flatten() { recent_clicks.push(row); }
+            }
+        }
+
+        let now_utc: String = conn
+            .query_row("SELECT datetime('now')", [], |r| r.get(0))
+            .unwrap_or_default();
+
+        serde_json::json!({
+            "generated_at_utc": now_utc,
+            "writer_health": {
+                "channel_drops": TELEMETRY_DROPS.load(std::sync::atomic::Ordering::Relaxed),
+                "fallback_writes": TELEMETRY_FALLBACK_WRITES.load(std::sync::atomic::Ordering::Relaxed),
+                "write_errors": TELEMETRY_WRITE_ERRORS.load(std::sync::atomic::Ordering::Relaxed)
+            },
+            "traffic_today_utc": {
+                "human_events": human_today,
+                "unique_human_visitors": uniq_today
+            },
+            "traffic_24h": {
+                "human_events": human_24h,
+                "bot_events": bot_24h,
+                "unique_human_visitors": uniq_visitors_24h,
+                "countries": countries,
+                "human_devices": devices,
+                "stage_latency": stage_latency
+            },
+            "funnel_all_time": {
+                "forms_sent_success": forms_sent,
+                "prospects_clicked_link": prospects_clicked,
+                "portal_views_events": portal_views,
+                "micro_scan_unique_refs": micro_opens,
+                "checkout_unique_refs": checkout_views,
+                "stripe_sessions_events": stripe_sessions,
+                "stripe_webhooks_200": paid_webhooks,
+                "zip_downloads_200": zip_downloads
+            },
+            "conversion_rates_pct": {
+                "form_to_micro_scan_pct": pct(micro_opens, forms_sent),
+                "micro_scan_to_checkout_pct": pct(checkout_views, micro_opens),
+                "checkout_to_stripe_pct": pct(stripe_sessions, checkout_views),
+                "form_to_paid_pct": pct(paid_webhooks, forms_sent)
+            },
+            "recent_human_clicks_last_15": recent_clicks
+        })
+    })
+    .await
+    .unwrap_or_else(|_| serde_json::json!({ "error": "TELEMETRY_TASK_JOIN_ERR" }));
+
+    (axum::http::StatusCode::OK, axum::Json(report))
 }
